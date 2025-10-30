@@ -1,0 +1,17 @@
+"""
+Lesion Decoding Toolkit (ldk) - A scientific Python package for neuroimaging lesion analysis.
+
+Main package providing unified API for lesion data loading, preprocessing, analysis,
+and export.
+"""
+
+__version__ = "0.1.0"
+
+# Core data structures
+from .core.lesion_data import LesionData
+
+# Exports
+__all__ = [
+    "__version__",
+    "LesionData",
+]

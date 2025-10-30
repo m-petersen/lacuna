@@ -1,4 +1,6 @@
-"""Core module for lesion decoding toolkit."""
+"""
+Core data structures and utilities for the lesion decoding toolkit.
+"""
 
 from .exceptions import (
     AnalysisError,
@@ -10,7 +12,12 @@ from .exceptions import (
     SpatialMismatchError,
     ValidationError,
 )
-from .provenance import create_provenance_record, validate_provenance_record
+from .lesion_data import LesionData
+from .provenance import (
+    create_provenance_record,
+    merge_provenance,
+    validate_provenance_record,
+)
 from .validation import (
     check_spatial_match,
     ensure_ras_plus,
@@ -28,6 +35,8 @@ __all__ = [
     "ProvenanceError",
     "NiftiLoadError",
     "AnalysisError",
+    # Core data
+    "LesionData",
     # Validation
     "validate_nifti_image",
     "ensure_ras_plus",
@@ -36,4 +45,5 @@ __all__ = [
     # Provenance
     "create_provenance_record",
     "validate_provenance_record",
+    "merge_provenance",
 ]
