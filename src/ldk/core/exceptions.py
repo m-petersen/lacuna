@@ -52,3 +52,15 @@ class AnalysisError(LdkError, RuntimeError):
     """Raised when analysis computation fails."""
 
     pass
+
+
+class AtlasNotFoundError(LdkError, FileNotFoundError):
+    """Raised when atlas cannot be found or resolved."""
+
+    pass
+
+
+class ConnectomeNotFoundError(LdkError, FileNotFoundError):
+    """Raised when connectome cannot be found or resolved."""
+
+    pass

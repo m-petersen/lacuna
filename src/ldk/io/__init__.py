@@ -6,13 +6,23 @@ Provides functions for:
 - Loading BIDS datasets
 - Exporting results to BIDS derivatives format
 - Saving NIfTI files
+- Fetching and caching reference datasets (atlases, templates)
+- Converting connectome data to LDK format
 """
 
 from .bids import BidsError, export_bids_derivatives, load_bids_dataset, save_nifti
+from .convert import gsp1000_to_ldk, tractogram_to_ldk
+from .fetch import get_atlas, get_connectome_path, get_data_dir, list_available_atlases
 
 __all__ = [
     "BidsError",
     "load_bids_dataset",
     "export_bids_derivatives",
     "save_nifti",
+    "get_atlas",
+    "get_connectome_path",
+    "get_data_dir",
+    "list_available_atlases",
+    "gsp1000_to_ldk",
+    "tractogram_to_ldk",
 ]
