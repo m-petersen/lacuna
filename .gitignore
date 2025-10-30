@@ -1,0 +1,94 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+.python-version
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.pytest/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.nii.gz
+*.nii
+!tests/fixtures/*.nii.gz
+!tests/fixtures/*.nii
+
+# Documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Distribution
+*.whl
+*.tar.gz
+
+# Logs
+*.log
+logs/
+
+# Development notebooks (experiments, not polished)
+notebooks/dev/
+!notebooks/dev/.gitkeep
+
+# Keep example notebooks
+!notebooks/examples/
+
+# Specs
+specs/
+
+# direnv
+.envrc
+
+# Notes
+notes

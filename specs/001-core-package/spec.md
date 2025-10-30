@@ -44,23 +44,23 @@ After completing analyses, a researcher needs to save the results in standard fo
 
 A researcher wants to understand the functional network impacts of a lesion by mapping it to a normative brain connectome. This involves overlaying the lesion mask with connectivity data to identify disconnected or affected brain networks.
 
-**Why this priority**: This is a core analysis capability that provides scientific value, but it depends on the foundational data loading and preprocessing capabilities being in place first.
+**Why this priority**: This is a core analysis capability that provides high scientific value. The initial implementation will focus on lesions already in standard space (MNI152), making this a high-priority feature that can be implemented early in the development cycle.
 
-**Independent Test**: Can be tested by taking preprocessed lesion data, applying it to a sample connectome, and verifying that network disruption metrics are calculated and stored in the results attribute.
+**Independent Test**: Can be tested by taking lesion data in standard space, applying it to a sample connectome, and verifying that network disruption metrics are calculated and stored in the results attribute.
 
 **Acceptance Scenarios**:
 
-1. **Given** a normalized LesionData object and a connectome atlas, **When** the researcher performs lesion network mapping, **Then** network disruption metrics are calculated and added to the LesionData results
+1. **Given** a LesionData object in MNI152 space and a connectome atlas, **When** the researcher performs lesion network mapping, **Then** network disruption metrics are calculated and added to the LesionData results
 2. **Given** analysis results in a LesionData object, **When** the researcher accesses them, **Then** they can retrieve network-level statistics and affected regions
-3. **Given** multiple subjects with lesion data, **When** batch analysis is performed, **Then** results are computed for all subjects and can be exported in a structured format
+3. **Given** multiple subjects with lesion data in MNI152 space, **When** batch analysis is performed, **Then** results are computed for all subjects and can be exported in a structured format
 
 ---
 
-### User Story 4 - Spatial Preprocessing and Normalization (Priority: P4)
+### User Story 4 - Spatial Preprocess and Normalization (Priority: P4)
 
 A researcher needs to transform lesion masks from native subject space to a standard template space (e.g., MNI152) to enable comparisons across subjects or mapping to normative atlases. This involves spatial normalization, resampling, and coordinate system transformations.
 
-**Why this priority**: Spatial normalization is a prerequisite for most group-level analyses and for using standardized brain atlases and connectomes. Because the the tool development will first focus on lesions already in standard space, it has a lower priority.
+**Why this priority**: While spatial normalization is useful for some workflows, the initial development will focus on lesions already in standard space. This allows core functionality (I/O, data model, and lesion network mapping) to be implemented and validated first. Native-to-MNI transformation will be added in a later phase once the core pipeline is stable and validated.
 
 **Independent Test**: Can be tested by taking lesion data in native space, applying spatial transformations, and verifying that the output is correctly aligned with a standard template (verified through visual inspection and affine matrix validation).
 
@@ -91,12 +91,35 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 
 ### Edge Cases
 
-- What happens when a lesion mask file has an unusual voxel orientation or non-standard affine matrix?
-- How does the system handle lesion masks with floating-point values (non-binary) vs. binary masks?
-- What happens when BIDS metadata is incomplete or malformed?
-- How does the system handle very large lesions that exceed anatomical boundaries?
-- What happens when attempting spatial operations on data that is already in the target space?
-- How does the system handle multi-session data where the same subject has lesion masks at different timepoints?
+- **What happens when a lesion mask file has an unusual voxel orientation or non-standard affine matrix?**
+  - System uses `ensure_ras_plus()` to reorient to RAS+ canonical orientation per Principle 7
+  - Non-standard affines are validated and corrected using nilearn's canonical orientation utilities
+  - Provenance records the reorientation operation
+
+- **How does the system handle lesion masks with floating-point values (non-binary) vs. binary masks?**
+  - Both are supported: floating-point values treated as probability maps
+  - `binarize()` function (Phase 6, T084) provides explicit thresholding (default: 0.5)
+  - Binary operations (volume calculation) automatically threshold at >0
+
+- **What happens when BIDS metadata is incomplete or malformed?**
+  - System validates required BIDS fields (subject_id) and raises `BIDSValidationError` with specific missing fields
+  - Optional fields are logged as warnings but don't block loading
+  - Graceful degradation: partial metadata still creates valid LesionData objects (T030)
+
+- **How does the system handle very large lesions that exceed anatomical boundaries?**
+  - No automatic clipping; analysis proceeds with full lesion extent
+  - Warnings logged if lesion extends beyond template mask boundaries
+  - Researchers responsible for preprocess if clipping needed
+
+- **What happens when attempting spatial operations on data that is already in the target space?**
+  - Coordinate space check (T028.1) detects matching spaces
+  - No-op: returns shallow copy of input with provenance note "already in target space"
+  - Prevents unnecessary computation and transformation artifacts
+
+- **How does the system handle multi-session data where the same subject has lesion masks at different timepoints?**
+  - BIDS loader (T027-T028) parses session information from filenames
+  - Each session creates separate LesionData object with session metadata
+  - Batch processing utilities handle session grouping for longitudinal analysis (v2.0 feature)
 
 ## Requirements *(mandatory)*
 
@@ -119,7 +142,7 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 - **FR-015**: System MUST define optional dependency groups (viz, dev, doc) in pyproject.toml
 - **FR-016**: System MUST use established libraries (nibabel, nilearn, pybids) for critical operations
 - **FR-017**: System MUST provide clear error messages for invalid input data or incompatible operations
-- **FR-018**: System MUST enforce module boundaries (core, io, upstream, analysis, downstream) with no circular dependencies
+- **FR-018**: System MUST enforce module boundaries (core, io, preprocess, analysis, modeling, reporting) with no circular dependencies
 - **FR-019**: System MUST ensure that new analysis modules can be added by depending only on the LesionData abstraction
 - **FR-020**: System MUST provide comprehensive test coverage using pytest
 
@@ -135,16 +158,119 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 
 - **Connectome Reference**: A normative brain connectivity dataset used for lesion network mapping, defining relationships between brain regions.
 
+### Data Management Architecture
+
+The system implements a tiered data management strategy to handle large reference datasets (atlases, connectomes, templates) while providing flexibility for different computational environments.
+
+#### Storage Strategy
+
+**Reference Data Types:**
+- **Atlases**: Pre-registered brain parcellation schemes (Harvard-Oxford, AAL, Schaefer, etc.). Small files (~10-50MB each) suitable for automatic downloading.
+- **Templates**: Standard space reference images (MNI152). Small files (~10MB) suitable for automatic downloading.
+- **Connectomes**: Large normative connectivity datasets (50-100GB). User-managed due to licensing and size constraints.
+
+**Storage Locations:**
+- **Default cache**: `~/.cache/ldk/` (XDG Base Directory compliant)
+  - Contains auto-downloaded atlases and templates
+  - Can be safely deleted and regenerated
+  - Respects `XDG_CACHE_HOME` environment variable
+- **User-specified data**: Configurable via `LDK_DATA_DIR` environment variable
+  - Allows placement on fast storage (NVMe) or network drives
+  - Persists across cache clearing operations
+- **Connectome storage**: User-managed, specified via `LDK_CONNECTOME_DIR` environment variable
+  - Users download and convert connectomes themselves
+  - No automatic downloading due to licensing restrictions
+
+#### Atlas Management
+
+**Pre-registered Atlases:**
+The system maintains a registry of commonly-used atlases with download URLs and checksums. On first use, atlases are automatically downloaded to the cache directory.
+
+**Supported workflow:**
+1. **Automatic download**: `RegionalDamage(atlas="harvard-oxford")` downloads on first use
+2. **Custom atlas**: `RegionalDamage(atlas="/path/to/custom.nii.gz")` uses user-provided files
+3. **Atlas directory**: `LDK_ATLAS_DIR=/lab/atlases` enables directory scanning for named atlases
+
+**Atlas resolution order:**
+1. If provided as Path → use directly (custom atlas)
+2. If in pre-registered catalog → fetch via Pooch (download if missing)
+3. If `LDK_ATLAS_DIR` set → scan directory for matching files
+4. Else → raise `AtlasNotFoundError` with available options
+
+**Atlas file format:**
+- Image file: `.nii.gz` with integer labels (3D) or probabilities (4D)
+- Label file: `_labels.txt` with format `"1 RegionName"` or `"RegionName"` per line
+- Paired files must share base name (e.g., `atlas.nii.gz` + `atlas_labels.txt`)
+
+#### Connectome Management
+
+**User-managed workflow:**
+Due to licensing restrictions, connectomes are not distributed with the package. Users must:
+1. Obtain connectome data from original sources (GSP1000, HCP, etc.)
+2. Convert to LDK-compatible format using conversion utilities
+3. Specify location via environment variable or direct path
+
+**Conversion utilities** (in `ldk.io.convert`):
+- `gsp1000_to_ldk()`: Converts GSP1000 batched fMRI data to HDF5 format
+- `tractogram_to_ldk()`: Converts MRtrix3 .tck files to LDK format
+- CLI tool: `ldk convert gsp1000 /path/to/raw /output/path`
+
+**Expected HDF5 structure** (functional connectomes):
+```
+connectome.h5
+├── timeseries (subjects, timepoints, voxels)
+├── mask_indices (voxel_count, 3)  # MNI152 coordinates
+└── attributes:
+    ├── mask_shape: [91, 109, 91]
+    ├── affine: 4x4 matrix
+    └── description: "GSP1000 functional connectome"
+```
+
+**Connectome resolution order:**
+1. If provided as Path → use directly
+2. If `LDK_CONNECTOME_DIR` set → look for named file
+3. Else → raise `ConnectomeNotFoundError` with setup instructions
+
+#### Implementation Details
+
+**Technology stack:**
+- **Pooch**: Download management, caching, checksums (for atlases/templates)
+- **XDG Base Directory**: Standard cache location (`~/.cache/ldk/`)
+- **Environment variables**: User configuration without code changes
+- **HDF5**: Efficient storage for large connectome matrices
+
+**Environment variables:**
+- `LDK_DATA_DIR`: Override default cache directory for all reference data
+- `LDK_ATLAS_DIR`: Additional atlas search directory (scanned for custom atlases)
+- `LDK_CONNECTOME_DIR`: Directory containing user-prepared connectomes
+- `XDG_CACHE_HOME`: System-wide XDG cache location (respected by default)
+
+**Functional requirements:**
+- **FR-021**: System MUST download pre-registered atlases automatically on first use
+- **FR-022**: System MUST verify downloaded data integrity using SHA256 checksums
+- **FR-023**: System MUST respect XDG Base Directory specification for cache location
+- **FR-024**: System MUST support user-specified data directories via environment variables
+- **FR-025**: System MUST provide conversion utilities for preparing connectome data
+- **FR-026**: System MUST raise clear errors when required data is missing, with setup instructions
+- **FR-027**: System MUST allow custom atlases without requiring pre-registration
+- **FR-028**: System MUST cache downloaded data to avoid repeated downloads
+
+**Success criteria:**
+- **SC-011**: Pre-registered atlas downloads complete in under 30 seconds on standard broadband
+- **SC-012**: Cached atlas access completes in under 100ms
+- **SC-013**: Users can specify custom data locations without modifying code
+- **SC-014**: Connectome conversion utilities process 50GB datasets in under 10 minutes
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: Researchers can load a single-subject lesion mask from a NIfTI file and create a valid LesionData object in under 5 seconds
 - **SC-002**: Researchers can load a BIDS dataset containing 50 subjects with lesion masks in under 2 minutes
-- **SC-003**: Spatial normalization operations complete in under 30 seconds per subject on standard hardware
-- **SC-004**: The package correctly handles 95% of valid NIfTI files without errors
+- **SC-003**: Spatial normalization operations complete in under 30 seconds per subject on standard hardware (4-core CPU, 16GB RAM, SSD storage)
+- **SC-004**: The package correctly handles 95% of BIDS-compliant NIfTI files without errors
 - **SC-005**: All spatial transformations preserve data integrity (no voxel data corruption) as verified by checksums
-- **SC-006**: Researchers can add a new analysis module without modifying existing code in core, io, or upstream modules
+- **SC-006**: Researchers can add a new analysis module without modifying existing code in core, io, or preprocess modules
 - **SC-007**: The test suite achieves at least 85% code coverage
 - **SC-008**: Researchers can complete a full pipeline (load, preprocess, analyze, save) for a single subject with fewer than 10 lines of code
 - **SC-009**: Error messages for common mistakes (wrong file path, incompatible spaces) clearly explain the problem and suggest solutions
