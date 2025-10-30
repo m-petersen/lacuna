@@ -193,98 +193,119 @@ def gsp1000_to_ldk(
     return created_files
 
 
-def tractogram_to_ldk(
-    tractogram_path: str | Path,
+def trk_to_tck(
+    trk_path: str | Path,
     output_path: str | Path,
     *,
-    tdi_path: str | Path | None = None,
     overwrite: bool = False,
 ) -> Path:
     """
-    Convert MRtrix3 tractogram to LDK-compatible format.
+    Convert TrackVis .trk tractogram to MRtrix3 .tck format using nibabel.
 
-    Stores tractogram metadata and optionally a precomputed track density
-    image (TDI) for structural network mapping analyses.
+    This conversion is necessary because StructuralNetworkMapping uses MRtrix3
+    tools (tckedit, tckmap, mrcalc) which require .tck format. The default
+    dTOR985 tractogram is distributed in .trk format.
+
+    Uses nibabel's streamlines module for pure Python conversion without
+    requiring MRtrix3 to be installed.
 
     Parameters
     ----------
-    tractogram_path : str | Path
-        Path to MRtrix3 .tck tractogram file
+    trk_path : str | Path
+        Path to input TrackVis .trk file (e.g., dTOR985.trk)
     output_path : str | Path
-        Output path for HDF5 file
-    tdi_path : str | Path, optional
-        Path to precomputed whole-brain TDI (.nii.gz)
-        If not provided, TDI will be computed during analysis
+        Output path for MRtrix3 .tck file
     overwrite : bool, default=False
         Whether to overwrite existing output file
 
     Returns
     -------
     Path
-        Path to created HDF5 file
+        Path to created .tck file
 
     Raises
     ------
     FileNotFoundError
-        If tractogram or TDI file not found
+        If trk file not found
+    ValueError
+        If input is not .trk or output is not .tck format
     RuntimeError
-        If MRtrix3 tools not available
+        If conversion fails
 
     Examples
     --------
-    >>> output = tractogram_to_ldk(
-    ...     tractogram_path="/data/hcp_tractogram.tck",
-    ...     output_path="/data/connectomes/hcp_structural.h5",
-    ...     tdi_path="/data/hcp_tdi.nii.gz"
+    >>> # Convert dTOR985 tractogram
+    >>> tck_path = trk_to_tck(
+    ...     trk_path="/data/dTOR985.trk",
+    ...     output_path="/data/dTOR985.tck"
     ... )
+    >>>
+    >>> # Later use in analysis:
+    >>> analysis = StructuralNetworkMapping(tractogram_path="/data/dTOR985.tck")
 
     Notes
     -----
-    This function stores metadata about the tractogram rather than the full
-    streamline data. Actual tractography filtering (tckedit) happens during
-    StructuralNetworkMapping analysis using the original .tck file.
+    - Uses nibabel for pure Python conversion (no external dependencies)
+    - Preserves streamline coordinates and header information
+    - The .tck file can be much larger than .trk due to format differences
+    - For dTOR985: expect ~5-10GB .tck file from ~2GB .trk file
+
+    See Also
+    --------
+    nibabel.streamlines: https://nipy.org/nibabel/reference/nibabel.streamlines.html
     """
-    tractogram_path = Path(tractogram_path)
+    from nibabel.streamlines import TckFile, TrkFile
+
+    trk_path = Path(trk_path)
     output_path = Path(output_path)
 
-    if not tractogram_path.exists():
-        raise FileNotFoundError(f"Tractogram not found: {tractogram_path}")
+    # Validate formats
+    if trk_path.suffix != ".trk":
+        raise ValueError(
+            f"Input must be .trk format, got: {trk_path.suffix}\n"
+            "Expected TrackVis .trk file (e.g., dTOR985.trk)"
+        )
+
+    if output_path.suffix != ".tck":
+        raise ValueError(
+            f"Output must be .tck format, got: {output_path.suffix}\n"
+            "MRtrix3 tools require .tck format"
+        )
+
+    if not trk_path.exists():
+        raise FileNotFoundError(f"TRK file not found: {trk_path}")
 
     if output_path.exists() and not overwrite:
         print(f"Output file already exists: {output_path}")
         return output_path
 
-    print("🚀 Converting tractogram to LDK format...")
-    print(f"Input: {tractogram_path}")
+    print("🚀 Converting .trk to .tck format...")
+    print(f"Input:  {trk_path}")
+    print(f"Output: {output_path}")
 
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with h5py.File(output_path, "w") as hf:
-        # Store tractogram metadata
-        hf.attrs["tractogram_path"] = str(tractogram_path.resolve())
-        hf.attrs["connectome_type"] = "structural"
-        hf.attrs["space"] = "MNI152_2mm"
+    try:
+        # Load TRK file
+        print("Loading .trk file...")
+        trk = TrkFile.load(str(trk_path))
 
-        # If TDI provided, store it
-        if tdi_path:
-            tdi_path = Path(tdi_path)
-            if not tdi_path.exists():
-                raise FileNotFoundError(f"TDI file not found: {tdi_path}")
+        # Create TCK file with same tractogram data
+        print("Creating .tck file...")
+        tck = TckFile(tractogram=trk.tractogram)
 
-            print(f"Loading TDI from: {tdi_path}")
-            tdi_img = nib.load(tdi_path)
-            tdi_data = tdi_img.get_fdata()
+        # Save to disk
+        print("Writing to disk...")
+        tck.save(str(output_path))
 
-            hf.create_dataset("tdi", data=tdi_data, compression="gzip")
-            hf.create_dataset("tdi_affine", data=tdi_img.affine)
-            hf.attrs["tdi_shape"] = tdi_data.shape
-            hf.attrs["has_tdi"] = True
-        else:
-            hf.attrs["has_tdi"] = False
-            print("No TDI provided - will be computed during analysis")
-
-        hf.attrs["description"] = "Structural connectome for LDK"
+    except Exception as e:
+        raise RuntimeError(
+            f"Conversion failed: {e}\n"
+            "Check that .trk file is valid and nibabel is properly installed."
+        ) from e
 
     print(f"✅ Conversion complete: {output_path}")
+    print("Note: Keep .tck file for StructuralNetworkMapping analyses")
+
     return output_path

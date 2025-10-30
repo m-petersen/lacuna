@@ -70,6 +70,19 @@ ATLAS_REGISTRY = pooch.create(
 )
 
 
+# Pooch registry for pre-registered tractograms
+# TODO: Replace with actual hosting URLs when available
+TRACTOGRAM_REGISTRY = pooch.create(
+    path=get_data_dir() / "tractograms",
+    base_url="https://github.com/lesion-decoding/ldk-data/raw/main/tractograms/",
+    registry={
+        # dTOR985 - Default structural connectome (985 subjects)
+        # Distributed in TrackVis .trk format, needs conversion to .tck
+        "dTOR985.trk": "sha256:placeholder_hash_dtor985",
+    },
+)
+
+
 def list_available_atlases() -> list[str]:
     """
     List all pre-registered atlases that can be automatically downloaded.
@@ -367,3 +380,83 @@ def get_connectome_path(name_or_path: str) -> Path:
         "   export LDK_CONNECTOME_DIR=/output/dir\n\n"
         "Or provide direct path: FunctionalNetworkMapping(connectome_path='/path/to/file.h5')"
     )
+
+
+def get_tractogram(name: str = "dTOR985", *, convert_to_tck: bool = True) -> Path:
+    """
+    Get structural tractogram with automatic download and conversion.
+
+    The default tractogram is dTOR985 (985 subjects), which is automatically
+    downloaded in TrackVis .trk format and optionally converted to MRtrix3 .tck
+    format for use with StructuralNetworkMapping.
+
+    Parameters
+    ----------
+    name : str, default="dTOR985"
+        Tractogram name (currently only "dTOR985" supported)
+    convert_to_tck : bool, default=True
+        Whether to convert .trk to .tck format using MRtrix3 tckconvert
+        Required for StructuralNetworkMapping
+
+    Returns
+    -------
+    Path
+        Path to tractogram file (.tck if converted, .trk otherwise)
+
+    Raises
+    ------
+    ValueError
+        If tractogram name not recognized
+    RuntimeError
+        If MRtrix3 not available and convert_to_tck=True
+
+    Examples
+    --------
+    >>> # Get dTOR985 as .tck (default, ready for analysis)
+    >>> tck_path = get_tractogram("dTOR985")
+    >>> analysis = StructuralNetworkMapping(tractogram_path=tck_path)
+
+    >>> # Get raw .trk file without conversion
+    >>> trk_path = get_tractogram("dTOR985", convert_to_tck=False)
+
+    Notes
+    -----
+    - First call downloads ~2GB .trk file from repository
+    - Conversion to .tck creates ~5-10GB file (MRtrix3 format)
+    - Files cached in ~/.cache/ldk/tractograms/
+    - Conversion requires MRtrix3 installation
+    """
+    if name not in TRACTOGRAM_REGISTRY.registry:
+        raise ValueError(
+            f"Tractogram '{name}' not recognized.\n"
+            f"Available tractograms: {list(TRACTOGRAM_REGISTRY.registry.keys())}"
+        )
+
+    # Fetch .trk file (downloads if needed, uses cache otherwise)
+    trk_filename = f"{name}.trk"
+    trk_path = Path(TRACTOGRAM_REGISTRY.fetch(trk_filename, progressbar=True))
+
+    if not convert_to_tck:
+        return trk_path
+
+    # Convert to .tck format
+    tck_path = trk_path.parent / f"{name}.tck"
+
+    if tck_path.exists():
+        print(f"Using cached .tck file: {tck_path}")
+        return tck_path
+
+    print(f"Converting {name} to MRtrix3 .tck format...")
+
+    # Import here to avoid circular import
+    from .convert import trk_to_tck
+
+    try:
+        return trk_to_tck(trk_path, tck_path)
+    except RuntimeError as e:
+        print(
+            f"\nWARNING: Could not convert to .tck format: {e}\n"
+            f"Returning .trk file. You'll need to convert manually:\n"
+            f"  ldk.io.trk_to_tck('{trk_path}', '{tck_path}')"
+        )
+        return trk_path

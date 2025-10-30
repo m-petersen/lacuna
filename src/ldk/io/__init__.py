@@ -11,8 +11,14 @@ Provides functions for:
 """
 
 from .bids import BidsError, export_bids_derivatives, load_bids_dataset, save_nifti
-from .convert import gsp1000_to_ldk, tractogram_to_ldk
-from .fetch import get_atlas, get_connectome_path, get_data_dir, list_available_atlases
+from .convert import gsp1000_to_ldk, trk_to_tck
+from .fetch import (
+    get_atlas,
+    get_connectome_path,
+    get_data_dir,
+    get_tractogram,
+    list_available_atlases,
+)
 
 __all__ = [
     "BidsError",
@@ -22,7 +28,8 @@ __all__ = [
     "get_atlas",
     "get_connectome_path",
     "get_data_dir",
+    "get_tractogram",
     "list_available_atlases",
     "gsp1000_to_ldk",
-    "tractogram_to_ldk",
+    "trk_to_tck",
 ]
