@@ -18,7 +18,6 @@ def test_atlas_aggregation_import():
 def test_atlas_aggregation_inherits_base_analysis():
     """Test that AtlasAggregation inherits from BaseAnalysis."""
     from ldk.analysis.atlas_aggregation import AtlasAggregation
-
     from ldk.analysis.base import BaseAnalysis
 
     assert issubclass(AtlasAggregation, BaseAnalysis)
@@ -82,26 +81,38 @@ def test_atlas_aggregation_validates_aggregation_method():
         )
 
 
-def test_atlas_aggregation_validates_atlas_directory():
+def test_atlas_aggregation_validates_atlas_directory(synthetic_lesion_img):
     """Test that AtlasAggregation validates atlas directory exists."""
     from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from ldk import LesionData
+
+    analysis = AtlasAggregation(atlas_dir="/nonexistent/path")
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
 
     with pytest.raises((ValueError, FileNotFoundError), match="atlas"):
-        analysis = AtlasAggregation(atlas_dir="/nonexistent/path")
-        # Or during validation
+        analysis.run(lesion_data)
 
 
-def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img):
+def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_path):
     """Test that AtlasAggregation validates source data exists."""
+    import nibabel as nib
+    import numpy as np
+    from ldk import LesionData
     from ldk.analysis.atlas_aggregation import AtlasAggregation
 
-    from ldk import LesionData
+    # Create mock atlas
+    atlas_dir = tmp_path / "atlases"
+    atlas_dir.mkdir()
+    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
+    atlas_data[20:40, 20:40, 20:40] = 1
+    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
+    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
     lesion_data = LesionData(lesion_img=synthetic_lesion_img)
 
     # Try to aggregate from non-existent analysis result
     analysis = AtlasAggregation(
-        atlas_dir="/path/to/atlases",
+        atlas_dir=str(atlas_dir),
         source="NonExistentAnalysis.network_map",
     )
 
@@ -113,9 +124,9 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, t
     """Test that AtlasAggregation can access results from previous analyses."""
     import nibabel as nib
     import numpy as np
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -130,7 +141,7 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, t
 
     # Add mock network map from previous analysis
     network_map = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_lesion_img.affine)
-    lesion_data.results["MockAnalysis"] = {"network_map": network_map}
+    lesion_data._results["MockAnalysis"] = {"network_map": network_map}
 
     # Should be able to aggregate the network map
     analysis = AtlasAggregation(
@@ -149,9 +160,9 @@ def test_atlas_aggregation_returns_lesion_data(synthetic_lesion_img, tmp_path):
     """Test that run() returns a LesionData object with namespaced results."""
     import nibabel as nib
     import numpy as np
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -177,9 +188,9 @@ def test_atlas_aggregation_result_structure(synthetic_lesion_img, tmp_path):
     """Test that results contain ROI-level aggregated values."""
     import nibabel as nib
     import numpy as np
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -208,9 +219,9 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_lesion_img, tmp_pa
     """Test that AtlasAggregation can process multiple atlases in directory."""
     import nibabel as nib
     import numpy as np
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
@@ -241,9 +252,9 @@ def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img, tm
     """Test that run() does not modify the input LesionData."""
     import nibabel as nib
     import numpy as np
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -271,9 +282,9 @@ def test_atlas_aggregation_adds_provenance(synthetic_lesion_img, tmp_path):
     """Test that run() adds provenance record."""
     import nibabel as nib
     import numpy as np
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
