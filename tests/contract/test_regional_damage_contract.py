@@ -42,15 +42,17 @@ def test_regional_damage_has_run_method():
     assert callable(analysis.run)
 
 
-def test_regional_damage_validates_atlas_directory():
+def test_regional_damage_validates_atlas_directory(synthetic_lesion_img):
     """Test that RegionalDamage validates atlas directory exists."""
     from ldk.analysis.regional_damage import RegionalDamage
+    from ldk import LesionData
 
     # Should raise error if atlas directory doesn't exist
+    analysis = RegionalDamage(atlas_dir="/nonexistent/path")
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+
     with pytest.raises((ValueError, FileNotFoundError), match="atlas"):
-        analysis = RegionalDamage(atlas_dir="/nonexistent/path")
-        # Or during validation
-        # analysis._validate_inputs(lesion_data)
+        analysis.run(lesion_data)
 
 
 def test_regional_damage_discovers_atlases(tmp_path):
@@ -71,12 +73,21 @@ def test_regional_damage_discovers_atlases(tmp_path):
     assert hasattr(analysis, "atlases") or hasattr(analysis, "_discover_atlases")
 
 
-def test_regional_damage_requires_binary_mask(synthetic_lesion_img):
+def test_regional_damage_requires_binary_mask(synthetic_lesion_img, tmp_path):
     """Test that RegionalDamage requires binary lesion mask."""
     import nibabel as nib
+    import numpy as np
     from ldk.analysis.regional_damage import RegionalDamage
 
     from ldk import LesionData
+
+    # Create mock atlas
+    atlas_dir = tmp_path / "atlases"
+    atlas_dir.mkdir()
+    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
+    atlas_data[20:40, 20:40, 20:40] = 1
+    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
+    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
     # Create non-binary lesion
     data = synthetic_lesion_img.get_fdata()
@@ -85,7 +96,7 @@ def test_regional_damage_requires_binary_mask(synthetic_lesion_img):
     non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
     lesion_data = LesionData(lesion_img=non_binary_img)
 
-    analysis = RegionalDamage(atlas_dir="/path/to/atlases")
+    analysis = RegionalDamage(atlas_dir=str(atlas_dir))
 
     # Should raise error for non-binary mask
     with pytest.raises(ValueError, match="binary"):

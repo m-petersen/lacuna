@@ -100,3 +100,36 @@ class RegionalDamage(AtlasAggregation):
             aggregation="percent",
             threshold=threshold,
         )
+
+    def _validate_inputs(self, lesion_data) -> None:
+        """
+        Validate inputs for regional damage analysis.
+
+        Extends parent validation to ensure lesion mask is binary.
+
+        Parameters
+        ----------
+        lesion_data : LesionData
+            Lesion data to validate
+
+        Raises
+        ------
+        ValueError
+            If lesion mask is not binary (contains values other than 0 and 1)
+        """
+        # Run parent validation first
+        super()._validate_inputs(lesion_data)
+
+        # Check that lesion mask is binary
+        import numpy as np
+
+        lesion_data_arr = lesion_data.lesion_img.get_fdata()
+        unique_vals = np.unique(lesion_data_arr)
+
+        # Binary mask should only have 0 and 1 (or just 0, or just 1)
+        if not np.all(np.isin(unique_vals, [0, 1])):
+            raise ValueError(
+                f"RegionalDamage requires binary lesion mask (0 and 1 only).\n"
+                f"Found values: {unique_vals}\n"
+                f"Use thresholding or binarization to convert continuous maps."
+            )
