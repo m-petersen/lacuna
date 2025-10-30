@@ -1,0 +1,188 @@
+"""
+Shared test fixtures for lesion decoding toolkit tests.
+
+Provides common fixtures used across contract, integration, and unit tests.
+"""
+
+import json
+
+import nibabel as nib
+import numpy as np
+import pytest
+
+
+@pytest.fixture
+def synthetic_lesion_img():
+    """Create a synthetic 3D lesion mask for testing."""
+    shape = (64, 64, 64)
+    data = np.zeros(shape, dtype=np.uint8)
+
+    # Create small spherical lesion
+    center = (32, 32, 32)
+    radius = 5
+    for x in range(max(0, center[0] - radius), min(shape[0], center[0] + radius + 1)):
+        for y in range(max(0, center[1] - radius), min(shape[1], center[1] + radius + 1)):
+            for z in range(max(0, center[2] - radius), min(shape[2], center[2] + radius + 1)):
+                dist = np.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2 + (z - center[2]) ** 2)
+                if dist <= radius:
+                    data[x, y, z] = 1
+
+    affine = np.eye(4)
+    affine[0, 0] = 2.0  # 2mm voxels
+    affine[1, 1] = 2.0
+    affine[2, 2] = 2.0
+
+    return nib.Nifti1Image(data, affine)
+
+
+@pytest.fixture
+def synthetic_anatomical_img():
+    """Create a synthetic anatomical (T1w) image for testing."""
+    shape = (64, 64, 64)
+    # Create brain-like structure with higher intensity in center
+    data = np.random.rand(*shape).astype(np.float32) * 100
+
+    # Add "brain" with ellipsoid
+    center = np.array(shape) // 2
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            for z in range(shape[2]):
+                dist = np.sqrt(
+                    ((x - center[0]) / 20) ** 2
+                    + ((y - center[1]) / 25) ** 2
+                    + ((z - center[2]) / 20) ** 2
+                )
+                if dist < 1.0:
+                    data[x, y, z] += 500 * (1 - dist)
+
+    affine = np.eye(4)
+    affine[0, 0] = 2.0
+    affine[1, 1] = 2.0
+    affine[2, 2] = 2.0
+
+    return nib.Nifti1Image(data, affine)
+
+
+@pytest.fixture
+def synthetic_4d_img():
+    """Create a synthetic 4D image (should be rejected by validation)."""
+    shape = (64, 64, 64, 10)
+    data = np.random.rand(*shape).astype(np.float32)
+    affine = np.eye(4)
+    return nib.Nifti1Image(data, affine)
+
+
+@pytest.fixture
+def simple_bids_dataset(tmp_path):
+    """
+    Create a minimal BIDS dataset for testing.
+
+    Structure:
+        dataset/
+        ├── dataset_description.json
+        ├── sub-001/
+        │   └── anat/
+        │       ├── sub-001_T1w.nii.gz
+        │       └── sub-001_mask-lesion.nii.gz
+        └── sub-002/
+            └── anat/
+                └── sub-002_mask-lesion.nii.gz
+    """
+    dataset_root = tmp_path / "bids_dataset"
+    dataset_root.mkdir()
+
+    # Create dataset_description.json
+
+    desc = {
+        "Name": "Test Lesion Dataset",
+        "BIDSVersion": "1.6.0",
+        "DatasetType": "raw",
+    }
+    with open(dataset_root / "dataset_description.json", "w") as f:
+        json.dump(desc, f)
+
+    # Create synthetic lesion masks
+    shape = (64, 64, 64)
+    affine = np.eye(4)
+    affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
+
+    # Subject 1 (with anatomical)
+    sub1_dir = dataset_root / "sub-001" / "anat"
+    sub1_dir.mkdir(parents=True)
+
+    # Lesion mask for sub-001
+    data1 = np.zeros(shape, dtype=np.uint8)
+    data1[30:35, 30:35, 30:35] = 1
+    lesion1 = nib.Nifti1Image(data1, affine)
+    nib.save(lesion1, sub1_dir / "sub-001_mask-lesion.nii.gz")
+
+    # Anatomical for sub-001
+    anat1_data = np.random.rand(*shape).astype(np.float32) * 1000
+    anat1 = nib.Nifti1Image(anat1_data, affine)
+    nib.save(anat1, sub1_dir / "sub-001_T1w.nii.gz")
+
+    # Subject 2 (lesion only, no anatomical)
+    sub2_dir = dataset_root / "sub-002" / "anat"
+    sub2_dir.mkdir(parents=True)
+
+    data2 = np.zeros(shape, dtype=np.uint8)
+    data2[25:30, 25:30, 25:30] = 1
+    lesion2 = nib.Nifti1Image(data2, affine)
+    nib.save(lesion2, sub2_dir / "sub-002_mask-lesion.nii.gz")
+
+    return dataset_root
+
+
+@pytest.fixture
+def multisession_bids_dataset(tmp_path):
+    """
+    Create a multi-session BIDS dataset for testing.
+
+    Structure:
+        dataset/
+        ├── dataset_description.json
+        └── sub-001/
+            ├── ses-01/
+            │   └── anat/
+            │       └── sub-001_ses-01_mask-lesion.nii.gz
+            └── ses-02/
+                └── anat/
+                    └── sub-001_ses-02_mask-lesion.nii.gz
+    """
+    dataset_root = tmp_path / "bids_multisession"
+    dataset_root.mkdir()
+
+    # Create dataset_description.json
+
+    desc = {
+        "Name": "Test Multi-Session Lesion Dataset",
+        "BIDSVersion": "1.6.0",
+        "DatasetType": "raw",
+    }
+    with open(dataset_root / "dataset_description.json", "w") as f:
+        json.dump(desc, f)
+
+    # Create synthetic lesion masks
+    shape = (64, 64, 64)
+    affine = np.eye(4)
+    affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
+
+    # Session 1
+    ses1_dir = dataset_root / "sub-001" / "ses-01" / "anat"
+    ses1_dir.mkdir(parents=True)
+
+    data1 = np.zeros(shape, dtype=np.uint8)
+    data1[30:35, 30:35, 30:35] = 1
+    lesion1 = nib.Nifti1Image(data1, affine)
+    nib.save(lesion1, ses1_dir / "sub-001_ses-01_mask-lesion.nii.gz")
+
+    # Session 2
+    ses2_dir = dataset_root / "sub-001" / "ses-02" / "anat"
+    ses2_dir.mkdir(parents=True)
+
+    data2 = np.zeros(shape, dtype=np.uint8)
+    data2[25:30, 25:30, 25:30] = 1
+    lesion2 = nib.Nifti1Image(data2, affine)
+    nib.save(lesion2, ses2_dir / "sub-001_ses-02_mask-lesion.nii.gz")
+
+    return dataset_root
