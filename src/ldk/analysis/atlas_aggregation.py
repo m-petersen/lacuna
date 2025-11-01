@@ -197,19 +197,40 @@ class AtlasAggregation(BaseAnalysis):
                 "Expected atlas files: <name>.nii.gz and <name>_labels.txt"
             )
 
-        # Validate spatial compatibility with first atlas
-        first_atlas = self.atlases[0]
-        atlas_img = nib.load(first_atlas["atlas_path"])
-
+        # Check spatial compatibility for all atlases
+        # Warn about incompatible atlases but allow processing of compatible ones
         source_shape = source_img.shape
-        atlas_shape = atlas_img.shape[:3]  # Handle 4D atlases
+        compatible_count = 0
+        incompatible_atlases = []
 
-        if source_shape != atlas_shape:
+        for atlas_info in self.atlases:
+            atlas_img = nib.load(atlas_info["atlas_path"])
+            atlas_shape = atlas_img.shape[:3]  # Handle 4D atlases
+
+            if source_shape == atlas_shape:
+                compatible_count += 1
+            else:
+                incompatible_atlases.append((atlas_info["name"], source_shape, atlas_shape))
+
+        # Warn about incompatible atlases
+        if incompatible_atlases:
+            import warnings
+
+            for atlas_name, src_shape, atl_shape in incompatible_atlases:
+                warnings.warn(
+                    f"Atlas '{atlas_name}' has incompatible shape and will be skipped.\n"
+                    f"Source shape: {src_shape}, Atlas shape: {atl_shape}",
+                    UserWarning,
+                    stacklevel=3,
+                )
+
+        # Ensure at least one compatible atlas exists
+        if compatible_count == 0:
             raise ValueError(
-                f"Source and atlas have incompatible shapes.\n"
+                f"No compatible atlases found in {self.atlas_dir}\n"
                 f"Source shape: {source_shape}\n"
-                f"Atlas shape:  {atlas_shape}\n"
-                "Both must be in the same space (e.g., MNI152 2mm)."
+                f"All {len(self.atlases)} atlas(es) have incompatible shapes.\n"
+                "Atlases must be in the same space as the source (e.g., MNI152 2mm)."
             )
 
     def _run_analysis(self, lesion_data: LesionData) -> dict:
@@ -242,6 +263,19 @@ class AtlasAggregation(BaseAnalysis):
             labels = atlas_info["labels"]
 
             atlas_data = atlas_img.get_fdata()
+
+            # Validate spatial compatibility for this atlas
+            atlas_shape = atlas_data.shape[:3]  # Handle 4D atlases
+            if source_data.shape != atlas_shape:
+                import warnings
+
+                warnings.warn(
+                    f"Skipping atlas '{atlas_name}': incompatible shape.\n"
+                    f"Source shape: {source_data.shape}, Atlas shape: {atlas_shape}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
 
             if atlas_data.ndim == 3:
                 # 3D integer-labeled atlas
