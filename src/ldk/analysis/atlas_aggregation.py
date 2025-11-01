@@ -92,10 +92,14 @@ class AtlasAggregation(BaseAnalysis):
     -----
     - Both 3D and 4D atlases support automatic resampling to match source data
       spatial resolution via nilearn
-    - 3D atlases: use NiftiLabelsMasker with nearest-neighbor interpolation
-    - 4D probabilistic atlases: use continuous interpolation for probability maps
-    - For 3D atlases: regions defined by integer labels
-    - For 4D atlases: each volume is a probability map for one region
+    - 3D atlases: integer labels, use NiftiLabelsMasker with nearest-neighbor
+      interpolation to preserve labels
+    - 4D atlases: automatically detect binary (0/1) vs probabilistic (0.0-1.0)
+      * Binary: use nearest-neighbor interpolation to preserve binary masks
+      * Probabilistic: use continuous interpolation for probability values
+    - For 3D atlases: regions defined by integer labels (automatically rounded)
+    - For 4D atlases: each volume is a binary or probability map for one region
+    - 4D probabilistic maps are thresholded at `threshold` parameter (default 0.5)
     - Results stored in LesionData.results["AtlasAggregation"] as dict
       mapping atlas_name_region_name -> aggregated_value
 
@@ -319,10 +323,16 @@ class AtlasAggregation(BaseAnalysis):
         # Create label names list (NiftiLabelsMasker expects ordered list)
         # Background (0) should not be included
         atlas_data = atlas_img.get_fdata()
-        region_ids = np.unique(atlas_data)
-        region_ids = region_ids[region_ids > 0]  # Exclude background
 
-        # Build ordered list of label names
+        # Round atlas values to ensure integer labels
+        # This handles edge cases where resampling or data type conversion
+        # might introduce small floating point values
+        atlas_data_rounded = np.round(atlas_data).astype(int)
+
+        region_ids = np.unique(atlas_data_rounded)
+        region_ids = region_ids[
+            region_ids > 0
+        ]  # Exclude background        # Build ordered list of label names
         label_names = [labels.get(int(rid), f"Region{int(rid)}") for rid in sorted(region_ids)]
 
         # Initialize NiftiLabelsMasker with appropriate settings
@@ -376,17 +386,18 @@ class AtlasAggregation(BaseAnalysis):
         voxel_volume_mm3: float,
     ) -> dict[str, float]:
         """
-        Aggregate source data for 4D probabilistic atlas with automatic resampling.
+        Aggregate source data for 4D atlas with automatic resampling.
 
         Uses nilearn's resample_to_img for automatic spatial alignment of atlas
-        to source data, similar to NiftiLabelsMasker for 3D atlases.
+        to source data. Detects binary vs probabilistic atlases and uses appropriate
+        interpolation method ('nearest' for binary, 'continuous' for probabilistic).
 
         Parameters
         ----------
         source_img : nib.Nifti1Image
             Source image to aggregate
         atlas_img : nib.Nifti1Image
-            4D atlas (x, y, z, n_regions) with probability maps
+            4D atlas (x, y, z, n_regions) with binary or probability maps
         labels : dict[int, str]
             Mapping from region ID to region name
         voxel_volume_mm3 : float
@@ -397,12 +408,21 @@ class AtlasAggregation(BaseAnalysis):
         dict[str, float]
             Mapping from region name to aggregated value
         """
+        # Detect if atlas is binary (only 0s and 1s) or probabilistic
+        atlas_data_orig = atlas_img.get_fdata()
+        unique_values = np.unique(atlas_data_orig)
+        is_binary = np.all(np.isin(unique_values, [0.0, 1.0]))
+
+        # Use appropriate interpolation based on atlas type
+        # 'nearest' for binary to preserve 0/1 values
+        # 'continuous' for probabilistic to interpolate between probability values
+        interpolation = "nearest" if is_binary else "continuous"
+
         # Resample atlas to match source data spatial resolution
-        # Use 'continuous' interpolation for probabilistic maps (not labels)
         atlas_resampled = resample_to_img(
             atlas_img,
             source_img,
-            interpolation="continuous",
+            interpolation=interpolation,
             copy=True,
             force_resample=True,
             copy_header=True,
