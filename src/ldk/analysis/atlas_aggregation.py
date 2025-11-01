@@ -10,15 +10,22 @@ Examples
 >>> from ldk import LesionData
 >>> from ldk.analysis import AtlasAggregation
 >>>
->>> # Compute regional damage (overlap percentages)
+>>> # Use bundled atlases
 >>> lesion = LesionData.from_nifti("lesion.nii.gz")
+>>> analysis = AtlasAggregation(
+...     source="lesion_img",
+...     aggregation="percent"
+... )
+>>> result = analysis.run(lesion)
+>>> print(result.results["AtlasAggregation"])
+>>>
+>>> # Use custom atlas directory
 >>> analysis = AtlasAggregation(
 ...     atlas_dir="/data/atlases",
 ...     source="lesion_img",
 ...     aggregation="percent"
 ... )
 >>> result = analysis.run(lesion)
->>> print(result.results["AtlasAggregation"])
 >>>
 >>> # Aggregate functional connectivity map by atlas regions
 >>> from ldk.analysis import FunctionalNetworkMapping
@@ -27,7 +34,6 @@ Examples
 >>>
 >>> # Now aggregate the network map to atlas ROIs
 >>> agg = AtlasAggregation(
-...     atlas_dir="/data/atlases",
 ...     source="FunctionalNetworkMapping.network_map",
 ...     aggregation="mean"
 ... )
@@ -59,10 +65,11 @@ class AtlasAggregation(BaseAnalysis):
 
     Parameters
     ----------
-    atlas_dir : str or Path
+    atlas_dir : str, Path, or None, default=None
         Directory containing atlas files. Each atlas should have:
         - NIfTI file (.nii or .nii.gz)
         - Labels file with same base name + "_labels.txt" or ".txt"
+        If None (default), uses bundled reference atlases included with the package.
     source : str, default="lesion_img"
         Source of data to aggregate. Options:
         - "lesion_img": Use the lesion mask directly
@@ -143,7 +150,7 @@ class AtlasAggregation(BaseAnalysis):
 
     def __init__(
         self,
-        atlas_dir: str | Path,
+        atlas_dir: str | Path | None = None,
         source: str = "lesion_img",
         aggregation: str = "mean",
         threshold: float = 0.5,
@@ -151,6 +158,12 @@ class AtlasAggregation(BaseAnalysis):
     ):
         """Initialize AtlasAggregation analysis."""
         super().__init__()
+
+        # If no atlas_dir provided, use bundled atlases
+        if atlas_dir is None:
+            from ldk.data import get_bundled_atlas_dir
+
+            atlas_dir = get_bundled_atlas_dir()
 
         self.atlas_dir = atlas_dir  # Store as provided (str or Path)
         self.source = source

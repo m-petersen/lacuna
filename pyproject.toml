@@ -66,6 +66,9 @@ Repository = "https://github.com/lesion-decoding-toolkit/ldk"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"ldk.data" = ["atlases/*.nii.gz", "atlases/*.txt", "atlases/*.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
