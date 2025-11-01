@@ -434,6 +434,21 @@ class AtlasAggregation(BaseAnalysis):
         results = {}
         n_regions = atlas_data.shape[3]
 
+        # Get sorted label IDs to map volume indices to label IDs
+        # Volume index i corresponds to the i-th label ID in sorted order
+        sorted_label_ids = sorted(labels.keys())
+
+        # Validate that we have the right number of labels
+        if len(sorted_label_ids) != n_regions:
+            import warnings
+
+            warnings.warn(
+                f"Number of volumes ({n_regions}) does not match number of labels "
+                f"({len(sorted_label_ids)}). Using available labels.",
+                UserWarning,
+                stacklevel=3,
+            )
+
         for region_idx in range(n_regions):
             # Get probability map for this region
             prob_map = atlas_data[:, :, :, region_idx]
@@ -447,9 +462,15 @@ class AtlasAggregation(BaseAnalysis):
             # Compute aggregation
             value = self._compute_aggregation(region_values, region_mask, voxel_volume_mm3)
 
-            # Region ID for 4D atlases is the volume index + 1
-            region_id = region_idx + 1
-            region_name = labels.get(region_id, f"Region{region_id}")
+            # Map volume index to label ID using sorted label IDs
+            # Volume 0 → sorted_label_ids[0] (could be 0, 1, or any starting ID)
+            # Volume 1 → sorted_label_ids[1], etc.
+            if region_idx < len(sorted_label_ids):
+                region_id = sorted_label_ids[region_idx]
+                region_name = labels[region_id]
+            else:
+                # Fallback if more volumes than labels
+                region_name = f"Region{region_idx}"
 
             results[region_name] = value
 
