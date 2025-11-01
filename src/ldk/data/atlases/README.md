@@ -18,23 +18,84 @@ Each atlas consists of two files:
 
 ## Included Atlases
 
+### HCP1065 White Matter Tracts (Atlas)
+- **File**: `HCP1065_thr0p1.nii.gz`
+- **Type**: Probabilistic (4D)
+- **Coverage**: White matter tracts
+- **Threshold**: 0.1 (10% probability threshold applied)
+- **Source**: Human Connectome Project
+- **Citation**: Yeh et al. (2022), Nature Communications, 22;13(1):4933
+- **License**: CC BY-SA 4.0
+- **Size**: ~1.1 MB
+
 ### Schaefer 2018 Atlas - 100 Parcels (7 Networks)
-- **File**: `schaefer2018-100parcels-7networks.nii.gz`
+- **File**: `Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
 - **Space**: MNI152 1mm
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex
 - **Networks**: 7 networks (Visual, Somatomotor, Dorsal Attention, Ventral Attention, Limbic, Frontoparietal, Default)
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
-- **License**: Free for research use
+- **Size**: ~229 KB
 
-### Schaefer 2018 Atlas - 400 Parcels (7 Networks)
-- **File**: `schaefer2018-400parcels-7networks.nii.gz`
+### Schaefer 2018 Atlas - 200 Parcels (7 Networks)
+- **File**: `Schaefer2018_200Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
 - **Space**: MNI152 1mm
 - **Type**: Discrete labels (3D)
-- **Coverage**: Cerebral cortex (finer parcellation)
-- **Networks**: 7 networks (same as 100 parcels version)
+- **Coverage**: Cerebral cortex (medium parcellation)
+- **Networks**: 7 networks
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
-- **License**: Free for research use
+- **License**: MIT
+- **Size**: ~253 KB
+
+### Schaefer 2018 Atlas - 400 Parcels (7 Networks)
+- **File**: `Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
+- **Space**: MNI152 1mm
+- **Type**: Discrete labels (3D)
+- **Coverage**: Cerebral cortex (fine parcellation)
+- **Networks**: 7 networks
+- **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **License**: MIT
+- **Size**: ~289 KB
+
+### Schaefer 2018 Atlas - 1000 Parcels (7 Networks)
+- **File**: `Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
+- **Space**: MNI152 1mm
+- **Type**: Discrete labels (3D)
+- **Coverage**: Cerebral cortex (very fine parcellation)
+- **Networks**: 7 networks
+- **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **License**: MIT
+- **Size**: ~353 KB
+
+### Tian Subcortical Atlas - Scale 1
+- **File**: `Tian_Subcortex_S1_3T_2009cAsym.nii.gz`
+- **Space**: MNI152 (2009c asymmetric)
+- **Type**: Discrete labels (3D)
+- **Coverage**: Subcortical structures (coarse parcellation)
+- **Regions**: 16 regions
+- **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
+- **License**: Permissive with attribution
+- **Size**: ~8.3 KB
+
+### Tian Subcortical Atlas - Scale 2
+- **File**: `Tian_Subcortex_S2_3T_2009cAsym.nii.gz`
+- **Space**: MNI152 (2009c asymmetric)
+- **Type**: Discrete labels (3D)
+- **Coverage**: Subcortical structures (medium parcellation)
+- **Regions**: 32 regions
+- **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
+- **License**: Permissive with attribution
+- **Size**: ~8.9 KB
+
+### Tian Subcortical Atlas - Scale 3
+- **File**: `Tian_Subcortex_S3_3T_2009cAsym.nii.gz`
+- **Space**: MNI152 (2009c asymmetric)
+- **Type**: Discrete labels (3D)
+- **Coverage**: Subcortical structures (fine parcellation)
+- **Regions**: 54 regions
+- **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
+- **License**: Permissive with attribution
+- **Size**: ~9.5 KB
 
 ## Usage
 
@@ -129,19 +190,22 @@ To add your own atlas to this directory:
 
 All bundled atlases are available for non-commercial research use. If you use these atlases in a publication, please cite the original papers listed above.
 
-For commercial use, please check the license terms of each atlas:
-- **Harvard-Oxford**: Check FSL license
-- **AAL3**: Contact atlas authors
-- **Schaefer 2018**: Contact atlas authors
-
 ## References
 
 1. **Schaefer 2018**: Schaefer, A., Kong, R., Gordon, E.M., et al. (2018). Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic Functional Connectivity MRI. *Cerebral Cortex*, 28(9), 3095-3114. https://doi.org/10.1093/cercor/bhx179
 
+2. **Tian Subcortical Atlas**: Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020). Topographic organization of the human subcortex unveiled with functional connectivity gradients. *Nature Neuroscience*, 23, 1516-1528. https://doi.org/10.1038/s41593-020-00711-6
+
+3. **HCP1065**: Yeh, F.-C., (2022). Population-based tract-to-region connectome of the human brain and its hierarchical topology. *Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4. Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research.
+
 ## Size Information
 
-- **Total size**: ~3-4 MB (compressed)
-- **Schaefer-100**: ~600 KB
-- **Schaefer-400**: ~1 MB
+- **Total size**: ~2.3 MB (compressed)
+- **HCP1065**: ~1.1 MB
+- **Schaefer-100**: ~229 KB
+- **Schaefer-200**: ~253 KB
+- **Schaefer-400**: ~289 KB
+- **Schaefer-1000**: ~353 KB
+- **Tian S1-S3**: ~27 KB total
 
 This is negligible compared to typical Python package sizes and enables a much better user experience.
