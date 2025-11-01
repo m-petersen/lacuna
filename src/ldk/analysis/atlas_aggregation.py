@@ -38,6 +38,7 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+from nilearn.maskers import NiftiLabelsMasker
 
 from ldk.analysis.base import BaseAnalysis
 from ldk.core.lesion_data import LesionData
@@ -88,7 +89,9 @@ class AtlasAggregation(BaseAnalysis):
 
     Notes
     -----
-    - Source map must be in same space as atlases (typically MNI152)
+    - 3D atlases use nilearn's NiftiLabelsMasker for robust extraction with
+      automatic resampling to match source data spatial resolution
+    - 4D probabilistic atlases require exact spatial match with source data
     - For 3D atlases: regions defined by integer labels
     - For 4D atlases: each volume is a probability map for one region
     - Results stored in LesionData.results["AtlasAggregation"] as dict
@@ -278,9 +281,9 @@ class AtlasAggregation(BaseAnalysis):
                 continue
 
             if atlas_data.ndim == 3:
-                # 3D integer-labeled atlas
+                # 3D integer-labeled atlas - use nilearn NiftiLabelsMasker
                 atlas_results = self._aggregate_3d_atlas(
-                    source_data, atlas_data, labels, voxel_volume_mm3
+                    source_img, atlas_img, labels, voxel_volume_mm3
                 )
             elif atlas_data.ndim == 4:
                 # 4D probabilistic atlas
@@ -306,50 +309,97 @@ class AtlasAggregation(BaseAnalysis):
 
     def _aggregate_3d_atlas(
         self,
-        source_data: np.ndarray,
-        atlas_data: np.ndarray,
+        source_img: nib.Nifti1Image,
+        atlas_img: nib.Nifti1Image,
         labels: dict[int, str],
         voxel_volume_mm3: float,
     ) -> dict[str, float]:
         """
-        Aggregate source data for 3D integer-labeled atlas.
+        Aggregate source data for 3D integer-labeled atlas using nilearn.
+
+        Uses nilearn's NiftiLabelsMasker for robust extraction with automatic
+        resampling, masking, and efficient computation.
 
         Parameters
         ----------
-        source_data : np.ndarray
-            Source voxel data to aggregate
-        atlas_data : np.ndarray
+        source_img : nib.Nifti1Image
+            Source image to aggregate
+        atlas_img : nib.Nifti1Image
             3D atlas with integer labels
         labels : dict[int, str]
             Mapping from region ID to region name
         voxel_volume_mm3 : float
-            Volume of one voxel in mm³
+            Volume of one voxel in mm³ (for volume aggregation)
 
         Returns
         -------
         dict[str, float]
             Mapping from region name to aggregated value
         """
-        results = {}
+        # Map our aggregation methods to nilearn strategies
+        strategy_map = {
+            "mean": "mean",
+            "sum": "sum",
+            "median": "median",
+            "std": "standard_deviation",
+            "percent": "mean",  # Will multiply by 100
+            "volume": "sum",  # Will multiply by voxel_volume_mm3
+        }
 
-        # Get unique region IDs (excluding 0 = background)
+        if self.aggregation not in strategy_map:
+            raise ValueError(f"Unknown aggregation method: {self.aggregation}")
+
+        strategy = strategy_map[self.aggregation]
+
+        # Create label names list (NiftiLabelsMasker expects ordered list)
+        # Background (0) should not be included
+        atlas_data = atlas_img.get_fdata()
         region_ids = np.unique(atlas_data)
-        region_ids = region_ids[region_ids > 0]
+        region_ids = region_ids[region_ids > 0]  # Exclude background
 
-        for region_id in region_ids:
-            # Create mask for this region
-            region_mask = atlas_data == region_id
+        # Build ordered list of label names
+        label_names = [labels.get(int(rid), f"Region{int(rid)}") for rid in sorted(region_ids)]
 
-            # Get values in this region
-            region_values = source_data[region_mask]
+        # Initialize NiftiLabelsMasker with appropriate settings
+        masker = NiftiLabelsMasker(
+            labels_img=atlas_img,
+            labels=label_names,
+            background_label=0,
+            strategy=strategy,
+            resampling_target="data",  # Resample atlas to match source data
+            standardize=False,  # Don't normalize for static maps
+            detrend=False,  # No detrending for static maps
+            memory=None,  # No caching for now
+            verbose=0,
+        )
 
-            # Compute aggregation
-            value = self._compute_aggregation(region_values, region_mask, voxel_volume_mm3)
+        # Extract values - nilearn expects 4D input (add time dimension if needed)
+        if source_img.ndim == 3:
+            # Add a dummy 4th dimension for time
+            source_data_4d = source_img.get_fdata()[..., np.newaxis]
+            source_img_4d = nib.Nifti1Image(source_data_4d, source_img.affine)
+        else:
+            source_img_4d = source_img
 
-            # Get region name
-            region_name = labels.get(int(region_id), f"Region{int(region_id)}")
+        # Transform: returns (n_timepoints, n_regions) array
+        region_values = masker.fit_transform(source_img_4d)
 
-            results[region_name] = value
+        # Squeeze to get (n_regions,) for single timepoint
+        if region_values.shape[0] == 1:
+            region_values = region_values.squeeze(axis=0)
+
+        # Apply post-processing based on aggregation type
+        if self.aggregation == "percent":
+            # Convert mean (0-1) to percentage (0-100)
+            region_values = region_values * 100
+        elif self.aggregation == "volume":
+            # Convert count to volume (mm³)
+            region_values = region_values * voxel_volume_mm3
+
+        # Build results dict
+        results = {}
+        for label_name, value in zip(label_names, region_values, strict=True):
+            results[label_name] = float(value)
 
         return results
 

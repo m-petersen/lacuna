@@ -83,8 +83,8 @@ def test_atlas_aggregation_validates_aggregation_method():
 
 def test_atlas_aggregation_validates_atlas_directory(synthetic_lesion_img):
     """Test that AtlasAggregation validates atlas directory exists."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
     from ldk import LesionData
+    from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     analysis = AtlasAggregation(atlas_dir="/nonexistent/path")
     lesion_data = LesionData(lesion_img=synthetic_lesion_img)
@@ -97,6 +97,7 @@ def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_pat
     """Test that AtlasAggregation validates source data exists."""
     import nibabel as nib
     import numpy as np
+
     from ldk import LesionData
     from ldk.analysis.atlas_aggregation import AtlasAggregation
 
