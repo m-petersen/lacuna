@@ -39,10 +39,11 @@ class RegionalDamage(AtlasAggregation):
 
     Parameters
     ----------
-    atlas_dir : str or Path
+    atlas_dir : str, Path, or None, default=None
         Directory containing atlas files. Each atlas should have:
         - NIfTI file (.nii or .nii.gz)
         - Labels file with same base name + "_labels.txt" or ".txt"
+        If None (default), uses bundled reference atlases included with the package.
     threshold : float, default=0.5
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
@@ -68,12 +69,12 @@ class RegionalDamage(AtlasAggregation):
 
     Examples
     --------
-    >>> # Simple regional damage analysis
+    >>> # Zero-config usage with bundled atlases
     >>> from ldk import LesionData
     >>> from ldk.analysis import RegionalDamage
     >>>
     >>> lesion = LesionData.from_nifti("lesion.nii.gz")
-    >>> analysis = RegionalDamage(atlas_dir="/data/atlases")
+    >>> analysis = RegionalDamage()  # Uses bundled atlases!
     >>> result = analysis.run(lesion)
     >>>
     >>> # Results are in AtlasAggregation namespace
@@ -82,10 +83,13 @@ class RegionalDamage(AtlasAggregation):
     ...     if pct > 10:  # Show regions with >10% damage
     ...         print(f"{region}: {pct:.1f}%")
     >>>
+    >>> # Use custom atlas directory
+    >>> analysis = RegionalDamage(atlas_dir="/data/atlases")
+    >>> result = analysis.run(lesion)
+    >>>
     >>> # Process only specific atlases
     >>> analysis = RegionalDamage(
-    ...     atlas_dir="/data/atlases",
-    ...     atlas_names=["HCP1065"]  # Only white matter tracts
+    ...     atlas_names=["Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm"]
     ... )
     >>> result = analysis.run(lesion)
 
@@ -96,7 +100,7 @@ class RegionalDamage(AtlasAggregation):
 
     def __init__(
         self,
-        atlas_dir: str | Path,
+        atlas_dir: str | Path | None = None,
         threshold: float = 0.5,
         atlas_names: list[str] | None = None,
     ):

@@ -1,0 +1,16 @@
+# MANIFEST.in - Include additional files in source distributions
+
+# Include all data files in the ldk.data package
+recursive-include src/ldk/data *.nii.gz
+recursive-include src/ldk/data *.txt
+recursive-include src/ldk/data *.md
+
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Exclude unnecessary files
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store
