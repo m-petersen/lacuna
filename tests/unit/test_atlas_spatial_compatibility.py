@@ -15,8 +15,8 @@ from ldk import LesionData
 from ldk.analysis import AtlasAggregation, RegionalDamage
 
 
-def test_atlas_aggregation_skips_incompatible_atlas_shapes(tmp_path):
-    """Test that atlases with incompatible shapes are skipped with warning."""
+def test_atlas_aggregation_resamples_incompatible_atlas_shapes(tmp_path):
+    """Test that atlases with incompatible shapes are automatically resampled with warning."""
     # Create lesion with specific shape
     lesion_shape = (64, 64, 64)
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
@@ -48,33 +48,32 @@ def test_atlas_aggregation_skips_incompatible_atlas_shapes(tmp_path):
     nib.save(nib.Nifti1Image(atlas3_data, np.eye(4)), atlas_dir / "compatible2.nii.gz")
     (atlas_dir / "compatible2_labels.txt").write_text("1 Region_D\n")
 
-    # Run analysis - should skip incompatible atlas with warning
+    # Run analysis - incompatible atlas should be resampled with warning
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir), aggregation="percent")
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         result = analysis.run(lesion_data)
 
-        # Should have warning about incompatible atlas
+        # Should have warning about resampling incompatible atlas
         assert len(w) >= 1
         warning_messages = [str(warning.message) for warning in w]
-        assert any("incompatible" in msg.lower() for msg in warning_messages)
-        assert any("incompatible" in msg for msg in warning_messages)
+        assert any("resample" in msg.lower() for msg in warning_messages)
 
-    # Results should only include compatible atlases
+    # Results should include ALL atlases (after resampling)
     atlas_results = result.results["AtlasAggregation"]
 
-    # Should have results from compatible atlases only
+    # Should have results from compatible atlases
     assert "compatible_Region_A" in atlas_results
     assert "compatible_Region_B" in atlas_results
     assert "compatible2_Region_D" in atlas_results
 
-    # Should NOT have results from incompatible atlas
-    assert "incompatible_Region_C" not in atlas_results
+    # Should ALSO have results from incompatible atlas (after resampling)
+    assert "incompatible_Region_C" in atlas_results
 
 
 def test_regional_damage_with_mixed_atlas_sizes(tmp_path):
-    """Test RegionalDamage with mixture of compatible and incompatible atlases."""
+    """Test RegionalDamage with mixture of compatible and incompatible atlases - all resampled."""
     # Create binary lesion
     lesion_shape = (91, 109, 91)  # Standard MNI152 2mm dimensions
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
@@ -99,67 +98,77 @@ def test_regional_damage_with_mixed_atlas_sizes(tmp_path):
     nib.save(nib.Nifti1Image(atlas2_data, np.eye(4)), atlas_dir / "mni1mm.nii.gz")
     (atlas_dir / "mni1mm_labels.txt").write_text("1 Parietal_Region\n")
 
-    # Run RegionalDamage - should work despite mixed atlases
+    # Run RegionalDamage - should process all atlases after resampling
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         result = analysis.run(lesion_data)
 
-        # Should warn about incompatible atlas
+        # Should warn about resampling incompatible atlas
         assert len(w) >= 1
-        assert any("incompatible" in str(warning.message).lower() for warning in w)
+        assert any("resample" in str(warning.message).lower() for warning in w)
 
-    # Should have results from compatible atlas only
+    # Should have results from BOTH atlases (after resampling)
     # Note: RegionalDamage stores results under its own class name "RegionalDamage"
     atlas_results = result.results.get("RegionalDamage", {})
     assert "mni2mm_Frontal_Region" in atlas_results
-    assert "mni1mm_Parietal_Region" not in atlas_results
+    assert "mni1mm_Parietal_Region" in atlas_results  # Now present after resampling
 
-    # Result should have non-zero damage for overlapping region
+    # Results should have non-zero damage for overlapping regions
     assert atlas_results["mni2mm_Frontal_Region"] > 0
+    # mni1mm might have damage too depending on resampling
 
 
-def test_all_atlases_incompatible_shape_still_returns_result(tmp_path):
-    """Test that analysis returns empty results when all atlases are incompatible."""
-    # Create lesion
+def test_all_atlases_incompatible_shape_are_resampled(tmp_path):
+    """Test that all incompatible atlases are resampled and processed."""
+    # Create lesion with proper voxel size
     lesion_shape = (64, 64, 64)
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
     lesion_array[20:40, 20:40, 20:40] = 1
-    lesion_img = nib.Nifti1Image(lesion_array, np.eye(4))
+    # Use 2mm isotropic voxels
+    affine_2mm = np.diag([2.0, 2.0, 2.0, 1.0])
+    lesion_img = nib.Nifti1Image(lesion_array, affine_2mm)
     lesion_data = LesionData(lesion_img=lesion_img)
 
     # Create atlas directory with only incompatible atlases
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
 
-    # Incompatible atlas 1
-    atlas1_data = np.zeros((91, 109, 91), dtype=np.uint8)
-    atlas1_data[40:50, 50:60, 40:50] = 1
-    nib.save(nib.Nifti1Image(atlas1_data, np.eye(4)), atlas_dir / "atlas1.nii.gz")
+    # Incompatible atlas 1 - 1.5mm isotropic voxels
+    atlas1_data = np.zeros((85, 85, 85), dtype=np.uint8)
+    atlas1_data[26:33, 26:33, 26:33] = 1  # Roughly maps to lesion location
+    affine_1_5mm = np.diag([1.5, 1.5, 1.5, 1.0])
+    nib.save(nib.Nifti1Image(atlas1_data, affine_1_5mm), atlas_dir / "atlas1.nii.gz")
     (atlas_dir / "atlas1_labels.txt").write_text("1 Region_A\n")
 
-    # Incompatible atlas 2
-    atlas2_data = np.zeros((182, 218, 182), dtype=np.uint8)
-    atlas2_data[80:100, 100:120, 80:100] = 1
-    nib.save(nib.Nifti1Image(atlas2_data, np.eye(4)), atlas_dir / "atlas2.nii.gz")
+    # Incompatible atlas 2 - 3mm isotropic voxels
+    atlas2_data = np.zeros((43, 43, 43), dtype=np.uint8)
+    atlas2_data[13:17, 13:17, 13:17] = 1  # Roughly maps to lesion location
+    affine_3mm = np.diag([3.0, 3.0, 3.0, 1.0])
+    nib.save(nib.Nifti1Image(atlas2_data, affine_3mm), atlas_dir / "atlas2.nii.gz")
     (atlas_dir / "atlas2_labels.txt").write_text("1 Region_B\n")
 
-    # Run analysis - should complete with warnings
+    # Run analysis - should complete with warnings about resampling
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir))
 
-    # Should raise ValueError when ALL atlases are incompatible
-    with pytest.raises(ValueError, match="No compatible atlases"):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            analysis.run(lesion_data)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = analysis.run(lesion_data)
 
-            # Should warn about both incompatible atlases
-            assert len(w) >= 2
+        # Should warn about both atlases being resampled
+        assert len(w) >= 2
+        warning_messages = [str(warning.message) for warning in w]
+        assert any("resample" in msg.lower() for msg in warning_messages)
+
+    # Should have results from both atlases (after resampling)
+    atlas_results = result.results["AtlasAggregation"]
+    assert "atlas1_Region_A" in atlas_results
+    assert "atlas2_Region_B" in atlas_results
 
 
 def test_4d_atlas_spatial_compatibility(tmp_path):
-    """Test spatial compatibility checking for 4D probabilistic atlases."""
+    """Test that 4D probabilistic atlases are automatically resampled."""
     # Create lesion
     lesion_shape = (64, 64, 64)
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
@@ -192,16 +201,17 @@ def test_4d_atlas_spatial_compatibility(tmp_path):
         warnings.simplefilter("always")
         result = analysis.run(lesion_data)
 
-        # Should warn about incompatible 4D atlas
-        assert any("incompatible" in str(warning.message).lower() for warning in w)
+        # Should warn about resampling incompatible 4D atlas
+        assert any("resample" in str(warning.message).lower() for warning in w)
 
-    # Should have results from compatible 4D atlas only
+    # Should have results from BOTH 4D atlases (after resampling)
     # Note: RegionalDamage stores results under its own class name "RegionalDamage"
     atlas_results = result.results.get("RegionalDamage", {})
     assert "prob4d_Region_1" in atlas_results
     assert "prob4d_Region_2" in atlas_results
     assert "prob4d_Region_3" in atlas_results
-    assert "prob4d_incompatible_Region_X" not in atlas_results
+    assert "prob4d_incompatible_Region_X" in atlas_results  # Now present after resampling
+    assert "prob4d_incompatible_Region_Y" in atlas_results
 
 
 if __name__ == "__main__":
