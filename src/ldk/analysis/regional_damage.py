@@ -46,6 +46,11 @@ class RegionalDamage(AtlasAggregation):
     threshold : float, default=0.5
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
+    atlas_names : list of str or None, default=None
+        If provided, only process atlases with these names (without file extensions).
+        Atlas names should match the base filename (e.g., "HCP1065" for "HCP1065.nii.gz").
+        If None, all atlases found in atlas_dir will be processed.
+        Example: ["HCP1065", "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm"]
 
     Raises
     ------
@@ -76,6 +81,13 @@ class RegionalDamage(AtlasAggregation):
     >>> for region, pct in overlap_pcts.items():
     ...     if pct > 10:  # Show regions with >10% damage
     ...         print(f"{region}: {pct:.1f}%")
+    >>>
+    >>> # Process only specific atlases
+    >>> analysis = RegionalDamage(
+    ...     atlas_dir="/data/atlases",
+    ...     atlas_names=["HCP1065"]  # Only white matter tracts
+    ... )
+    >>> result = analysis.run(lesion)
 
     See Also
     --------
@@ -86,19 +98,22 @@ class RegionalDamage(AtlasAggregation):
         self,
         atlas_dir: str | Path,
         threshold: float = 0.5,
+        atlas_names: list[str] | None = None,
     ):
         """
         Initialize RegionalDamage analysis.
 
         This is equivalent to:
         AtlasAggregation(atlas_dir=atlas_dir, source="lesion_img",
-                        aggregation="percent", threshold=threshold)
+                        aggregation="percent", threshold=threshold,
+                        atlas_names=atlas_names)
         """
         super().__init__(
             atlas_dir=atlas_dir,
             source="lesion_img",
             aggregation="percent",
             threshold=threshold,
+            atlas_names=atlas_names,
         )
 
     def _validate_inputs(self, lesion_data) -> None:

@@ -80,6 +80,11 @@ class AtlasAggregation(BaseAnalysis):
     threshold : float, default=0.5
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
+    atlas_names : list of str or None, default=None
+        If provided, only process atlases with these names (without file extensions).
+        Atlas names should match the base filename (e.g., "HCP1065" for "HCP1065.nii.gz").
+        If None, all atlases found in atlas_dir will be processed.
+        Example: ["HCP1065", "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm"]
 
     Raises
     ------
@@ -118,6 +123,14 @@ class AtlasAggregation(BaseAnalysis):
     ...     source="FunctionalNetworkMapping.network_map",
     ...     aggregation="mean"
     ... )
+    >>>
+    >>> # Process only specific atlases
+    >>> analysis = AtlasAggregation(
+    ...     atlas_dir="/data/atlases",
+    ...     source="lesion_img",
+    ...     aggregation="percent",
+    ...     atlas_names=["HCP1065", "Schaefer2018_400Parcels"]  # Only these two
+    ... )
 
     See Also
     --------
@@ -134,6 +147,7 @@ class AtlasAggregation(BaseAnalysis):
         source: str = "lesion_img",
         aggregation: str = "mean",
         threshold: float = 0.5,
+        atlas_names: list[str] | None = None,
     ):
         """Initialize AtlasAggregation analysis."""
         super().__init__()
@@ -142,6 +156,7 @@ class AtlasAggregation(BaseAnalysis):
         self.source = source
         self.aggregation = aggregation
         self.threshold = threshold
+        self.atlas_names = atlas_names
 
         # Validate aggregation method
         if aggregation not in self.VALID_AGGREGATIONS:
@@ -153,6 +168,19 @@ class AtlasAggregation(BaseAnalysis):
         # Validate threshold
         if not 0.0 <= threshold <= 1.0:
             raise ValueError(f"Threshold must be between 0.0 and 1.0, got {threshold}")
+
+        # Validate atlas_names if provided
+        if atlas_names is not None:
+            if not isinstance(atlas_names, list):
+                raise TypeError(
+                    f"atlas_names must be a list of strings or None, got {type(atlas_names).__name__}"
+                )
+            if not all(isinstance(name, str) for name in atlas_names):
+                raise TypeError("All items in atlas_names must be strings")
+            if not atlas_names:
+                raise ValueError(
+                    "atlas_names cannot be an empty list (use None to process all atlases)"
+                )
 
         # Will be populated in _validate_inputs
         self.atlases = []
@@ -201,10 +229,31 @@ class AtlasAggregation(BaseAnalysis):
         self.atlases = self._discover_atlases()
 
         if not self.atlases:
-            raise ValueError(
-                f"No valid atlases found in {self.atlas_dir}\n"
-                "Expected atlas files: <name>.nii.gz and <name>_labels.txt"
-            )
+            if self.atlas_names is not None:
+                raise ValueError(
+                    f"No matching atlases found for specified names: {self.atlas_names}\n"
+                    f"Available atlases in {self.atlas_dir}: check directory contents\n"
+                    "Ensure atlas names match the base filename (without .nii.gz extension)"
+                )
+            else:
+                raise ValueError(
+                    f"No valid atlases found in {self.atlas_dir}\n"
+                    "Expected atlas files: <name>.nii.gz and <name>_labels.txt"
+                )
+
+        # Warn if some requested atlases weren't found
+        if self.atlas_names is not None:
+            found_names = {atlas["name"] for atlas in self.atlases}
+            missing_names = set(self.atlas_names) - found_names
+            if missing_names:
+                import warnings
+
+                warnings.warn(
+                    f"Some requested atlases were not found: {sorted(missing_names)}\n"
+                    f"Found atlases: {sorted(found_names)}",
+                    UserWarning,
+                    stacklevel=3,
+                )
 
     def _run_analysis(self, lesion_data: LesionData) -> dict:
         """
@@ -578,6 +627,8 @@ class AtlasAggregation(BaseAnalysis):
         - Atlas NIfTI: <name>.nii or <name>.nii.gz
         - Labels file: <name>_labels.txt or <name>.txt
 
+        If atlas_names is provided, only atlases with matching names are included.
+
         Returns
         -------
         list[dict]
@@ -599,6 +650,10 @@ class AtlasAggregation(BaseAnalysis):
                 base_name = nifti_path.name[:-7]
             else:
                 base_name = nifti_path.name[:-4]
+
+            # Filter by atlas_names if provided
+            if self.atlas_names is not None and base_name not in self.atlas_names:
+                continue
 
             # Look for corresponding labels file
             labels_path = atlas_dir / f"{base_name}_labels.txt"
