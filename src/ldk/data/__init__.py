@@ -165,39 +165,63 @@ def get_atlas_citation(name: str) -> str:
     Examples
     --------
     >>> from ldk.data import get_atlas_citation
-    >>> citation = get_atlas_citation('aal3')
+    >>> citation = get_atlas_citation('HCP1065_thr0p1')
     >>> print(citation)
-    AAL3 Atlas:
-    Rolls, E.T., Joliot, M. & Tzourio-Mazoyer, N. Implementation of a new...
+    HCP1065 White Matter Tracts:
+    Data were provided by the Human Connectome Project...
     """
     # Citation database
     citations = {
-        "aal3": """AAL3 Atlas (170 regions):
-Rolls, E.T., Joliot, M. & Tzourio-Mazoyer, N. (2015).
-Implementation of a new parcellation of the orbitofrontal cortex in the 
-automated anatomical labeling atlas.
-NeuroImage, 122, 1-5.
-https://doi.org/10.1016/j.neuroimage.2015.07.075""",
-        "harvard-oxford-cortical": """Harvard-Oxford Cortical Atlas (48 regions):
-Desikan, R.S., Ségonne, F., Fischl, B., et al. (2006).
-An automated labeling system for subdividing the human cerebral cortex on MRI 
-scans into gyral based regions of interest.
-NeuroImage, 31(3), 968-980.
-https://doi.org/10.1016/j.neuroimage.2006.01.021
-
-Available through FSL: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Atlases""",
-        "schaefer2018-100parcels-7networks": """Schaefer 2018 Atlas (100 parcels, 7 networks):
+        "HCP1065_thr0p1": """HCP1065 White Matter Tracts: Yeh, F.-C., (2022). 
+Population-based tract-to-region connectome of the human brain and its hierarchical topology.
+*Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4.
+Data were provided by the Human Connectome Project, WU-Minn Consortium
+(Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657)
+funded by the 16 NIH Institutes and Centers that support the NIH Blueprint
+for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience
+at Washington University.""",
+        "Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (100 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
-Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic 
+Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
 Functional Connectivity MRI.
 Cerebral Cortex, 28(9), 3095-3114.
 https://doi.org/10.1093/cercor/bhx179""",
-        "schaefer2018-400parcels-7networks": """Schaefer 2018 Atlas (400 parcels, 7 networks):
+        "Schaefer2018_200Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (200 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
-Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic 
+Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
 Functional Connectivity MRI.
 Cerebral Cortex, 28(9), 3095-3114.
 https://doi.org/10.1093/cercor/bhx179""",
+        "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (400 parcels, 7 networks):
+Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
+Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
+Functional Connectivity MRI.
+Cerebral Cortex, 28(9), 3095-3114.
+https://doi.org/10.1093/cercor/bhx179""",
+        "Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (1000 parcels, 7 networks):
+Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
+Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
+Functional Connectivity MRI.
+Cerebral Cortex, 28(9), 3095-3114.
+https://doi.org/10.1093/cercor/bhx179""",
+        "Tian_Subcortex_S1_3T_2009cAsym": """Tian Subcortical Atlas - Scale 1 (16 regions):
+Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
+Topographic organization of the human subcortex unveiled with functional
+connectivity gradients.
+Nature Neuroscience, 23, 1516-1528.
+https://doi.org/10.1038/s41593-020-00711-6""",
+        "Tian_Subcortex_S2_3T_2009cAsym": """Tian Subcortical Atlas - Scale 2 (32 regions):
+Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
+Topographic organization of the human subcortex unveiled with functional
+connectivity gradients.
+Nature Neuroscience, 23, 1516-1528.
+https://doi.org/10.1038/s41593-020-00711-6""",
+        "Tian_Subcortex_S3_3T_2009cAsym": """Tian Subcortical Atlas - Scale 3 (54 regions):
+Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
+Topographic organization of the human subcortex unveiled with functional
+connectivity gradients.
+Nature Neuroscience, 23, 1516-1528.
+https://doi.org/10.1038/s41593-020-00711-6""",
     }
 
     if name not in citations:
