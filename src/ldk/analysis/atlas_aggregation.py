@@ -38,6 +38,7 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+from nilearn.image import resample_to_img
 from nilearn.maskers import NiftiLabelsMasker
 
 from ldk.analysis.base import BaseAnalysis
@@ -89,9 +90,10 @@ class AtlasAggregation(BaseAnalysis):
 
     Notes
     -----
-    - 3D atlases use nilearn's NiftiLabelsMasker for robust extraction with
-      automatic resampling to match source data spatial resolution
-    - 4D probabilistic atlases require exact spatial match with source data
+    - Both 3D and 4D atlases support automatic resampling to match source data
+      spatial resolution via nilearn
+    - 3D atlases: use NiftiLabelsMasker with nearest-neighbor interpolation
+    - 4D probabilistic atlases: use continuous interpolation for probability maps
     - For 3D atlases: regions defined by integer labels
     - For 4D atlases: each volume is a probability map for one region
     - Results stored in LesionData.results["AtlasAggregation"] as dict
@@ -200,42 +202,6 @@ class AtlasAggregation(BaseAnalysis):
                 "Expected atlas files: <name>.nii.gz and <name>_labels.txt"
             )
 
-        # Check spatial compatibility for all atlases
-        # Warn about incompatible atlases but allow processing of compatible ones
-        source_shape = source_img.shape
-        compatible_count = 0
-        incompatible_atlases = []
-
-        for atlas_info in self.atlases:
-            atlas_img = nib.load(atlas_info["atlas_path"])
-            atlas_shape = atlas_img.shape[:3]  # Handle 4D atlases
-
-            if source_shape == atlas_shape:
-                compatible_count += 1
-            else:
-                incompatible_atlases.append((atlas_info["name"], source_shape, atlas_shape))
-
-        # Warn about incompatible atlases
-        if incompatible_atlases:
-            import warnings
-
-            for atlas_name, src_shape, atl_shape in incompatible_atlases:
-                warnings.warn(
-                    f"Atlas '{atlas_name}' has incompatible shape and will be skipped.\n"
-                    f"Source shape: {src_shape}, Atlas shape: {atl_shape}",
-                    UserWarning,
-                    stacklevel=3,
-                )
-
-        # Ensure at least one compatible atlas exists
-        if compatible_count == 0:
-            raise ValueError(
-                f"No compatible atlases found in {self.atlas_dir}\n"
-                f"Source shape: {source_shape}\n"
-                f"All {len(self.atlases)} atlas(es) have incompatible shapes.\n"
-                "Atlases must be in the same space as the source (e.g., MNI152 2mm)."
-            )
-
     def _run_analysis(self, lesion_data: LesionData) -> dict:
         """
         Compute ROI-level aggregation for all atlases.
@@ -267,18 +233,17 @@ class AtlasAggregation(BaseAnalysis):
 
             atlas_data = atlas_img.get_fdata()
 
-            # Validate spatial compatibility for this atlas
+            # Warn if resampling will occur
             atlas_shape = atlas_data.shape[:3]  # Handle 4D atlases
             if source_data.shape != atlas_shape:
                 import warnings
 
                 warnings.warn(
-                    f"Skipping atlas '{atlas_name}': incompatible shape.\n"
+                    f"Atlas '{atlas_name}' will be resampled to match source data.\n"
                     f"Source shape: {source_data.shape}, Atlas shape: {atlas_shape}",
                     UserWarning,
                     stacklevel=2,
                 )
-                continue
 
             if atlas_data.ndim == 3:
                 # 3D integer-labeled atlas - use nilearn NiftiLabelsMasker
@@ -286,9 +251,9 @@ class AtlasAggregation(BaseAnalysis):
                     source_img, atlas_img, labels, voxel_volume_mm3
                 )
             elif atlas_data.ndim == 4:
-                # 4D probabilistic atlas
+                # 4D probabilistic atlas - use nilearn resampling
                 atlas_results = self._aggregate_4d_atlas(
-                    source_data, atlas_data, labels, voxel_volume_mm3
+                    source_img, atlas_img, labels, voxel_volume_mm3
                 )
             else:
                 import warnings
@@ -405,30 +370,47 @@ class AtlasAggregation(BaseAnalysis):
 
     def _aggregate_4d_atlas(
         self,
-        source_data: np.ndarray,
-        atlas_data: np.ndarray,
+        source_img: nib.Nifti1Image,
+        atlas_img: nib.Nifti1Image,
         labels: dict[int, str],
         voxel_volume_mm3: float,
     ) -> dict[str, float]:
         """
-        Aggregate source data for 4D probabilistic atlas.
+        Aggregate source data for 4D probabilistic atlas with automatic resampling.
+
+        Uses nilearn's resample_to_img for automatic spatial alignment of atlas
+        to source data, similar to NiftiLabelsMasker for 3D atlases.
 
         Parameters
         ----------
-        source_data : np.ndarray
-            Source voxel data to aggregate
-        atlas_data : np.ndarray
-            4D atlas (x, y, z, n_regions)
+        source_img : nib.Nifti1Image
+            Source image to aggregate
+        atlas_img : nib.Nifti1Image
+            4D atlas (x, y, z, n_regions) with probability maps
         labels : dict[int, str]
             Mapping from region ID to region name
         voxel_volume_mm3 : float
-            Volume of one voxel in mm³
+            Volume of one voxel in mm³ (for volume aggregation)
 
         Returns
         -------
         dict[str, float]
             Mapping from region name to aggregated value
         """
+        # Resample atlas to match source data spatial resolution
+        # Use 'continuous' interpolation for probabilistic maps (not labels)
+        atlas_resampled = resample_to_img(
+            atlas_img,
+            source_img,
+            interpolation="continuous",
+            copy=True,
+            force_resample=True,
+            copy_header=True,
+        )
+
+        source_data = source_img.get_fdata()
+        atlas_data = atlas_resampled.get_fdata()
+
         results = {}
         n_regions = atlas_data.shape[3]
 
