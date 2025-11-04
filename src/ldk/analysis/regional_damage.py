@@ -37,6 +37,12 @@ class RegionalDamage(AtlasAggregation):
     This provides a simpler interface for the common use case of computing
     how much of each brain region is damaged by a lesion.
 
+    Attributes
+    ----------
+    batch_strategy : str
+        Batch processing strategy. Set to "parallel" as regional damage
+        analysis is independent per subject and benefits from parallel processing.
+
     Parameters
     ----------
     atlas_dir : str, Path, or None, default=None
@@ -97,6 +103,9 @@ class RegionalDamage(AtlasAggregation):
     --------
     AtlasAggregation : More flexible aggregation with custom sources/methods
     """
+
+    #: Preferred batch processing strategy
+    batch_strategy: str = "parallel"
 
     def __init__(
         self,

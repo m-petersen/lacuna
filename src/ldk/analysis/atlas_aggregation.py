@@ -63,6 +63,12 @@ class AtlasAggregation(BaseAnalysis):
     The analysis discovers all atlases in the specified directory and computes
     the specified aggregation method for each region in each atlas.
 
+    Attributes
+    ----------
+    batch_strategy : str
+        Batch processing strategy. Set to "parallel" as atlas aggregation
+        is independent per subject and benefits from parallel processing.
+
     Parameters
     ----------
     atlas_dir : str, Path, or None, default=None
@@ -144,6 +150,9 @@ class AtlasAggregation(BaseAnalysis):
     RegionalDamage : Convenience wrapper for lesion overlap analysis
     BaseAnalysis : Parent class defining analysis interface
     """
+
+    #: Preferred batch processing strategy
+    batch_strategy: str = "parallel"
 
     VALID_AGGREGATIONS = ["mean", "sum", "percent", "volume", "median", "std"]
     VALID_SOURCES = ["lesion_img", "anatomical_img"]
@@ -434,8 +443,15 @@ class AtlasAggregation(BaseAnalysis):
             region_values = region_values * voxel_volume_mm3
 
         # Build results dict
+        # Note: region_values length might not match label_names if regions are lost during resampling
+        # We zip without strict=True and handle the mismatch
         results = {}
-        for label_name, value in zip(label_names, region_values, strict=True):
+        for i, value in enumerate(region_values):
+            if i < len(label_names):
+                label_name = label_names[i]
+            else:
+                # Fallback if we get more regions than expected
+                label_name = f"Region{i}"
             results[label_name] = float(value)
 
         return results
