@@ -24,9 +24,18 @@ class BaseAnalysis(ABC):
 
     The public `run()` method orchestrates the workflow and cannot be overridden.
 
+    Attributes
+    ----------
+    batch_strategy : str
+        Preferred batch processing strategy ("parallel", "vectorized", or "streaming").
+        Default is "parallel". Subclasses should override this if they benefit from
+        a different strategy (e.g., vectorized for network mapping analyses).
+
     Examples
     --------
     >>> class MyAnalysis(BaseAnalysis):
+    ...     batch_strategy = "parallel"  # Process subjects in parallel
+    ...
     ...     def __init__(self, threshold=0.5):
     ...         super().__init__()
     ...         self.threshold = threshold
@@ -44,6 +53,9 @@ class BaseAnalysis(ABC):
     >>> print(result.results["MyAnalysis"])
     {"volume": 523.5, "above_threshold": True}
     """
+
+    #: Preferred batch processing strategy (default: parallel)
+    batch_strategy: str = "parallel"
 
     def __init__(self) -> None:
         """
