@@ -479,3 +479,187 @@ def save_nifti(
         # Create anatomical filename
         anat_path = output_path.parent / output_path.name.replace("lesion", "anat")
         nib.save(lesion_data.anatomical_img, anat_path)
+
+
+def validate_bids_derivatives(
+    derivatives_dir: str | Path,
+    raise_on_error: bool = True,
+) -> dict[str, list[str]]:
+    """
+    Validate BIDS derivatives directory structure.
+
+    Checks that a derivatives directory follows BIDS specifications:
+    - Has dataset_description.json
+    - Subject directories follow naming conventions
+    - Files follow BIDS naming patterns
+    - Required metadata is present
+
+    Parameters
+    ----------
+    derivatives_dir : str or Path
+        Path to derivatives directory (e.g., 'derivatives/ldk-v0.1.0')
+    raise_on_error : bool, default=True
+        If True, raises BidsError on validation failure.
+        If False, returns errors as list.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Dictionary with validation results:
+        - 'errors': List of error messages (MUST fix)
+        - 'warnings': List of warning messages (SHOULD fix)
+        Empty lists indicate passing validation.
+
+    Raises
+    ------
+    BidsError
+        If validation fails and raise_on_error=True
+    FileNotFoundError
+        If derivatives_dir doesn't exist
+
+    Examples
+    --------
+    >>> from ldk.io import validate_bids_derivatives
+    >>>
+    >>> # Validate after export
+    >>> validate_bids_derivatives('derivatives/ldk-v0.1.0')
+    {'errors': [], 'warnings': []}
+    >>>
+    >>> # Check without raising exceptions
+    >>> result = validate_bids_derivatives('derivatives/ldk-v0.1.0', raise_on_error=False)
+    >>> if result['errors']:
+    ...     print(f"Found {len(result['errors'])} errors")
+
+    Notes
+    -----
+    Validation checks:
+    - dataset_description.json exists and is valid JSON
+    - Contains required fields: Name, BIDSVersion, GeneratedBy
+    - Subject directories match pattern: sub-<label>[/ses-<label>]
+    - File naming follows BIDS conventions
+    - No unexpected files in root directory
+    """
+    derivatives_dir = Path(derivatives_dir)
+    errors = []
+    warnings_list = []
+
+    # Check directory exists
+    if not derivatives_dir.exists():
+        raise FileNotFoundError(f"Derivatives directory not found: {derivatives_dir}")
+
+    if not derivatives_dir.is_dir():
+        errors.append(f"Path is not a directory: {derivatives_dir}")
+        if raise_on_error:
+            raise BidsError("Validation failed:\n" + "\n".join(errors))
+        return {"errors": errors, "warnings": warnings_list}
+
+    # Check for dataset_description.json
+    desc_file = derivatives_dir / "dataset_description.json"
+    if not desc_file.exists():
+        errors.append(
+            "Missing required file: dataset_description.json\n"
+            "This file is required for BIDS derivatives."
+        )
+    else:
+        # Validate dataset_description.json content
+        try:
+            with open(desc_file) as f:
+                desc_data = json.load(f)
+
+            # Check required fields
+            required_fields = ["Name", "BIDSVersion", "GeneratedBy"]
+            for field in required_fields:
+                if field not in desc_data:
+                    errors.append(f"dataset_description.json missing required field: '{field}'")
+
+            # Check GeneratedBy structure if present
+            if "GeneratedBy" in desc_data:
+                if not isinstance(desc_data["GeneratedBy"], list):
+                    errors.append("dataset_description.json: 'GeneratedBy' must be a list")
+                elif desc_data["GeneratedBy"]:
+                    # Check first entry has required fields
+                    gen_by = desc_data["GeneratedBy"][0]
+                    if not isinstance(gen_by, dict):
+                        errors.append(
+                            "dataset_description.json: GeneratedBy entries must be objects"
+                        )
+                    elif "Name" not in gen_by:
+                        warnings_list.append(
+                            "dataset_description.json: GeneratedBy entry should have 'Name' field"
+                        )
+
+        except json.JSONDecodeError as e:
+            errors.append(f"dataset_description.json is not valid JSON: {e}")
+        except Exception as e:
+            errors.append(f"Error reading dataset_description.json: {e}")
+
+    # Check subject directories
+    subject_dirs = [d for d in derivatives_dir.iterdir() if d.is_dir()]
+
+    if not subject_dirs:
+        warnings_list.append("No subject directories found in derivatives")
+    else:
+        for subj_dir in subject_dirs:
+            subj_name = subj_dir.name
+
+            # Check subject directory naming
+            if not subj_name.startswith("sub-"):
+                # Skip non-subject directories (like sourcedata, code)
+                if subj_name not in ["sourcedata", "code", ".git"]:
+                    warnings_list.append(
+                        f"Directory '{subj_name}' doesn't follow BIDS naming "
+                        f"(should start with 'sub-')"
+                    )
+                continue
+
+            # Check for expected subdirectories
+            expected_subdirs = ["anat", "results", "func", "dwi"]
+            has_subdirs = any((subj_dir / sd).exists() for sd in expected_subdirs)
+
+            if not has_subdirs:
+                warnings_list.append(
+                    f"Subject '{subj_name}' has no standard BIDS subdirectories "
+                    f"(anat, results, func, dwi)"
+                )
+
+            # Check for session subdirectories
+            session_dirs = [
+                d for d in subj_dir.iterdir() if d.is_dir() and d.name.startswith("ses-")
+            ]
+            for ses_dir in session_dirs:
+                ses_name = ses_dir.name
+                # Validate session naming
+                if not ses_name.startswith("ses-"):
+                    warnings_list.append(
+                        f"Session directory '{ses_name}' in {subj_name} doesn't follow "
+                        f"BIDS naming (should start with 'ses-')"
+                    )
+
+    # Check for unexpected files in root
+    root_files = [f for f in derivatives_dir.iterdir() if f.is_file()]
+    expected_root_files = [
+        "dataset_description.json",
+        "README",
+        "README.md",
+        "CHANGES",
+        "LICENSE",
+        ".bidsignore",
+    ]
+
+    for root_file in root_files:
+        if root_file.name not in expected_root_files:
+            warnings_list.append(
+                f"Unexpected file in derivatives root: {root_file.name}\n"
+                f"Consider moving to a subject directory or removing"
+            )
+
+    # Raise error if requested and errors found
+    if errors and raise_on_error:
+        error_msg = "BIDS derivatives validation failed:\n\nErrors:\n" + "\n".join(
+            f"  - {e}" for e in errors
+        )
+        if warnings_list:
+            error_msg += "\n\nWarnings:\n" + "\n".join(f"  - {w}" for w in warnings_list)
+        raise BidsError(error_msg)
+
+    return {"errors": errors, "warnings": warnings_list}
