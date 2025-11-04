@@ -186,3 +186,42 @@ def multisession_bids_dataset(tmp_path):
     nib.save(lesion2, ses2_dir / "sub-001_ses-02_mask-lesion.nii.gz")
 
     return dataset_root
+
+
+@pytest.fixture
+def synthetic_lesion_data(synthetic_lesion_img):
+    """Create a LesionData object from synthetic lesion image."""
+    import sys
+
+    sys.path.insert(0, "/home/marvin/projects/lesion_decoding_toolkit/src")
+    from ldk.core.lesion_data import LesionData
+
+    return LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"subject_id": "sub-test", "source": "synthetic"},
+    )
+
+
+@pytest.fixture
+def batch_lesion_data_list(synthetic_lesion_img):
+    """Create a list of LesionData objects for batch testing."""
+    import sys
+
+    sys.path.insert(0, "/home/marvin/projects/lesion_decoding_toolkit/src")
+    from ldk.core.lesion_data import LesionData
+
+    lesion_list = []
+    for i in range(1, 4):  # Create 3 test subjects
+        # Create slightly different lesion for each subject
+        data = synthetic_lesion_img.get_fdata().copy()
+        # Shift lesion slightly for each subject
+        data = np.roll(data, shift=i * 2, axis=0)
+
+        lesion_img = nib.Nifti1Image(data.astype(np.uint8), synthetic_lesion_img.affine)
+        lesion_data = LesionData(
+            lesion_img=lesion_img,
+            metadata={"subject_id": f"sub-{i:03d}", "source": "synthetic_batch"},
+        )
+        lesion_list.append(lesion_data)
+
+    return lesion_list
