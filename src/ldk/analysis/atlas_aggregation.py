@@ -417,6 +417,7 @@ class AtlasAggregation(BaseAnalysis):
             detrend=False,  # No detrending for static maps
             memory=None,  # No caching for now
             verbose=0,
+            keep_masked_labels=False,  # Remove empty region signals (future nilearn default)
         )
 
         # Extract values - nilearn expects 4D input (add time dimension if needed)
