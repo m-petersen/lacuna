@@ -1,0 +1,460 @@
+"""
+MRtrix3 command wrappers for tractography-based lesion network mapping.
+
+Provides Python wrappers around MRtrix3 commands (tckedit, tckmap, mrcalc)
+for filtering tractograms by lesion masks and computing disconnection maps.
+"""
+
+import os
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+import nibabel as nib
+
+
+class MRtrixError(Exception):
+    """Raised when MRtrix3 commands fail or are not available."""
+
+    pass
+
+
+def check_mrtrix_available() -> bool:
+    """
+    Check if MRtrix3 commands are available in the system PATH.
+
+    Returns
+    -------
+    bool
+        True if all required MRtrix3 commands are available
+
+    Raises
+    ------
+    MRtrixError
+        If MRtrix3 is not installed or commands are not in PATH
+
+    Examples
+    --------
+    >>> from ldk.utils.mrtrix import check_mrtrix_available
+    >>> try:
+    ...     check_mrtrix_available()
+    ...     print("MRtrix3 is available")
+    ... except MRtrixError as e:
+    ...     print(f"MRtrix3 not available: {e}")
+    """
+    required_commands = ["tckedit", "tckmap", "mrcalc"]
+
+    missing_commands = []
+    for cmd in required_commands:
+        if shutil.which(cmd) is None:
+            missing_commands.append(cmd)
+
+    if missing_commands:
+        raise MRtrixError(
+            f"MRtrix3 commands not found in PATH: {', '.join(missing_commands)}\n"
+            f"Please install MRtrix3: https://www.mrtrix.org/download/"
+        )
+
+    return True
+
+
+def run_mrtrix_command(
+    command: list[str], check: bool = True, capture_output: bool = False
+) -> subprocess.CompletedProcess:
+    """
+    Execute an MRtrix3 command with proper error handling.
+
+    Parameters
+    ----------
+    command : list of str
+        Command and arguments to execute
+    check : bool, default=True
+        If True, raises subprocess.CalledProcessError on non-zero exit
+    capture_output : bool, default=False
+        If True, captures stdout and stderr
+
+    Returns
+    -------
+    subprocess.CompletedProcess
+        Result of command execution
+
+    Raises
+    ------
+    MRtrixError
+        If command execution fails
+    """
+    try:
+        result = subprocess.run(
+            command, check=check, capture_output=capture_output, text=True, encoding="utf-8"
+        )
+        return result
+    except FileNotFoundError as e:
+        raise MRtrixError(
+            f"MRtrix3 command '{command[0]}' not found. "
+            f"Please install MRtrix3: https://www.mrtrix.org/download/"
+        ) from e
+    except subprocess.CalledProcessError as e:
+        raise MRtrixError(f"MRtrix3 command failed: {' '.join(command)}\n{e.stderr}") from e
+
+
+def filter_tractogram_by_lesion(
+    tractogram_path: str | Path,
+    lesion_mask: str | Path | nib.Nifti1Image,
+    output_path: str | Path | None = None,
+    n_jobs: int = 1,
+    force: bool = False,
+) -> Path:
+    """
+    Filter a whole-brain tractogram to streamlines passing through a lesion mask.
+
+    Uses MRtrix3's tckedit with -include to extract only streamlines that
+    intersect with the lesion mask.
+
+    Parameters
+    ----------
+    tractogram_path : str or Path
+        Path to whole-brain tractogram (.tck file)
+    lesion_mask : str, Path, or nibabel.Nifti1Image
+        Lesion mask image or path to NIfTI file
+    output_path : str, Path, or None
+        Output path for filtered tractogram. If None, creates temp file.
+    n_jobs : int, default=1
+        Number of threads for MRtrix3 to use
+    force : bool, default=False
+        Overwrite existing output file
+
+    Returns
+    -------
+    Path
+        Path to filtered tractogram file
+
+    Raises
+    ------
+    MRtrixError
+        If MRtrix3 command fails
+    FileNotFoundError
+        If input files don't exist
+
+    Examples
+    --------
+    >>> from ldk.utils.mrtrix import filter_tractogram_by_lesion
+    >>> filtered_tck = filter_tractogram_by_lesion(
+    ...     tractogram_path="whole_brain.tck",
+    ...     lesion_mask="lesion.nii.gz",
+    ...     output_path="lesion_streamlines.tck",
+    ...     n_jobs=8
+    ... )
+
+    Notes
+    -----
+    - Input tractogram must be in same coordinate space as lesion mask (typically MNI152)
+    - Output is a .tck file containing only streamlines passing through lesion
+    - For large tractograms, this operation can be slow (minutes to hours)
+    """
+    tractogram_path = Path(tractogram_path)
+    if not tractogram_path.exists():
+        raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
+
+    # Handle lesion mask - save to temp file if needed
+    lesion_mask_path = None
+    temp_lesion_file = None
+
+    if isinstance(lesion_mask, (str, Path)):
+        lesion_mask_path = Path(lesion_mask)
+        if not lesion_mask_path.exists():
+            raise FileNotFoundError(f"Lesion mask not found: {lesion_mask_path}")
+    elif isinstance(lesion_mask, nib.Nifti1Image):
+        # Save to temporary file
+        temp_lesion_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        lesion_mask_path = Path(temp_lesion_file.name)
+        nib.save(lesion_mask, lesion_mask_path)
+    else:
+        raise TypeError(
+            f"lesion_mask must be str, Path, or nibabel.Nifti1Image, got {type(lesion_mask)}"
+        )
+
+    # Determine output path
+    if output_path is None:
+        temp_output = tempfile.NamedTemporaryFile(suffix=".tck", delete=False)
+        output_path = Path(temp_output.name)
+    else:
+        output_path = Path(output_path)
+
+    # Check if output exists and force flag
+    if output_path.exists() and not force:
+        raise FileExistsError(
+            f"Output file already exists: {output_path}\nUse force=True to overwrite"
+        )
+
+    try:
+        # Build tckedit command
+        cmd = [
+            "tckedit",
+            str(tractogram_path),
+            str(output_path),
+            "-include",
+            str(lesion_mask_path),
+            "-nthreads",
+            str(n_jobs),
+        ]
+
+        if force:
+            cmd.append("-force")
+
+        # Execute
+        run_mrtrix_command(cmd)
+
+        return output_path
+
+    finally:
+        # Clean up temporary lesion file if created
+        if temp_lesion_file is not None:
+            try:
+                os.unlink(lesion_mask_path)
+            except Exception:
+                pass
+
+
+def compute_tdi_map(
+    tractogram_path: str | Path,
+    template: str | Path | nib.Nifti1Image,
+    output_path: str | Path | None = None,
+    n_jobs: int = 1,
+    force: bool = False,
+) -> Path:
+    """
+    Compute Track Density Image (TDI) from a tractogram.
+
+    Uses MRtrix3's tckmap to create a voxel-wise count of streamline endpoints
+    or trajectories passing through each voxel.
+
+    Parameters
+    ----------
+    tractogram_path : str or Path
+        Path to tractogram (.tck file)
+    template : str, Path, or nibabel.Nifti1Image
+        Template image defining output grid, or path to NIfTI file
+    output_path : str, Path, or None
+        Output path for TDI map. If None, creates temp file.
+    n_jobs : int, default=1
+        Number of threads for MRtrix3 to use
+    force : bool, default=False
+        Overwrite existing output file
+
+    Returns
+    -------
+    Path
+        Path to TDI map file
+
+    Raises
+    ------
+    MRtrixError
+        If MRtrix3 command fails
+    FileNotFoundError
+        If input files don't exist
+
+    Examples
+    --------
+    >>> from ldk.utils.mrtrix import compute_tdi_map
+    >>> tdi = compute_tdi_map(
+    ...     tractogram_path="lesion_streamlines.tck",
+    ...     template="MNI152_T1_2mm.nii.gz",
+    ...     output_path="lesion_tdi.nii.gz",
+    ...     n_jobs=8
+    ... )
+
+    Notes
+    -----
+    - Template defines the output grid resolution and FOV
+    - Uses -contrast tdi for standard track density imaging
+    """
+    tractogram_path = Path(tractogram_path)
+    if not tractogram_path.exists():
+        raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
+
+    # Handle template - save to temp file if needed
+    template_path = None
+    temp_template_file = None
+
+    if isinstance(template, (str, Path)):
+        template_path = Path(template)
+        if not template_path.exists():
+            raise FileNotFoundError(f"Template not found: {template_path}")
+    elif isinstance(template, nib.Nifti1Image):
+        # Save to temporary file
+        temp_template_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        template_path = Path(temp_template_file.name)
+        nib.save(template, template_path)
+    else:
+        raise TypeError(f"template must be str, Path, or nibabel.Nifti1Image, got {type(template)}")
+
+    # Determine output path
+    if output_path is None:
+        temp_output = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        output_path = Path(temp_output.name)
+    else:
+        output_path = Path(output_path)
+
+    # Check if output exists and force flag
+    if output_path.exists() and not force:
+        raise FileExistsError(
+            f"Output file already exists: {output_path}\nUse force=True to overwrite"
+        )
+
+    try:
+        # Build tckmap command
+        cmd = [
+            "tckmap",
+            "-contrast",
+            "tdi",
+            "-template",
+            str(template_path),
+            str(tractogram_path),
+            str(output_path),
+            "-nthreads",
+            str(n_jobs),
+        ]
+
+        if force:
+            cmd.append("-force")
+
+        # Execute
+        run_mrtrix_command(cmd)
+
+        return output_path
+
+    finally:
+        # Clean up temporary template file if created
+        if temp_template_file is not None:
+            try:
+                os.unlink(template_path)
+            except Exception:
+                pass
+
+
+def compute_disconnection_map(
+    lesion_tdi: str | Path | nib.Nifti1Image,
+    whole_brain_tdi: str | Path | nib.Nifti1Image,
+    output_path: str | Path | None = None,
+    force: bool = False,
+) -> Path:
+    """
+    Compute disconnection map as ratio of lesion TDI to whole-brain TDI.
+
+    Uses MRtrix3's mrcalc to divide lesion TDI by whole-brain TDI, producing
+    a voxel-wise disconnection probability map.
+
+    Parameters
+    ----------
+    lesion_tdi : str, Path, or nibabel.Nifti1Image
+        TDI from lesion-filtered tractogram
+    whole_brain_tdi : str, Path, or nibabel.Nifti1Image
+        TDI from whole-brain tractogram (reference)
+    output_path : str, Path, or None
+        Output path for disconnection map. If None, creates temp file.
+    force : bool, default=False
+        Overwrite existing output file
+
+    Returns
+    -------
+    Path
+        Path to disconnection map file
+
+    Raises
+    ------
+    MRtrixError
+        If MRtrix3 command fails
+    FileNotFoundError
+        If input files don't exist
+
+    Examples
+    --------
+    >>> from ldk.utils.mrtrix import compute_disconnection_map
+    >>> disconn_map = compute_disconnection_map(
+    ...     lesion_tdi="lesion_tdi.nii.gz",
+    ...     whole_brain_tdi="whole_brain_tdi.nii.gz",
+    ...     output_path="disconnection_map.nii.gz"
+    ... )
+
+    Notes
+    -----
+    - Values range from 0 (no disconnection) to 1 (complete disconnection)
+    - Voxels with zero whole-brain TDI are handled gracefully (set to 0)
+    """
+    # Handle lesion TDI input
+    lesion_tdi_path = None
+    temp_lesion_file = None
+
+    if isinstance(lesion_tdi, (str, Path)):
+        lesion_tdi_path = Path(lesion_tdi)
+        if not lesion_tdi_path.exists():
+            raise FileNotFoundError(f"Lesion TDI not found: {lesion_tdi_path}")
+    elif isinstance(lesion_tdi, nib.Nifti1Image):
+        temp_lesion_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        lesion_tdi_path = Path(temp_lesion_file.name)
+        nib.save(lesion_tdi, lesion_tdi_path)
+    else:
+        raise TypeError(
+            f"lesion_tdi must be str, Path, or nibabel.Nifti1Image, got {type(lesion_tdi)}"
+        )
+
+    # Handle whole-brain TDI input
+    wb_tdi_path = None
+    temp_wb_file = None
+
+    if isinstance(whole_brain_tdi, (str, Path)):
+        wb_tdi_path = Path(whole_brain_tdi)
+        if not wb_tdi_path.exists():
+            raise FileNotFoundError(f"Whole-brain TDI not found: {wb_tdi_path}")
+    elif isinstance(whole_brain_tdi, nib.Nifti1Image):
+        temp_wb_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        wb_tdi_path = Path(temp_wb_file.name)
+        nib.save(whole_brain_tdi, wb_tdi_path)
+    else:
+        raise TypeError(
+            f"whole_brain_tdi must be str, Path, or nibabel.Nifti1Image, got {type(whole_brain_tdi)}"
+        )
+
+    # Determine output path
+    if output_path is None:
+        temp_output = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        output_path = Path(temp_output.name)
+    else:
+        output_path = Path(output_path)
+
+    # Check if output exists and force flag
+    if output_path.exists() and not force:
+        raise FileExistsError(
+            f"Output file already exists: {output_path}\nUse force=True to overwrite"
+        )
+
+    try:
+        # Build mrcalc command
+        cmd = [
+            "mrcalc",
+            str(lesion_tdi_path),
+            str(wb_tdi_path),
+            "-divide",
+            str(output_path),
+        ]
+
+        if force:
+            cmd.append("-force")
+
+        # Execute
+        run_mrtrix_command(cmd)
+
+        return output_path
+
+    finally:
+        # Clean up temporary files if created
+        for temp_file, temp_path in [
+            (temp_lesion_file, lesion_tdi_path),
+            (temp_wb_file, wb_tdi_path),
+        ]:
+            if temp_file is not None:
+                try:
+                    os.unlink(temp_path)
+                except Exception:
+                    pass
