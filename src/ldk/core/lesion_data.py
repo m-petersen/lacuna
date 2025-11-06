@@ -17,6 +17,51 @@ from .exceptions import NiftiLoadError
 from .validation import check_spatial_match, validate_affine, validate_nifti_image
 
 
+class ImmutableDict(dict):
+    """
+    Immutable dictionary wrapper with custom error messages.
+
+    This class wraps a dictionary and prevents modifications by raising
+    clear, informative errors when modification is attempted.
+    """
+
+    def __init__(self, data: dict, attribute_name: str):
+        super().__init__(data)
+        self._attribute_name = attribute_name
+
+    def __setitem__(self, key, value):
+        raise TypeError(
+            f"Cannot modify LesionData.{self._attribute_name} - it is immutable.\n"
+            f"To update {self._attribute_name}, create a new LesionData instance instead."
+        )
+
+    def __delitem__(self, key):
+        raise TypeError(
+            f"Cannot delete from LesionData.{self._attribute_name} - it is immutable.\n"
+            f"To modify {self._attribute_name}, create a new LesionData instance instead."
+        )
+
+    def update(self, *args, **kwargs):
+        raise TypeError(
+            f"Cannot update LesionData.{self._attribute_name} - it is immutable.\n"
+            f"To update {self._attribute_name}, create a new LesionData instance instead."
+        )
+
+    def pop(self, *args, **kwargs):
+        raise TypeError(f"Cannot pop from LesionData.{self._attribute_name} - it is immutable.")
+
+    def popitem(self):
+        raise TypeError(f"Cannot popitem from LesionData.{self._attribute_name} - it is immutable.")
+
+    def clear(self):
+        raise TypeError(f"Cannot clear LesionData.{self._attribute_name} - it is immutable.")
+
+    def setdefault(self, *args, **kwargs):
+        raise TypeError(
+            f"Cannot setdefault on LesionData.{self._attribute_name} - it is immutable."
+        )
+
+
 class LesionData:
     """
     Central data container for a single subject's lesion analysis.
@@ -33,17 +78,22 @@ class LesionData:
     anatomical_img : nibabel.Nifti1Image, optional
         Subject's anatomical scan (must match lesion coordinate space).
     metadata : dict, optional
-        Subject metadata (must contain 'subject_id' key if provided).
-        Defaults to {"subject_id": "sub-unknown"}.
+        Subject metadata. Must contain 'space' key (e.g., 'MNI152_2mm', 'MNI152_1mm', 
+        or 'native') unless provenance is provided. 'subject_id' defaults to 
+        "sub-unknown" if not provided.
     provenance : list of dict, optional
-        Processing history (for deserialization only).
+        Processing history (for deserialization only). If provided without 
+        metadata["space"], the most recent transformation's output_space is used.
     results : dict, optional
         Analysis results (for deserialization only).
 
     Raises
     ------
+    ValueError
+        If metadata is missing 'space' key and provenance is None, or if lesion_img 
+        is not 3D.
     ValidationError
-        If lesion_img is not 3D, affines don't match, or metadata missing 'subject_id'.
+        If affines don't match between lesion and anatomical images.
     SpatialMismatchError
         If anatomical_img coordinate space doesn't match lesion_img.
 
@@ -66,7 +116,10 @@ class LesionData:
     --------
     >>> import nibabel as nib
     >>> lesion_img = nib.load("lesion.nii.gz")
-    >>> lesion = LesionData(lesion_img, metadata={"subject_id": "sub-001"})
+    >>> lesion = LesionData(
+    ...     lesion_img,
+    ...     metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
+    ... )
     >>> print(f"Volume: {lesion.get_volume_mm3()} mm³")
     >>> print(f"Space: {lesion.get_coordinate_space()}")
     """
@@ -100,6 +153,19 @@ class LesionData:
             metadata = {}
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
+
+        # Require explicit coordinate space specification
+        if "space" not in metadata and provenance is None:
+            raise ValueError(
+                "metadata must contain 'space' key to specify coordinate space.\n"
+                "This is required for spatial validation in analysis modules.\n"
+                "Common values:\n"
+                "  - 'MNI152_1mm' (1mm MNI152 template)\n"
+                "  - 'MNI152_2mm' (2mm MNI152 template)\n"
+                "  - 'native' (subject's native space)\n"
+                "Example: LesionData(img, metadata={'subject_id': 'sub-001', 'space': 'MNI152_2mm'})"
+            )
+
         self._metadata = metadata.copy()
 
         # Setup provenance (empty list for new objects)
@@ -108,7 +174,7 @@ class LesionData:
         # Setup results (empty dict for new objects)
         self._results = dict(results) if results is not None else {}
 
-        # Track coordinate space (extracted from provenance or default to native)
+        # Track coordinate space (extracted from metadata or provenance)
         self._coordinate_space = self._infer_coordinate_space()
 
     @classmethod
@@ -460,13 +526,28 @@ class LesionData:
         )
 
     def _infer_coordinate_space(self) -> str:
-        """Infer coordinate space from provenance or default to 'native'."""
+        """
+        Infer coordinate space from metadata or provenance.
+
+        Priority order:
+        1. metadata["space"] (explicit user specification)
+        2. provenance (most recent transformation's output_space)
+
+        Note: At least one of these must be present (validated in __init__).
+        """
+        # First check metadata (highest priority)
+        if "space" in self._metadata:
+            return self._metadata["space"]
+
+        # Then check provenance (must exist if metadata["space"] is missing)
         if self._provenance:
             # Check most recent transformation
             last_transform = self._provenance[-1]
             if "output_space" in last_transform:
                 return last_transform["output_space"]
-        return "native"
+
+        # Should never reach here due to validation in __init__
+        raise ValueError("No coordinate space found in metadata or provenance")
 
     # Read-only properties
 
@@ -486,9 +567,31 @@ class LesionData:
         return self._affine.copy()  # Return copy to prevent modification
 
     @property
-    def metadata(self) -> dict[str, Any]:
-        """Subject and session metadata (immutable view)."""
-        return self._metadata.copy()  # Return copy to prevent modification
+    def metadata(self) -> ImmutableDict:
+        """
+        Subject and session metadata (read-only view).
+
+        Returns an immutable dictionary that prevents modifications with clear
+        error messages. To update metadata, create a new LesionData instance
+        with the desired metadata.
+
+        Returns
+        -------
+        ImmutableDict
+            Read-only view of metadata. Raises TypeError on modification attempts.
+
+        Examples
+        --------
+        >>> lesion.metadata["subject_id"]  # OK - reading
+        'sub-001'
+        >>> lesion.metadata["new_key"] = "value"  # Raises TypeError
+        Traceback (most recent call last):
+            ...
+        TypeError: Cannot modify LesionData.metadata - it is immutable.
+        LesionData follows the Value Object pattern for scientific reproducibility.
+        To update metadata, create a new LesionData instance instead.
+        """
+        return ImmutableDict(self._metadata, "metadata")
 
     @property
     def provenance(self) -> list[dict[str, Any]]:
