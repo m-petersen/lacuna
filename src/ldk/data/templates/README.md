@@ -39,4 +39,4 @@ These templates are from the FSL MNI152 standard space:
 
 ## License
 
-These templates are distributed under the FSL license and are freely available for research purposes.
+These templates are distributed under the FSL license and are freely available for research purposes (https://fsl.fmrib.ox.ac.uk/fsl/docs/license.html).
