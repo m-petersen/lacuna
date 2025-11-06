@@ -60,7 +60,7 @@ def check_mrtrix_available() -> bool:
 
 
 def run_mrtrix_command(
-    command: list[str], check: bool = True, capture_output: bool = False
+    command: list[str], check: bool = True, capture_output: bool = False, verbose: bool = True
 ) -> subprocess.CompletedProcess:
     """
     Execute an MRtrix3 command with proper error handling.
@@ -73,6 +73,8 @@ def run_mrtrix_command(
         If True, raises subprocess.CalledProcessError on non-zero exit
     capture_output : bool, default=False
         If True, captures stdout and stderr
+    verbose : bool, default=True
+        If True, prints the command being executed
 
     Returns
     -------
@@ -84,6 +86,9 @@ def run_mrtrix_command(
     MRtrixError
         If command execution fails
     """
+    if verbose:
+        print(f"   Executing: {' '.join(command)}", flush=True)
+
     try:
         result = subprocess.run(
             command, check=check, capture_output=capture_output, text=True, encoding="utf-8"
@@ -458,3 +463,132 @@ def compute_disconnection_map(
                     os.unlink(temp_path)
                 except Exception:
                     pass
+
+
+def compute_whole_brain_tdi(
+    tractogram_path: str | Path,
+    output_1mm: str | Path | None = None,
+    output_2mm: str | Path | None = None,
+    n_jobs: int = 1,
+    force: bool = False,
+) -> dict[str, Path | None]:
+    """
+    Compute whole-brain Track Density Images (TDI) at 1mm and/or 2mm MNI resolution.
+
+    Convenience function that computes TDI maps from a whole-brain tractogram
+    using bundled MNI152 templates at different resolutions. This generates the
+    reference connectivity maps needed for disconnection analysis.
+
+    Parameters
+    ----------
+    tractogram_path : str or Path
+        Path to whole-brain tractogram (.tck file)
+    output_1mm : str, Path, or None, optional
+        Output path for 1mm TDI map. If None, 1mm TDI is not computed.
+    output_2mm : str, Path, or None, optional
+        Output path for 2mm TDI map. If None, 2mm TDI is not computed.
+    n_jobs : int, default=1
+        Number of threads for MRtrix3 to use
+    force : bool, default=False
+        Overwrite existing output files
+
+    Returns
+    -------
+    dict
+        Dictionary with keys "tdi_1mm" and "tdi_2mm" containing Path objects
+        to the computed TDI maps, or None if not computed.
+
+    Raises
+    ------
+    MRtrixError
+        If MRtrix3 command fails
+    FileNotFoundError
+        If tractogram file doesn't exist
+    ValueError
+        If neither output_1mm nor output_2mm is specified
+
+    Examples
+    --------
+    >>> from ldk.utils.mrtrix import compute_whole_brain_tdi
+    >>>
+    >>> # Compute both resolutions
+    >>> tdis = compute_whole_brain_tdi(
+    ...     tractogram_path="whole_brain.tck",
+    ...     output_1mm="tdi_1mm.nii.gz",
+    ...     output_2mm="tdi_2mm.nii.gz",
+    ...     n_jobs=8
+    ... )
+    >>> print(f"1mm TDI: {tdis['tdi_1mm']}")
+    >>> print(f"2mm TDI: {tdis['tdi_2mm']}")
+    >>>
+    >>> # Compute only 2mm resolution
+    >>> tdis = compute_whole_brain_tdi(
+    ...     tractogram_path="whole_brain.tck",
+    ...     output_2mm="tdi_2mm.nii.gz",
+    ...     n_jobs=8
+    ... )
+
+    Notes
+    -----
+    - Uses bundled FSL MNI152 T1 templates (1mm: 182×218×182, 2mm: 91×109×91)
+    - Processing time scales with tractogram size (typically 5-30 minutes)
+    - Output files can be large (hundreds of MB for dense tractograms)
+    - These TDI maps serve as reference connectivity for disconnection analysis
+
+    See Also
+    --------
+    compute_tdi_map : Lower-level function for custom TDI computation
+    StructuralNetworkMapping : Analysis that uses whole-brain TDI as reference
+    """
+    from ldk.data import get_template_path
+
+    if output_1mm is None and output_2mm is None:
+        raise ValueError("At least one of output_1mm or output_2mm must be specified")
+
+    tractogram_path = Path(tractogram_path)
+    if not tractogram_path.exists():
+        raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
+
+    results = {"tdi_1mm": None, "tdi_2mm": None}
+
+    # Compute 1mm TDI if requested
+    if output_1mm is not None:
+        print("Computing 1mm whole-brain TDI...")
+        template_1mm = get_template_path(resolution=1)
+        output_1mm_path = Path(output_1mm)
+
+        if output_1mm_path.exists() and not force:
+            print(f"✓ 1mm TDI already exists: {output_1mm_path}")
+            results["tdi_1mm"] = output_1mm_path
+        else:
+            tdi_1mm_path = compute_tdi_map(
+                tractogram_path=tractogram_path,
+                template=template_1mm,
+                output_path=output_1mm_path,
+                n_jobs=n_jobs,
+                force=force,
+            )
+            results["tdi_1mm"] = tdi_1mm_path
+            print(f"✓ 1mm TDI saved to: {tdi_1mm_path}")
+
+    # Compute 2mm TDI if requested
+    if output_2mm is not None:
+        print("Computing 2mm whole-brain TDI...")
+        template_2mm = get_template_path(resolution=2)
+        output_2mm_path = Path(output_2mm)
+
+        if output_2mm_path.exists() and not force:
+            print(f"✓ 2mm TDI already exists: {output_2mm_path}")
+            results["tdi_2mm"] = output_2mm_path
+        else:
+            tdi_2mm_path = compute_tdi_map(
+                tractogram_path=tractogram_path,
+                template=template_2mm,
+                output_path=output_2mm_path,
+                n_jobs=n_jobs,
+                force=force,
+            )
+            results["tdi_2mm"] = tdi_2mm_path
+            print(f"✓ 2mm TDI saved to: {tdi_2mm_path}")
+
+    return results
