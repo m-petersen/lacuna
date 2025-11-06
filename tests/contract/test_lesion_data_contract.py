@@ -15,11 +15,11 @@ def test_lesion_data_import():
     assert LesionData is not None
 
 
-def test_lesion_data_init_with_minimal_args(synthetic_lesion_img):
+def test_lesion_data_init_with_minimal_args(synthetic_lesion_img, lesion_metadata):
     """Test LesionData initialization with minimal required arguments."""
     from ldk.core.lesion_data import LesionData
     
-    lesion = LesionData(synthetic_lesion_img)
+    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     
     assert lesion is not None
     assert lesion.lesion_img is synthetic_lesion_img
@@ -32,7 +32,7 @@ def test_lesion_data_init_with_minimal_args(synthetic_lesion_img):
     assert len(lesion.results) == 0
 
 
-def test_lesion_data_init_with_metadata(synthetic_lesion_img):
+def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
     """Test LesionData initialization with custom metadata."""
     from ldk.core.lesion_data import LesionData
     
@@ -49,7 +49,7 @@ def test_lesion_data_init_with_metadata(synthetic_lesion_img):
     assert lesion.metadata["age"] == 45
 
 
-def test_lesion_data_init_with_anatomical(synthetic_lesion_img):
+def test_lesion_data_init_with_anatomical(synthetic_lesion_img, lesion_metadata):
     """Test LesionData initialization with anatomical image."""
     from ldk.core.lesion_data import LesionData
     
@@ -57,7 +57,7 @@ def test_lesion_data_init_with_anatomical(synthetic_lesion_img):
     anat_data = np.random.rand(*synthetic_lesion_img.shape).astype(np.float32)
     anat_img = nib.Nifti1Image(anat_data, synthetic_lesion_img.affine)
     
-    lesion = LesionData(synthetic_lesion_img, anatomical_img=anat_img)
+    lesion = LesionData(synthetic_lesion_img, anatomical_img=anat_img, metadata=lesion_metadata)
     
     assert lesion.anatomical_img is anat_img
     assert np.array_equal(lesion.anatomical_img.affine, lesion.affine)
@@ -132,43 +132,43 @@ def test_lesion_data_from_nifti_nonexistent_file():
         LesionData.from_nifti("/nonexistent/file.nii.gz")
 
 
-def test_lesion_data_validate(synthetic_lesion_img):
+def test_lesion_data_validate(synthetic_lesion_img, lesion_metadata):
     """Test LesionData.validate method."""
     from ldk.core.lesion_data import LesionData
     
-    lesion = LesionData(synthetic_lesion_img)
+    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     
     # Should pass validation
     assert lesion.validate() is True
 
 
-def test_lesion_data_get_volume_mm3(synthetic_lesion_img):
+def test_lesion_data_get_volume_mm3(synthetic_lesion_img, lesion_metadata):
     """Test get_volume_mm3 method."""
     from ldk.core.lesion_data import LesionData
     
-    lesion = LesionData(synthetic_lesion_img)
+    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     volume = lesion.get_volume_mm3()
     
     assert isinstance(volume, float)
     assert volume > 0  # Synthetic lesion has nonzero voxels
 
 
-def test_lesion_data_get_coordinate_space(synthetic_lesion_img):
+def test_lesion_data_get_coordinate_space(synthetic_lesion_img, lesion_metadata):
     """Test get_coordinate_space method."""
     from ldk.core.lesion_data import LesionData
     
-    lesion = LesionData(synthetic_lesion_img)
+    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     space = lesion.get_coordinate_space()
     
     assert isinstance(space, str)
     assert space == "native"  # Default for new lesions
 
 
-def test_lesion_data_copy(synthetic_lesion_img):
+def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
     """Test LesionData.copy method creates independent copy."""
     from ldk.core.lesion_data import LesionData
     
-    lesion = LesionData(synthetic_lesion_img, metadata={"subject_id": "sub-001"})
+    lesion = LesionData(synthetic_lesion_img, metadata={"subject_id": "sub-001", "space": "MNI152_2mm"})
     lesion_copy = lesion.copy()
     
     # Should be different objects
@@ -179,7 +179,7 @@ def test_lesion_data_copy(synthetic_lesion_img):
     assert np.array_equal(lesion_copy.affine, lesion.affine)
 
 
-def test_lesion_data_to_dict(synthetic_lesion_img):
+def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
     """Test to_dict serialization."""
     from ldk.core.lesion_data import LesionData
     
@@ -195,12 +195,12 @@ def test_lesion_data_to_dict(synthetic_lesion_img):
     assert data_dict["metadata"]["subject_id"] == "sub-001"
 
 
-def test_lesion_data_from_dict(synthetic_lesion_img):
+def test_lesion_data_from_dict(synthetic_lesion_img, lesion_metadata):
     """Test from_dict deserialization."""
     from ldk.core.lesion_data import LesionData
     
     # Create original
-    metadata = {"subject_id": "sub-001"}
+    metadata = {"subject_id": "sub-001", "space": "MNI152_2mm"}
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
     
     # Serialize and deserialize
@@ -210,11 +210,11 @@ def test_lesion_data_from_dict(synthetic_lesion_img):
     assert lesion_restored.metadata["subject_id"] == "sub-001"
 
 
-def test_lesion_data_properties_are_readonly(synthetic_lesion_img):
+def test_lesion_data_properties_are_readonly(synthetic_lesion_img, lesion_metadata):
     """Test that properties cannot be directly modified."""
     from ldk.core.lesion_data import LesionData
     
-    lesion = LesionData(synthetic_lesion_img)
+    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     
     # These should raise AttributeError if trying to set
     with pytest.raises(AttributeError):
@@ -248,6 +248,14 @@ def synthetic_lesion_img():
     affine[2, 2] = 2.0
     
     return nib.Nifti1Image(data, affine)
+
+
+
+
+@pytest.fixture
+def lesion_metadata():
+    """Standard metadata with required space field."""
+    return {"subject_id": "sub-001", "space": "MNI152_2mm"}
 
 
 @pytest.fixture
