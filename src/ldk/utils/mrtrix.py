@@ -74,7 +74,8 @@ def run_mrtrix_command(
     capture_output : bool, default=False
         If True, captures stdout and stderr
     verbose : bool, default=True
-        If True, prints the command being executed
+        If True, prints the command being executed and allows output to display.
+        If False, suppresses both command printing and MRtrix3 output.
 
     Returns
     -------
@@ -89,9 +90,12 @@ def run_mrtrix_command(
     if verbose:
         print(f"   Executing: {' '.join(command)}", flush=True)
 
+    # When verbose=False, capture output to suppress it
+    should_capture = capture_output or not verbose
+
     try:
         result = subprocess.run(
-            command, check=check, capture_output=capture_output, text=True, encoding="utf-8"
+            command, check=check, capture_output=should_capture, text=True, encoding="utf-8"
         )
         return result
     except FileNotFoundError as e:
