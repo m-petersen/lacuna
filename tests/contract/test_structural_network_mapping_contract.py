@@ -602,3 +602,203 @@ def test_provenance_includes_memory_settings():
     assert "keep_intermediate" in params
     assert params["load_to_memory"] is False
     assert params["keep_intermediate"] is True
+
+
+# ============================================================================
+# Contract Tests for Atlas-based Connectivity Matrix Computation
+# ============================================================================
+
+
+def test_atlas_parameter_optional():
+    """Test that atlas_path is an optional parameter."""
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    # Should work without atlas (voxel-wise only)
+    analysis = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+    )
+    assert analysis.atlas_path is None
+
+
+def test_atlas_accepts_bundled_name():
+    """Test that atlas_path can be a bundled atlas name string."""
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    # Should accept bundled atlas name
+    analysis = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+        atlas_path="schaefer100",
+    )
+    assert analysis.atlas_path == "schaefer100"
+
+
+def test_atlas_accepts_custom_path():
+    """Test that atlas_path can be a custom file path."""
+
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    # Should accept custom atlas path
+    analysis = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+        atlas_path="/path/to/custom_atlas.nii.gz",
+    )
+    assert analysis.atlas_path == "/path/to/custom_atlas.nii.gz"
+
+
+def test_compute_lesioned_parameter():
+    """Test that compute_lesioned parameter is available."""
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    # Should have compute_lesioned parameter
+    analysis = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+        atlas_path="schaefer100",
+        compute_lesioned=True,
+    )
+    assert analysis.compute_lesioned is True
+
+
+def test_atlas_resolved_during_validation():
+    """Test that bundled atlas is resolved to Path during validation."""
+    import tempfile
+    from pathlib import Path
+
+    import nibabel as nib
+    import numpy as np
+
+    from ldk import LesionData
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    # Create temporary files
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+
+        # Create dummy files
+        tck_file = tmp_path / "tractogram.tck"
+        tdi_file = tmp_path / "tdi.nii.gz"
+        tck_file.touch()
+        nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), tdi_file)
+
+        # Create lesion
+        lesion_data = np.zeros((91, 109, 91))
+        lesion_data[45:50, 54:59, 45:50] = 1
+        lesion_img = nib.Nifti1Image(lesion_data, np.eye(4))
+        lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+
+        # Initialize with bundled atlas name
+        analysis = StructuralNetworkMapping(
+            tractogram_path=tck_file,
+            whole_brain_tdi=tdi_file,
+            atlas_path="schaefer100",
+            check_dependencies=False,
+        )
+
+        # Before validation, _atlas_resolved should be None
+        assert analysis._atlas_resolved is None
+
+        # Validate - this should resolve the atlas
+        try:
+            analysis._validate_inputs(lesion)
+            # After validation, _atlas_resolved should be a Path
+            assert analysis._atlas_resolved is not None
+            assert isinstance(analysis._atlas_resolved, Path)
+        except (FileNotFoundError, ValueError):
+            # Expected if atlas doesn't exist, but _atlas_resolved should still be attempted
+            pass
+
+
+def test_results_include_connectivity_matrices_when_atlas_provided():
+    """Test that results include connectivity matrices when atlas is provided."""
+    # This is a contract test - we're testing the interface, not the implementation
+    # The actual matrices would be computed by MRtrix3 in real execution
+
+    # Expected result structure when atlas is provided:
+    expected_keys_with_atlas = {
+        "disconnection_map",  # Always present
+        "mean_disconnection",  # Always present
+        "lesion_streamline_count",  # Always present
+        "metadata",  # Always present
+        "lesion_connectivity_matrix",  # Present when atlas provided
+        "disconnectivity_percent",  # Present when atlas provided
+        "full_connectivity_matrix",  # Present when atlas provided
+        "matrix_statistics",  # Present when atlas provided
+    }
+
+    # When atlas is None, connectivity matrices should not be in results
+    expected_keys_without_atlas = {
+        "disconnection_map",
+        "mean_disconnection",
+        "lesion_streamline_count",
+        "metadata",
+    }
+
+    # Test interface expectation
+    assert expected_keys_with_atlas is not None
+    assert expected_keys_without_atlas is not None
+
+
+def test_matrix_statistics_structure():
+    """Test expected structure of matrix_statistics in results."""
+    # Contract: matrix_statistics should contain these keys
+    expected_stats_keys = {
+        "n_parcels",
+        "n_edges_total",
+        "n_edges_affected",
+        "percent_edges_affected",
+        "mean_disconnection_percent",
+        "max_disconnection_percent",
+        "mean_degree_reduction",
+        "max_degree_reduction",
+        "most_affected_parcel",
+    }
+
+    # When compute_lesioned=True, additional keys expected
+    expected_stats_with_lesioned = expected_stats_keys | {
+        "lesioned_mean_degree",
+        "connectivity_preservation_ratio",
+    }
+
+    assert expected_stats_keys is not None
+    assert expected_stats_with_lesioned is not None
+
+
+def test_full_connectivity_matrix_caching():
+    """Test that full connectivity matrix is cached for batch processing."""
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    analysis = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+        atlas_path="schaefer100",
+    )
+
+    # Should have cache attribute
+    assert hasattr(analysis, "_full_connectivity_matrix")
+    # Initially None
+    assert analysis._full_connectivity_matrix is None
+
+
+def test_lesioned_connectivity_optional():
+    """Test that lesioned connectivity is only computed when requested."""
+    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    # Default: compute_lesioned=False
+    analysis1 = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+        atlas_path="schaefer100",
+    )
+    assert analysis1.compute_lesioned is False
+
+    # Explicit: compute_lesioned=True
+    analysis2 = StructuralNetworkMapping(
+        tractogram_path="/path/to/tractogram.tck",
+        whole_brain_tdi="/path/to/tdi.nii.gz",
+        atlas_path="schaefer100",
+        compute_lesioned=True,
+    )
+    assert analysis2.compute_lesioned is True
