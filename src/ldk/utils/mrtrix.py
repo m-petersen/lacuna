@@ -109,6 +109,7 @@ def filter_tractogram_by_lesion(
     output_path: str | Path | None = None,
     n_jobs: int = 1,
     force: bool = False,
+    verbose: bool = True,
 ) -> Path:
     """
     Filter a whole-brain tractogram to streamlines passing through a lesion mask.
@@ -128,6 +129,8 @@ def filter_tractogram_by_lesion(
         Number of threads for MRtrix3 to use
     force : bool, default=False
         Overwrite existing output file
+    verbose : bool, default=True
+        If True, prints MRtrix3 commands being executed
 
     Returns
     -------
@@ -208,7 +211,7 @@ def filter_tractogram_by_lesion(
             cmd.append("-force")
 
         # Execute
-        run_mrtrix_command(cmd)
+        run_mrtrix_command(cmd, verbose=verbose)
 
         return output_path
 
@@ -227,6 +230,7 @@ def compute_tdi_map(
     output_path: str | Path | None = None,
     n_jobs: int = 1,
     force: bool = False,
+    verbose: bool = True,
 ) -> Path:
     """
     Compute Track Density Image (TDI) from a tractogram.
@@ -246,6 +250,8 @@ def compute_tdi_map(
         Number of threads for MRtrix3 to use
     force : bool, default=False
         Overwrite existing output file
+    verbose : bool, default=True
+        If True, prints MRtrix3 commands being executed
 
     Returns
     -------
@@ -325,7 +331,7 @@ def compute_tdi_map(
             cmd.append("-force")
 
         # Execute
-        run_mrtrix_command(cmd)
+        run_mrtrix_command(cmd, verbose=verbose)
 
         return output_path
 
@@ -343,6 +349,7 @@ def compute_disconnection_map(
     whole_brain_tdi: str | Path | nib.Nifti1Image,
     output_path: str | Path | None = None,
     force: bool = False,
+    verbose: bool = True,
 ) -> Path:
     """
     Compute disconnection map as ratio of lesion TDI to whole-brain TDI.
@@ -360,6 +367,8 @@ def compute_disconnection_map(
         Output path for disconnection map. If None, creates temp file.
     force : bool, default=False
         Overwrite existing output file
+    verbose : bool, default=True
+        If True, prints MRtrix3 commands being executed
 
     Returns
     -------
@@ -448,7 +457,7 @@ def compute_disconnection_map(
             cmd.append("-force")
 
         # Execute
-        run_mrtrix_command(cmd)
+        run_mrtrix_command(cmd, verbose=verbose)
 
         return output_path
 

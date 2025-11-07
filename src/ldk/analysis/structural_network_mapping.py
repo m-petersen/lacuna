@@ -14,13 +14,14 @@ import numpy as np
 
 from ldk.analysis.base import BaseAnalysis
 from ldk.core.lesion_data import LesionData
-from ldk.data import get_template_path
+from ldk.data import get_bundled_atlas, get_template_path
 from ldk.utils.mrtrix import (
     MRtrixError,
     check_mrtrix_available,
     compute_disconnection_map,
     compute_tdi_map,
     filter_tractogram_by_lesion,
+    run_mrtrix_command,
 )
 
 
@@ -32,6 +33,11 @@ class StructuralNetworkMapping(BaseAnalysis):
     1. Filtering a whole-brain tractogram to streamlines passing through the lesion
     2. Computing track density images (TDI) for both lesion and whole-brain tracts
     3. Calculating disconnection probability as the ratio of lesion TDI to whole-brain TDI
+    4. Optionally computing parcellated connectivity matrices (if atlas provided)
+
+    **Outputs:**
+    - **Voxel-wise disconnection map** (always): 3D NIfTI showing disconnection probability per voxel
+    - **Connectivity matrices** (optional): Parcellated edge-wise disconnection when atlas is provided
 
     The analysis requires MRtrix3 to be installed and available in the system PATH.
 
@@ -138,21 +144,62 @@ class StructuralNetworkMapping(BaseAnalysis):
         tractogram_path: str | Path,
         whole_brain_tdi: str | Path,
         template: str | Path | None = None,
+        atlas_path: str | Path | None = None,
+        compute_lesioned: bool = False,
         n_jobs: int = 1,
         keep_intermediate: bool = False,
         load_to_memory: bool = True,
         check_dependencies: bool = True,
+        verbose: bool = True,
     ):
-        """Initialize StructuralNetworkMapping analysis."""
+        """Initialize StructuralNetworkMapping analysis.
+
+        Parameters
+        ----------
+        tractogram_path : str | Path
+            Path to whole-brain tractogram (.tck file)
+        whole_brain_tdi : str | Path
+            Path to pre-computed whole-brain TDI map
+        template : str | Path | None, optional
+            Template image for output grid. Auto-detected if None.
+        atlas_path : str | Path | None, optional
+            Parcellation atlas for computing connectivity matrices.
+            Options:
+            - None: Skip matrix computation (default, voxel-wise map only)
+            - "schaefer100", "schaefer200", etc.: Use bundled atlas
+            - Path to custom atlas NIfTI file
+            When provided, computes lesion connectivity matrix and
+            disconnectivity percentage per edge.
+        compute_lesioned : bool, default=False
+            If True and atlas_path provided, also compute the "lesioned"
+            connectivity matrix (streamlines NOT passing through lesion),
+            representing intact structural connectivity.
+        n_jobs : int, default=1
+            Number of threads for MRtrix3 operations
+        keep_intermediate : bool, default=False
+            Keep intermediate tractogram files for inspection
+        load_to_memory : bool, default=True
+            Load maps into memory (True) or use memory-mapped files (False)
+        check_dependencies : bool, default=True
+            Check MRtrix3 availability at initialization
+        """
         super().__init__()
 
         self.tractogram_path = Path(tractogram_path)
         self.whole_brain_tdi = Path(whole_brain_tdi)
         self.template = Path(template) if template is not None else None
+        self.atlas_path = atlas_path  # Can be str (bundled) or Path (custom)
+        self.compute_lesioned = compute_lesioned
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
         self.load_to_memory = load_to_memory
         self._check_dependencies = check_dependencies
+        self.verbose = verbose
+
+        # Will be resolved to Path during validation
+        self._atlas_resolved = None
+        # Cache for full connectivity matrix (computed once if atlas provided)
+        self._full_connectivity_matrix = None
 
         # Check MRtrix3 availability if requested
         if check_dependencies:
@@ -208,6 +255,24 @@ class StructuralNetworkMapping(BaseAnalysis):
             if not self.template.exists():
                 raise FileNotFoundError(f"Template not found: {self.template}")
 
+        # Load atlas from bundled data or validate custom atlas path
+        if self.atlas_path is not None:
+            if isinstance(self.atlas_path, str):
+                # Bundled atlas requested (e.g., "schaefer100", "aal3")
+                try:
+                    atlas_file, labels_file = get_bundled_atlas(self.atlas_path)
+                    self._atlas_resolved = atlas_file
+                except (FileNotFoundError, ValueError) as e:
+                    raise ValueError(
+                        f"Bundled atlas '{self.atlas_path}' not found. "
+                        f"Use list_bundled_atlases() to see available options."
+                    ) from e
+            else:
+                # Custom atlas path provided
+                self._atlas_resolved = Path(self.atlas_path)
+                if not self._atlas_resolved.exists():
+                    raise FileNotFoundError(f"Atlas file not found: {self._atlas_resolved}")
+
         # Check that lesion is binary
         lesion_array = lesion_data.lesion_img.get_fdata()
         unique_vals = np.unique(lesion_array)
@@ -244,8 +309,16 @@ class StructuralNetworkMapping(BaseAnalysis):
         2. Compute TDI from filtered tractogram (tckmap)
         3. Compute disconnection as ratio of lesion TDI to whole-brain TDI (mrcalc)
         """
+        # Get subject ID for informative output
+        subject_id = lesion_data.metadata.get("subject_id", "unknown")
+
+        # Print subject info when processing multiple subjects
+        print(f"\n{'=' * 60}")
+        print(f"Processing: {subject_id}")
+        print(f"{'=' * 60}")
+
         # Create temporary directory for intermediate files
-        temp_dir = tempfile.mkdtemp(prefix="slnm_")
+        temp_dir = tempfile.mkdtemp(prefix=f"slnm_{subject_id}_")
         temp_dir_path = Path(temp_dir)
 
         if self.keep_intermediate:
@@ -260,6 +333,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 output_path=lesion_tck_path,
                 n_jobs=self.n_jobs,
                 force=True,
+                verbose=self.verbose,
             )
 
             # Step 2: Compute TDI from lesion-filtered tractogram
@@ -271,6 +345,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 output_path=lesion_tdi_path,
                 n_jobs=self.n_jobs,
                 force=True,
+                verbose=self.verbose,
             )
 
             # Step 3: Compute disconnection map
@@ -280,6 +355,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 whole_brain_tdi=self.whole_brain_tdi,
                 output_path=disconn_map_path,
                 force=True,
+                verbose=self.verbose,
             )
 
             # Load results
@@ -331,6 +407,17 @@ class StructuralNetworkMapping(BaseAnalysis):
                 },
             }
 
+            # Optional: Compute parcellated connectivity matrices if atlas provided
+            if self._atlas_resolved is not None:
+                print(f"\n▶️  Computing parcellated connectivity matrices ({subject_id})...")
+                connectivity_results = self._compute_connectivity_matrices(
+                    lesion_data=lesion_data,
+                    lesion_tck_path=lesion_tck_path,
+                    temp_dir_path=temp_dir_path,
+                    subject_id=subject_id,
+                )
+                results.update(connectivity_results)
+
             return results
 
         finally:
@@ -345,6 +432,212 @@ class StructuralNetworkMapping(BaseAnalysis):
                 print("   - lesion_tdi.nii.gz")
                 print("   - disconnection_map.nii.gz")
 
+    def _compute_connectivity_matrices(
+        self,
+        lesion_data: LesionData,
+        lesion_tck_path: Path,
+        temp_dir_path: Path,
+        subject_id: str,
+    ) -> dict:
+        """Compute parcellated connectivity matrices.
+
+        Parameters
+        ----------
+        lesion_data : LesionData
+            Lesion data with mask image
+        lesion_tck_path : Path
+            Path to lesion-filtered tractogram
+        temp_dir_path : Path
+            Temporary directory for intermediate files
+        subject_id : str
+            Subject identifier for file naming
+
+        Returns
+        -------
+        dict
+            Dictionary with connectivity matrix results:
+            - lesion_connectivity_matrix: np.ndarray
+            - disconnectivity_percent: np.ndarray
+            - lesioned_connectivity_matrix: np.ndarray (optional)
+            - matrix_statistics: dict
+        """
+
+        # Step 1: Compute full-brain connectivity matrix (cached)
+        if self._full_connectivity_matrix is None:
+            print("   Computing full-brain connectivity matrix (will be cached)...")
+            self._full_connectivity_matrix = self._compute_connectivity_matrix(
+                tractogram_path=self.tractogram_path,
+                matrix_name="full_connectivity",
+            )
+        else:
+            print("   Using cached full-brain connectivity matrix")
+
+        full_matrix = self._full_connectivity_matrix
+
+        # Step 2: Compute lesion connectivity matrix
+        print("   Computing lesion connectivity matrix...")
+        lesion_matrix = self._compute_connectivity_matrix(
+            tractogram_path=lesion_tck_path,
+            matrix_name=f"{subject_id}_lesion_connectivity",
+        )
+
+        # Step 3: Compute disconnectivity percentage
+        print("   Computing disconnectivity percentage...")
+        with np.errstate(divide="ignore", invalid="ignore"):
+            disconn_pct = (lesion_matrix / full_matrix) * 100
+
+        # Handle division by zero
+        disconn_pct = np.nan_to_num(disconn_pct, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Step 4: Optional - compute lesioned (intact) connectivity
+        lesioned_matrix = None
+        if self.compute_lesioned:
+            print("   Computing lesioned (intact) connectivity matrix...")
+
+            # Save lesion mask temporarily for tckedit -exclude
+            lesion_mask_path = temp_dir_path / f"{subject_id}_lesion_mask.nii.gz"
+            nib.save(lesion_data.lesion_img, lesion_mask_path)
+
+            # Filter tractogram to EXCLUDE streamlines through lesion
+            lesioned_tck_path = temp_dir_path / f"{subject_id}_lesioned.tck"
+            command = [
+                "tckedit",
+                str(self.tractogram_path),
+                str(lesioned_tck_path),
+                "-exclude",
+                str(lesion_mask_path),
+                "-nthreads",
+                str(self.n_jobs),
+                "-force",
+            ]
+            run_mrtrix_command(command, verbose=self.verbose)
+
+            # Compute lesioned connectivity matrix
+            lesioned_matrix = self._compute_connectivity_matrix(
+                tractogram_path=lesioned_tck_path,
+                matrix_name=f"{subject_id}_lesioned_connectivity",
+            )
+
+        # Step 5: Compute summary statistics
+        matrix_stats = self._compute_matrix_statistics(
+            full_matrix=full_matrix,
+            lesion_matrix=lesion_matrix,
+            disconn_pct=disconn_pct,
+            lesioned_matrix=lesioned_matrix,
+        )
+
+        return {
+            "lesion_connectivity_matrix": lesion_matrix,
+            "disconnectivity_percent": disconn_pct,
+            "full_connectivity_matrix": full_matrix,
+            "lesioned_connectivity_matrix": lesioned_matrix,
+            "matrix_statistics": matrix_stats,
+        }
+
+    def _compute_connectivity_matrix(
+        self,
+        tractogram_path: Path,
+        matrix_name: str,
+    ) -> np.ndarray:
+        """Compute connectivity matrix from tractogram using tck2connectome.
+
+        Parameters
+        ----------
+        tractogram_path : Path
+            Path to tractogram file
+        matrix_name : str
+            Name for temporary CSV file
+
+        Returns
+        -------
+        np.ndarray
+            Connectivity matrix (n_parcels x n_parcels)
+        """
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=True, mode="w") as tmp_csv:
+            output_csv = Path(tmp_csv.name)
+
+            command = [
+                "tck2connectome",
+                str(tractogram_path),
+                str(self._atlas_resolved),
+                str(output_csv),
+                "-symmetric",
+                "-zero_diagonal",
+                "-nthreads",
+                str(self.n_jobs),
+                "-force",
+            ]
+
+            run_mrtrix_command(command, verbose=self.verbose)
+
+            # Load matrix
+            matrix = np.loadtxt(output_csv, delimiter=",")
+
+        return matrix
+
+    def _compute_matrix_statistics(
+        self,
+        full_matrix: np.ndarray,
+        lesion_matrix: np.ndarray,
+        disconn_pct: np.ndarray,
+        lesioned_matrix: np.ndarray | None,
+    ) -> dict:
+        """Compute summary statistics for connectivity matrices.
+
+        Parameters
+        ----------
+        full_matrix : np.ndarray
+            Full connectivity matrix
+        lesion_matrix : np.ndarray
+            Lesion connectivity matrix
+        disconn_pct : np.ndarray
+            Disconnectivity percentage matrix
+        lesioned_matrix : np.ndarray | None
+            Lesioned (intact) connectivity matrix
+
+        Returns
+        -------
+        dict
+            Summary statistics
+        """
+        # Edge-wise statistics
+        n_edges = int(np.sum(full_matrix > 0))
+        n_affected_edges = int(np.sum(lesion_matrix > 0))
+        mean_disconnection_pct = (
+            float(np.mean(disconn_pct[full_matrix > 0])) if n_edges > 0 else 0.0
+        )
+
+        # Node-wise statistics (degree)
+        full_degree = np.sum(full_matrix > 0, axis=1)
+        lesion_degree = np.sum(lesion_matrix > 0, axis=1)
+        degree_reduction = full_degree - lesion_degree
+
+        stats = {
+            "n_parcels": full_matrix.shape[0],
+            "n_edges_total": n_edges,
+            "n_edges_affected": n_affected_edges,
+            "percent_edges_affected": (
+                float(n_affected_edges / n_edges * 100) if n_edges > 0 else 0.0
+            ),
+            "mean_disconnection_percent": mean_disconnection_pct,
+            "max_disconnection_percent": float(np.max(disconn_pct)),
+            "mean_degree_reduction": float(np.mean(degree_reduction)),
+            "max_degree_reduction": int(np.max(degree_reduction)),
+            "most_affected_parcel": int(np.argmax(degree_reduction)),
+        }
+
+        # Add lesioned matrix statistics if computed
+        if lesioned_matrix is not None:
+            lesioned_degree = np.sum(lesioned_matrix > 0, axis=1)
+            stats["lesioned_mean_degree"] = float(np.mean(lesioned_degree))
+
+            # Quality control: lesion + lesioned should approximately equal full
+            combined = lesion_matrix + lesioned_matrix
+            preservation = np.sum(combined > 0) / n_edges if n_edges > 0 else 0
+            stats["connectivity_preservation_ratio"] = float(preservation)
+
+        return stats
+
     def _get_parameters(self) -> dict:
         """Get analysis parameters for provenance tracking."""
         return {
@@ -354,6 +647,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,
+            "verbose": self.verbose,
         }
 
     def _get_version(self) -> str:
