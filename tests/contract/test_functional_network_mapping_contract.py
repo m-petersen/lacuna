@@ -74,7 +74,7 @@ def test_functional_network_mapping_validates_coordinate_space(synthetic_lesion_
     from ldk import LesionData
 
     # Create lesion data with non-MNI space
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
 
@@ -95,7 +95,7 @@ def test_functional_network_mapping_requires_binary_mask(synthetic_lesion_img):
     import nibabel as nib
 
     non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
-    lesion_data = LesionData(lesion_img=non_binary_img)
+    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152_2mm"})
 
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
 

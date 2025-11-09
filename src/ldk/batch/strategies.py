@@ -219,19 +219,149 @@ class ParallelStrategy(BatchStrategy):
         return "parallel"
 
 
-# Future strategies (Phase 5+)
+class VectorizedStrategy(BatchStrategy):
+    """
+    Vectorized batch processing using batched NumPy operations.
 
-# class VectorizedStrategy(BatchStrategy):
-#     """
-#     Vectorized batch processing using NumPy operations.
-#
-#     Best for: Matrix-based analyses (FunctionalNetworkMapping, StructuralNetworkMapping)
-#     Speedup: 10-50x via optimized BLAS operations
-#     Memory: High (stacks all lesion data in memory)
-#
-#     Implementation requires analysis.run_batch() method.
-#     """
-#     pass
+    Best for: Matrix-based analyses (FunctionalNetworkMapping)
+    Speedup: 10-50x via optimized BLAS operations and reduced overhead
+    Memory: Moderate (processes lesions in configurable batches)
+
+    This strategy leverages vectorized operations to process multiple lesions
+    simultaneously through each connectome batch. Instead of:
+        for lesion in lesions:
+            for connectome_batch in batches:
+                process(lesion, connectome_batch)
+
+    It does:
+        for connectome_batch in batches:
+            process_all_lesions_together(lesions_batch, connectome_batch)
+
+    This dramatically reduces overhead and enables efficient BLAS operations.
+
+    The analysis class must implement:
+        run_batch(lesion_data_list: list[LesionData]) -> list[LesionData]
+
+    Parameters
+    ----------
+    n_jobs : int, default=-1
+        Not used for vectorized processing (uses BLAS parallelization instead).
+        Kept for interface compatibility.
+    lesion_batch_size : int or None, default=None
+        Number of lesions to process together in memory.
+        - None: Process all lesions together (maximum speed, high memory)
+        - N: Process N lesions at a time (balanced speed/memory)
+        Useful when processing hundreds of lesions.
+
+    Examples
+    --------
+    >>> from ldk.batch.strategies import VectorizedStrategy
+    >>> from ldk.analysis import FunctionalNetworkMapping
+    >>>
+    >>> # Process all lesions together (fastest)
+    >>> strategy = VectorizedStrategy()
+    >>> results = strategy.execute(lesions, FunctionalNetworkMapping(...))
+    >>>
+    >>> # Process 50 lesions at a time (memory-constrained)
+    >>> strategy = VectorizedStrategy(lesion_batch_size=50)
+    >>> results = strategy.execute(lesions, FunctionalNetworkMapping(...))
+    """
+
+    def __init__(
+        self,
+        n_jobs: int = -1,
+        lesion_batch_size: int | None = None,
+        batch_result_callback: Callable[[list[LesionData]], None] | None = None,
+    ):
+        super().__init__(n_jobs)
+        self.lesion_batch_size = lesion_batch_size
+        self.batch_result_callback = batch_result_callback
+
+    def execute(
+        self,
+        lesion_data_list: list[LesionData],
+        analysis: BaseAnalysis,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> list[LesionData]:
+        """
+        Execute vectorized batch processing.
+
+        Calls analysis.run_batch() which processes multiple lesions together
+        using vectorized operations. Falls back to sequential processing if
+        run_batch() is not implemented.
+
+        Parameters
+        ----------
+        lesion_data_list : list[LesionData]
+            Subjects to process
+        analysis : BaseAnalysis
+            Analysis to apply (must implement run_batch method)
+        progress_callback : callable or None
+            Progress reporting function (called after each lesion batch)
+
+        Returns
+        -------
+        list[LesionData]
+            Processed subjects
+
+        Raises
+        ------
+        NotImplementedError
+            If analysis doesn't implement run_batch()
+        """
+        # Check if analysis supports batch processing
+        if not hasattr(analysis, "run_batch") or not callable(analysis.run_batch):
+            raise NotImplementedError(
+                f"Analysis {analysis.__class__.__name__} does not implement "
+                f"run_batch() method required for vectorized strategy. "
+                f"Please use parallel strategy instead or implement run_batch()."
+            )
+
+        # Process all lesions together if no batch size specified
+        if self.lesion_batch_size is None:
+            results = analysis.run_batch(lesion_data_list)
+
+            # Call batch result callback if provided
+            if self.batch_result_callback:
+                self.batch_result_callback(results)
+
+            # Update progress
+            if progress_callback:
+                for i in range(len(results)):
+                    progress_callback(i)
+
+            return results
+
+        # Process lesions in batches
+        all_results = []
+        n_lesions = len(lesion_data_list)
+
+        for batch_start in range(0, n_lesions, self.lesion_batch_size):
+            batch_end = min(batch_start + self.lesion_batch_size, n_lesions)
+            lesion_batch = lesion_data_list[batch_start:batch_end]
+
+            # Process this batch
+            batch_results = analysis.run_batch(lesion_batch)
+            
+            # Call batch result callback if provided (for immediate saving)
+            if self.batch_result_callback:
+                self.batch_result_callback(batch_results)
+            
+            all_results.extend(batch_results)
+
+            # Update progress
+            if progress_callback:
+                for i in range(batch_start, batch_end):
+                    progress_callback(i)
+
+        return all_results
+
+    @property
+    def name(self) -> str:
+        return "vectorized"
+
+
+# Future strategies (Phase 5+)
 
 # class StreamingStrategy(BatchStrategy):
 #     """

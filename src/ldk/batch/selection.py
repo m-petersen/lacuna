@@ -9,10 +9,13 @@ strategy based on:
 - User preferences
 """
 
+from __future__ import annotations
+
 import os
+from collections.abc import Callable
 
 from ldk.analysis.base import BaseAnalysis
-from ldk.batch.strategies import BatchStrategy, ParallelStrategy
+from ldk.batch.strategies import BatchStrategy, ParallelStrategy, VectorizedStrategy
 
 
 def select_strategy(
@@ -21,6 +24,8 @@ def select_strategy(
     n_jobs: int = -1,
     force_strategy: str | None = None,
     backend: str = "loky",
+    lesion_batch_size: int | None = None,
+    batch_result_callback: Callable | None = None,
 ) -> BatchStrategy:
     """
     Select the optimal batch processing strategy.
@@ -42,13 +47,18 @@ def select_strategy(
     force_strategy : str or None, default=None
         Override automatic selection. Options:
         - "parallel": Force parallel processing
-        - "vectorized": Force vectorized processing (future)
+        - "vectorized": Force vectorized processing
         - "streaming": Force streaming processing (future)
     backend : str, default='loky'
         Joblib backend for parallel processing:
         - 'loky': Robust multiprocessing (best for standalone scripts)
         - 'threading': Thread-based (use in Jupyter notebooks to avoid pickling issues)
         - 'multiprocessing': Standard multiprocessing
+    lesion_batch_size : int or None, default=None
+        For vectorized strategy: number of lesions to process together in memory.
+        - None: Process all lesions at once (fastest, high memory)
+        - N: Process N lesions at a time (balanced speed/memory)
+        Only applies to vectorized strategy.
 
     Returns
     -------
@@ -73,6 +83,11 @@ def select_strategy(
     >>>
     >>> # Threading backend for Jupyter
     >>> strategy = select_strategy(analysis, n_subjects=50, backend='threading')
+    >>>
+    >>> # Vectorized with memory control
+    >>> from ldk.analysis import FunctionalNetworkMapping
+    >>> analysis = FunctionalNetworkMapping(...)
+    >>> strategy = select_strategy(analysis, n_subjects=100, lesion_batch_size=20)
     """
     # Handle force override
     if force_strategy is not None:
@@ -80,34 +95,40 @@ def select_strategy(
 
         if force_strategy == "parallel":
             return ParallelStrategy(n_jobs=n_jobs, backend=backend)
-        elif force_strategy in ("vectorized", "streaming"):
+        elif force_strategy == "vectorized":
+            return VectorizedStrategy(
+                n_jobs=n_jobs,
+                lesion_batch_size=lesion_batch_size,
+                batch_result_callback=batch_result_callback,
+            )
+        elif force_strategy == "streaming":
             raise ValueError(
-                f"Strategy '{force_strategy}' is not yet implemented. "
-                f"Available strategies: 'parallel'"
+                "Strategy 'streaming' is not yet implemented. "
+                "Available strategies: 'parallel', 'vectorized'"
             )
         else:
             raise ValueError(
                 f"Unknown strategy '{force_strategy}'. "
-                f"Available strategies: 'parallel', 'vectorized' (future), 'streaming' (future)"
+                f"Available strategies: 'parallel', 'vectorized', 'streaming' (future)"
             )
 
     # Get preferred strategy from analysis class
     preferred_strategy = getattr(analysis, "batch_strategy", "parallel")
 
-    # For now, only parallel strategy is implemented
+    # Dispatch to appropriate strategy
     if preferred_strategy == "parallel":
         return ParallelStrategy(n_jobs=n_jobs, backend=backend)
     elif preferred_strategy == "vectorized":
-        # Future: VectorizedStrategy
-        raise NotImplementedError(
-            f"Analysis {analysis.__class__.__name__} prefers 'vectorized' strategy, "
-            "but this is not yet implemented. Falling back to parallel processing."
+        return VectorizedStrategy(
+            n_jobs=n_jobs,
+            lesion_batch_size=lesion_batch_size,
+            batch_result_callback=batch_result_callback,
         )
     elif preferred_strategy == "streaming":
         # Future: StreamingStrategy
         raise NotImplementedError(
             f"Analysis {analysis.__class__.__name__} prefers 'streaming' strategy, "
-            "but this is not yet implemented. Falling back to parallel processing."
+            "but this is not yet implemented. Use 'parallel' or 'vectorized' instead."
         )
     else:
         # Unknown strategy - fall back to parallel

@@ -198,7 +198,7 @@ def synthetic_lesion_data(synthetic_lesion_img):
 
     return LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test", "source": "synthetic"},
+        metadata={"subject_id": "sub-test", "source": "synthetic", "space": "MNI152_2mm"},
     )
 
 
@@ -220,7 +220,7 @@ def batch_lesion_data_list(synthetic_lesion_img):
         lesion_img = nib.Nifti1Image(data.astype(np.uint8), synthetic_lesion_img.affine)
         lesion_data = LesionData(
             lesion_img=lesion_img,
-            metadata={"subject_id": f"sub-{i:03d}", "source": "synthetic_batch"},
+            metadata={"subject_id": f"sub-{i:03d}", "source": "synthetic_batch", "space": "MNI152_2mm"},
         )
         lesion_list.append(lesion_data)
 

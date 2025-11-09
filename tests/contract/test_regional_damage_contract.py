@@ -48,7 +48,7 @@ def test_regional_damage_validates_atlas_directory(synthetic_lesion_img):
 
     # Should raise error if atlas directory doesn't exist
     analysis = RegionalDamage(atlas_dir="/nonexistent/path")
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     with pytest.raises((ValueError, FileNotFoundError), match="atlas"):
         analysis.run(lesion_data)
@@ -93,7 +93,7 @@ def test_regional_damage_requires_binary_mask(synthetic_lesion_img, tmp_path):
     data = data.astype(float) * 0.5
 
     non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
-    lesion_data = LesionData(lesion_img=non_binary_img)
+    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152_2mm"})
 
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
 
@@ -124,7 +124,7 @@ def test_regional_damage_returns_lesion_data(synthetic_lesion_img, tmp_path):
     # Create label file
     (atlas_dir / "test_atlas_labels.txt").write_text("1 Region1\n2 Region2\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
     result = analysis.run(lesion_data)
@@ -154,7 +154,7 @@ def test_regional_damage_result_structure(synthetic_lesion_img, tmp_path):
     nib.save(atlas_img, atlas_dir / "test_atlas.nii.gz")
     (atlas_dir / "test_atlas_labels.txt").write_text("1 TestRegion\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
     result = analysis.run(lesion_data)
@@ -194,7 +194,7 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_lesion_img, tmp_pat
     nib.save(nib.Nifti1Image(atlas_4d, np.eye(4)), atlas_dir / "atlas_4d.nii.gz")
     (atlas_dir / "atlas_4d_labels.txt").write_text("Region1\nRegion2\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
     result = analysis.run(lesion_data)
@@ -221,7 +221,7 @@ def test_regional_damage_preserves_input_immutability(synthetic_lesion_img, tmp_
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
     original_results = lesion_data.results.copy()
 
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
@@ -251,7 +251,7 @@ def test_regional_damage_adds_provenance(synthetic_lesion_img, tmp_path):
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
     original_prov_len = len(lesion_data.provenance)
 
     analysis = RegionalDamage(atlas_dir=str(atlas_dir))
