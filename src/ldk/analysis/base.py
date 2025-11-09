@@ -66,6 +66,78 @@ class BaseAnalysis(ABC):
         """
         pass
 
+    def __repr__(self) -> str:
+        """
+        Return detailed string representation of the analysis object.
+
+        Returns
+        -------
+        str
+            String in format "ClassName(param1=value1, param2=value2, ...)"
+
+        Examples
+        --------
+        >>> analysis = FunctionalNetworkMapping(method='pearson', connectome_path='...')
+        >>> repr(analysis)
+        "FunctionalNetworkMapping(method='pearson', connectome_path='...', ...)"
+        """
+        params = self._get_parameters()
+        class_name = self.__class__.__name__
+
+        if not params:
+            return f"{class_name}()"
+
+        # Format parameters - truncate long values
+        param_strs = []
+        for key, value in params.items():
+            if isinstance(value, str) and len(value) > 50:
+                value_str = f"'{value[:47]}...'"
+            elif isinstance(value, str):
+                value_str = f"'{value}'"
+            else:
+                value_str = str(value)
+            param_strs.append(f"{key}={value_str}")
+
+        params_formatted = ", ".join(param_strs)
+        return f"{class_name}({params_formatted})"
+
+    def __str__(self) -> str:
+        """
+        Return user-friendly string representation of the analysis.
+
+        Returns
+        -------
+        str
+            Human-readable description of the analysis configuration.
+
+        Examples
+        --------
+        >>> analysis = FunctionalNetworkMapping(method='pearson')
+        >>> print(analysis)
+        FunctionalNetworkMapping Analysis
+        Configuration:
+          - method: pearson
+          - connectome_path: /path/to/connectome.h5
+          - compute_t_map: True
+          - t_threshold: 2.0
+        """
+        class_name = self.__class__.__name__
+        params = self._get_parameters()
+
+        if not params:
+            return f"{class_name} Analysis (no parameters)"
+
+        lines = [f"{class_name} Analysis", "Configuration:"]
+        for key, value in params.items():
+            # Truncate long strings for readability
+            if isinstance(value, str) and len(value) > 60:
+                value_str = f"{value[:57]}..."
+            else:
+                value_str = str(value)
+            lines.append(f"  - {key}: {value_str}")
+
+        return "\n".join(lines)
+
     @final
     def run(self, lesion_data: LesionData) -> LesionData:
         """

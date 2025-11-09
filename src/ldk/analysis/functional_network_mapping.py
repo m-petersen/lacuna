@@ -211,8 +211,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             msg = f"Connectome path not found: {self.connectome_path}"
             raise ValidationError(msg)
 
-        # Get and validate connectome files
-        connectome_files = self._get_connectome_files()
+        # Validate that we have connectome files
+        _ = self._get_connectome_files()  # Raises ValidationError if no files found
 
         # Validate MNI152 coordinate space
         space = lesion_data.metadata.get("space", "")
@@ -818,7 +818,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Initialize streaming aggregators for each lesion (MEMORY OPTIMIZED)
         # Instead of storing all correlation maps, we accumulate statistics
         aggregators = []
-        for i in range(len(lesion_batch)):
+        for _ in range(len(lesion_batch)):
             aggregators.append(
                 {
                     "sum_z": np.zeros(n_voxels, dtype=np.float64),  # Need higher precision for sums
@@ -1287,3 +1287,21 @@ class FunctionalNetworkMapping(BaseAnalysis):
         lesion_data_with_results = lesion_data.add_result(self.__class__.__name__, results)
 
         return lesion_data_with_results
+
+    def _get_parameters(self) -> dict:
+        """Get analysis parameters for provenance and display.
+
+        Returns
+        -------
+        dict
+            Dictionary of parameter names and values.
+        """
+        return {
+            "connectome_path": str(self.connectome_path),
+            "method": self.method,
+            "pini_percentile": self.pini_percentile,
+            "n_jobs": self.n_jobs,
+            "compute_t_map": self.compute_t_map,
+            "t_threshold": self.t_threshold,
+            "verbose": self.verbose,
+        }
