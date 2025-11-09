@@ -24,6 +24,7 @@ from sklearn.decomposition import PCA
 from ldk.analysis.base import BaseAnalysis
 from ldk.core.exceptions import ValidationError
 from ldk.core.lesion_data import LesionData
+from ldk.utils.logging import ConsoleLogger
 
 
 class FunctionalNetworkMapping(BaseAnalysis):
@@ -156,6 +157,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.compute_t_map = compute_t_map
         self.t_threshold = t_threshold
 
+        # Initialize logger
+        self.logger = ConsoleLogger(verbose=verbose, width=70)
+
         # Determine if path is a directory or single file
         self._is_batch_dir = self.connectome_path.is_dir()
         self._batch_files = None
@@ -271,25 +275,23 @@ class FunctionalNetworkMapping(BaseAnalysis):
         """
         # Load mask information once
         if self._mask_info is None:
-            if self.verbose:
-                print("Loading mask information from connectome...")
+            self.logger.info("Loading mask information from connectome...")
             self._load_mask_info()
-            if self.verbose:
-                mask_shape = self._mask_info["mask_shape"]
-                n_voxels = len(self._mask_info["mask_indices"][0])
-                print(f"  ✓ Mask shape: {mask_shape}, {n_voxels:,} voxels")
+            mask_shape = self._mask_info["mask_shape"]
+            n_voxels = len(self._mask_info["mask_indices"][0])
+            self.logger.success(
+                "Mask loaded", details={"shape": str(mask_shape), "n_voxels": n_voxels}
+            )
 
         # Get lesion voxel indices (computed once, reused for all batches)
-        if self.verbose:
-            print("Computing lesion-connectome overlap...")
+        self.logger.info("Computing lesion-connectome overlap...")
         lesion_voxel_indices = self._get_lesion_voxel_indices(lesion_data)
 
         if len(lesion_voxel_indices) == 0:
             msg = "No lesion voxels overlap with connectome mask"
             raise ValidationError(msg)
 
-        if self.verbose:
-            print(f"  ✓ Found {len(lesion_voxel_indices):,} overlapping lesion voxels")
+        self.logger.success(f"Found {len(lesion_voxel_indices):,} overlapping lesion voxels")
 
         # Initialize accumulators for batch processing
         all_z_maps = []
@@ -299,23 +301,22 @@ class FunctionalNetworkMapping(BaseAnalysis):
         connectome_files = self._get_connectome_files()
         n_batches = len(connectome_files)
 
-        if self.verbose:
-            if n_batches == 1:
-                print("Processing single connectome file...")
-            else:
-                print(f"Processing {n_batches} connectome batches sequentially...")
+        if n_batches == 1:
+            self.logger.subsection("Processing Connectome")
+        else:
+            self.logger.subsection(f"Processing {n_batches} Connectome Batches")
 
         for batch_idx, batch_file in enumerate(connectome_files, 1):
-            if self.verbose:
-                print(f"  [{batch_idx}/{n_batches}] Loading {batch_file.name}...")
+            self.logger.progress(f"Loading {batch_file.name}", current=batch_idx, total=n_batches)
 
             # Load this batch's timeseries
             with h5py.File(batch_file, "r") as hf:
                 batch_timeseries = hf["timeseries"][:]
                 batch_n_subjects = batch_timeseries.shape[0]
 
-            if self.verbose:
-                print(f"    - {batch_n_subjects} subjects, extracting lesion timeseries...")
+            self.logger.info(
+                f"Extracting lesion timeseries ({batch_n_subjects} subjects)", indent_level=1
+            )
 
             # Extract lesion timeseries for this batch
             if self.method == "boes":
@@ -327,14 +328,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     batch_timeseries, lesion_voxel_indices
                 )
 
-            if self.verbose:
-                print("    - Computing correlation maps...")
+            self.logger.info("Computing correlation maps", indent_level=1)
 
             # Compute correlation maps for this batch
             batch_r_maps = self._compute_correlation_maps_batch(lesion_ts, batch_timeseries)
 
-            if self.verbose:
-                print("    - Applying Fisher z-transform...")
+            self.logger.info("Applying Fisher z-transform", indent_level=1)
 
             # Fisher z-transform
             batch_z_maps = np.arctanh(batch_r_maps)
@@ -344,14 +343,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
             all_z_maps.append(batch_z_maps)
             total_subjects += batch_timeseries.shape[0]
 
-            if self.verbose:
-                print(f"    ✓ Batch {batch_idx} complete")
-
             # Explicitly free memory
             del batch_timeseries, lesion_ts, batch_r_maps, batch_z_maps
 
-        if self.verbose:
-            print(f"Aggregating results across {total_subjects} subjects...")
+        self.logger.info(f"Aggregating results across {total_subjects} subjects...")
 
         # Concatenate all z-maps
         all_z_maps_array = np.vstack(all_z_maps)
@@ -364,8 +359,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         t_map_flat = None
         std_error_map_flat = None
         if self.compute_t_map:
-            if self.verbose:
-                print("Computing t-statistics...")
+            self.logger.info("Computing t-statistics...")
             std_z_map = np.std(all_z_maps_array, axis=0, ddof=1)
             with np.errstate(divide="ignore", invalid="ignore"):
                 std_error_map_flat = std_z_map / np.sqrt(total_subjects)
@@ -379,8 +373,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Free memory
         del all_z_maps, all_z_maps_array
 
-        if self.verbose:
-            print("Creating 3D output volumes...")
+        self.logger.info("Creating 3D output volumes...")
 
         # Convert flat arrays to 3D brain volumes
         mask_shape = self._mask_info["mask_shape"]
@@ -409,8 +402,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             # Create thresholded binary map if threshold provided
             if self.t_threshold is not None:
-                if self.verbose:
-                    print(f"Creating thresholded map (|t| > {self.t_threshold})...")
+                self.logger.info(f"Creating thresholded map (|t| > {self.t_threshold})")
                 t_threshold_mask = np.abs(t_map_flat) > self.t_threshold
                 n_significant = np.sum(t_threshold_mask)
                 pct_significant = (n_significant / len(t_map_flat)) * 100
@@ -421,8 +413,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
 
-                if self.verbose:
-                    print(f"  - {n_significant:,} voxels ({pct_significant:.2f}%) above threshold")
+                self.logger.info(
+                    f"Found {n_significant:,} voxels ({pct_significant:.2f}%) above threshold",
+                    indent_level=1,
+                )
 
         # Compute summary statistics
         mean_correlation = float(np.mean(mean_r_map))
@@ -430,15 +424,20 @@ class FunctionalNetworkMapping(BaseAnalysis):
         max_correlation = float(np.max(mean_r_map))
         min_correlation = float(np.min(mean_r_map))
 
-        if self.verbose:
-            print("✓ Analysis complete!")
-            print(f"  - Mean correlation: {mean_correlation:.4f}")
-            print(f"  - Std correlation: {std_correlation:.4f}")
-            print(f"  - Range: [{min_correlation:.4f}, {max_correlation:.4f}]")
-            if t_map_nifti is not None:
-                t_min = float(np.min(t_map_flat))
-                t_max = float(np.max(t_map_flat))
-                print(f"  - T-statistic range: [{t_min:.2f}, {t_max:.2f}]")
+        # Success summary
+        summary_details = {
+            "mean_correlation": mean_correlation,
+            "std_correlation": std_correlation,
+            "correlation_range": f"[{min_correlation:.4f}, {max_correlation:.4f}]",
+            "n_subjects": total_subjects,
+        }
+
+        if t_map_nifti is not None:
+            t_min = float(np.min(t_map_flat))
+            t_max = float(np.max(t_map_flat))
+            summary_details["t_range"] = f"[{t_min:.2f}, {t_max:.2f}]"
+
+        self.logger.success("Analysis complete", details=summary_details)
 
         results = {
             "correlation_map": correlation_map_nifti,
@@ -636,8 +635,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Check if resampling is needed
         if lesion_shape != mask_shape:
-            if self.verbose:
-                print(f"  ⚠️  Resampling lesion from {lesion_shape} to {mask_shape}...")
+            self.logger.warning(
+                f"Resampling lesion from {lesion_shape} to {mask_shape}", indent_level=1
+            )
 
             # Resample lesion to connectome space
             from nilearn.image import resample_to_img
@@ -655,8 +655,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             )
             lesion_mask = lesion_img_resampled.get_fdata().astype(bool)
 
-            if self.verbose:
-                print("    ✓ Resampling complete")
+            self.logger.success("Resampling complete", indent_level=2)
         else:
             lesion_mask = lesion_img.get_fdata().astype(bool)
 
@@ -765,10 +764,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         >>> strategy = VectorizedStrategy()
         >>> results = strategy.execute(lesion_data_list, analysis)
         """
-        if self.verbose:
-            print(f"\n{'=' * 70}")
-            print(f"VECTORIZED BATCH PROCESSING: {len(lesion_data_list)} lesions")
-            print(f"{'=' * 70}")
+        self.logger.section("VECTORIZED BATCH PROCESSING")
+        self.logger.info(f"Processing {len(lesion_data_list)} lesions together")
 
         # Validate all lesions first
         for lesion_data in lesion_data_list:
@@ -778,17 +775,22 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_indices, mask_affine, mask_shape = self._load_mask_info()
         connectome_files = self._get_connectome_files()
 
-        if self.verbose:
-            print(f"✓ Found {len(connectome_files)} connectome batch files")
-            print(f"✓ Mask shape: {mask_shape}")
-            print(f"✓ Processing {len(lesion_data_list)} lesions together")
+        self.logger.success(
+            "Loaded connectome metadata",
+            details={
+                "connectome_batches": len(connectome_files),
+                "mask_shape": mask_shape,
+                "n_lesions": len(lesion_data_list),
+            },
+        )
 
         # Prepare all lesions with resampling if needed
         lesion_batch = []
         for i, lesion_data in enumerate(lesion_data_list):
-            if self.verbose:
-                subject_id = lesion_data.metadata.get("subject_id", f"lesion_{i}")
-                print(f"\nPreparing lesion {i + 1}/{len(lesion_data_list)}: {subject_id}")
+            subject_id = lesion_data.metadata.get("subject_id", f"lesion_{i}")
+            self.logger.info(
+                f"Preparing lesion {i + 1}/{len(lesion_data_list)}: {subject_id}", indent_level=1
+            )
 
             voxel_indices = self._get_lesion_voxel_indices(lesion_data)
 
@@ -806,10 +808,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             )
 
         # Process through all connectome batches (VECTORIZED)
-        if self.verbose:
-            print(f"\n{'=' * 70}")
-            print("PROCESSING CONNECTOME BATCHES")
-            print(f"{'=' * 70}")
+        self.logger.subsection("Processing Connectome Batches")
 
         # Get number of voxels from first connectome batch
         with h5py.File(connectome_files[0], "r") as hf:
@@ -840,12 +839,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 n_subjects = timeseries_data.shape[0]
                 total_subjects += n_subjects
 
-            if self.verbose:
-                print(
-                    f"\nConnectome batch {batch_idx + 1}/{len(connectome_files)}",
-                    end="",
-                    flush=True,
-                )  # Vectorized processing for ALL lesions at once
+            # Vectorized processing for ALL lesions at once
             batch_r_maps = self._compute_batch_correlations_vectorized(
                 lesion_batch, timeseries_data
             )  # (n_lesions, n_subjects, n_voxels)
@@ -869,35 +863,41 @@ class FunctionalNetworkMapping(BaseAnalysis):
             # Display timing information
             batch_elapsed = time.time() - batch_start_time
             batch_times.append(batch_elapsed)
-            if self.verbose:
-                # Show time and estimate remaining after a few batches
-                if len(batch_times) > 2:
-                    avg_time = sum(batch_times) / len(batch_times)
-                    remaining_batches = len(connectome_files) - (batch_idx + 1)
-                    est_remaining = avg_time * remaining_batches
-                    print(
-                        f" - completed in {batch_elapsed:.2f}s (est. {est_remaining:.1f}s remaining)"
-                    )
-                else:
-                    print(f" - completed in {batch_elapsed:.2f}s")
 
-        if self.verbose:
-            total_batch_time = sum(batch_times)
-            avg_batch_time = total_batch_time / len(batch_times) if batch_times else 0
-            print(f"\n✓ Finished processing across {len(connectome_files)} batches")
-            print(
-                f"✓ Total processing time: {total_batch_time:.2f}s (avg: {avg_batch_time:.2f}s per batch)"
-            )
-            print(f"\n{'=' * 70}")
-            print("AGGREGATING RESULTS")
-            print(f"{'=' * 70}")
+            # Show progress with time estimates
+            if len(batch_times) > 2:
+                avg_time = sum(batch_times) / len(batch_times)
+                remaining_batches = len(connectome_files) - (batch_idx + 1)
+                est_remaining = avg_time * remaining_batches
+                self.logger.progress(
+                    f"Batch completed in {batch_elapsed:.2f}s (est. {est_remaining:.1f}s remaining)",
+                    current=batch_idx + 1,
+                    total=len(connectome_files),
+                )
+            else:
+                self.logger.progress(
+                    f"Batch completed in {batch_elapsed:.2f}s",
+                    current=batch_idx + 1,
+                    total=len(connectome_files),
+                )
+
+        total_batch_time = sum(batch_times)
+        avg_batch_time = total_batch_time / len(batch_times) if batch_times else 0
+        self.logger.success(
+            "Batch processing complete",
+            details={
+                "n_batches": len(connectome_files),
+                "total_time": f"{total_batch_time:.2f}s",
+                "avg_time_per_batch": f"{avg_batch_time:.2f}s",
+            },
+        )
 
         # Compute final statistics from aggregated values
+        self.logger.subsection("Aggregating Results")
         results = []
         for i, lesion_info in enumerate(lesion_batch):
-            if self.verbose:
-                subject_id = lesion_info["lesion_data"].metadata.get("subject_id", f"lesion_{i}")
-                print(f"\nAggregating results for: {subject_id}")
+            subject_id = lesion_info["lesion_data"].metadata.get("subject_id", f"lesion_{i}")
+            self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
 
             # Compute statistics from streaming aggregators
             n = aggregators[i]["n"]
@@ -928,10 +928,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             results.append(result)
 
-        if self.verbose:
-            print(f"\n{'=' * 70}")
-            print(f"✓ BATCH PROCESSING COMPLETE: {len(results)} lesions processed")
-            print(f"{'=' * 70}\n")
+        self.logger.success("Batch processing complete", details={
+            "n_lesions_processed": len(results)
+        })
 
         return results
 
