@@ -5,6 +5,10 @@ This module provides the primary entry point for batch processing with
 automatic strategy selection and progress monitoring.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
+
 from tqdm import tqdm
 
 from ldk.analysis.base import BaseAnalysis
@@ -19,6 +23,8 @@ def batch_process(
     show_progress: bool = True,
     strategy: str | None = None,
     backend: str = "loky",
+    lesion_batch_size: int | None = None,
+    batch_result_callback: Callable | None = None,
 ) -> list[LesionData]:
     """
     Process multiple lesions through an analysis pipeline with automatic optimization.
@@ -44,10 +50,20 @@ def batch_process(
         Force specific strategy:
         - None: Automatic selection based on analysis.batch_strategy
         - "parallel": Force parallel processing
-        - "vectorized": Force vectorized processing (future)
+        - "vectorized": Force vectorized processing
         - "streaming": Force streaming processing (future)
     backend : str, default='loky'
         Joblib backend for parallel processing:
+    lesion_batch_size : int or None, default=None
+        For vectorized strategy: number of lesions to process together in memory.
+        - None: Process all lesions at once (fastest, high memory)
+        - N: Process N lesions at a time (balanced speed/memory)
+        Only applies when using vectorized strategy. Ignored for parallel strategy.
+    batch_result_callback : callable or None, default=None
+        Callback function called after each lesion batch is processed.
+        Signature: callback(batch_results: list[LesionData]) -> None
+        Use this to save results immediately and free memory.
+        Example: batch_result_callback=lambda batch: [save(r) for r in batch]
         - 'loky': Robust multiprocessing (best for standalone scripts)
         - 'threading': Thread-based parallelism (use in Jupyter notebooks to avoid pickling issues)
         - 'multiprocessing': Standard multiprocessing
@@ -136,6 +152,8 @@ def batch_process(
         n_jobs=n_jobs,
         force_strategy=strategy,
         backend=backend,
+        lesion_batch_size=lesion_batch_size,
+        batch_result_callback=batch_result_callback,
     )
 
     # Setup progress tracking

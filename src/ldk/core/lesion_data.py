@@ -78,11 +78,11 @@ class LesionData:
     anatomical_img : nibabel.Nifti1Image, optional
         Subject's anatomical scan (must match lesion coordinate space).
     metadata : dict, optional
-        Subject metadata. Must contain 'space' key (e.g., 'MNI152_2mm', 'MNI152_1mm', 
-        or 'native') unless provenance is provided. 'subject_id' defaults to 
+        Subject metadata. Must contain 'space' key (e.g., 'MNI152_2mm', 'MNI152_1mm',
+        or 'native') unless provenance is provided. 'subject_id' defaults to
         "sub-unknown" if not provided.
     provenance : list of dict, optional
-        Processing history (for deserialization only). If provided without 
+        Processing history (for deserialization only). If provided without
         metadata["space"], the most recent transformation's output_space is used.
     results : dict, optional
         Analysis results (for deserialization only).
@@ -90,7 +90,7 @@ class LesionData:
     Raises
     ------
     ValueError
-        If metadata is missing 'space' key and provenance is None, or if lesion_img 
+        If metadata is missing 'space' key and provenance is None, or if lesion_img
         is not 3D.
     ValidationError
         If affines don't match between lesion and anatomical images.
@@ -194,7 +194,8 @@ class LesionData:
         anatomical_path : str or Path, optional
             Path to anatomical NIfTI file.
         metadata : dict, optional
-            Subject metadata. Auto-generated 'subject_id' if not provided.
+            Subject metadata. Must include 'space' key to specify coordinate space.
+            Auto-generated 'subject_id' if not provided.
 
         Returns
         -------
@@ -207,14 +208,19 @@ class LesionData:
             If file paths don't exist.
         NiftiLoadError
             If images fail to load or validate.
+        ValueError
+            If 'space' key is missing from metadata.
 
         Examples
         --------
-        >>> lesion = LesionData.from_nifti("lesion.nii.gz")
+        >>> lesion = LesionData.from_nifti(
+        ...     "lesion.nii.gz",
+        ...     metadata={"space": "MNI152_2mm"}
+        ... )
         >>> lesion = LesionData.from_nifti(
         ...     "lesion.nii.gz",
         ...     anatomical_path="T1w.nii.gz",
-        ...     metadata={"subject_id": "sub-001"}
+        ...     metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
         ... )
         """
         lesion_path = Path(lesion_path)

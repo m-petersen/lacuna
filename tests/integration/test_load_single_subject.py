@@ -94,7 +94,7 @@ def test_single_subject_workflow_with_analysis(tmp_path):
     nib.save(lesion_img, input_path)
 
     # Load
-    lesion_data = LesionData.from_nifti(input_path, metadata={"subject_id": "sub-workflow"})
+    lesion_data = LesionData.from_nifti(input_path, metadata={"subject_id": "sub-workflow", "space": "MNI152_2mm"})
 
     # Simulate analysis
     volume_mm3 = lesion_data.get_volume_mm3()
@@ -149,7 +149,7 @@ def test_single_subject_validation_catches_issues(tmp_path):
 
     # Should raise ValidationError for 4D image
     with pytest.raises(ValidationError, match="3D"):
-        LesionData.from_nifti(lesion_path)
+        LesionData.from_nifti(lesion_path, metadata={"space": "MNI152_2mm"})
 
 
 def test_single_subject_empty_mask_warning(tmp_path):
@@ -169,7 +169,7 @@ def test_single_subject_empty_mask_warning(tmp_path):
 
     # Should warn about empty mask
     with pytest.warns(UserWarning, match="empty"):
-        lesion_data = LesionData.from_nifti(lesion_path)
+        lesion_data = LesionData.from_nifti(lesion_path, metadata={"space": "MNI152_2mm"})
         lesion_data.validate()
 
 

@@ -83,7 +83,7 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("0 Region_Right\n1 Region_Left\n2 Region_Middle\n")
 
             # Load lesion data
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path)
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
 
             # Run analysis
             analysis = AtlasAggregation(
@@ -166,7 +166,7 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 Bottom_Region\n2 Top_Region\n")
 
             # Load and analyze
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path)
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
             analysis = AtlasAggregation(
                 atlas_dir=str(tmpdir),
                 source="lesion_img",
@@ -232,7 +232,7 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 First_Region\n2 Second_Region\n3 Third_Region\n")
 
             # Load and analyze
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path)
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
             analysis = AtlasAggregation(
                 atlas_dir=str(tmpdir),
                 source="lesion_img",

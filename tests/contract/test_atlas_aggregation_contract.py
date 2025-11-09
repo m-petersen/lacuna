@@ -87,7 +87,7 @@ def test_atlas_aggregation_validates_atlas_directory(synthetic_lesion_img):
     from ldk.analysis.atlas_aggregation import AtlasAggregation
 
     analysis = AtlasAggregation(atlas_dir="/nonexistent/path")
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     with pytest.raises((ValueError, FileNotFoundError), match="atlas"):
         analysis.run(lesion_data)
@@ -109,7 +109,7 @@ def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_pat
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     # Try to aggregate from non-existent analysis result
     analysis = AtlasAggregation(
@@ -138,7 +138,7 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, t
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
     # Create lesion data with mock analysis results
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     # Add mock network map from previous analysis
     network_map = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_lesion_img.affine)
@@ -173,7 +173,7 @@ def test_atlas_aggregation_returns_lesion_data(synthetic_lesion_img, tmp_path):
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir), source="lesion_img")
     result = analysis.run(lesion_data)
@@ -201,7 +201,7 @@ def test_atlas_aggregation_result_structure(synthetic_lesion_img, tmp_path):
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 TestRegion\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir), source="lesion_img", aggregation="mean")
     result = analysis.run(lesion_data)
@@ -237,7 +237,7 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_lesion_img, tmp_pa
         )
         (atlas_dir / f"{atlas_name}_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
 
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir))
     result = analysis.run(lesion_data)
@@ -265,7 +265,7 @@ def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img, tm
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
     original_results = lesion_data.results.copy()
 
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir))
@@ -295,7 +295,7 @@ def test_atlas_aggregation_adds_provenance(synthetic_lesion_img, tmp_path):
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
     original_prov_len = len(lesion_data.provenance)
 
     analysis = AtlasAggregation(atlas_dir=str(atlas_dir))

@@ -9,7 +9,7 @@ Key Components
 - **batch_process()**: Main entry point for batch processing
 - **BatchStrategy**: Abstract base class for processing strategies
 - **ParallelStrategy**: Multi-core parallelization using joblib
-- **VectorizedStrategy**: Batch matrix operations (future)
+- **VectorizedStrategy**: Batch matrix operations for connectome analyses
 - **select_strategy()**: Automatic strategy selection logic
 
 Examples
@@ -31,5 +31,13 @@ Examples
 """
 
 from ldk.batch.api import batch_process
+from ldk.batch.selection import select_strategy
+from ldk.batch.strategies import BatchStrategy, ParallelStrategy, VectorizedStrategy
 
-__all__ = ["batch_process"]
+__all__ = [
+    "batch_process",
+    "select_strategy",
+    "BatchStrategy",
+    "ParallelStrategy",
+    "VectorizedStrategy",
+]

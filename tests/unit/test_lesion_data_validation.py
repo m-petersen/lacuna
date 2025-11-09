@@ -28,7 +28,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should warn about empty mask
@@ -52,7 +52,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should warn about suspicious voxel size
@@ -77,7 +77,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="NaN"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_affine_inf_error(self):
         """Test that Inf in affine raises ValidationError."""
@@ -96,7 +96,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="Inf"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_4d_image_error(self):
         """Test that 4D images raise ValidationError."""
@@ -112,7 +112,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="3D"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_non_invertible_affine_error(self):
         """Test that non-invertible affine raises ValidationError."""
@@ -130,7 +130,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="invertible"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_spatial_mismatch_error(self):
         """Test that mismatched lesion and anatomical raise ValidationError."""
@@ -152,7 +152,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="spatial"):
-            LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152_2mm"})
 
     def test_validate_spatial_mismatch_shape_error(self):
         """Test that mismatched shapes raise ValidationError."""
@@ -172,7 +172,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="spatial"):
-            LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152_2mm"})
 
     def test_validate_valid_lesion_data_no_warnings(self):
         """Test that valid LesionData passes validation without warnings."""
@@ -191,7 +191,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should not raise any warnings or errors
@@ -214,7 +214,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should warn about suspicious voxel size
@@ -240,7 +240,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should not raise warnings (reasonable clinical voxel size)
@@ -265,7 +265,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should warn about non-RAS+ orientation
@@ -289,7 +289,7 @@ class TestLesionDataValidation:
         from ldk import LesionData
 
         with pytest.raises(ValidationError, match="voxel size|invertible"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={})
+            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_lesion_data_with_both_images(self):
         """Test validation when both lesion and anatomical provided."""
@@ -311,7 +311,7 @@ class TestLesionDataValidation:
         lesion_data_obj = LesionData(
             lesion_img=lesion_img,
             anatomical_img=anat_img,
-            metadata={"subject_id": "test"},
+            metadata={"subject_id": "test", "space": "MNI152_2mm"},
         )
 
         # Should pass validation
@@ -334,7 +334,7 @@ class TestLesionDataValidation:
         lesion_data = LesionData(
             lesion_img=lesion_img,
             anatomical_img=None,
-            metadata={},  # Empty metadata
+            metadata={"space": "MNI152_2mm"},  # Empty metadata
         )
 
         # Should still validate
