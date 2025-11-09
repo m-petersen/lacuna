@@ -161,3 +161,20 @@ class RegionalDamage(AtlasAggregation):
                 f"Found values: {unique_vals}\n"
                 f"Use thresholding or binarization to convert continuous maps."
             )
+
+    def _get_parameters(self) -> dict:
+        """Get analysis parameters for provenance and display.
+
+        Returns
+        -------
+        dict
+            Dictionary of parameter names and values.
+        """
+        params = super()._get_parameters()
+        # RegionalDamage is a specific configuration of AtlasAggregation
+        # Override the source and aggregation to reflect the simplified API
+        params.update({
+            "analysis_type": "RegionalDamage",
+            "threshold": params.get("threshold", 0.5),
+        })
+        return params

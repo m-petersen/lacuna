@@ -653,3 +653,23 @@ class StructuralNetworkMapping(BaseAnalysis):
     def _get_version(self) -> str:
         """Get analysis version."""
         return "0.1.0"
+
+    def _get_parameters(self) -> dict:
+        """Get analysis parameters for provenance and display.
+
+        Returns
+        -------
+        dict
+            Dictionary of parameter names and values.
+        """
+        return {
+            "tractogram_path": str(self.tractogram_path),
+            "whole_brain_tdi": str(self.whole_brain_tdi),
+            "template": str(self.template) if self.template else None,
+            "atlas_path": str(self.atlas_path) if self.atlas_path else None,
+            "compute_lesioned": self.compute_lesioned,
+            "n_jobs": self.n_jobs,
+            "keep_intermediate": self.keep_intermediate,
+            "load_to_memory": self.load_to_memory,
+            "verbose": self.verbose,
+        }

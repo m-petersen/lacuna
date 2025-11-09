@@ -767,3 +767,20 @@ class AtlasAggregation(BaseAnalysis):
             )
 
         return labels
+
+    def _get_parameters(self) -> dict:
+        """Get analysis parameters for provenance and display.
+
+        Returns
+        -------
+        dict
+            Dictionary of parameter names and values.
+        """
+        return {
+            "atlas_dir": str(self.atlas_dir) if self.atlas_dir else None,
+            "source": self.source,
+            "aggregation": self.aggregation,
+            "threshold": self.threshold,
+            "atlas_names": self.atlas_names,
+            "num_atlases": len(self.atlases) if hasattr(self, 'atlases') else None,
+        }
