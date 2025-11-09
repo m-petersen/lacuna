@@ -158,6 +158,24 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 
 - **Connectome Reference**: A normative brain connectivity dataset used for lesion network mapping, defining relationships between brain regions.
 
+### Batch Processing Architecture
+
+The system implements a flexible batch processing architecture that optimizes execution strategy based on analysis characteristics and computational resources.
+
+**Batch Strategies:**
+- **Parallel**: For independent per-subject analyses (RegionalDamage, AtlasAggregation). Uses multiprocessing to parallelize across subjects, providing 4-8x speedup on multi-core systems proportional to available CPU cores.
+- **Vectorized**: For matrix-based analyses (FunctionalNetworkMapping, StructuralNetworkMapping). Stacks lesion data into matrices and performs batch operations via optimized BLAS libraries, providing 10-50x speedup for network analyses.
+- **Streaming**: For memory-intensive operations with large connectomes. Processes subjects sequentially with immediate saving to disk, managing memory constraints while maintaining throughput.
+
+**Strategy Selection**: The `batch_process()` function automatically selects the optimal strategy based on:
+1. Analysis type (declared via `batch_strategy` class attribute)
+2. Number of subjects and estimated memory requirements
+3. Available system resources (CPU cores, RAM)
+
+**Analysis Declaration**: Each analysis class declares its preferred batch strategy. Custom batch implementations can override `run_batch()` for specialized optimizations beyond the default strategy.
+
+**Design Rationale**: Batch processing is implemented AFTER save/export functionality (Phase 4) to ensure proper validation of single-subject pipelines and establish a foundation for handling batch results. See `batch-architecture.md` for detailed implementation specifications.
+
 ### Data Management Architecture
 
 The system implements a tiered data management strategy to handle large reference datasets (atlases, connectomes, templates) while providing flexibility for different computational environments.

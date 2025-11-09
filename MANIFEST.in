@@ -5,6 +5,11 @@ recursive-include src/ldk/data *.nii.gz
 recursive-include src/ldk/data *.txt
 recursive-include src/ldk/data *.md
 
+# Include templates specifically
+include src/ldk/data/templates/MNI152_T1_1mm.nii.gz
+include src/ldk/data/templates/MNI152_T1_2mm.nii.gz
+include src/ldk/data/templates/README.md
+
 # Include documentation
 include README.md
 include LICENSE

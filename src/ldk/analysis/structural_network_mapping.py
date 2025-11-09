@@ -15,6 +15,7 @@ import numpy as np
 from ldk.analysis.base import BaseAnalysis
 from ldk.core.lesion_data import LesionData
 from ldk.data import get_bundled_atlas, get_template_path
+from ldk.utils.logging import ConsoleLogger
 from ldk.utils.mrtrix import (
     MRtrixError,
     check_mrtrix_available,
@@ -196,6 +197,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         self._check_dependencies = check_dependencies
         self.verbose = verbose
 
+        # Initialize logger
+        self.logger = ConsoleLogger(verbose=verbose, width=70)
+
         # Will be resolved to Path during validation
         self._atlas_resolved = None
         # Cache for full connectivity matrix (computed once if atlas provided)
@@ -312,17 +316,15 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Get subject ID for informative output
         subject_id = lesion_data.metadata.get("subject_id", "unknown")
 
-        # Print subject info when processing multiple subjects
-        print(f"\n{'=' * 60}")
-        print(f"Processing: {subject_id}")
-        print(f"{'=' * 60}")
+        # Subject header
+        self.logger.section(f"PROCESSING: {subject_id}")
 
         # Create temporary directory for intermediate files
         temp_dir = tempfile.mkdtemp(prefix=f"slnm_{subject_id}_")
         temp_dir_path = Path(temp_dir)
 
         if self.keep_intermediate:
-            print(f"ℹ️  Intermediate files will be saved to: {temp_dir}")
+            self.logger.info(f"Intermediate files will be saved to: {temp_dir}")
 
         try:
             # Step 1: Filter tractogram by lesion
@@ -409,7 +411,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._atlas_resolved is not None:
-                print(f"\n▶️  Computing parcellated connectivity matrices ({subject_id})...")
+                self.logger.subsection("Computing Connectivity Matrices")
                 connectivity_results = self._compute_connectivity_matrices(
                     lesion_data=lesion_data,
                     lesion_tck_path=lesion_tck_path,
@@ -427,10 +429,11 @@ class StructuralNetworkMapping(BaseAnalysis):
 
                 shutil.rmtree(temp_dir, ignore_errors=True)
             else:
-                print(f"✓ Intermediate files preserved in: {temp_dir}")
-                print("   - lesion_streamlines.tck")
-                print("   - lesion_tdi.nii.gz")
-                print("   - disconnection_map.nii.gz")
+                self.logger.success(f"Intermediate files preserved in: {temp_dir}")
+                self.logger.info("Files saved:", indent_level=1)
+                self.logger.info("- lesion_streamlines.tck", indent_level=2)
+                self.logger.info("- lesion_tdi.nii.gz", indent_level=2)
+                self.logger.info("- disconnection_map.nii.gz", indent_level=2)
 
     def _compute_connectivity_matrices(
         self,
@@ -464,25 +467,27 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Step 1: Compute full-brain connectivity matrix (cached)
         if self._full_connectivity_matrix is None:
-            print("   Computing full-brain connectivity matrix (will be cached)...")
+            self.logger.info(
+                "Computing full-brain connectivity matrix (will be cached)", indent_level=1
+            )
             self._full_connectivity_matrix = self._compute_connectivity_matrix(
                 tractogram_path=self.tractogram_path,
                 matrix_name="full_connectivity",
             )
         else:
-            print("   Using cached full-brain connectivity matrix")
+            self.logger.info("Using cached full-brain connectivity matrix", indent_level=1)
 
         full_matrix = self._full_connectivity_matrix
 
         # Step 2: Compute lesion connectivity matrix
-        print("   Computing lesion connectivity matrix...")
+        self.logger.info("Computing lesion connectivity matrix", indent_level=1)
         lesion_matrix = self._compute_connectivity_matrix(
             tractogram_path=lesion_tck_path,
             matrix_name=f"{subject_id}_lesion_connectivity",
         )
 
         # Step 3: Compute disconnectivity percentage
-        print("   Computing disconnectivity percentage...")
+        self.logger.info("Computing disconnectivity percentage", indent_level=1)
         with np.errstate(divide="ignore", invalid="ignore"):
             disconn_pct = (lesion_matrix / full_matrix) * 100
 
@@ -492,7 +497,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Step 4: Optional - compute lesioned (intact) connectivity
         lesioned_matrix = None
         if self.compute_lesioned:
-            print("   Computing lesioned (intact) connectivity matrix...")
+            self.logger.info("Computing lesioned (intact) connectivity matrix", indent_level=1)
 
             # Save lesion mask temporarily for tckedit -exclude
             lesion_mask_path = temp_dir_path / f"{subject_id}_lesion_mask.nii.gz"
