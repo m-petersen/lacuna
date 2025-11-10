@@ -11,8 +11,8 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from ldk import LesionData
-from ldk.analysis import AtlasAggregation, RegionalDamage
+from lacuna import LesionData
+from lacuna.analysis import AtlasAggregation, RegionalDamage
 
 
 class TestAtlasNamesFilter:

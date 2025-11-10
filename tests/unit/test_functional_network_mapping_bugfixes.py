@@ -12,8 +12,8 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from ldk import LesionData
-from ldk.analysis import FunctionalNetworkMapping
+from lacuna import LesionData
+from lacuna.analysis import FunctionalNetworkMapping
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
     """
     import nibabel as nib
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     analysis = FunctionalNetworkMapping(
         connectome_path=str(simple_connectome), method="boes", verbose=False
@@ -112,7 +112,7 @@ def test_both_fixes_together(simple_connectome):
     """
     import nibabel as nib
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     analysis = FunctionalNetworkMapping(
         connectome_path=str(simple_connectome), method="boes", verbose=False, compute_t_map=False

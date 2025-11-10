@@ -29,7 +29,7 @@ for connectome_batch in batches:
 
 ## Components Implemented
 
-### 1. VectorizedStrategy (`src/ldk/batch/strategies.py`)
+### 1. VectorizedStrategy (`src/lacuna/batch/strategies.py`)
 
 New batch processing strategy that:
 - Processes multiple lesions simultaneously through vectorized operations
@@ -38,7 +38,7 @@ New batch processing strategy that:
 - Automatically used when `analysis.batch_strategy = "vectorized"`
 
 ```python
-from ldk.batch import VectorizedStrategy
+from lacuna.batch import VectorizedStrategy
 
 # Process all lesions together (fastest)
 strategy = VectorizedStrategy()
@@ -49,7 +49,7 @@ strategy = VectorizedStrategy(lesion_batch_size=50)
 results = strategy.execute(lesions, analysis)
 ```
 
-### 2. GSP1000 Utilities (`src/ldk/utils/gsp1000.py`)
+### 2. GSP1000 Utilities (`src/lacuna/utils/gsp1000.py`)
 
 Utilities to create optimized HDF5 connectome batches from GSP1000 data:
 
@@ -57,7 +57,7 @@ Utilities to create optimized HDF5 connectome batches from GSP1000 data:
 Converts GSP1000 functional data to HDF5 batch files:
 
 ```python
-from ldk.utils import create_connectome_batches
+from lacuna.utils import create_connectome_batches
 
 batch_files = create_connectome_batches(
     gsp_dir="/data/GSP1000",
@@ -88,19 +88,19 @@ connectome_batch_000.h5:
 Validates integrity and consistency of batch files:
 
 ```python
-from ldk.utils import validate_connectome_batches
+from lacuna.utils import validate_connectome_batches
 
 summary = validate_connectome_batches("/data/connectomes/gsp1000_batches")
 # Returns: {n_batches, total_subjects, n_timepoints, n_voxels, consistent, errors}
 ```
 
-### 3. Updated Batch Selection (`src/ldk/batch/selection.py`)
+### 3. Updated Batch Selection (`src/lacuna/batch/selection.py`)
 
 Now automatically selects vectorized strategy when appropriate:
 
 ```python
-from ldk.analysis import FunctionalNetworkMapping
-from ldk.batch import select_strategy
+from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.batch import select_strategy
 
 # FunctionalNetworkMapping.batch_strategy = "vectorized"
 analysis = FunctionalNetworkMapping(...)
@@ -246,7 +246,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
 ### Step 1: Create Connectome Batches
 ```python
-from ldk.utils import create_connectome_batches
+from lacuna.utils import create_connectome_batches
 
 # Convert GSP1000 to optimized HDF5 batches
 batches = create_connectome_batches(
@@ -259,9 +259,9 @@ batches = create_connectome_batches(
 
 ### Step 2: Batch Process with Vectorization
 ```python
-from ldk.batch import batch_process
-from ldk.analysis import FunctionalNetworkMapping
-from ldk.io import load_bids_dataset
+from lacuna.batch import batch_process
+from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.io import load_bids_dataset
 
 # Load lesions
 dataset = load_bids_dataset("/data/lesions")
@@ -284,7 +284,7 @@ results = batch_process(lesions, analysis)
 
 ### Step 3: Control Memory Usage
 ```python
-from ldk.batch import VectorizedStrategy
+from lacuna.batch import VectorizedStrategy
 
 # For many lesions, process in sub-batches
 strategy = VectorizedStrategy(lesion_batch_size=50)
@@ -312,25 +312,25 @@ Processing 100 lesions × 1000 subjects:
 
 ## Files Modified
 
-1. **`src/ldk/batch/strategies.py`**
+1. **`src/lacuna/batch/strategies.py`**
    - Implemented `VectorizedStrategy` class
    - Supports configurable lesion batch sizes
    - Requires `run_batch()` method in analysis
 
-2. **`src/ldk/batch/selection.py`**
+2. **`src/lacuna/batch/selection.py`**
    - Updated to support vectorized strategy selection
    - Returns `VectorizedStrategy` when `analysis.batch_strategy="vectorized"`
 
-3. **`src/ldk/batch/__init__.py`**
+3. **`src/lacuna/batch/__init__.py`**
    - Exported `VectorizedStrategy`
    - Updated documentation
 
-4. **`src/ldk/utils/gsp1000.py`** (NEW)
+4. **`src/lacuna/utils/gsp1000.py`** (NEW)
    - `create_connectome_batches()`: Convert GSP1000 to HDF5
    - `validate_connectome_batches()`: Verify batch integrity
    - Adjustable `subjects_per_batch` parameter
 
-5. **`src/ldk/utils/__init__.py`**
+5. **`src/lacuna/utils/__init__.py`**
    - Exported GSP1000 utilities
 
 ## Testing
@@ -338,15 +338,15 @@ Processing 100 lesions × 1000 subjects:
 ### Test Imports
 ```bash
 python -c "
-from ldk.batch import VectorizedStrategy, select_strategy
-from ldk.utils import create_connectome_batches, validate_connectome_batches
+from lacuna.batch import VectorizedStrategy, select_strategy
+from lacuna.utils import create_connectome_batches, validate_connectome_batches
 print('✅ All imports successful')
 "
 ```
 
 ### Test GSP1000 Conversion
 ```python
-from ldk.utils import create_connectome_batches, validate_connectome_batches
+from lacuna.utils import create_connectome_batches, validate_connectome_batches
 
 # Create batches
 batches = create_connectome_batches(

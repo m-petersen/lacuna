@@ -1,6 +1,6 @@
-from ldk import batch_process
-from ldk.analysis import StructuralNetworkMapping
-from ldk.io import load_bids_dataset
+from lacuna import batch_process
+from lacuna.analysis import StructuralNetworkMapping
+from lacuna.io import load_bids_dataset
 
 # Load all subjects
 dataset = load_bids_dataset("/path/to/bids")
@@ -18,6 +18,6 @@ analysis = StructuralNetworkMapping(
 results = batch_process(lesions, analysis, n_jobs=4, show_progress=True)
 
 # Export to CSV for statistics
-from ldk.io import batch_export_to_csv
+from lacuna.io import batch_export_to_csv
 
 batch_export_to_csv(results, "sLNM_results.csv")

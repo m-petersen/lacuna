@@ -84,8 +84,8 @@ The implementation is fully backward compatible:
 ## Usage Example
 
 ```python
-from ldk import LesionData
-from ldk.analysis import FunctionalNetworkMapping
+from lacuna import LesionData
+from lacuna.analysis import FunctionalNetworkMapping
 
 # Load lesion
 lesion = LesionData.from_nifti(
@@ -162,7 +162,7 @@ Attributes:
 
 ## Migration from compute_flnm.py
 
-This implementation provides the same memory-efficient processing as `notes/compute_flnm.py` but integrated into the LDK framework:
+This implementation provides the same memory-efficient processing as `notes/compute_flnm.py` but integrated into the Lacuna framework:
 
 | Feature | compute_flnm.py | FunctionalNetworkMapping |
 |---------|----------------|-------------------------|
@@ -171,7 +171,7 @@ This implementation provides the same memory-efficient processing as `notes/comp
 | BOES method | ✓ | ✓ |
 | PINI method | ✓ | ✓ |
 | Parallel processing | ✓ | Future work |
-| LDK integration | ✗ | ✓ |
+| Lacuna integration | ✗ | ✓ |
 | Provenance tracking | ✗ | ✓ |
 | Type safety | ✗ | ✓ |
 

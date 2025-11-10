@@ -168,15 +168,15 @@ def main():
             print("  - Lesion batch size: ALL (process all together - high memory)")
     print(f"\n📊 Found {len(lesion_files)} lesion files to process")
 
-    # Import LDK
+    # Import Lacuna
     try:
-        from ldk import LesionData
-        from ldk.analysis import FunctionalNetworkMapping
-        from ldk.batch import batch_process
+        from lacuna import LesionData
+        from lacuna.analysis import FunctionalNetworkMapping
+        from lacuna.batch import batch_process
 
         print("✓ Successfully imported ldk modules")
     except ImportError as e:
-        print(f"❌ Failed to import ldk: {e}")
+        print(f"❌ Failed to import lacuna: {e}")
         print("   Make sure the package is installed: pip install -e .")
         sys.exit(1)
 

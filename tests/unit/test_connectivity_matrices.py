@@ -10,7 +10,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
 
 class TestConnectivityMatrixComputation:
@@ -19,7 +19,7 @@ class TestConnectivityMatrixComputation:
     @pytest.fixture
     def mock_analysis(self):
         """Create a mock StructuralNetworkMapping instance."""
-        with patch("ldk.analysis.structural_network_mapping.check_mrtrix_available"):
+        with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
             analysis = StructuralNetworkMapping(
                 tractogram_path="/fake/path/tractogram.tck",
                 whole_brain_tdi="/fake/path/tdi.nii.gz",
@@ -295,7 +295,7 @@ class TestMatrixDimensions:
         """Create mock analysis that can use different atlases."""
 
         def _create_analysis(n_parcels):
-            with patch("ldk.analysis.structural_network_mapping.check_mrtrix_available"):
+            with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
                 analysis = StructuralNetworkMapping(
                     tractogram_path="/fake/path/tractogram.tck",
                     whole_brain_tdi="/fake/path/tdi.nii.gz",

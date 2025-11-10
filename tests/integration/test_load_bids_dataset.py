@@ -11,7 +11,7 @@ import numpy as np
 
 def test_load_bids_dataset_complete_workflow(simple_bids_dataset):
     """Test loading complete BIDS dataset."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load entire dataset
     lesion_data_dict = load_bids_dataset(simple_bids_dataset)
@@ -34,7 +34,7 @@ def test_load_bids_dataset_complete_workflow(simple_bids_dataset):
 
 def test_load_bids_dataset_subject_filtering(simple_bids_dataset):
     """Test filtering by specific subjects."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load only sub-001
     lesion_data_dict = load_bids_dataset(simple_bids_dataset, subjects=["sub-001"])
@@ -46,7 +46,7 @@ def test_load_bids_dataset_subject_filtering(simple_bids_dataset):
 
 def test_load_bids_dataset_multisession(multisession_bids_dataset):
     """Test loading dataset with multiple sessions."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load all sessions
     lesion_data_dict = load_bids_dataset(multisession_bids_dataset)
@@ -64,7 +64,7 @@ def test_load_bids_dataset_multisession(multisession_bids_dataset):
 
 def test_load_bids_dataset_session_filtering(multisession_bids_dataset):
     """Test filtering by specific sessions."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load only ses-01
     lesion_data_dict = load_bids_dataset(multisession_bids_dataset, sessions=["ses-01"])
@@ -76,7 +76,7 @@ def test_load_bids_dataset_session_filtering(multisession_bids_dataset):
 
 def test_bids_dataset_batch_analysis(simple_bids_dataset):
     """Test analyzing multiple subjects from BIDS dataset."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load dataset
     lesion_data_dict = load_bids_dataset(simple_bids_dataset)
@@ -101,8 +101,8 @@ def test_bids_dataset_batch_analysis(simple_bids_dataset):
 
 def test_bids_dataset_export_derivatives(simple_bids_dataset, tmp_path):
     """Test complete workflow: load → analyze → export."""
-    from ldk.core.provenance import create_provenance_record
-    from ldk.io import export_bids_derivatives, load_bids_dataset
+    from lacuna.core.provenance import create_provenance_record
+    from lacuna.io import export_bids_derivatives, load_bids_dataset
 
     # Load dataset
     lesion_data_dict = load_bids_dataset(simple_bids_dataset)
@@ -161,7 +161,7 @@ def test_bids_dataset_export_derivatives(simple_bids_dataset, tmp_path):
 
 def test_bids_dataset_missing_anatomicals(tmp_path):
     """Test handling dataset where some subjects lack anatomical images."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Create BIDS dataset with mixed anatomical availability
     bids_root = tmp_path / "bids_mixed"
@@ -214,7 +214,7 @@ def test_bids_dataset_missing_anatomicals(tmp_path):
 
 def test_bids_dataset_metadata_extraction(simple_bids_dataset):
     """Test that BIDS metadata is properly extracted."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     lesion_data_dict = load_bids_dataset(simple_bids_dataset)
 
@@ -229,7 +229,7 @@ def test_bids_dataset_metadata_extraction(simple_bids_dataset):
 
 def test_bids_dataset_empty(tmp_path):
     """Test handling of empty BIDS dataset."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Create minimal BIDS structure with no subjects
     bids_root = tmp_path / "empty_bids"
@@ -248,7 +248,7 @@ def test_bids_dataset_empty(tmp_path):
 
 def test_bids_dataset_load_with_custom_metadata(simple_bids_dataset, tmp_path):
     """Test adding custom metadata during BIDS loading."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load with custom metadata template
     custom_metadata = {"study": "test_study", "scanner": "3T"}

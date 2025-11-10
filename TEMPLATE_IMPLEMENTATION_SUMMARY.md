@@ -6,11 +6,11 @@ Successfully implemented a bundled template system replacing nilearn dependency 
 
 ## Files Created
 
-### 1. **src/ldk/data/templates/** (directory)
+### 1. **src/lacuna/data/templates/** (directory)
    - Storage location for MNI152 templates
    - Location: Inside package data structure for distribution
 
-### 2. **src/ldk/data/templates/README.md**
+### 2. **src/lacuna/data/templates/README.md**
    - Documentation about included templates
    - Source information, dimensions, usage
 
@@ -32,15 +32,15 @@ Successfully implemented a bundled template system replacing nilearn dependency 
 
 ## Files Modified
 
-### 1. **src/ldk/data/__init__.py**
+### 1. **src/lacuna/data/__init__.py**
    - Added `get_mni_template(resolution=2)` function
    - Added `get_template_path(resolution=2)` function
    - Added `list_templates()` function
    - Added to `__all__` exports
 
-### 2. **src/ldk/analysis/structural_network_mapping.py**
+### 2. **src/lacuna/analysis/structural_network_mapping.py**
    - Replaced `from nilearn.datasets import load_mni152_template`
-   - With: `from ldk.data import get_mni_template`
+   - With: `from lacuna.data import get_mni_template`
    - Updated template loading logic (line ~178)
    - Updated docstring to reflect bundled templates
 
@@ -56,7 +56,7 @@ Successfully implemented a bundled template system replacing nilearn dependency 
 ## Directory Structure
 
 ```
-lesion_decoding_toolkit/
+lacuna/
 ├── download_templates.py          # NEW: Download script
 ├── test_templates.py              # NEW: Test script
 ├── MANIFEST.in                    # MODIFIED: Added templates
@@ -81,14 +81,14 @@ lesion_decoding_toolkit/
 Run the download script to fetch the actual template files:
 
 ```bash
-cd /home/marvin/projects/lesion_decoding_toolkit
+cd /home/marvin/projects/lacuna
 python download_templates.py
 ```
 
 This will:
 - Try to copy from your FSL installation (you have FSL, right?)
 - Or download via nilearn
-- Place files in `src/ldk/data/templates/`
+- Place files in `src/lacuna/data/templates/`
 
 ### 2. Test Template Loading
 Verify everything works:
@@ -142,7 +142,7 @@ template = load_mni152_template(resolution=2)
 
 ### After (bundled):
 ```python
-from ldk.data import get_mni_template
+from lacuna.data import get_mni_template
 template = get_mni_template(resolution=2)
 ```
 
@@ -178,7 +178,7 @@ This is acceptable for a neuroimaging package where data files are expected.
 After downloading templates, test:
 
 - [ ] `python test_templates.py` - all tests pass
-- [ ] Import works: `from ldk.data import get_mni_template`
+- [ ] Import works: `from lacuna.data import get_mni_template`
 - [ ] Templates load: `template = get_mni_template(resolution=2)`
 - [ ] Correct shapes: 1mm=(182,218,182), 2mm=(91,109,91)
 - [ ] StructuralNetworkMapping works without template parameter
@@ -187,8 +187,8 @@ After downloading templates, test:
 ## Rollback Plan
 
 If issues arise, revert these commits:
-1. `git checkout HEAD~1 src/ldk/data/__init__.py`
-2. `git checkout HEAD~1 src/ldk/analysis/structural_network_mapping.py`
+1. `git checkout HEAD~1 src/lacuna/data/__init__.py`
+2. `git checkout HEAD~1 src/lacuna/analysis/structural_network_mapping.py`
 3. `git checkout HEAD~1 pyproject.toml MANIFEST.in`
 4. Restore nilearn import in structural_network_mapping.py
 

@@ -1,10 +1,10 @@
-# Lesion Decoding Toolkit (ldk)
+# Lacuna
 
 A scientific Python package for neuroimaging lesion analysis.
 
 ## Overview
 
-The Lesion Decoding Toolkit (ldk) provides researchers with an end-to-end pipeline for:
+Lacuna provides researchers with an end-to-end pipeline for:
 - Loading lesion data from NIfTI files and BIDS-compliant datasets
 - Performing spatial preprocessing and normalization
 - Conducting lesion network mapping analyses
@@ -23,30 +23,30 @@ The Lesion Decoding Toolkit (ldk) provides researchers with an end-to-end pipeli
 ### Basic Installation
 
 ```bash
-pip install lesion-decoding-toolkit
+pip install lacuna
 ```
 
 ### With Optional Dependencies
 
 ```bash
 # For visualization features
-pip install lesion-decoding-toolkit[viz]
+pip install lacuna[viz]
 
 # For BIDS support
-pip install lesion-decoding-toolkit[bids]
+pip install lacuna[bids]
 
 # For development
-pip install lesion-decoding-toolkit[dev]
+pip install lacuna[dev]
 
 # Install everything
-pip install lesion-decoding-toolkit[all]
+pip install lacuna[all]
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/lesion-decoding-toolkit/ldk.git
-cd ldk
+git clone https://github.com/lacuna/lacuna.git
+cd lacuna
 pip install -e ".[dev]"
 ```
 
@@ -55,7 +55,7 @@ pip install -e ".[dev]"
 ### Load a Single Lesion Mask
 
 ```python
-from ldk import LesionData
+from lacuna import LesionData
 
 # Load a NIfTI lesion mask
 lesion = LesionData.from_nifti("path/to/lesion_mask.nii.gz")
@@ -69,7 +69,7 @@ print(f"Coordinate space: {lesion.get_coordinate_space()}")
 ### Load a BIDS Dataset
 
 ```python
-from ldk.io import load_bids_dataset
+from lacuna.io import load_bids_dataset
 
 # Load all subjects with lesion masks
 dataset = load_bids_dataset("path/to/bids_dataset")
@@ -82,8 +82,8 @@ for subject_id, lesion in dataset.items():
 ### Spatial Normalization
 
 ```python
-from ldk import LesionData
-from ldk.preprocess import normalize_to_mni
+from lacuna import LesionData
+from lacuna.preprocess import normalize_to_mni
 
 # Load lesion in native space
 lesion = LesionData.from_nifti("lesion_native.nii.gz")
@@ -98,7 +98,7 @@ print(f"Transformations applied: {len(lesion_mni.provenance)}")
 ### Lesion Network Mapping
 
 ```python
-from ldk.analysis import LesionNetworkMapping
+from lacuna.analysis import LesionNetworkMapping
 
 # Initialize analyzer
 lnm = LesionNetworkMapping(
@@ -117,12 +117,12 @@ for network, score in results['network_disruption_scores'].items():
 ### Save Results
 
 ```python
-from ldk.io import export_bids_derivatives
+from lacuna.io import export_bids_derivatives
 
 # Export to BIDS derivatives format
 export_bids_derivatives(
     lesion_mni,
-    output_dir="derivatives/ldk-v0.1.0",
+    output_dir="derivatives/lacuna-v0.1.0",
     include_images=True,
     include_results=True
 )
@@ -139,7 +139,7 @@ export_bids_derivatives(
 
 ## Documentation
 
-Full documentation is available at: https://lesion-decoding-toolkit.readthedocs.io
+Full documentation is available at: https://lacuna.readthedocs.io
 
 ## Development
 
@@ -153,7 +153,7 @@ pip install -e ".[dev]"
 pytest
 
 # Run with coverage
-pytest --cov=ldk --cov-report=html
+pytest --cov=lacuna --cov-report=html
 
 # Run specific test categories
 pytest -m contract  # Contract tests only
@@ -178,11 +178,11 @@ mypy src
 If you use this toolkit in your research, please cite:
 
 ```bibtex
-@software{lesion_decoding_toolkit,
-  title = {Lesion Decoding Toolkit},
-  author = {Lesion Decoding Toolkit Contributors},
+@software{lacuna,
+  title = {Lacuna},
+  author = {Lacuna Contributors},
   year = {2025},
-  url = {https://github.com/lesion-decoding-toolkit/ldk}
+  url = {https://github.com/lacuna/lacuna}
 }
 ```
 
@@ -196,5 +196,5 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## Support
 
-- Issue Tracker: https://github.com/lesion-decoding-toolkit/ldk/issues
-- Documentation: https://lesion-decoding-toolkit.readthedocs.io
+- Issue Tracker: https://github.com/lacuna/lacuna/issues
+- Documentation: https://lacuna.readthedocs.io

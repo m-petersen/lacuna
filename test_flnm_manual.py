@@ -222,14 +222,14 @@ def run_flnm_analysis():
     print("RUNNING FUNCTIONAL NETWORK MAPPING ANALYSIS")
     print("=" * 70)
 
-    # Import LDK modules
+    # Import Lacuna modules
     try:
-        from ldk import LesionData
-        from ldk.analysis import FunctionalNetworkMapping
+        from lacuna import LesionData
+        from lacuna.analysis import FunctionalNetworkMapping
 
         print("✓ Successfully imported ldk modules")
     except ImportError as e:
-        print(f"❌ Failed to import ldk: {e}")
+        print(f"❌ Failed to import lacuna: {e}")
         print("   Make sure the package is installed: pip install -e .")
         return None
 

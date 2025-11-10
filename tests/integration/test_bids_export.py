@@ -9,9 +9,9 @@ import json
 
 import numpy as np
 
-from ldk import LesionData
-from ldk.core.provenance import create_provenance_record
-from ldk.io import export_bids_derivatives
+from lacuna import LesionData
+from lacuna.core.provenance import create_provenance_record
+from lacuna.io import export_bids_derivatives
 
 
 def test_export_single_subject_workflow(tmp_path, synthetic_lesion_img):
@@ -23,7 +23,7 @@ def test_export_single_subject_workflow(tmp_path, synthetic_lesion_img):
     )
 
     # Export to BIDS derivatives
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data, output_dir)
 
     # Verify directory structure
@@ -35,7 +35,7 @@ def test_export_single_subject_workflow(tmp_path, synthetic_lesion_img):
     # Verify dataset_description.json content
     with open(output_dir / "dataset_description.json") as f:
         ds_desc = json.load(f)
-    assert ds_desc["Name"] == "Lesion Decoding Toolkit Derivatives"
+    assert ds_desc["Name"] == "Lacuna Derivatives"
     assert "GeneratedBy" in ds_desc
 
 
@@ -62,7 +62,7 @@ def test_export_with_analysis_results(tmp_path, synthetic_lesion_img):
     lesion_with_results = lesion_with_results.add_provenance(prov)
 
     # Export
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_with_results, output_dir)
 
     # Verify results directory exists
@@ -95,7 +95,7 @@ def test_export_multi_session(tmp_path, synthetic_lesion_img):
             metadata={"subject_id": subject_id, "session_id": session, "space": "MNI152_2mm"},
         )
 
-        output_dir = tmp_path / "derivatives" / "ldk"
+        output_dir = tmp_path / "derivatives" / "lacuna"
         subject_dir = export_bids_derivatives(lesion_data, output_dir)
 
         # Verify session is in the path
@@ -103,7 +103,7 @@ def test_export_multi_session(tmp_path, synthetic_lesion_img):
         assert (subject_dir / "anat").exists()
 
     # Verify both sessions exist
-    subject_base = tmp_path / "derivatives" / "ldk" / subject_id
+    subject_base = tmp_path / "derivatives" / "lacuna" / subject_id
     assert (subject_base / "ses-pre").exists()
     assert (subject_base / "ses-post").exists()
 
@@ -111,7 +111,7 @@ def test_export_multi_session(tmp_path, synthetic_lesion_img):
 def test_export_multiple_subjects(tmp_path, synthetic_lesion_img):
     """Test exporting multiple subjects to same derivatives directory."""
     subjects = ["sub-101", "sub-102", "sub-103", "sub-104", "sub-105"]
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
 
     for subject_id in subjects:
         lesion_data = LesionData(
@@ -139,7 +139,7 @@ def test_export_and_reload_workflow(tmp_path, synthetic_lesion_img):
     )
 
     # Export to BIDS
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(original, output_dir)
 
     # Find exported lesion file
@@ -165,7 +165,7 @@ def test_export_with_anatomical_image(tmp_path, synthetic_lesion_img, synthetic_
         metadata={"subject_id": "sub-301", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data, output_dir, include_anatomical=True)
 
     anat_dir = subject_dir / "anat"
@@ -183,7 +183,7 @@ def test_export_preserves_bids_naming(tmp_path, synthetic_lesion_img):
         metadata={"subject_id": "sub-401", "session_id": "ses-01", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data, output_dir)
 
     # Find lesion file and check naming
@@ -209,7 +209,7 @@ def test_export_selective_outputs(tmp_path, synthetic_lesion_img):
     )
     lesion_with_results = lesion_data.add_result("TestAnalysis", {"metric": 42.0})
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
 
     # Export only images, no results
     subject_dir = export_bids_derivatives(
@@ -228,7 +228,7 @@ def test_export_creates_complete_derivatives_structure(tmp_path, synthetic_lesio
         metadata={"subject_id": "sub-601", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data, output_dir)
 
     # Check complete structure

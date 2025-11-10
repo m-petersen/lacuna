@@ -19,7 +19,7 @@ SYNC IMPACT REPORT
 	- TODO(RATIFICATION_DATE): Set the official ratification date upon team review.
 -->
 
-# Lesion Decoding Toolkit (ldk) Constitution
+# Lacuna Constitution
 
 ## Core Principles
 
@@ -54,7 +54,7 @@ programmatically.
 
 ### 3. Consistent and Predictable User Experience (API Contract)
 
-The `ldk.core.LesionData` object is the canonical API contract for pipeline stages.
+The `lacuna.core.LesionData` object is the canonical API contract for pipeline stages.
 All publicly exported functions and classes MUST document their inputs, outputs,
 side-effects, and required metadata in docstrings (preferably using NumPy or Google
 docstring style). The project MUST maintain a well-structured `pyproject.toml` with
@@ -123,7 +123,7 @@ prevents a critical class of bugs in neuroimaging analysis.
 
 ## Additional Constraints
 
-- Source layout: the package MUST use the `src/ldk` layout to guarantee test
+- Source layout: the package MUST use the `src/lacuna` layout to guarantee test
 	integrity and avoid accidental local imports during testing.
 - Packaging: `pyproject.toml` is the authoritative project configuration and MUST
 	include extras for `viz`, `dev`, and `doc`.
@@ -138,19 +138,19 @@ extensibility, and maintainability.
 
 ### Module Boundaries & Separation of Concerns
 
-- **`ldk.core`**: Defines the `LesionData` class and core abstractions. MUST NOT
+- **`lacuna.core`**: Defines the `LesionData` class and core abstractions. MUST NOT
 	depend on analysis-specific logic from other subpackages.
-- **`ldk.io`**: Handles all file I/O (NIfTI, BIDS). MUST return fully-formed
+- **`lacuna.io`**: Handles all file I/O (NIfTI, BIDS). MUST return fully-formed
 	`LesionData` objects; analysis modules MUST NOT perform direct file operations.
-- **`ldk.preprocess`**: Preprocessing and spatial operations. Functions MUST accept
+- **`lacuna.preprocess`**: Preprocessing and spatial operations. Functions MUST accept
 	and return `LesionData` objects.
-- **`ldk.analysis`**: Domain-specific analyses (lesion network mapping,
+- **`lacuna.analysis`**: Domain-specific analyses (lesion network mapping,
 	transcriptomics, etc.). Each module MUST be independently usable and MUST
 	append results to `LesionData.results` without side effects on other modules.
-- **`ldk.modeling`** and **`ldk.reporting`**: Post-analysis tasks (modeling, reporting). MUST depend
+- **`lacuna.modeling`** and **`lacuna.reporting`**: Post-analysis tasks (modeling, reporting). MUST depend
 	only on the structure of `LesionData.results`, not on internal analysis
 	implementation details.
-- **`ldk.utils`** and **`ldk.viz`**: Auxiliary functionality. MUST be stateless
+- **`lacuna.utils`** and **`lacuna.viz`**: Auxiliary functionality. MUST be stateless
 	and have no circular dependencies with core modules.
 
 ### Extensibility Requirements (Dependency Inversion)

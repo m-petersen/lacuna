@@ -12,8 +12,8 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from ldk import LesionData
-from ldk.analysis import FunctionalNetworkMapping
+from lacuna import LesionData
+from lacuna.analysis import FunctionalNetworkMapping
 
 
 @pytest.fixture

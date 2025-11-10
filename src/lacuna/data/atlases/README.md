@@ -1,0 +1,211 @@
+# Bundled Reference Atlases
+
+This directory contains lightweight neuroimaging atlases bundled with the Lacuna for zero-configuration usage.
+
+## Purpose
+
+These atlases enable:
+- **Immediate usage**: No download or configuration required
+- **Reproducibility**: Version-controlled reference data
+- **Testing**: Reliable test fixtures without external dependencies
+- **Documentation**: Working examples out-of-the-box
+
+## Atlas Files
+
+Each atlas consists of two files:
+- **`<atlas_name>.nii.gz`**: NIfTI image file with region labels or probabilities
+- **`<atlas_name>_labels.txt`**: Text file mapping region IDs to anatomical names
+
+## Included Atlases
+
+### HCP1065 White Matter Tracts (Atlas)
+- **File**: `HCP1065_thr0p1.nii.gz`
+- **Type**: Probabilistic (4D)
+- **Coverage**: White matter tracts
+- **Threshold**: 0.1 (10% probability threshold applied)
+- **Source**: Human Connectome Project
+- **Citation**: Yeh et al. (2022), Nature Communications, 22;13(1):4933
+- **License**: CC BY-SA 4.0
+- **Size**: ~1.1 MB
+
+### Schaefer 2018 Atlas - 100 Parcels (7 Networks)
+- **File**: `Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
+- **Space**: MNI152 1mm
+- **Type**: Discrete labels (3D)
+- **Coverage**: Cerebral cortex
+- **Networks**: 7 networks (Visual, Somatomotor, Dorsal Attention, Ventral Attention, Limbic, Frontoparietal, Default)
+- **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **Size**: ~229 KB
+
+### Schaefer 2018 Atlas - 200 Parcels (7 Networks)
+- **File**: `Schaefer2018_200Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
+- **Space**: MNI152 1mm
+- **Type**: Discrete labels (3D)
+- **Coverage**: Cerebral cortex (medium parcellation)
+- **Networks**: 7 networks
+- **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **License**: MIT
+- **Size**: ~253 KB
+
+### Schaefer 2018 Atlas - 400 Parcels (7 Networks)
+- **File**: `Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
+- **Space**: MNI152 1mm
+- **Type**: Discrete labels (3D)
+- **Coverage**: Cerebral cortex (fine parcellation)
+- **Networks**: 7 networks
+- **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **License**: MIT
+- **Size**: ~289 KB
+
+### Schaefer 2018 Atlas - 1000 Parcels (7 Networks)
+- **File**: `Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
+- **Space**: MNI152 1mm
+- **Type**: Discrete labels (3D)
+- **Coverage**: Cerebral cortex (very fine parcellation)
+- **Networks**: 7 networks
+- **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **License**: MIT
+- **Size**: ~353 KB
+
+### Tian Subcortical Atlas - Scale 1
+- **File**: `Tian_Subcortex_S1_3T_2009cAsym.nii.gz`
+- **Space**: MNI152 (2009c asymmetric)
+- **Type**: Discrete labels (3D)
+- **Coverage**: Subcortical structures (coarse parcellation)
+- **Regions**: 16 regions
+- **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
+- **License**: Permissive with attribution
+- **Size**: ~8.3 KB
+
+### Tian Subcortical Atlas - Scale 2
+- **File**: `Tian_Subcortex_S2_3T_2009cAsym.nii.gz`
+- **Space**: MNI152 (2009c asymmetric)
+- **Type**: Discrete labels (3D)
+- **Coverage**: Subcortical structures (medium parcellation)
+- **Regions**: 32 regions
+- **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
+- **License**: Permissive with attribution
+- **Size**: ~8.9 KB
+
+### Tian Subcortical Atlas - Scale 3
+- **File**: `Tian_Subcortex_S3_3T_2009cAsym.nii.gz`
+- **Space**: MNI152 (2009c asymmetric)
+- **Type**: Discrete labels (3D)
+- **Coverage**: Subcortical structures (fine parcellation)
+- **Regions**: 54 regions
+- **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
+- **License**: Permissive with attribution
+- **Size**: ~9.5 KB
+
+## Usage
+
+### Automatic (Default)
+```python
+from lacuna.analysis import RegionalDamage
+
+# Uses bundled atlases automatically
+analysis = RegionalDamage()
+result = analysis.run(lesion_data)
+```
+
+### List Available Atlases
+```python
+from lacuna.data import list_bundled_atlases
+
+atlases = list_bundled_atlases()
+print(atlases)
+# ['schaefer2018-100parcels-7networks', ...]
+```
+
+### Get Atlas Path
+```python
+from lacuna.data import get_bundled_atlas
+
+img_path, labels_path = get_bundled_atlas('aal3')
+print(img_path)  # Full path to aal3.nii.gz
+print(labels_path)  # Full path to aal3_labels.txt
+```
+
+### Get Citation
+```python
+from lacuna.data import get_atlas_citation
+
+citation = get_atlas_citation('aal3')
+print(citation)
+# Prints full citation information
+```
+
+## Custom Atlases
+
+You can still use your own atlas directory:
+
+```python
+from lacuna.analysis import RegionalDamage
+
+# Use custom directory
+analysis = RegionalDamage(atlas_dir="/path/to/my/atlases")
+
+# Or mix bundled + custom
+analysis = RegionalDamage(
+    atlas_dir="/path/to/my/atlases",
+    include_bundled=True
+)
+```
+
+## Adding More Atlases
+
+To add your own atlas to this directory:
+
+1. Place NIfTI file: `<name>.nii.gz`
+2. Create labels file: `<name>_labels.txt` with format:
+   ```
+   0 Background
+   1 Region_Name_1
+   2 Region_Name_2
+   ...
+   ```
+3. The atlas will be automatically discovered
+
+## File Format Requirements
+
+### NIfTI Images
+- **Format**: `.nii.gz` (compressed NIfTI)
+- **Space**: Any standard space (MNI152 recommended)
+- **3D atlases**: Integer labels (1, 2, 3, ...)
+- **4D atlases**: Probabilistic values (0.0-1.0), one volume per region
+
+### Labels Files
+- **Format**: Plain text, one region per line
+- **Structure**: `<id> <name>`
+  - `<id>`: Integer region ID (matches atlas values)
+  - `<name>`: Region name (can contain spaces)
+- **Example**:
+  ```
+  0 Background
+  1 Left_Precentral_Gyrus
+  2 Right_Precentral_Gyrus
+  ```
+
+## Licenses and Attribution
+
+All bundled atlases are available for non-commercial research use. If you use these atlases in a publication, please cite the original papers listed above.
+
+## References
+
+1. **Schaefer 2018**: Schaefer, A., Kong, R., Gordon, E.M., et al. (2018). Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic Functional Connectivity MRI. *Cerebral Cortex*, 28(9), 3095-3114. https://doi.org/10.1093/cercor/bhx179
+
+2. **Tian Subcortical Atlas**: Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020). Topographic organization of the human subcortex unveiled with functional connectivity gradients. *Nature Neuroscience*, 23, 1516-1528. https://doi.org/10.1038/s41593-020-00711-6
+
+3. **HCP1065**: Yeh, F.-C., (2022). Population-based tract-to-region connectome of the human brain and its hierarchical topology. *Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4. Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research.
+
+## Size Information
+
+- **Total size**: ~2.3 MB (compressed)
+- **HCP1065**: ~1.1 MB
+- **Schaefer-100**: ~229 KB
+- **Schaefer-200**: ~253 KB
+- **Schaefer-400**: ~289 KB
+- **Schaefer-1000**: ~353 KB
+- **Tian S1-S3**: ~27 KB total
+
+This is negligible compared to typical Python package sizes and enables a much better user experience.

@@ -8,8 +8,8 @@ including round-trip testing (save → load → verify).
 import nibabel as nib
 import numpy as np
 
-from ldk import LesionData
-from ldk.io import save_nifti
+from lacuna import LesionData
+from lacuna.io import save_nifti
 
 
 def test_save_and_reload_lesion(tmp_path, synthetic_lesion_img):

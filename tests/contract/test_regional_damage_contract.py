@@ -10,22 +10,22 @@ import pytest
 
 def test_regional_damage_import():
     """Test that RegionalDamage can be imported."""
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     assert RegionalDamage is not None
 
 
 def test_regional_damage_inherits_base_analysis():
     """Test that RegionalDamage inherits from BaseAnalysis."""
-    from ldk.analysis.base import BaseAnalysis
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.base import BaseAnalysis
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     assert issubclass(RegionalDamage, BaseAnalysis)
 
 
 def test_regional_damage_can_instantiate():
     """Test that RegionalDamage can be instantiated with atlas directory."""
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     analysis = RegionalDamage(atlas_dir="/path/to/atlases")
     assert analysis is not None
@@ -34,7 +34,7 @@ def test_regional_damage_can_instantiate():
 
 def test_regional_damage_has_run_method():
     """Test that RegionalDamage has the run() method from BaseAnalysis."""
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     analysis = RegionalDamage(atlas_dir="/path/to/atlases")
     assert hasattr(analysis, "run")
@@ -43,8 +43,8 @@ def test_regional_damage_has_run_method():
 
 def test_regional_damage_validates_atlas_directory(synthetic_lesion_img):
     """Test that RegionalDamage validates atlas directory exists."""
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Should raise error if atlas directory doesn't exist
     analysis = RegionalDamage(atlas_dir="/nonexistent/path")
@@ -56,7 +56,7 @@ def test_regional_damage_validates_atlas_directory(synthetic_lesion_img):
 
 def test_regional_damage_discovers_atlases(tmp_path):
     """Test that RegionalDamage can discover atlas files in directory."""
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Create mock atlas directory
     atlas_dir = tmp_path / "atlases"
@@ -77,8 +77,8 @@ def test_regional_damage_requires_binary_mask(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -107,8 +107,8 @@ def test_regional_damage_returns_lesion_data(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -141,8 +141,8 @@ def test_regional_damage_result_structure(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -175,8 +175,8 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_lesion_img, tmp_pat
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
@@ -210,8 +210,8 @@ def test_regional_damage_preserves_input_immutability(synthetic_lesion_img, tmp_
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -240,8 +240,8 @@ def test_regional_damage_adds_provenance(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.regional_damage import RegionalDamage
+    from lacuna import LesionData
+    from lacuna.analysis.regional_damage import RegionalDamage
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"

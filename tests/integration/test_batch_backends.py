@@ -14,9 +14,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from ldk import LesionData, batch_process
-from ldk.analysis import RegionalDamage
-from ldk.batch.strategies import ParallelStrategy
+from lacuna import LesionData, batch_process
+from lacuna.analysis import RegionalDamage
+from lacuna.batch.strategies import ParallelStrategy
 
 
 @pytest.fixture

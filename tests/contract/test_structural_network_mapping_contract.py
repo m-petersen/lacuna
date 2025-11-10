@@ -10,22 +10,22 @@ import pytest
 
 def test_structural_network_mapping_import():
     """Test that StructuralNetworkMapping can be imported."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     assert StructuralNetworkMapping is not None
 
 
 def test_structural_network_mapping_inherits_base_analysis():
     """Test that StructuralNetworkMapping inherits from BaseAnalysis."""
-    from ldk.analysis.base import BaseAnalysis
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.base import BaseAnalysis
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     assert issubclass(StructuralNetworkMapping, BaseAnalysis)
 
 
 def test_structural_network_mapping_can_instantiate():
     """Test that StructuralNetworkMapping can be instantiated with required parameters."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should accept tractogram and TDI paths
     analysis = StructuralNetworkMapping(
@@ -38,7 +38,7 @@ def test_structural_network_mapping_can_instantiate():
 
 def test_structural_network_mapping_validates_mrtrix_available():
     """Test that StructuralNetworkMapping checks for MRtrix3 availability."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should check if MRtrix3 commands are available during initialization
     analysis = StructuralNetworkMapping(
@@ -52,7 +52,7 @@ def test_structural_network_mapping_validates_mrtrix_available():
 
 def test_structural_network_mapping_has_run_method():
     """Test that StructuralNetworkMapping has the run() method from BaseAnalysis."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -68,8 +68,8 @@ def test_structural_network_mapping_validates_coordinate_space(synthetic_lesion_
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -95,8 +95,8 @@ def test_structural_network_mapping_requires_binary_mask(synthetic_lesion_img, t
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -124,8 +124,8 @@ def test_structural_network_mapping_requires_binary_mask(synthetic_lesion_img, t
 
 def test_structural_network_mapping_returns_lesion_data(synthetic_lesion_img):
     """Test that run() returns a LesionData object with namespaced results."""
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Mark lesion as MNI152 space
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
@@ -146,7 +146,7 @@ def test_structural_network_mapping_returns_lesion_data(synthetic_lesion_img):
 
 def test_structural_network_mapping_result_structure():
     """Test that results should contain expected keys and data types."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -167,7 +167,7 @@ def test_structural_network_mapping_result_structure():
 
 def test_structural_network_mapping_accepts_n_jobs():
     """Test that StructuralNetworkMapping accepts n_jobs parameter for MRtrix."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -181,8 +181,8 @@ def test_structural_network_mapping_accepts_n_jobs():
 
 def test_structural_network_mapping_preserves_input_immutability(synthetic_lesion_img):
     """Test that run() does not modify the input LesionData."""
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
     original_results = lesion_data.results.copy()
@@ -206,7 +206,7 @@ def test_structural_network_mapping_preserves_input_immutability(synthetic_lesio
 
 def test_structural_network_mapping_adds_provenance():
     """Test that run() should add provenance record."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -230,9 +230,9 @@ def test_template_auto_loading_2mm(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
-    from ldk.data import get_template_path
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.data import get_template_path
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -265,9 +265,9 @@ def test_template_auto_loading_1mm(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
-    from ldk.data import get_template_path
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.data import get_template_path
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -300,8 +300,8 @@ def test_space_validation_requires_exact_format(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -336,8 +336,8 @@ def test_space_validation_rejects_non_mni(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -359,7 +359,7 @@ def test_space_validation_rejects_non_mni(synthetic_lesion_img, tmp_path):
 
 def test_bundled_template_exists():
     """Test that bundled MNI templates are available."""
-    from ldk.data import get_template_path
+    from lacuna.data import get_template_path
 
     # Both templates should exist
     path_1mm = get_template_path(resolution=1)
@@ -371,7 +371,7 @@ def test_bundled_template_exists():
 
 def test_bundled_template_correct_dimensions():
     """Test that bundled templates have correct dimensions."""
-    from ldk.data import get_mni_template
+    from lacuna.data import get_mni_template
 
     # Test 1mm template
     template_1mm = get_mni_template(resolution=1)
@@ -388,7 +388,7 @@ def test_bundled_template_correct_dimensions():
 
 def test_template_loading_api():
     """Test the template loading API functions."""
-    from ldk.data import get_mni_template, get_template_path, list_templates
+    from lacuna.data import get_mni_template, get_template_path, list_templates
 
     # Test list_templates
     templates = list_templates()
@@ -412,7 +412,7 @@ def test_template_loading_api():
 
 def test_template_loading_invalid_resolution():
     """Test that invalid resolutions raise appropriate errors."""
-    from ldk.data import get_mni_template, get_template_path
+    from lacuna.data import get_mni_template, get_template_path
 
     # Test get_mni_template
     with pytest.raises(ValueError, match="Resolution must be 1 or 2"):
@@ -430,7 +430,7 @@ def test_template_loading_invalid_resolution():
 
 def test_memory_management_parameters():
     """Test that StructuralNetworkMapping accepts memory management parameters."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Test with default values
     analysis = StructuralNetworkMapping(
@@ -454,7 +454,7 @@ def test_memory_management_parameters():
 def test_load_to_memory_requires_keep_intermediate():
     """Test that load_to_memory=False requires keep_intermediate=True."""
 
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # This should raise an error during execution
     analysis = StructuralNetworkMapping(
@@ -477,8 +477,8 @@ def test_template_stored_as_path_not_image(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
@@ -512,7 +512,7 @@ def test_template_stored_as_path_not_image(synthetic_lesion_img, tmp_path):
 
 def test_compute_whole_brain_tdi_function_exists():
     """Test that compute_whole_brain_tdi utility function exists."""
-    from ldk.utils.mrtrix import compute_whole_brain_tdi
+    from lacuna.utils.mrtrix import compute_whole_brain_tdi
 
     assert compute_whole_brain_tdi is not None
     assert callable(compute_whole_brain_tdi)
@@ -520,7 +520,7 @@ def test_compute_whole_brain_tdi_function_exists():
 
 def test_compute_whole_brain_tdi_accepts_parameters():
     """Test that compute_whole_brain_tdi accepts expected parameters."""
-    from ldk.utils.mrtrix import compute_whole_brain_tdi
+    from lacuna.utils.mrtrix import compute_whole_brain_tdi
 
     # Should accept tractogram path and output paths
     # This documents the interface even if execution fails
@@ -539,7 +539,7 @@ def test_compute_whole_brain_tdi_accepts_parameters():
 
 def test_compute_whole_brain_tdi_requires_at_least_one_output():
     """Test that compute_whole_brain_tdi requires at least one output."""
-    from ldk.utils.mrtrix import compute_whole_brain_tdi
+    from lacuna.utils.mrtrix import compute_whole_brain_tdi
 
     # Should raise error if neither output specified
     with pytest.raises(ValueError, match="At least one"):
@@ -548,7 +548,7 @@ def test_compute_whole_brain_tdi_requires_at_least_one_output():
 
 def test_compute_whole_brain_tdi_validates_tractogram_exists():
     """Test that compute_whole_brain_tdi validates tractogram file exists."""
-    from ldk.utils.mrtrix import compute_whole_brain_tdi
+    from lacuna.utils.mrtrix import compute_whole_brain_tdi
 
     # Should raise FileNotFoundError if tractogram doesn't exist
     with pytest.raises(FileNotFoundError, match="Tractogram"):
@@ -560,7 +560,7 @@ def test_compute_whole_brain_tdi_validates_tractogram_exists():
 
 def test_mrtrix_commands_are_printed(capsys):
     """Test that MRtrix3 commands are printed during execution."""
-    from ldk.utils.mrtrix import run_mrtrix_command
+    from lacuna.utils.mrtrix import run_mrtrix_command
 
     # Test that verbose mode prints commands
     try:
@@ -579,14 +579,14 @@ def test_mrtrix_commands_are_printed(capsys):
 
 def test_batch_strategy_is_parallel():
     """Test that StructuralNetworkMapping declares parallel batch strategy."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     assert StructuralNetworkMapping.batch_strategy == "parallel"
 
 
 def test_provenance_includes_memory_settings():
     """Test that provenance includes memory management settings."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -611,7 +611,7 @@ def test_provenance_includes_memory_settings():
 
 def test_atlas_parameter_optional():
     """Test that atlas_path is an optional parameter."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should work without atlas (voxel-wise only)
     analysis = StructuralNetworkMapping(
@@ -623,7 +623,7 @@ def test_atlas_parameter_optional():
 
 def test_atlas_accepts_bundled_name():
     """Test that atlas_path can be a bundled atlas name string."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should accept bundled atlas name
     analysis = StructuralNetworkMapping(
@@ -637,7 +637,7 @@ def test_atlas_accepts_bundled_name():
 def test_atlas_accepts_custom_path():
     """Test that atlas_path can be a custom file path."""
 
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should accept custom atlas path
     analysis = StructuralNetworkMapping(
@@ -650,7 +650,7 @@ def test_atlas_accepts_custom_path():
 
 def test_compute_lesioned_parameter():
     """Test that compute_lesioned parameter is available."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should have compute_lesioned parameter
     analysis = StructuralNetworkMapping(
@@ -670,8 +670,8 @@ def test_atlas_resolved_during_validation():
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import LesionData
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create temporary files
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -768,7 +768,7 @@ def test_matrix_statistics_structure():
 
 def test_full_connectivity_matrix_caching():
     """Test that full connectivity matrix is cached for batch processing."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -784,7 +784,7 @@ def test_full_connectivity_matrix_caching():
 
 def test_lesioned_connectivity_optional():
     """Test that lesioned connectivity is only computed when requested."""
-    from ldk.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Default: compute_lesioned=False
     analysis1 = StructuralNetworkMapping(

@@ -13,8 +13,8 @@ import pytest
 
 
 def test_io_module_imports():
-    """Test that I/O functions can be imported from ldk.io."""
-    from ldk.io import BidsError, export_bids_derivatives, load_bids_dataset, save_nifti
+    """Test that I/O functions can be imported from lacuna.io."""
+    from lacuna.io import BidsError, export_bids_derivatives, load_bids_dataset, save_nifti
 
     assert load_bids_dataset is not None
     assert export_bids_derivatives is not None
@@ -24,7 +24,7 @@ def test_io_module_imports():
 
 def test_load_bids_dataset_simple(simple_bids_dataset):
     """Test loading a simple BIDS dataset with manual parser."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load without pybids validation (uses manual parser)
     dataset = load_bids_dataset(simple_bids_dataset, validate_bids=False)
@@ -48,7 +48,7 @@ def test_load_bids_dataset_simple(simple_bids_dataset):
 
 def test_load_bids_dataset_multisession(multisession_bids_dataset):
     """Test loading a multi-session BIDS dataset."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     dataset = load_bids_dataset(multisession_bids_dataset, validate_bids=False)
 
@@ -65,7 +65,7 @@ def test_load_bids_dataset_multisession(multisession_bids_dataset):
 
 def test_load_bids_dataset_filter_subjects(simple_bids_dataset):
     """Test loading specific subjects only."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Load only sub-001
     dataset = load_bids_dataset(simple_bids_dataset, subjects=["sub-001"], validate_bids=False)
@@ -77,7 +77,7 @@ def test_load_bids_dataset_filter_subjects(simple_bids_dataset):
 
 def test_load_bids_dataset_nonexistent_path():
     """Test that loading nonexistent path raises FileNotFoundError."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     with pytest.raises(FileNotFoundError, match="not found"):
         load_bids_dataset("/nonexistent/path", validate_bids=False)
@@ -85,7 +85,7 @@ def test_load_bids_dataset_nonexistent_path():
 
 def test_load_bids_dataset_missing_description(tmp_path):
     """Test that loading dataset without dataset_description.json raises BidsError."""
-    from ldk.io import BidsError, load_bids_dataset
+    from lacuna.io import BidsError, load_bids_dataset
 
     # Create directory without dataset_description.json
     dataset_dir = tmp_path / "invalid_bids"
@@ -97,7 +97,7 @@ def test_load_bids_dataset_missing_description(tmp_path):
 
 def test_load_bids_dataset_no_lesion_masks(tmp_path):
     """Test that dataset with no lesion masks raises BidsError."""
-    from ldk.io import BidsError, load_bids_dataset
+    from lacuna.io import BidsError, load_bids_dataset
 
     # Create valid structure but no lesion masks
     dataset_dir = tmp_path / "empty_bids"
@@ -120,7 +120,7 @@ def test_load_bids_dataset_no_lesion_masks(tmp_path):
 
 def test_load_bids_dataset_warns_missing_anatomical(simple_bids_dataset):
     """Test that missing anatomical images trigger warnings."""
-    from ldk.io import load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # sub-002 has no anatomical, should warn
     with pytest.warns(UserWarning, match="No anatomical image found"):
@@ -131,8 +131,8 @@ def test_load_bids_dataset_warns_missing_anatomical(simple_bids_dataset):
 
 def test_save_nifti_basic(tmp_path, synthetic_lesion_img):
     """Test saving LesionData to NIfTI file."""
-    from ldk import LesionData
-    from ldk.io import save_nifti
+    from lacuna import LesionData
+    from lacuna.io import save_nifti
 
     # Create LesionData
     lesion_data = LesionData(
@@ -155,8 +155,8 @@ def test_save_nifti_basic(tmp_path, synthetic_lesion_img):
 
 def test_save_nifti_with_anatomical(tmp_path, synthetic_lesion_img, synthetic_anatomical_img):
     """Test saving LesionData with anatomical image."""
-    from ldk import LesionData
-    from ldk.io import save_nifti
+    from lacuna import LesionData
+    from lacuna.io import save_nifti
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
@@ -175,8 +175,8 @@ def test_save_nifti_with_anatomical(tmp_path, synthetic_lesion_img, synthetic_an
 
 def test_save_nifti_invalid_extension(tmp_path, synthetic_lesion_img):
     """Test that invalid file extension raises ValueError."""
-    from ldk import LesionData
-    from ldk.io import save_nifti
+    from lacuna import LesionData
+    from lacuna.io import save_nifti
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
@@ -190,15 +190,15 @@ def test_save_nifti_invalid_extension(tmp_path, synthetic_lesion_img):
 
 def test_export_bids_derivatives_basic(tmp_path, synthetic_lesion_img):
     """Test exporting LesionData to BIDS derivatives format."""
-    from ldk import LesionData
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.io import export_bids_derivatives
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data, output_dir)
 
     # Verify directory structure
@@ -213,9 +213,9 @@ def test_export_bids_derivatives_basic(tmp_path, synthetic_lesion_img):
 
 def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
     """Test exporting LesionData with analysis results."""
-    from ldk import LesionData
-    from ldk.core.provenance import create_provenance_record
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.core.provenance import create_provenance_record
+    from lacuna.io import export_bids_derivatives
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
@@ -234,7 +234,7 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
         prov
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data_with_results, output_dir)
 
     # Verify results and provenance files
@@ -250,15 +250,15 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
 
 def test_export_bids_derivatives_session(tmp_path, synthetic_lesion_img):
     """Test exporting multi-session data."""
-    from ldk import LesionData
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.io import export_bids_derivatives
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         metadata={"subject_id": "sub-001", "session_id": "ses-01", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_data, output_dir)
 
     # Verify session structure
@@ -268,8 +268,8 @@ def test_export_bids_derivatives_session(tmp_path, synthetic_lesion_img):
 
 def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_lesion_img):
     """Test that export without subject_id raises ValueError."""
-    from ldk import LesionData
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.io import export_bids_derivatives
 
     # Create LesionData without subject_id (should not be possible via __init__, but test anyway)
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
@@ -277,22 +277,22 @@ def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_lesion_img):
     # Manually remove subject_id for testing
     lesion_data._metadata = {}
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
     with pytest.raises(ValueError, match="subject_id"):
         export_bids_derivatives(lesion_data, output_dir)
 
 
 def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_lesion_img):
     """Test that overwrite=False prevents file overwriting."""
-    from ldk import LesionData
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.io import export_bids_derivatives
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
 
     # First export should succeed
     export_bids_derivatives(lesion_data, output_dir)
@@ -304,15 +304,15 @@ def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_lesion
 
 def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_lesion_img):
     """Test that overwrite=True allows file overwriting."""
-    from ldk import LesionData
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.io import export_bids_derivatives
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
 
     # First export
     export_bids_derivatives(lesion_data, output_dir)
@@ -324,15 +324,15 @@ def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_lesion_im
 
 def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_lesion_img):
     """Test selective output options."""
-    from ldk import LesionData
-    from ldk.io import export_bids_derivatives
+    from lacuna import LesionData
+    from lacuna.io import export_bids_derivatives
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
     )
 
-    output_dir = tmp_path / "derivatives" / "ldk"
+    output_dir = tmp_path / "derivatives" / "lacuna"
 
     # Export only images, no results/provenance
     subject_dir = export_bids_derivatives(
@@ -350,7 +350,7 @@ def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_lesion_im
 
 def test_bids_error_exception():
     """Test BidsError exception can be raised and caught."""
-    from ldk.io import BidsError
+    from lacuna.io import BidsError
 
     with pytest.raises(BidsError):
         raise BidsError("Test error message")

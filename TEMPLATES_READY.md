@@ -7,24 +7,24 @@ Successfully integrated FSL MNI152 templates into the package as bundled data.
 ## What Changed
 
 ### Files Modified
-- **`src/ldk/data/__init__.py`**: Added `get_mni_template()`, `get_template_path()`, `list_templates()` functions
-- **`src/ldk/analysis/structural_network_mapping.py`**: 
+- **`src/lacuna/data/__init__.py`**: Added `get_mni_template()`, `get_template_path()`, `list_templates()` functions
+- **`src/lacuna/analysis/structural_network_mapping.py`**: 
   - Removed `from nilearn.datasets import load_mni152_template`
-  - Added `from ldk.data import get_mni_template`
+  - Added `from lacuna.data import get_mni_template`
   - Updated `_validate_inputs()` to load templates as nibabel images
 - **`pyproject.toml`**: Added templates to package_data
 - **`MANIFEST.in`**: Added templates to source distribution
 
 ### Templates Included
-- ✅ `src/ldk/data/templates/MNI152_T1_1mm.nii.gz` (182×218×182)
-- ✅ `src/ldk/data/templates/MNI152_T1_2mm.nii.gz` (91×109×91)
-- ✅ `src/ldk/data/templates/README.md`
+- ✅ `src/lacuna/data/templates/MNI152_T1_1mm.nii.gz` (182×218×182)
+- ✅ `src/lacuna/data/templates/MNI152_T1_2mm.nii.gz` (91×109×91)
+- ✅ `src/lacuna/data/templates/README.md`
 
 ## Testing Results
 
 ✅ Template loading works:
 ```python
-from ldk.data import get_mni_template
+from lacuna.data import get_mni_template
 template = get_mni_template(resolution=2)  # (91, 109, 91)
 ```
 
@@ -54,7 +54,7 @@ analysis = StructuralNetworkMapping(
 ## API
 
 ```python
-from ldk.data import get_mni_template, list_templates
+from lacuna.data import get_mni_template, list_templates
 
 # Load template
 template_2mm = get_mni_template(resolution=2)

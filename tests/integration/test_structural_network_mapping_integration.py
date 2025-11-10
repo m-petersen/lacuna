@@ -10,9 +10,9 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from ldk import LesionData
-from ldk.analysis import StructuralNetworkMapping
-from ldk.utils.mrtrix import MRtrixError, check_mrtrix_available
+from lacuna import LesionData
+from lacuna.analysis import StructuralNetworkMapping
+from lacuna.utils.mrtrix import MRtrixError, check_mrtrix_available
 
 
 def _check_mrtrix():

@@ -193,8 +193,8 @@ def synthetic_lesion_data(synthetic_lesion_img):
     """Create a LesionData object from synthetic lesion image."""
     import sys
 
-    sys.path.insert(0, "/home/marvin/projects/lesion_decoding_toolkit/src")
-    from ldk.core.lesion_data import LesionData
+    sys.path.insert(0, "/home/marvin/projects/lacuna/src")
+    from lacuna.core.lesion_data import LesionData
 
     return LesionData(
         lesion_img=synthetic_lesion_img,
@@ -207,8 +207,8 @@ def batch_lesion_data_list(synthetic_lesion_img):
     """Create a list of LesionData objects for batch testing."""
     import sys
 
-    sys.path.insert(0, "/home/marvin/projects/lesion_decoding_toolkit/src")
-    from ldk.core.lesion_data import LesionData
+    sys.path.insert(0, "/home/marvin/projects/lacuna/src")
+    from lacuna.core.lesion_data import LesionData
 
     lesion_list = []
     for i in range(1, 4):  # Create 3 test subjects

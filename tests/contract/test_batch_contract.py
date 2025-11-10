@@ -9,11 +9,11 @@ import sys
 
 import pytest
 
-sys.path.insert(0, "/home/marvin/projects/lesion_decoding_toolkit/src")
+sys.path.insert(0, "/home/marvin/projects/lacuna/src")
 
-from ldk.analysis.base import BaseAnalysis
-from ldk.batch import batch_process
-from ldk.core.lesion_data import LesionData
+from lacuna.analysis.base import BaseAnalysis
+from lacuna.batch import batch_process
+from lacuna.core.lesion_data import LesionData
 
 
 class MockAnalysis(BaseAnalysis):
@@ -151,32 +151,32 @@ class TestBatchStrategyContract:
         """BatchStrategy should be an abstract base class."""
         from abc import ABC
 
-        from ldk.batch.strategies import BatchStrategy
+        from lacuna.batch.strategies import BatchStrategy
 
         assert issubclass(BatchStrategy, ABC)
 
     def test_batch_strategy_has_execute_method(self):
         """BatchStrategy should define execute() abstract method."""
-        from ldk.batch.strategies import BatchStrategy
+        from lacuna.batch.strategies import BatchStrategy
 
         assert hasattr(BatchStrategy, "execute")
         assert callable(BatchStrategy.execute)
 
     def test_batch_strategy_has_name_property(self):
         """BatchStrategy should define name property."""
-        from ldk.batch.strategies import BatchStrategy
+        from lacuna.batch.strategies import BatchStrategy
 
         assert hasattr(BatchStrategy, "name")
 
     def test_parallel_strategy_is_batch_strategy(self):
         """ParallelStrategy should be a subclass of BatchStrategy."""
-        from ldk.batch.strategies import BatchStrategy, ParallelStrategy
+        from lacuna.batch.strategies import BatchStrategy, ParallelStrategy
 
         assert issubclass(ParallelStrategy, BatchStrategy)
 
     def test_parallel_strategy_has_name(self):
         """ParallelStrategy should have name property returning 'parallel'."""
-        from ldk.batch.strategies import ParallelStrategy
+        from lacuna.batch.strategies import ParallelStrategy
 
         strategy = ParallelStrategy(n_jobs=1)
         assert strategy.name == "parallel"
@@ -187,7 +187,7 @@ class TestBaseAnalysisBatchIntegration:
 
     def test_base_analysis_has_batch_strategy_attribute(self):
         """BaseAnalysis should have batch_strategy class attribute."""
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna.analysis.base import BaseAnalysis
 
         assert hasattr(BaseAnalysis, "batch_strategy")
         assert isinstance(BaseAnalysis.batch_strategy, str)
@@ -195,14 +195,14 @@ class TestBaseAnalysisBatchIntegration:
 
     def test_regional_damage_has_batch_strategy(self):
         """RegionalDamage should declare batch_strategy."""
-        from ldk.analysis import RegionalDamage
+        from lacuna.analysis import RegionalDamage
 
         assert hasattr(RegionalDamage, "batch_strategy")
         assert RegionalDamage.batch_strategy == "parallel"
 
     def test_atlas_aggregation_has_batch_strategy(self):
         """AtlasAggregation should declare batch_strategy."""
-        from ldk.analysis import AtlasAggregation
+        from lacuna.analysis import AtlasAggregation
 
         assert hasattr(AtlasAggregation, "batch_strategy")
         assert AtlasAggregation.batch_strategy == "parallel"
@@ -223,7 +223,7 @@ class TestBatchProcessBackend:
         """ParallelStrategy should accept backend parameter in constructor."""
         import inspect
 
-        from ldk.batch.strategies import ParallelStrategy
+        from lacuna.batch.strategies import ParallelStrategy
 
         sig = inspect.signature(ParallelStrategy.__init__)
         assert "backend" in sig.parameters
@@ -231,7 +231,7 @@ class TestBatchProcessBackend:
 
     def test_parallel_strategy_stores_backend(self):
         """ParallelStrategy should store backend parameter."""
-        from ldk.batch.strategies import ParallelStrategy
+        from lacuna.batch.strategies import ParallelStrategy
 
         strategy = ParallelStrategy(n_jobs=2, backend="threading")
         assert hasattr(strategy, "backend")
@@ -239,7 +239,7 @@ class TestBatchProcessBackend:
 
     def test_parallel_strategy_default_backend_is_loky(self):
         """ParallelStrategy should default to loky backend."""
-        from ldk.batch.strategies import ParallelStrategy
+        from lacuna.batch.strategies import ParallelStrategy
 
         strategy = ParallelStrategy(n_jobs=2)
         assert strategy.backend == "loky"
@@ -248,7 +248,7 @@ class TestBatchProcessBackend:
         """select_strategy should accept backend parameter."""
         import inspect
 
-        from ldk.batch.selection import select_strategy
+        from lacuna.batch.selection import select_strategy
 
         sig = inspect.signature(select_strategy)
         assert "backend" in sig.parameters
@@ -256,7 +256,7 @@ class TestBatchProcessBackend:
 
     def test_select_strategy_passes_backend_to_strategy(self):
         """select_strategy should pass backend to created strategy."""
-        from ldk.batch.selection import select_strategy
+        from lacuna.batch.selection import select_strategy
 
         analysis = MockAnalysis()
         strategy = select_strategy(analysis=analysis, n_subjects=10, n_jobs=2, backend="threading")
