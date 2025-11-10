@@ -1,4 +1,4 @@
-# Feature Specification: Lesion Decoding Toolkit (ldk) Core Package
+# Feature Specification: Lacuna Core Package
 
 **Feature Branch**: `001-core-package`  
 **Created**: 2025-10-27  
@@ -188,14 +188,14 @@ The system implements a tiered data management strategy to handle large referenc
 - **Connectomes**: Large normative connectivity datasets (50-100GB). User-managed due to licensing and size constraints.
 
 **Storage Locations:**
-- **Default cache**: `~/.cache/ldk/` (XDG Base Directory compliant)
+- **Default cache**: `~/.cache/lacuna/` (XDG Base Directory compliant)
   - Contains auto-downloaded atlases and templates
   - Can be safely deleted and regenerated
   - Respects `XDG_CACHE_HOME` environment variable
-- **User-specified data**: Configurable via `LDK_DATA_DIR` environment variable
+- **User-specified data**: Configurable via `LACUNA_DATA_DIR` environment variable
   - Allows placement on fast storage (NVMe) or network drives
   - Persists across cache clearing operations
-- **Connectome storage**: User-managed, specified via `LDK_CONNECTOME_DIR` environment variable
+- **Connectome storage**: User-managed, specified via `LACUNA_CONNECTOME_DIR` environment variable
   - Users download and convert connectomes themselves
   - No automatic downloading due to licensing restrictions
 
@@ -207,12 +207,12 @@ The system maintains a registry of commonly-used atlases with download URLs and 
 **Supported workflow:**
 1. **Automatic download**: `RegionalDamage(atlas="harvard-oxford")` downloads on first use
 2. **Custom atlas**: `RegionalDamage(atlas="/path/to/custom.nii.gz")` uses user-provided files
-3. **Atlas directory**: `LDK_ATLAS_DIR=/lab/atlases` enables directory scanning for named atlases
+3. **Atlas directory**: `LACUNA_ATLAS_DIR=/lab/atlases` enables directory scanning for named atlases
 
 **Atlas resolution order:**
 1. If provided as Path → use directly (custom atlas)
 2. If in pre-registered catalog → fetch via Pooch (download if missing)
-3. If `LDK_ATLAS_DIR` set → scan directory for matching files
+3. If `LACUNA_ATLAS_DIR` set → scan directory for matching files
 4. Else → raise `AtlasNotFoundError` with available options
 
 **Atlas file format:**
@@ -228,10 +228,10 @@ Due to licensing restrictions, connectomes are not distributed with the package.
 2. Convert to LDK-compatible format using conversion utilities
 3. Specify location via environment variable or direct path
 
-**Conversion utilities** (in `ldk.io.convert`):
+**Conversion utilities** (in `lacuna.io.convert`):
 - `gsp1000_to_ldk()`: Converts GSP1000 batched fMRI data to HDF5 format
 - `tractogram_to_ldk()`: Converts MRtrix3 .tck files to LDK format
-- CLI tool: `ldk convert gsp1000 /path/to/raw /output/path`
+- CLI tool: `lacuna convert gsp1000 /path/to/raw /output/path`
 
 **Expected HDF5 structure** (functional connectomes):
 ```
@@ -246,21 +246,21 @@ connectome.h5
 
 **Connectome resolution order:**
 1. If provided as Path → use directly
-2. If `LDK_CONNECTOME_DIR` set → look for named file
+2. If `LACUNA_CONNECTOME_DIR` set → look for named file
 3. Else → raise `ConnectomeNotFoundError` with setup instructions
 
 #### Implementation Details
 
 **Technology stack:**
 - **Pooch**: Download management, caching, checksums (for atlases/templates)
-- **XDG Base Directory**: Standard cache location (`~/.cache/ldk/`)
+- **XDG Base Directory**: Standard cache location (`~/.cache/lacuna/`)
 - **Environment variables**: User configuration without code changes
 - **HDF5**: Efficient storage for large connectome matrices
 
 **Environment variables:**
-- `LDK_DATA_DIR`: Override default cache directory for all reference data
-- `LDK_ATLAS_DIR`: Additional atlas search directory (scanned for custom atlases)
-- `LDK_CONNECTOME_DIR`: Directory containing user-prepared connectomes
+- `LACUNA_DATA_DIR`: Override default cache directory for all reference data
+- `LACUNA_ATLAS_DIR`: Additional atlas search directory (scanned for custom atlases)
+- `LACUNA_CONNECTOME_DIR`: Directory containing user-prepared connectomes
 - `XDG_CACHE_HOME`: System-wide XDG cache location (respected by default)
 
 **Functional requirements:**

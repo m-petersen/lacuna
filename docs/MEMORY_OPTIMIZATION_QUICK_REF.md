@@ -104,12 +104,12 @@ pytest tests/unit/test_memory_optimization.py
 
 ## Files Modified
 
-- `src/ldk/analysis/functional_network_mapping.py`
+- `src/lacuna/analysis/functional_network_mapping.py`
   - Added streaming aggregation
   - Added `_aggregate_results_from_statistics()`
   - Float32 optimization in einsum
   
-- `src/ldk/batch/*.py`
+- `src/lacuna/batch/*.py`
   - No changes needed (backward compatible)
 
 - `test_batch_flnm.py`

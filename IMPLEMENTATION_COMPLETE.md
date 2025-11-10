@@ -53,7 +53,7 @@ for batch in connectome_batches:  # 10 iterations
 ### 1. Create Connectome Batches from GSP1000
 
 ```python
-from ldk.utils import create_connectome_batches
+from lacuna.utils import create_connectome_batches
 
 # Convert GSP1000 to optimized batches
 batches = create_connectome_batches(
@@ -69,9 +69,9 @@ batches = create_connectome_batches(
 ### 2. Vectorized Batch Processing (Automatic)
 
 ```python
-from ldk import LesionData
-from ldk.analysis import FunctionalNetworkMapping
-from ldk.batch import batch_process
+from lacuna import LesionData
+from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.batch import batch_process
 
 # Load lesions
 lesions = [
@@ -123,7 +123,7 @@ The script will:
 ### Memory Management
 - Process lesions in configurable sub-batches if needed:
   ```python
-  from ldk.batch import VectorizedStrategy
+  from lacuna.batch import VectorizedStrategy
   
   strategy = VectorizedStrategy(lesion_batch_size=50)
   results = strategy.execute(lesions, analysis)
@@ -223,9 +223,9 @@ def _compute_batch_correlations_vectorized(self, lesion_batch, timeseries_data):
 All integration tests pass:
 ```bash
 python -c "
-from ldk.analysis import FunctionalNetworkMapping
-from ldk.batch import VectorizedStrategy, select_strategy, batch_process
-from ldk.utils import create_connectome_batches, validate_connectome_batches
+from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.batch import VectorizedStrategy, select_strategy, batch_process
+from lacuna.utils import create_connectome_batches, validate_connectome_batches
 
 # ✓ All imports successful
 # ✓ run_batch() method exists
@@ -244,7 +244,7 @@ python test_batch_flnm.py
 
 ### 2. Create Connectome Batches (if needed)
 ```python
-from ldk.utils import create_connectome_batches
+from lacuna.utils import create_connectome_batches
 
 create_connectome_batches(
     gsp_dir="/your/GSP1000/path",

@@ -1,6 +1,6 @@
 """Unit tests for analysis object repr and str methods."""
 
-from ldk.analysis import (
+from lacuna.analysis import (
     AtlasAggregation,
     FunctionalNetworkMapping,
     RegionalDamage,

@@ -10,22 +10,22 @@ import pytest
 
 def test_atlas_aggregation_import():
     """Test that AtlasAggregation can be imported."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     assert AtlasAggregation is not None
 
 
 def test_atlas_aggregation_inherits_base_analysis():
     """Test that AtlasAggregation inherits from BaseAnalysis."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.base import BaseAnalysis
 
     assert issubclass(AtlasAggregation, BaseAnalysis)
 
 
 def test_atlas_aggregation_can_instantiate():
     """Test that AtlasAggregation can be instantiated with required parameters."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     analysis = AtlasAggregation(
         atlas_dir="/path/to/atlases", source="lesion_img", aggregation="mean"
@@ -35,7 +35,7 @@ def test_atlas_aggregation_can_instantiate():
 
 def test_atlas_aggregation_has_run_method():
     """Test that AtlasAggregation has the run() method from BaseAnalysis."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     analysis = AtlasAggregation(atlas_dir="/path/to/atlases")
     assert hasattr(analysis, "run")
@@ -44,7 +44,7 @@ def test_atlas_aggregation_has_run_method():
 
 def test_atlas_aggregation_accepts_source_parameter():
     """Test that AtlasAggregation accepts source parameter to specify data source."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Can aggregate lesion directly
     analysis1 = AtlasAggregation(atlas_dir="/path/to/atlases", source="lesion_img")
@@ -60,7 +60,7 @@ def test_atlas_aggregation_accepts_source_parameter():
 
 def test_atlas_aggregation_accepts_aggregation_methods():
     """Test that AtlasAggregation accepts different aggregation methods."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     for method in ["mean", "sum", "percent", "volume"]:
         analysis = AtlasAggregation(
@@ -71,7 +71,7 @@ def test_atlas_aggregation_accepts_aggregation_methods():
 
 def test_atlas_aggregation_validates_aggregation_method():
     """Test that invalid aggregation method raises ValueError."""
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     with pytest.raises(ValueError, match="aggregation"):
         AtlasAggregation(
@@ -83,8 +83,8 @@ def test_atlas_aggregation_validates_aggregation_method():
 
 def test_atlas_aggregation_validates_atlas_directory(synthetic_lesion_img):
     """Test that AtlasAggregation validates atlas directory exists."""
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     analysis = AtlasAggregation(atlas_dir="/nonexistent/path")
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
@@ -98,8 +98,8 @@ def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_pat
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -126,8 +126,8 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, t
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -162,8 +162,8 @@ def test_atlas_aggregation_returns_lesion_data(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -190,8 +190,8 @@ def test_atlas_aggregation_result_structure(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -221,8 +221,8 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_lesion_img, tmp_pa
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
@@ -254,8 +254,8 @@ def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img, tm
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"
@@ -284,8 +284,8 @@ def test_atlas_aggregation_adds_provenance(synthetic_lesion_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from ldk import LesionData
-    from ldk.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna import LesionData
+    from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Create mock atlas
     atlas_dir = tmp_path / "atlases"

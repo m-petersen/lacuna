@@ -10,8 +10,8 @@ class TestResultNamespacing:
 
     def test_results_namespaced_by_class_name(self, synthetic_lesion_img):
         """Test that results are automatically namespaced under class name."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class VolumeAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -29,8 +29,8 @@ class TestResultNamespacing:
 
     def test_multiple_analyses_separate_namespaces(self, synthetic_lesion_img):
         """Test that different analyses have separate namespaces."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class Analysis1(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -58,8 +58,8 @@ class TestResultNamespacing:
 
     def test_namespace_collision_overwrites(self, synthetic_lesion_img):
         """Test that running same analysis twice overwrites previous results."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
             def __init__(self, value):
@@ -86,8 +86,8 @@ class TestResultNamespacing:
 
     def test_namespace_preserves_other_results(self, synthetic_lesion_img):
         """Test that new analysis preserves results from other analyses."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class AnalysisA(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -125,8 +125,8 @@ class TestResultNamespacing:
 
     def test_namespace_with_complex_results(self, synthetic_lesion_img):
         """Test namespacing with complex nested result dictionaries."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class ComplexAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -155,8 +155,8 @@ class TestImmutability:
 
     def test_input_lesion_data_not_modified(self, synthetic_lesion_img):
         """Test that input LesionData object is never modified."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -180,8 +180,8 @@ class TestImmutability:
 
     def test_input_results_dict_not_modified(self, synthetic_lesion_img):
         """Test that the input results dictionary is not modified."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class Analysis1(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -216,8 +216,8 @@ class TestImmutability:
 
     def test_lesion_img_not_modified(self, synthetic_lesion_img):
         """Test that running analysis doesn't affect original LesionData image reference."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -238,8 +238,8 @@ class TestImmutability:
 
     def test_metadata_not_modified(self, synthetic_lesion_img):
         """Test that metadata is not modified."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -261,8 +261,8 @@ class TestImmutability:
 
     def test_chained_analyses_preserve_immutability(self, synthetic_lesion_img):
         """Test that chaining multiple analyses maintains immutability."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class A1(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -308,8 +308,8 @@ class TestProvenanceTracking:
 
     def test_provenance_added_after_analysis(self, synthetic_lesion_img):
         """Test that provenance is recorded after running analysis."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -328,8 +328,8 @@ class TestProvenanceTracking:
 
     def test_provenance_contains_analysis_name(self, synthetic_lesion_img):
         """Test that provenance records the analysis class name."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class MyCustomAnalysis(BaseAnalysis):
             def _validate_inputs(self, lesion_data):
@@ -347,8 +347,8 @@ class TestProvenanceTracking:
 
     def test_provenance_records_parameters(self, synthetic_lesion_img):
         """Test that analysis parameters are recorded in provenance."""
-        from ldk import LesionData
-        from ldk.analysis.base import BaseAnalysis
+        from lacuna import LesionData
+        from lacuna.analysis.base import BaseAnalysis
 
         class ParameterizedAnalysis(BaseAnalysis):
             def __init__(self, threshold=0.5, method="default"):

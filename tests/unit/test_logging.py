@@ -3,7 +3,7 @@
 import io
 from contextlib import redirect_stdout
 
-from ldk.utils.logging import (
+from lacuna.utils.logging import (
     ConsoleLogger,
     MessageType,
     log_error,

@@ -72,7 +72,7 @@ estimated_remaining = avg_time_per_batch * remaining_batches
 Timing information is shown when `verbose=True`:
 
 ```python
-from ldk.analysis import FunctionalNetworkMapping
+from lacuna.analysis import FunctionalNetworkMapping
 
 # Show timing (default)
 analysis = FunctionalNetworkMapping(
@@ -186,7 +186,7 @@ If seeing slow times:
 
 ## Code Location
 
-Implementation in `src/ldk/analysis/functional_network_mapping.py`:
+Implementation in `src/lacuna/analysis/functional_network_mapping.py`:
 
 ```python
 def run_batch(self, lesion_data_list):

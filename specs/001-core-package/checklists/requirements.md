@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Lesion Decoding Toolkit (ldk) Core Package
+# Specification Quality Checklist: Lacuna Core Package
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-10-27

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Lesion Decoding Toolkit provides sophisticated memory management capabilities for processing large numbers of lesions efficiently. This guide explains how to optimize memory usage while maintaining high performance.
+The Lacuna provides sophisticated memory management capabilities for processing large numbers of lesions efficiently. This guide explains how to optimize memory usage while maintaining high performance.
 
 ## Key Concepts
 
@@ -11,7 +11,7 @@ The Lesion Decoding Toolkit provides sophisticated memory management capabilitie
 The `lesion_batch_size` parameter controls how many lesions are processed together in each batch:
 
 ```python
-from ldk.batch import batch_process
+from lacuna.batch import batch_process
 
 results = batch_process(
     lesions,
@@ -68,7 +68,7 @@ For maximum efficiency with large datasets, combine both features:
 ```python
 from pathlib import Path
 import nibabel as nib
-from ldk.batch import batch_process
+from lacuna.batch import batch_process
 
 output_dir = Path("/path/to/output")
 output_dir.mkdir(exist_ok=True)
@@ -291,7 +291,7 @@ if USE_VECTORIZED and LESION_BATCH_SIZE:
 
 ```python
 from typing import List
-from ldk.core.lesion_data import LesionData
+from lacuna.core.lesion_data import LesionData
 
 def batch_result_callback(batch_results: List[LesionData]) -> None:
     """

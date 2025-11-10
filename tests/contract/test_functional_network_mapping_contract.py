@@ -10,23 +10,23 @@ import pytest
 
 def test_functional_network_mapping_import():
     """Test that FunctionalNetworkMapping can be imported."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     assert FunctionalNetworkMapping is not None
 
 
 def test_functional_network_mapping_inherits_base_analysis():
     """Test that FunctionalNetworkMapping inherits from BaseAnalysis."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     assert issubclass(FunctionalNetworkMapping, BaseAnalysis)
 
 
 def test_functional_network_mapping_can_instantiate():
     """Test that FunctionalNetworkMapping can be instantiated with required parameters."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     # Should accept connectome path
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
@@ -35,7 +35,7 @@ def test_functional_network_mapping_can_instantiate():
 
 def test_functional_network_mapping_has_method_parameter():
     """Test that FunctionalNetworkMapping accepts method parameter (boes/pini)."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     # Test BOES method
     analysis_boes = FunctionalNetworkMapping(
@@ -52,7 +52,7 @@ def test_functional_network_mapping_has_method_parameter():
 
 def test_functional_network_mapping_validates_method():
     """Test that invalid method raises ValueError."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     with pytest.raises(ValueError, match="method must be 'boes' or 'pini'"):
         FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5", method="invalid")
@@ -60,7 +60,7 @@ def test_functional_network_mapping_validates_method():
 
 def test_functional_network_mapping_has_run_method():
     """Test that FunctionalNetworkMapping has the run() method from BaseAnalysis."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
     assert hasattr(analysis, "run")
@@ -69,9 +69,9 @@ def test_functional_network_mapping_has_run_method():
 
 def test_functional_network_mapping_validates_coordinate_space(synthetic_lesion_img):
     """Test that FunctionalNetworkMapping validates MNI152 coordinate space."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create lesion data with non-MNI space
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
@@ -85,9 +85,9 @@ def test_functional_network_mapping_validates_coordinate_space(synthetic_lesion_
 
 def test_functional_network_mapping_requires_binary_mask(synthetic_lesion_img):
     """Test that FunctionalNetworkMapping requires binary lesion mask."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create non-binary lesion data
     data = synthetic_lesion_img.get_fdata()
@@ -108,9 +108,9 @@ def test_functional_network_mapping_returns_lesion_data(synthetic_lesion_img, tm
     """Test that run() returns a LesionData object with namespaced results."""
     import h5py
     import numpy as np
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create minimal mock connectome file
     connectome_path = tmp_path / "mock_connectome.h5"
@@ -138,9 +138,9 @@ def test_functional_network_mapping_result_structure(synthetic_lesion_img, tmp_p
     """Test that results contain expected keys and data types."""
     import h5py
     import numpy as np
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create minimal mock connectome
     connectome_path = tmp_path / "mock_connectome.h5"
@@ -169,7 +169,7 @@ def test_functional_network_mapping_result_structure(synthetic_lesion_img, tmp_p
 
 def test_functional_network_mapping_accepts_pini_percentile():
     """Test that PINI method accepts percentile parameter."""
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     analysis = FunctionalNetworkMapping(
         connectome_path="/path/to/connectome.h5", method="pini", pini_percentile=20
@@ -182,9 +182,9 @@ def test_functional_network_mapping_preserves_input_immutability(synthetic_lesio
     """Test that run() does not modify the input LesionData."""
     import h5py
     import numpy as np
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create mock connectome
     connectome_path = tmp_path / "mock_connectome.h5"
@@ -212,9 +212,9 @@ def test_functional_network_mapping_adds_provenance(synthetic_lesion_img, tmp_pa
     """Test that run() adds provenance record."""
     import h5py
     import numpy as np
-    from ldk.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create mock connectome
     connectome_path = tmp_path / "mock_connectome.h5"

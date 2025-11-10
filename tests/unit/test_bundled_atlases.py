@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from ldk.data import (
+from lacuna.data import (
     get_atlas_citation,
     get_bundled_atlas,
     get_bundled_atlas_dir,

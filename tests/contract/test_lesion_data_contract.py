@@ -11,15 +11,15 @@ import pytest
 
 
 def test_lesion_data_import():
-    """Test that LesionData can be imported from ldk.core."""
-    from ldk.core.lesion_data import LesionData
+    """Test that LesionData can be imported from lacuna.core."""
+    from lacuna.core.lesion_data import LesionData
 
     assert LesionData is not None
 
 
 def test_lesion_data_init_with_minimal_args(synthetic_lesion_img, lesion_metadata):
     """Test LesionData initialization with minimal required arguments."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
 
@@ -36,7 +36,7 @@ def test_lesion_data_init_with_minimal_args(synthetic_lesion_img, lesion_metadat
 
 def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
     """Test LesionData initialization with custom metadata."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     metadata = {
         "subject_id": "sub-001",
@@ -53,7 +53,7 @@ def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
 
 def test_lesion_data_init_with_anatomical(synthetic_lesion_img, lesion_metadata):
     """Test LesionData initialization with anatomical image."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     # Create matching anatomical image
     anat_data = np.random.rand(*synthetic_lesion_img.shape).astype(np.float32)
@@ -67,8 +67,8 @@ def test_lesion_data_init_with_anatomical(synthetic_lesion_img, lesion_metadata)
 
 def test_lesion_data_init_validates_3d_image(synthetic_4d_img):
     """Test that LesionData rejects 4D images."""
-    from ldk.core.exceptions import ValidationError
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.exceptions import ValidationError
+    from lacuna.core.lesion_data import LesionData
 
     with pytest.raises(ValidationError, match="3D"):
         LesionData(synthetic_4d_img)
@@ -76,8 +76,8 @@ def test_lesion_data_init_validates_3d_image(synthetic_4d_img):
 
 def test_lesion_data_init_validates_affine_mismatch():
     """Test that LesionData rejects mismatched anatomical affine."""
-    from ldk.core.exceptions import SpatialMismatchError
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.exceptions import SpatialMismatchError
+    from lacuna.core.lesion_data import LesionData
 
     # Create lesion
     lesion_data = np.ones((64, 64, 64), dtype=np.uint8)
@@ -97,7 +97,7 @@ def test_lesion_data_init_validates_affine_mismatch():
 
 def test_lesion_data_from_nifti(tmp_path, synthetic_lesion_img):
     """Test LesionData.from_nifti classmethod."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     # Save test image
     filepath = tmp_path / "test_lesion.nii.gz"
@@ -113,7 +113,7 @@ def test_lesion_data_from_nifti(tmp_path, synthetic_lesion_img):
 
 def test_lesion_data_from_nifti_with_metadata(tmp_path, synthetic_lesion_img):
     """Test from_nifti with custom metadata."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     filepath = tmp_path / "test_lesion.nii.gz"
     nib.save(synthetic_lesion_img, filepath)
@@ -127,8 +127,8 @@ def test_lesion_data_from_nifti_with_metadata(tmp_path, synthetic_lesion_img):
 
 def test_lesion_data_from_nifti_nonexistent_file():
     """Test from_nifti with nonexistent file raises error."""
-    from ldk.core.exceptions import NiftiLoadError
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.exceptions import NiftiLoadError
+    from lacuna.core.lesion_data import LesionData
 
     with pytest.raises((NiftiLoadError, FileNotFoundError)):
         LesionData.from_nifti("/nonexistent/file.nii.gz", metadata={"space": "MNI152_2mm"})
@@ -136,7 +136,7 @@ def test_lesion_data_from_nifti_nonexistent_file():
 
 def test_lesion_data_validate(synthetic_lesion_img, lesion_metadata):
     """Test LesionData.validate method."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
 
@@ -146,7 +146,7 @@ def test_lesion_data_validate(synthetic_lesion_img, lesion_metadata):
 
 def test_lesion_data_get_volume_mm3(synthetic_lesion_img, lesion_metadata):
     """Test get_volume_mm3 method."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     volume = lesion.get_volume_mm3()
@@ -157,7 +157,7 @@ def test_lesion_data_get_volume_mm3(synthetic_lesion_img, lesion_metadata):
 
 def test_lesion_data_get_coordinate_space(synthetic_lesion_img, lesion_metadata):
     """Test get_coordinate_space method."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
     space = lesion.get_coordinate_space()
@@ -168,7 +168,7 @@ def test_lesion_data_get_coordinate_space(synthetic_lesion_img, lesion_metadata)
 
 def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
     """Test LesionData.copy method creates independent copy."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(
         synthetic_lesion_img, metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
@@ -185,7 +185,7 @@ def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
 
 def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
     """Test to_dict serialization."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     metadata = {"subject_id": "sub-001", "age": 45}
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
@@ -201,7 +201,7 @@ def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
 
 def test_lesion_data_from_dict(synthetic_lesion_img, lesion_metadata):
     """Test from_dict deserialization."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     # Create original
     metadata = {"subject_id": "sub-001", "space": "MNI152_2mm"}
@@ -216,7 +216,7 @@ def test_lesion_data_from_dict(synthetic_lesion_img, lesion_metadata):
 
 def test_lesion_data_properties_are_readonly(synthetic_lesion_img, lesion_metadata):
     """Test that properties cannot be directly modified."""
-    from ldk.core.lesion_data import LesionData
+    from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
 

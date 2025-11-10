@@ -11,8 +11,8 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 
-from ldk import LesionData
-from ldk.analysis import AtlasAggregation
+from lacuna import LesionData
+from lacuna.analysis import AtlasAggregation
 
 
 class TestAtlasLabelAssignment:

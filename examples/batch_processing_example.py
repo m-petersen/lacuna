@@ -17,9 +17,9 @@ import argparse
 import time
 from pathlib import Path
 
-from ldk import LesionData, batch_process
-from ldk.analysis import AtlasAggregation, RegionalDamage
-from ldk.io import batch_export_to_csv, batch_export_to_tsv
+from lacuna import LesionData, batch_process
+from lacuna.analysis import AtlasAggregation, RegionalDamage
+from lacuna.io import batch_export_to_csv, batch_export_to_tsv
 
 
 def main():

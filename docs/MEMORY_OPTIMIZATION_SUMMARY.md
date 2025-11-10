@@ -173,8 +173,8 @@ pytest tests/unit/test_memory_optimization.py -v
 No code changes required! The optimization is automatic:
 
 ```python
-from ldk.batch import batch_process
-from ldk.analysis import FunctionalNetworkMapping
+from lacuna.batch import batch_process
+from lacuna.analysis import FunctionalNetworkMapping
 
 analysis = FunctionalNetworkMapping(...)
 

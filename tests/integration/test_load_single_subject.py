@@ -12,7 +12,7 @@ import pytest
 
 def test_load_single_subject_lesion_only(tmp_path):
     """Test loading single subject with lesion mask only."""
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create synthetic lesion
     shape = (64, 64, 64)
@@ -43,7 +43,7 @@ def test_load_single_subject_lesion_only(tmp_path):
 
 def test_load_single_subject_with_anatomical(tmp_path):
     """Test loading single subject with both lesion and anatomical images."""
-    from ldk import LesionData
+    from lacuna import LesionData
 
     shape = (64, 64, 64)
     affine = np.eye(4)
@@ -78,9 +78,9 @@ def test_load_single_subject_with_anatomical(tmp_path):
 
 def test_single_subject_workflow_with_analysis(tmp_path):
     """Test complete workflow: load → analyze → save."""
-    from ldk import LesionData
-    from ldk.core.provenance import create_provenance_record
-    from ldk.io import save_nifti
+    from lacuna import LesionData
+    from lacuna.core.provenance import create_provenance_record
+    from lacuna.io import save_nifti
 
     # Create and save lesion
     shape = (64, 64, 64)
@@ -132,8 +132,8 @@ def test_single_subject_workflow_with_analysis(tmp_path):
 
 def test_single_subject_validation_catches_issues(tmp_path):
     """Test that validation catches common issues."""
-    from ldk import LesionData
-    from ldk.core.exceptions import ValidationError
+    from lacuna import LesionData
+    from lacuna.core.exceptions import ValidationError
 
     # Create lesion with 4D data (should be caught)
     shape = (64, 64, 64, 3)  # 4D is invalid!
@@ -154,7 +154,7 @@ def test_single_subject_validation_catches_issues(tmp_path):
 
 def test_single_subject_empty_mask_warning(tmp_path):
     """Test that empty lesion mask triggers warning."""
-    from ldk import LesionData
+    from lacuna import LesionData
 
     # Create empty lesion (all zeros)
     shape = (64, 64, 64)
@@ -175,7 +175,7 @@ def test_single_subject_empty_mask_warning(tmp_path):
 
 def test_single_subject_metadata_persistence(tmp_path):
     """Test that metadata persists through operations."""
-    from ldk import LesionData
+    from lacuna import LesionData
 
     shape = (64, 64, 64)
     data = np.zeros(shape, dtype=np.uint8)

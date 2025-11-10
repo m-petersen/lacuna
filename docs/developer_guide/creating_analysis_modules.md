@@ -1,10 +1,10 @@
 # Creating Custom Analysis Modules
 
-This guide shows you how to create custom analysis modules that plug into the LDK framework.
+This guide shows you how to create custom analysis modules that plug into the Lacuna framework.
 
 ## Overview
 
-All analysis modules in LDK inherit from `BaseAnalysis`, which provides a standardized interface and automatic result management. By implementing two simple methods, your analysis becomes a first-class citizen in the LDK ecosystem.
+All analysis modules in Lacuna inherit from `BaseAnalysis`, which provides a standardized interface and automatic result management. By implementing two simple methods, your analysis becomes a first-class citizen in the Lacuna ecosystem.
 
 ## The BaseAnalysis Contract
 
@@ -28,8 +28,8 @@ Here's the simplest possible analysis module:
 ```python
 # File: my_custom_analysis.py
 
-from ldk.analysis.base import BaseAnalysis
-from ldk.core import LesionData
+from lacuna.analysis.base import BaseAnalysis
+from lacuna.core import LesionData
 
 class MyCustomAnalysis(BaseAnalysis):
     """
@@ -85,7 +85,7 @@ class MyCustomAnalysis(BaseAnalysis):
 ## Usage Example
 
 ```python
-from ldk import LesionData
+from lacuna import LesionData
 from my_custom_analysis import MyCustomAnalysis
 
 # Load data
@@ -104,8 +104,8 @@ print(result.results['MyCustomAnalysis']['volume_mm3'])
 ```python
 from typing import Literal
 import numpy as np
-from ldk.analysis.base import BaseAnalysis
-from ldk.core import LesionData
+from lacuna.analysis.base import BaseAnalysis
+from lacuna.core import LesionData
 
 class LesionVolumeAnalysis(BaseAnalysis):
     """
@@ -313,7 +313,7 @@ def _get_version(self) -> str:
 
 def test_my_analysis_basic(synthetic_lesion_img):
     """Test basic functionality."""
-    from ldk import LesionData
+    from lacuna import LesionData
     from my_analysis import MyAnalysis
     
     lesion_data = LesionData(lesion_img=synthetic_lesion_img)
@@ -388,18 +388,18 @@ def _run_analysis(self, lesion_data: LesionData) -> dict:
 
 ## Contributing Your Analysis
 
-To contribute your analysis to LDK:
+To contribute your analysis to Lacuna:
 
-1. **Create the module** in `src/ldk/analysis/your_analysis.py`
+1. **Create the module** in `src/lacuna/analysis/your_analysis.py`
 2. **Write tests** in `tests/unit/test_your_analysis.py`
 3. **Add documentation** to the module docstring
-4. **Export** from `src/ldk/analysis/__init__.py`
+4. **Export** from `src/lacuna/analysis/__init__.py`
 5. **Submit a pull request** with description and examples
 
 ## Questions?
 
 - See the API documentation: `help(BaseAnalysis)`
-- Check existing analyses: `src/ldk/analysis/`
+- Check existing analyses: `src/lacuna/analysis/`
 - Ask on GitHub Discussions
 
 ## Summary
@@ -407,7 +407,7 @@ To contribute your analysis to LDK:
 Creating a custom analysis requires:
 
 ```python
-from ldk.analysis.base import BaseAnalysis
+from lacuna.analysis.base import BaseAnalysis
 
 class YourAnalysis(BaseAnalysis):
     def __init__(self, ...):

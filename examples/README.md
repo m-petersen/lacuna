@@ -1,6 +1,6 @@
-# LDK Examples
+# Lacuna Examples
 
-This directory contains example scripts and notebooks demonstrating how to use the Lesion Decoding Toolkit.
+This directory contains example scripts and notebooks demonstrating how to use the Lacuna.
 
 ## Batch Processing Example
 
@@ -161,9 +161,9 @@ EXPORTING RESULTS
 ### In Python Scripts
 
 ```python
-from ldk import LesionData, batch_process
-from ldk.analysis import RegionalDamage
-from ldk.io import batch_export_to_csv
+from lacuna import LesionData, batch_process
+from lacuna.analysis import RegionalDamage
+from lacuna.io import batch_export_to_csv
 
 # Load lesions
 lesions = [LesionData.from_nifti(path) for path in lesion_paths]

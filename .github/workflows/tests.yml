@@ -43,7 +43,7 @@ jobs:
     
     - name: Run tests
       run: |
-        pytest --cov=ldk --cov-report=xml --cov-report=term-missing
+        pytest --cov=lacuna --cov-report=xml --cov-report=term-missing
     
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'

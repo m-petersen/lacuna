@@ -1,11 +1,11 @@
 # Using Bundled MNI152 Templates
 
-The lesion_decoding_toolkit package includes bundled MNI152 reference templates for reproducibility and offline usage.
+The lacuna package includes bundled MNI152 reference templates for reproducibility and offline usage.
 
 ## Quick Start
 
 ```python
-from ldk.data import get_mni_template
+from lacuna.data import get_mni_template
 
 # Load 2mm template (default)
 template_2mm = get_mni_template(resolution=2)
@@ -29,7 +29,7 @@ python download_templates.py
 This script will:
 1. Try to copy templates from your FSL installation (if available)
 2. Fall back to downloading via nilearn
-3. Place templates in `src/ldk/data/templates/`
+3. Place templates in `src/lacuna/data/templates/`
 
 ### Option 2: Manual Installation
 
@@ -37,13 +37,13 @@ If you have FSL installed:
 
 ```bash
 # Copy from FSL
-cp $FSLDIR/data/standard/MNI152_T1_1mm.nii.gz src/ldk/data/templates/
-cp $FSLDIR/data/standard/MNI152_T1_2mm.nii.gz src/ldk/data/templates/
+cp $FSLDIR/data/standard/MNI152_T1_1mm.nii.gz src/lacuna/data/templates/
+cp $FSLDIR/data/standard/MNI152_T1_2mm.nii.gz src/lacuna/data/templates/
 ```
 
 Or download directly:
 1. Get templates from http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009
-2. Place in `src/ldk/data/templates/`
+2. Place in `src/lacuna/data/templates/`
 
 ## API Reference
 
@@ -63,13 +63,13 @@ Load MNI152 T1-weighted template at specified resolution.
 
 **Example:**
 ```python
-from ldk.data import get_mni_template
+from lacuna.data import get_mni_template
 
 # Get default 2mm template
 template = get_mni_template()
 
 # Use with analysis
-from ldk.analysis import StructuralNetworkMapping
+from lacuna.analysis import StructuralNetworkMapping
 analysis = StructuralNetworkMapping(
     tractogram_path="tractogram.tck",
     whole_brain_tdi="tdi.nii.gz"
@@ -89,7 +89,7 @@ Get path to template file without loading it.
 
 **Example:**
 ```python
-from ldk.data import get_template_path
+from lacuna.data import get_template_path
 
 path = get_template_path(resolution=2)
 print(path)  # /path/to/ldk/data/templates/MNI152_T1_2mm.nii.gz
@@ -105,7 +105,7 @@ List all available templates with metadata.
 
 **Example:**
 ```python
-from ldk.data import list_templates
+from lacuna.data import list_templates
 
 templates = list_templates()
 for res, info in templates.items():
@@ -134,8 +134,8 @@ for res, info in templates.items():
 The templates are automatically used by analysis modules:
 
 ```python
-from ldk import LesionData
-from ldk.analysis import StructuralNetworkMapping
+from lacuna import LesionData
+from lacuna.analysis import StructuralNetworkMapping
 
 # Load lesion (must specify space)
 lesion = LesionData.from_nifti(
@@ -208,7 +208,7 @@ python download_templates.py
 
 **Error:**
 ```
-ImportError: cannot import name 'get_mni_template' from 'ldk.data'
+ImportError: cannot import name 'get_mni_template' from 'lacuna.data'
 ```
 
 **Solution:**
@@ -222,7 +222,7 @@ pip install -e .
 If template has unexpected dimensions, verify files:
 ```python
 import nibabel as nib
-from ldk.data import get_template_path
+from lacuna.data import get_template_path
 
 path = get_template_path(resolution=2)
 img = nib.load(path)

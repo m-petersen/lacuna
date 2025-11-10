@@ -10,7 +10,7 @@ import pytest
 
 def test_base_analysis_import():
     """Test that BaseAnalysis can be imported."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     assert BaseAnalysis is not None
 
@@ -18,7 +18,7 @@ def test_base_analysis_import():
 def test_base_analysis_is_abstract():
     """Test that BaseAnalysis is an abstract base class."""
     from abc import ABC
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Should be a subclass of ABC
     assert issubclass(BaseAnalysis, ABC)
@@ -26,7 +26,7 @@ def test_base_analysis_is_abstract():
 
 def test_base_analysis_cannot_be_instantiated():
     """Test that BaseAnalysis cannot be instantiated directly."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Should raise TypeError when trying to instantiate
     with pytest.raises(TypeError, match="abstract"):
@@ -35,7 +35,7 @@ def test_base_analysis_cannot_be_instantiated():
 
 def test_base_analysis_requires_validate_inputs():
     """Test that subclasses must implement _validate_inputs."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Create incomplete subclass (missing _validate_inputs)
     class IncompleteAnalysis(BaseAnalysis):
@@ -49,7 +49,7 @@ def test_base_analysis_requires_validate_inputs():
 
 def test_base_analysis_requires_run_analysis():
     """Test that subclasses must implement _run_analysis."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Create incomplete subclass (missing _run_analysis)
     class IncompleteAnalysis(BaseAnalysis):
@@ -63,7 +63,7 @@ def test_base_analysis_requires_run_analysis():
 
 def test_base_analysis_complete_subclass_can_instantiate():
     """Test that complete subclass can be instantiated."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Create complete subclass
     class CompleteAnalysis(BaseAnalysis):
@@ -84,7 +84,7 @@ def test_base_analysis_complete_subclass_can_instantiate():
 
 def test_base_analysis_run_method_exists():
     """Test that run() method is defined on BaseAnalysis."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Create complete subclass
     class TestAnalysis(BaseAnalysis):
@@ -103,7 +103,7 @@ def test_base_analysis_run_method_exists():
 
 def test_base_analysis_run_method_is_final():
     """Test that run() method cannot be overridden (marked with @final)."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     # Create subclass that tries to override run()
     class BadAnalysis(BaseAnalysis):
@@ -130,8 +130,8 @@ def test_base_analysis_run_method_is_final():
 
 def test_base_analysis_run_accepts_lesion_data(synthetic_lesion_img):
     """Test that run() accepts LesionData and returns LesionData."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     # Create test analysis
     class TestAnalysis(BaseAnalysis):
@@ -153,8 +153,8 @@ def test_base_analysis_run_accepts_lesion_data(synthetic_lesion_img):
 
 def test_base_analysis_run_validates_inputs(synthetic_lesion_img):
     """Test that run() calls _validate_inputs before analysis."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     validation_called = []
 
@@ -179,8 +179,8 @@ def test_base_analysis_run_validates_inputs(synthetic_lesion_img):
 
 def test_base_analysis_run_namespaces_results(synthetic_lesion_img):
     """Test that run() automatically namespaces results under class name."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     class MyTestAnalysis(BaseAnalysis):
         def _validate_inputs(self, lesion_data):
@@ -202,8 +202,8 @@ def test_base_analysis_run_namespaces_results(synthetic_lesion_img):
 
 def test_base_analysis_run_preserves_existing_results(synthetic_lesion_img):
     """Test that run() preserves results from other analyses."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     class Analysis1(BaseAnalysis):
         def _validate_inputs(self, lesion_data):
@@ -237,8 +237,8 @@ def test_base_analysis_run_preserves_existing_results(synthetic_lesion_img):
 
 def test_base_analysis_run_does_not_modify_input(synthetic_lesion_img):
     """Test that run() does not modify the input LesionData (immutability)."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     class TestAnalysis(BaseAnalysis):
         def _validate_inputs(self, lesion_data):
@@ -264,8 +264,8 @@ def test_base_analysis_run_does_not_modify_input(synthetic_lesion_img):
 
 def test_base_analysis_run_handles_analysis_errors(synthetic_lesion_img):
     """Test that run() properly handles errors from _run_analysis."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     class FailingAnalysis(BaseAnalysis):
         def _validate_inputs(self, lesion_data):
@@ -284,7 +284,7 @@ def test_base_analysis_run_handles_analysis_errors(synthetic_lesion_img):
 
 def test_base_analysis_supports_custom_parameters():
     """Test that subclasses can accept custom initialization parameters."""
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna.analysis.base import BaseAnalysis
 
     class ParameterizedAnalysis(BaseAnalysis):
         def __init__(self, threshold=0.5, method="default", **kwargs):
@@ -309,8 +309,8 @@ def test_base_analysis_supports_custom_parameters():
 
 def test_base_analysis_chain_multiple_analyses(synthetic_lesion_img):
     """Test that multiple analyses can be chained on the same LesionData."""
-    from ldk import LesionData
-    from ldk.analysis.base import BaseAnalysis
+    from lacuna import LesionData
+    from lacuna.analysis.base import BaseAnalysis
 
     class VolumeAnalysis(BaseAnalysis):
         def _validate_inputs(self, lesion_data):

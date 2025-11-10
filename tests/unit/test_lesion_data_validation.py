@@ -15,7 +15,7 @@ class TestLesionDataValidation:
 
     def test_validate_empty_mask_warning(self):
         """Test that empty lesion masks trigger a warning."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         # Create empty mask (all zeros)
         shape = (64, 64, 64)
@@ -37,7 +37,7 @@ class TestLesionDataValidation:
 
     def test_validate_suspicious_voxel_size_warning(self):
         """Test that suspicious voxel sizes trigger warnings."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -61,7 +61,7 @@ class TestLesionDataValidation:
 
     def test_validate_affine_nan_error(self):
         """Test that NaN in affine raises ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -74,14 +74,14 @@ class TestLesionDataValidation:
         lesion_img = nib.Nifti1Image(data, affine)
 
         # Should raise ValidationError during construction
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="NaN"):
             LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_affine_inf_error(self):
         """Test that Inf in affine raises ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -93,14 +93,14 @@ class TestLesionDataValidation:
 
         lesion_img = nib.Nifti1Image(data, affine)
 
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="Inf"):
             LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_4d_image_error(self):
         """Test that 4D images raise ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         # Create 4D image
         shape = (64, 64, 64, 10)
@@ -109,14 +109,14 @@ class TestLesionDataValidation:
 
         lesion_img = nib.Nifti1Image(data, affine)
 
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="3D"):
             LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_non_invertible_affine_error(self):
         """Test that non-invertible affine raises ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -127,14 +127,14 @@ class TestLesionDataValidation:
 
         lesion_img = nib.Nifti1Image(data, affine)
 
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="invertible"):
             LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_spatial_mismatch_error(self):
         """Test that mismatched lesion and anatomical raise ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         # Create lesion
         lesion_data = np.zeros((64, 64, 64), dtype=np.uint8)
@@ -149,14 +149,14 @@ class TestLesionDataValidation:
         affine2[0, 0] = affine2[1, 1] = affine2[2, 2] = 3.0  # Different voxel size
         anat_img = nib.Nifti1Image(anat_data, affine2)
 
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="spatial"):
             LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152_2mm"})
 
     def test_validate_spatial_mismatch_shape_error(self):
         """Test that mismatched shapes raise ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         # Create lesion
         lesion_data = np.zeros((64, 64, 64), dtype=np.uint8)
@@ -169,14 +169,14 @@ class TestLesionDataValidation:
         anat_data = np.random.rand(80, 80, 80).astype(np.float32)
         anat_img = nib.Nifti1Image(anat_data, affine)
 
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="spatial"):
             LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152_2mm"})
 
     def test_validate_valid_lesion_data_no_warnings(self):
         """Test that valid LesionData passes validation without warnings."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -199,7 +199,7 @@ class TestLesionDataValidation:
 
     def test_validate_very_small_voxels_warning(self):
         """Test that very small voxel sizes trigger warnings."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -223,7 +223,7 @@ class TestLesionDataValidation:
 
     def test_validate_anisotropic_voxels_ok(self):
         """Test that anisotropic (but reasonable) voxels are acceptable."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -248,7 +248,7 @@ class TestLesionDataValidation:
 
     def test_validate_negative_determinant_warning(self):
         """Test that negative affine determinant (neurological convention) triggers warning."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -274,7 +274,7 @@ class TestLesionDataValidation:
 
     def test_validate_zero_voxel_size_error(self):
         """Test that zero voxel size raises ValidationError."""
-        from ldk.core.exceptions import ValidationError
+        from lacuna.core.exceptions import ValidationError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -286,14 +286,14 @@ class TestLesionDataValidation:
 
         lesion_img = nib.Nifti1Image(data, affine)
 
-        from ldk import LesionData
+        from lacuna import LesionData
 
         with pytest.raises(ValidationError, match="voxel size|invertible"):
             LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152_2mm"})
 
     def test_validate_lesion_data_with_both_images(self):
         """Test validation when both lesion and anatomical provided."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         affine = np.eye(4)
@@ -319,7 +319,7 @@ class TestLesionDataValidation:
 
     def test_validate_metadata_optional(self):
         """Test that validation works with minimal metadata."""
-        from ldk import LesionData
+        from lacuna import LesionData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
