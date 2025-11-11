@@ -351,3 +351,84 @@ class BaseAnalysis(ABC):
         ...     return "1.2.3"
         """
         return "0.1.0"
+
+    def _validate_and_transform_space(
+        self,
+        lesion_data: LesionData,
+        required_space: str,
+        required_resolution: float | None = None,
+    ) -> LesionData:
+        """Validate coordinate space and auto-transform if needed.
+
+        This helper method provides a standard pattern for analysis modules
+        to validate spatial requirements and automatically transform data
+        to the required space if needed.
+
+        Parameters
+        ----------
+        lesion_data : LesionData
+            Input lesion data
+        required_space : str
+            Required coordinate space identifier (e.g., 'MNI152NLin2009cAsym')
+        required_resolution : float, optional
+            Required resolution in mm. If None, any resolution accepted.
+
+        Returns
+        -------
+        LesionData
+            Original data (if already in required space) or transformed data
+
+        Raises
+        ------
+        ValueError
+            If space cannot be determined or transformation not available
+
+        Examples
+        --------
+        >>> def _validate_inputs(self, lesion_data: LesionData) -> None:
+        ...     # Ensure data is in MNI152NLin2009cAsym space at 2mm
+        ...     lesion_data = self._validate_and_transform_space(
+        ...         lesion_data,
+        ...         required_space='MNI152NLin2009cAsym',
+        ...         required_resolution=2
+        ...     )
+        ...     return lesion_data
+        """
+        # Get current space from metadata
+        current_space = lesion_data.metadata.get("space")
+        current_resolution = lesion_data.metadata.get("resolution", 2)
+
+        if current_space is None:
+            raise ValueError(
+                "Cannot determine coordinate space from lesion data. "
+                "Ensure metadata contains 'space' key."
+            )
+
+        # Check if transformation needed
+        needs_space_transform = current_space != required_space
+        needs_resolution_change = (
+            required_resolution is not None and current_resolution != required_resolution
+        )
+
+        if not needs_space_transform and not needs_resolution_change:
+            # Already in required space - no transformation needed
+            return lesion_data
+
+        # Import transformation utilities
+        from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
+        from lacuna.spatial.transform import transform_lesion_data
+
+        # Create target space
+        target_resolution = (
+            required_resolution if required_resolution is not None else current_resolution
+        )
+        target_space = CoordinateSpace(
+            identifier=required_space,
+            resolution=target_resolution,
+            reference_affine=REFERENCE_AFFINES.get(
+                (required_space, target_resolution), lesion_data.affine
+            ),
+        )
+
+        # Transform data
+        return transform_lesion_data(lesion_data, target_space)
