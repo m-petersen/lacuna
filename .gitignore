@@ -82,7 +82,7 @@ notebooks/dev/
 !notebooks/dev/.gitkeep
 
 # Keep example notebooks
-!notebooks/examples/
+notebooks/
 
 # Specs
 specs/
@@ -91,4 +91,4 @@ specs/
 .envrc
 
 # Notes
-notes
+notes/
