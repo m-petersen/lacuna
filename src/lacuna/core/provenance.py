@@ -4,11 +4,55 @@ Provenance tracking utilities for reproducibility.
 Functions for recording and managing transformation history.
 """
 
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
 from .exceptions import ProvenanceError
 
+
+@dataclass
+class TransformationRecord:
+    """Record of a spatial transformation operation.
+
+    Attributes:
+        source_space: Source coordinate space identifier (e.g., 'MNI152NLin6Asym')
+        source_resolution: Source resolution in mm
+        target_space: Target coordinate space identifier
+        target_resolution: Target resolution in mm
+        method: Transformation method (e.g., 'nitransforms')
+        interpolation: Interpolation method used (e.g., 'linear', 'nearest')
+        timestamp: ISO 8601 timestamp of transformation
+        rationale: Optional explanation for transformation strategy choice
+        transform_file: Optional path/identifier of transform file used
+    """
+
+    source_space: str
+    source_resolution: float
+    target_space: str
+    target_resolution: float
+    method: str
+    interpolation: str
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    rationale: str | None = None
+    transform_file: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for provenance tracking."""
+        result = {
+            "source_space": self.source_space,
+            "source_resolution": self.source_resolution,
+            "target_space": self.target_space,
+            "target_resolution": self.target_resolution,
+            "method": self.method,
+            "interpolation": self.interpolation,
+            "timestamp": self.timestamp,
+        }
+        if self.rationale is not None:
+            result["rationale"] = self.rationale
+        if self.transform_file is not None:
+            result["transform_file"] = self.transform_file
+        return result
 
 def create_provenance_record(
     function: str,
@@ -89,9 +133,9 @@ def validate_provenance_record(record: dict[str, Any]) -> None:
     """
     required_fields = ["function", "parameters", "timestamp", "version"]
 
-    for field in required_fields:
-        if field not in record:
-            raise ProvenanceError(f"Provenance record missing required field: {field}")
+    for field_name in required_fields:
+        if field_name not in record:
+            raise ProvenanceError(f"Provenance record missing required field: {field_name}")
 
     # Validate timestamp format
     try:

@@ -2,6 +2,52 @@
 
 This directory contains example scripts and notebooks demonstrating how to use the Lacuna.
 
+## Multi-Space Architecture Demo (NEW!)
+
+### `space_transformation_demo.py`
+
+**Comprehensive demonstration** of the new multi-space neuroimaging architecture (Feature 001).
+
+**What it demonstrates:**
+1. **Automatic Space Detection**: Load lesion images with automatic detection of coordinate space
+2. **Query APIs**: Check supported spaces and available transformations  
+3. **Space Validation**: Validate spatial consistency and transform availability
+4. **Transformation Strategy**: Automatic selection of transformation direction and interpolation method
+5. **Provenance Tracking**: Complete tracking of all transformations with `TransformationRecord`
+6. **Analysis Integration**: Helper methods for automatic space alignment in analysis modules
+7. **Data Asset Management**: Template and transform file management with TemplateFlow integration
+
+**Usage:**
+
+```bash
+# Run with auto-generated synthetic lesion
+python examples/space_transformation_demo.py
+
+# Run with your own lesion image
+python examples/space_transformation_demo.py /path/to/your/lesion.nii.gz
+```
+
+**Features shown:**
+- ✓ Automatic detection of MNI152NLin6Asym space from header
+- ✓ Query of all 4 supported coordinate spaces
+- ✓ Available bidirectional transforms between NLin6 ↔ NLin2009c
+- ✓ Space validation and transform availability checks
+- ✓ Transformation strategy (forward direction, nearest neighbor interpolation)
+- ✓ TransformationRecord structure for provenance
+- ✓ Analysis module integration pattern
+- ✓ Data asset management with local caching
+
+**Requirements:**
+- `nibabel` (required for NIfTI I/O)
+- `nitransforms` (optional, for actual transformations)
+- `templateflow` (optional, for automatic transform downloads)
+
+```bash
+pip install nitransforms templateflow
+```
+
+---
+
 ## Batch Processing Example
 
 ### Standalone Script (Recommended for Production)

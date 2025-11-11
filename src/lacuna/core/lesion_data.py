@@ -259,7 +259,27 @@ class LesionData:
                     if part.startswith("sub-"):
                         metadata["subject_id"] = part
                         break
+        # If coordinate space information is missing from metadata, attempt
+        # to detect it from the loaded NIfTI image (affine/header or filename)
+        # using the central get_image_space utility. This keeps behavior
+        # convenient for users while ensuring LesionData always receives
+        # explicit space/resolution metadata downstream.
+        if "space" not in metadata or "resolution" not in metadata:
+            try:
+                # Import lazily to avoid circular imports at module load time
+                from .spaces import get_image_space
 
+                detected = get_image_space(lesion_img, filepath=lesion_path)
+                if detected is not None:
+                    # Populate metadata entries if not already present
+                    if "space" not in metadata:
+                        metadata["space"] = detected.identifier
+                    if "resolution" not in metadata:
+                        metadata["resolution"] = detected.resolution
+            except Exception:
+                # Detection is best-effort; leave metadata untouched and allow
+                # __init__ to raise a helpful error if necessary.
+                pass
         return cls(lesion_img, anatomical_img=anatomical_img, metadata=metadata)
 
     def validate(self) -> bool:
