@@ -27,9 +27,7 @@ def test_atlas_aggregation_can_instantiate():
     """Test that AtlasAggregation can be instantiated with required parameters."""
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    analysis = AtlasAggregation(
-        atlas_dir="/path/to/atlases", source="lesion_img", aggregation="mean"
-    )
+    analysis = AtlasAggregation(source="lesion_img", aggregation="mean")
     assert analysis is not None
 
 
@@ -37,7 +35,7 @@ def test_atlas_aggregation_has_run_method():
     """Test that AtlasAggregation has the run() method from BaseAnalysis."""
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    analysis = AtlasAggregation(atlas_dir="/path/to/atlases")
+    analysis = AtlasAggregation()
     assert hasattr(analysis, "run")
     assert callable(analysis.run)
 
@@ -47,12 +45,11 @@ def test_atlas_aggregation_accepts_source_parameter():
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     # Can aggregate lesion directly
-    analysis1 = AtlasAggregation(atlas_dir="/path/to/atlases", source="lesion_img")
+    analysis1 = AtlasAggregation(source="lesion_img")
     assert analysis1.source == "lesion_img"
 
     # Can aggregate from previous analysis result
     analysis2 = AtlasAggregation(
-        atlas_dir="/path/to/atlases",
         source="FunctionalNetworkMapping.network_map",
     )
     assert analysis2.source == "FunctionalNetworkMapping.network_map"
@@ -63,9 +60,7 @@ def test_atlas_aggregation_accepts_aggregation_methods():
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
     for method in ["mean", "sum", "percent", "volume"]:
-        analysis = AtlasAggregation(
-            atlas_dir="/path/to/atlases", source="lesion_img", aggregation=method
-        )
+        analysis = AtlasAggregation(source="lesion_img", aggregation=method)
         assert analysis.aggregation == method
 
 
@@ -75,22 +70,33 @@ def test_atlas_aggregation_validates_aggregation_method():
 
     with pytest.raises(ValueError, match="aggregation"):
         AtlasAggregation(
-            atlas_dir="/path/to/atlases",
             source="lesion_img",
             aggregation="invalid_method",
         )
 
 
 def test_atlas_aggregation_validates_atlas_directory(synthetic_lesion_img):
-    """Test that AtlasAggregation validates atlas directory exists."""
+    """Test that AtlasAggregation validates atlases are available in registry."""
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.assets.atlases.registry import ATLAS_REGISTRY
 
-    analysis = AtlasAggregation(atlas_dir="/nonexistent/path")
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    # Save current registry state
+    saved_registry = ATLAS_REGISTRY.copy()
+    
+    try:
+        # Clear registry
+        ATLAS_REGISTRY.clear()
+        
+        analysis = AtlasAggregation()
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    with pytest.raises((ValueError, FileNotFoundError), match="atlas"):
-        analysis.run(lesion_data)
+        with pytest.raises(ValueError, match="atlas|registry"):
+            analysis.run(lesion_data)
+    finally:
+        # Restore registry
+        ATLAS_REGISTRY.clear()
+        ATLAS_REGISTRY.update(saved_registry)
 
 
 def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_path):
@@ -100,20 +106,22 @@ def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_pat
 
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.assets.atlases.registry import register_atlases_from_directory
 
-    # Create mock atlas
+    # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
     atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
     atlas_data[20:40, 20:40, 20:40] = 1
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
+    
+    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Try to aggregate from non-existent analysis result
     analysis = AtlasAggregation(
-        atlas_dir=str(atlas_dir),
         source="NonExistentAnalysis.network_map",
     )
 
@@ -121,7 +129,7 @@ def test_atlas_aggregation_validates_source_exists(synthetic_lesion_img, tmp_pat
         analysis.run(lesion_data)
 
 
-def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, tmp_path):
+def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img):
     """Test that AtlasAggregation can access results from previous analyses."""
     import nibabel as nib
     import numpy as np
@@ -129,26 +137,18 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, t
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    # Create mock atlas
-    atlas_dir = tmp_path / "atlases"
-    atlas_dir.mkdir()
-    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
-    atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
-
     # Create lesion data with mock analysis results
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Add mock network map from previous analysis
     network_map = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_lesion_img.affine)
     lesion_data._results["MockAnalysis"] = {"network_map": network_map}
 
-    # Should be able to aggregate the network map
+    # Should be able to aggregate the network map using bundled atlas
     analysis = AtlasAggregation(
-        atlas_dir=str(atlas_dir),
         source="MockAnalysis.network_map",
         aggregation="mean",
+        atlas_names=["Schaefer2018_100Parcels7Networks"],
     )
 
     result = analysis.run(lesion_data)
@@ -157,25 +157,17 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_lesion_img, t
     assert "AtlasAggregation" in result.results
 
 
-def test_atlas_aggregation_returns_lesion_data(synthetic_lesion_img, tmp_path):
+def test_atlas_aggregation_returns_lesion_data(synthetic_lesion_img):
     """Test that run() returns a LesionData object with namespaced results."""
-    import nibabel as nib
-    import numpy as np
-
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    # Create mock atlas
-    atlas_dir = tmp_path / "atlases"
-    atlas_dir.mkdir()
-    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
-    atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
-
-    analysis = AtlasAggregation(atlas_dir=str(atlas_dir), source="lesion_img")
+    analysis = AtlasAggregation(
+        source="lesion_img",
+        atlas_names=["Schaefer2018_100Parcels7Networks"],
+    )
     result = analysis.run(lesion_data)
 
     # Should return LesionData
@@ -185,90 +177,59 @@ def test_atlas_aggregation_returns_lesion_data(synthetic_lesion_img, tmp_path):
     assert "AtlasAggregation" in result.results
 
 
-def test_atlas_aggregation_result_structure(synthetic_lesion_img, tmp_path):
+def test_atlas_aggregation_result_structure(synthetic_lesion_img):
     """Test that results contain ROI-level aggregated values."""
-    import nibabel as nib
-    import numpy as np
-
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    # Create mock atlas
-    atlas_dir = tmp_path / "atlases"
-    atlas_dir.mkdir()
-    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
-    atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 TestRegion\n")
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
-
-    analysis = AtlasAggregation(atlas_dir=str(atlas_dir), source="lesion_img", aggregation="mean")
+    analysis = AtlasAggregation(
+        source="lesion_img",
+        aggregation="mean",
+        atlas_names=["Schaefer2018_100Parcels7Networks"],
+    )
     result = analysis.run(lesion_data)
 
     results_dict = result.results["AtlasAggregation"]
 
     # Should contain ROI-level values
-    # Format: {"test_TestRegion": 0.523, ...}
+    # Format: {"Schaefer2018_100Parcels7Networks_7Networks_LH_Vis_1": 0.523, ...}
     assert len(results_dict) > 0
     for key, value in results_dict.items():
         assert isinstance(key, str)
         assert isinstance(value, (int, float))
 
 
-def test_atlas_aggregation_handles_multiple_atlases(synthetic_lesion_img, tmp_path):
-    """Test that AtlasAggregation can process multiple atlases in directory."""
-    import nibabel as nib
-    import numpy as np
-
+def test_atlas_aggregation_handles_multiple_atlases(synthetic_lesion_img):
+    """Test that AtlasAggregation can process multiple atlases from registry."""
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    atlas_dir = tmp_path / "atlases"
-    atlas_dir.mkdir()
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    # Create two atlases
-    for atlas_name in ["atlas1", "atlas2"]:
-        atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
-        atlas_data[20:40, 20:40, 20:40] = 1
-        nib.save(
-            nib.Nifti1Image(atlas_data, np.eye(4)),
-            atlas_dir / f"{atlas_name}.nii.gz",
-        )
-        (atlas_dir / f"{atlas_name}_labels.txt").write_text("1 Region1\n")
-
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
-
-    analysis = AtlasAggregation(atlas_dir=str(atlas_dir))
+    # Use two bundled atlases
+    analysis = AtlasAggregation(
+        atlas_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
+    )
     result = analysis.run(lesion_data)
 
     results_dict = result.results["AtlasAggregation"]
 
     # Should have results from both atlases
-    assert any("atlas1" in key for key in results_dict.keys())
-    assert any("atlas2" in key for key in results_dict.keys())
+    assert any("Schaefer2018_100Parcels7Networks" in key for key in results_dict.keys())
+    assert any("Schaefer2018_200Parcels7Networks" in key for key in results_dict.keys())
 
 
-def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img, tmp_path):
+def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img):
     """Test that run() does not modify the input LesionData."""
-    import nibabel as nib
-    import numpy as np
-
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    # Create mock atlas
-    atlas_dir = tmp_path / "atlases"
-    atlas_dir.mkdir()
-    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
-    atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
-
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
     original_results = lesion_data.results.copy()
 
-    analysis = AtlasAggregation(atlas_dir=str(atlas_dir))
+    analysis = AtlasAggregation(atlas_names=["Schaefer2018_100Parcels7Networks"])
     result = analysis.run(lesion_data)
 
     # Input should not be modified
@@ -279,26 +240,15 @@ def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img, tm
     assert result is not lesion_data
 
 
-def test_atlas_aggregation_adds_provenance(synthetic_lesion_img, tmp_path):
+def test_atlas_aggregation_adds_provenance(synthetic_lesion_img):
     """Test that run() adds provenance record."""
-    import nibabel as nib
-    import numpy as np
-
     from lacuna import LesionData
     from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
-    # Create mock atlas
-    atlas_dir = tmp_path / "atlases"
-    atlas_dir.mkdir()
-    atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
-    atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
-
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
     original_prov_len = len(lesion_data.provenance)
 
-    analysis = AtlasAggregation(atlas_dir=str(atlas_dir))
+    analysis = AtlasAggregation(atlas_names=["Schaefer2018_100Parcels7Networks"])
     result = analysis.run(lesion_data)
 
     # Should have added provenance

@@ -142,7 +142,10 @@ def test_base_analysis_run_accepts_lesion_data(synthetic_lesion_img):
             return {"test_result": 42}
 
     analysis = TestAnalysis()
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Run should accept LesionData
     result = analysis.run(lesion_data)
@@ -167,7 +170,10 @@ def test_base_analysis_run_validates_inputs(synthetic_lesion_img):
             return {}
 
     analysis = TestAnalysis()
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Should raise validation error
     with pytest.raises(ValueError, match="Validation failed"):
@@ -190,7 +196,10 @@ def test_base_analysis_run_namespaces_results(synthetic_lesion_img):
             return {"score": 123, "metric": "test"}
 
     analysis = MyTestAnalysis()
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     result = analysis.run(lesion_data)
 
@@ -219,7 +228,10 @@ def test_base_analysis_run_preserves_existing_results(synthetic_lesion_img):
         def _run_analysis(self, lesion_data):
             return {"value": 2}
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Run first analysis
     result1 = Analysis1().run(lesion_data)
@@ -247,7 +259,10 @@ def test_base_analysis_run_does_not_modify_input(synthetic_lesion_img):
         def _run_analysis(self, lesion_data):
             return {"result": "new"}
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
     original_results = lesion_data.results.copy()
 
     analysis = TestAnalysis()
@@ -275,7 +290,10 @@ def test_base_analysis_run_handles_analysis_errors(synthetic_lesion_img):
             raise RuntimeError("Analysis computation failed!")
 
     analysis = FailingAnalysis()
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Should propagate the error
     with pytest.raises(RuntimeError, match="Analysis computation failed"):
@@ -330,7 +348,10 @@ def test_base_analysis_chain_multiple_analyses(synthetic_lesion_img):
             volume = lesion_data.results["VolumeAnalysis"]["volume_mm3"]
             return {"network_score": volume * 0.5}
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img)
+    lesion_data = LesionData(
+        lesion_img=synthetic_lesion_img,
+        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Chain analyses
     result = VolumeAnalysis().run(lesion_data)
