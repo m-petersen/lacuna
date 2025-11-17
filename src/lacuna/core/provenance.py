@@ -40,6 +40,7 @@ class TransformationRecord:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for provenance tracking."""
         result = {
+            "type": "spatial_transformation",
             "source_space": self.source_space,
             "source_resolution": self.source_resolution,
             "target_space": self.target_space,

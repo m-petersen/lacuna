@@ -13,6 +13,15 @@ from .exceptions import (
     ValidationError,
 )
 from .lesion_data import LesionData
+from .output import (
+    AnalysisResult,
+    VoxelMapResult,
+    ROIResult,
+    ConnectivityMatrixResult,
+    SurfaceResult,
+    TractogramResult,
+    MiscResult,
+)
 from .provenance import (
     create_provenance_record,
     merge_provenance,
@@ -37,6 +46,14 @@ __all__ = [
     "AnalysisError",
     # Core data
     "LesionData",
+    # Output classes
+    "AnalysisResult",
+    "VoxelMapResult",
+    "ROIResult",
+    "ConnectivityMatrixResult",
+    "SurfaceResult",
+    "TractogramResult",
+    "MiscResult",
     # Validation
     "validate_nifti_image",
     "ensure_ras_plus",
