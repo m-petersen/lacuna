@@ -21,9 +21,168 @@ from lacuna.core.exceptions import (
 SUPPORTED_SPACES = [
     "MNI152NLin6Asym",
     "MNI152NLin2009cAsym",
-    "MNI152NLin2009bAsym",
+    "MNI152NLin2009aAsym",  # Alias for cAsym
+    "MNI152NLin2009bAsym",  # Alias for cAsym
     "native",
 ]
+
+# Space aliases - anatomically identical spaces that require no transformation
+# Only resampling is needed if resolutions differ
+SPACE_ALIASES = {
+    "MNI152NLin2009aAsym": "MNI152NLin2009cAsym",
+    "MNI152NLin2009bAsym": "MNI152NLin2009cAsym",
+}
+
+
+def canonicalize_space_variant(space: str) -> str:
+    """Canonicalize MNI space variant identifiers to their standard forms.
+    
+    Handles space variant aliases by converting them to their canonical representations:
+    - MNI152NLin2009aAsym -> MNI152NLin2009cAsym
+    - MNI152NLin2009bAsym -> MNI152NLin2009cAsym  
+    - MNI152NLin2009cAsym -> MNI152NLin2009cAsym (unchanged)
+    - Other spaces remain unchanged
+    
+    This canonicalization enables consistent space comparisons and transform lookups.
+    Note: This is NOT related to spatial normalization (warping images to standard space).
+    
+    Args:
+        space: Space identifier string
+        
+    Returns:
+        Canonical space identifier
+        
+    Examples:
+        >>> canonicalize_space_variant("MNI152NLin2009aAsym")
+        'MNI152NLin2009cAsym'
+        >>> canonicalize_space_variant("MNI152NLin6Asym")
+        'MNI152NLin6Asym'
+    """
+    return SPACE_ALIASES.get(space, space)
+
+
+def spaces_are_equivalent(space1: str, space2: str) -> bool:
+    """Check if two space identifiers are anatomically equivalent.
+    
+    Returns True if spaces are identical or are aliases of each other
+    (e.g., aAsym and cAsym are equivalent).
+    
+    Args:
+        space1: First space identifier
+        space2: Second space identifier
+        
+    Returns:
+        True if spaces are equivalent, False otherwise
+        
+    Examples:
+        >>> spaces_are_equivalent("MNI152NLin2009aAsym", "MNI152NLin2009cAsym")
+        True
+        >>> spaces_are_equivalent("MNI152NLin6Asym", "MNI152NLin2009cAsym")
+        False
+    """
+    return canonicalize_space_variant(space1) == canonicalize_space_variant(space2)
+
+
+def validate_space_compatibility(
+    actual_space: str,
+    expected_space: str,
+    context: str = "operation",
+    suggest_transform: bool = False
+) -> None:
+    """Validate that actual space is compatible with expected space.
+    
+    Raises ValueError if spaces are incompatible (not equivalent).
+    Handles space aliases automatically.
+    
+    Args:
+        actual_space: The actual space of the data
+        expected_space: The expected/required space
+        context: Description of operation for error messages
+        suggest_transform: Whether to suggest transformation in error message
+        
+    Raises:
+        ValueError: If spaces are incompatible
+        
+    Examples:
+        >>> validate_space_compatibility("MNI152NLin2009aAsym", "MNI152NLin2009cAsym", "test")
+        # No error - spaces are equivalent
+        >>> validate_space_compatibility("native", "MNI152NLin6Asym", "test")
+        ValueError: Space mismatch in test: got 'native', expected 'MNI152NLin6Asym'
+    """
+    if not spaces_are_equivalent(actual_space, expected_space):
+        msg = (
+            f"Space mismatch in {context}: "
+            f"got '{actual_space}', expected '{expected_space}'"
+        )
+        
+        if suggest_transform:
+            # Check if transform might be available
+            norm_actual = canonicalize_space_variant(actual_space)
+            norm_expected = canonicalize_space_variant(expected_space)
+            
+            # Basic check for common transform pairs
+            if {norm_actual, norm_expected} == {"MNI152NLin6Asym", "MNI152NLin2009cAsym"}:
+                msg += (
+                    ". Transform available between these spaces. "
+                    "Consider using transform_lesion_data() to align spaces."
+                )
+        
+        raise ValueError(msg)
+
+
+def validate_space_and_resolution(
+    space: str | None,
+    resolution: float | None,
+    strict: bool = True
+) -> None:
+    """Validate space identifier and resolution are consistent.
+    
+    Ensures that if a space is specified, resolution is also provided,
+    and both are valid values.
+    
+    Args:
+        space: Space identifier (can be None for native/unknown space)
+        resolution: Resolution in mm (can be None if space is None)
+        strict: Whether to require resolution when space is provided
+        
+    Raises:
+        ValueError: If validation fails
+        
+    Examples:
+        >>> validate_space_and_resolution("MNI152NLin6Asym", 2.0)
+        # No error
+        >>> validate_space_and_resolution("MNI152NLin6Asym", None)
+        ValueError: Resolution is required when space is specified
+        >>> validate_space_and_resolution(None, None)
+        # No error - both None is acceptable
+    """
+    # Both None is acceptable (native/unknown space)
+    if space is None and resolution is None:
+        return
+    
+    # If space is provided, resolution must be provided in strict mode
+    if space is not None and resolution is None and strict:
+        raise ValueError(
+            "Resolution is required when space is specified. "
+            f"Got space='{space}' but resolution=None"
+        )
+    
+    # Validate space identifier if provided
+    if space is not None and space not in SUPPORTED_SPACES:
+        raise ValueError(
+            f"Unknown or unsupported space identifier: '{space}'. "
+            f"Supported spaces: {SUPPORTED_SPACES}"
+        )
+    
+    # Validate resolution if provided
+    if resolution is not None:
+        valid_resolutions = [0.5, 1, 2]
+        if resolution not in valid_resolutions:
+            raise ValueError(
+                f"Invalid resolution: {resolution}mm. "
+                f"Must be one of {valid_resolutions}mm"
+            )
+
 
 # Reference affine matrices for each space/resolution pair
 # These are the canonical transformations from voxel to world coordinates
@@ -37,22 +196,6 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
-    ("MNI152NLin6Asym", 1): np.array(
-        [
-            [1.0, 0.0, 0.0, -91.0],
-            [0.0, 1.0, 0.0, -126.0],
-            [0.0, 0.0, 1.0, -72.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ]
-    ),
-    ("MNI152NLin2009cAsym", 2): np.array(
-        [
-            [2.0, 0.0, 0.0, -96.5],
-            [0.0, 2.0, 0.0, -132.5],
-            [0.0, 0.0, 2.0, -78.5],
-            [0.0, 0.0, 0.0, 1.0],
-        ]
-    ),
     ("MNI152NLin2009cAsym", 1): np.array(
         [
             [1.0, 0.0, 0.0, -96.0],
@@ -61,11 +204,46 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
+    # MNI152NLin2009aAsym - anatomically identical to cAsym 
+    ("MNI152NLin2009aAsym", 1): np.array(
+        [
+            [1.0, 0.0, 0.0, -96.0],
+            [0.0, 1.0, 0.0, -132.0],
+            [0.0, 0.0, 1.0, -78.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    ),
+    ("MNI152NLin2009cAsym", 2): np.array(
+        [
+            [2.0, 0.0, 0.0, -96.0],
+            [0.0, 2.0, 0.0, -132.0],
+            [0.0, 0.0, 2.0, -78.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    ),
+    # MNI152NLin2009aAsym 2mm - anatomically identical to cAsym
+    ("MNI152NLin2009aAsym", 2): np.array(
+        [
+            [2.0, 0.0, 0.0, -96.0],
+            [0.0, 2.0, 0.0, -132.0],
+            [0.0, 0.0, 2.0, -78.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    ),
+    # MNI152NLin2009bAsym - anatomically identical to cAsym (dTOR tractogram, 0.5mm)
     ("MNI152NLin2009bAsym", 0.5): np.array(
         [
             [0.5, 0.0, 0.0, -98.0],
             [0.0, 0.5, 0.0, -134.0],
             [0.0, 0.0, 0.5, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    ),
+    ("MNI152NLin6Asym", 1): np.array(
+        [
+            [1.0, 0.0, 0.0, -90.0],
+            [0.0, 1.0, 0.0, -126.0],
+            [0.0, 0.0, 1.0, -72.0],
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
@@ -340,15 +518,22 @@ class SpaceValidator:
         if not self.detect_mismatch(source_space, target_space):
             return True
 
+        # Resolve space aliases (aAsym/bAsym -> cAsym)
+        # Aliased spaces are anatomically identical, only resampling needed
+        source_id = SPACE_ALIASES.get(source_space.identifier, source_space.identifier)
+        target_id = SPACE_ALIASES.get(target_space.identifier, target_space.identifier)
+
+        # If aliases resolve to same space, only resolution difference remains
+        if source_id == target_id:
+            return True  # Resolution resampling is always supported
+
         # Check if transform pair is in registry
         supported_pairs = [
             ("MNI152NLin6Asym", "MNI152NLin2009cAsym"),
             ("MNI152NLin2009cAsym", "MNI152NLin6Asym"),
-            ("MNI152NLin2009bAsym", "MNI152NLin2009cAsym"),
-            ("MNI152NLin2009cAsym", "MNI152NLin2009bAsym"),
         ]
 
-        pair = (source_space.identifier, target_space.identifier)
+        pair = (source_id, target_id)
         return pair in supported_pairs
 
 
@@ -357,6 +542,7 @@ __all__ = [
     "SpatialMetadata",
     "SpaceValidator",
     "SUPPORTED_SPACES",
+    "SPACE_ALIASES",
     "REFERENCE_AFFINES",
     "detect_space_from_filename",
     "detect_space_from_header",

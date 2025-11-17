@@ -78,7 +78,7 @@ class LesionData:
     anatomical_img : nibabel.Nifti1Image, optional
         Subject's anatomical scan (must match lesion coordinate space).
     metadata : dict, optional
-        Subject metadata. Must contain 'space' key (e.g., 'MNI152_2mm', 'MNI152_1mm',
+        Subject metadata. Must contain 'space' key (e.g., 'MNI152NLin6Asym', 'MNI152_1mm',
         or 'native') unless provenance is provided. 'subject_id' defaults to
         "sub-unknown" if not provided.
     provenance : list of dict, optional
@@ -118,7 +118,7 @@ class LesionData:
     >>> lesion_img = nib.load("lesion.nii.gz")
     >>> lesion = LesionData(
     ...     lesion_img,
-    ...     metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
+    ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     ... )
     >>> print(f"Volume: {lesion.get_volume_mm3()} mm³")
     >>> print(f"Space: {lesion.get_coordinate_space()}")
@@ -161,9 +161,9 @@ class LesionData:
                 "This is required for spatial validation in analysis modules.\n"
                 "Common values:\n"
                 "  - 'MNI152_1mm' (1mm MNI152 template)\n"
-                "  - 'MNI152_2mm' (2mm MNI152 template)\n"
+                "  - 'MNI152NLin6Asym' (2mm MNI152 template)\n"
                 "  - 'native' (subject's native space)\n"
-                "Example: LesionData(img, metadata={'subject_id': 'sub-001', 'space': 'MNI152_2mm'})"
+                "Example: LesionData(img, metadata={'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym'})"
             )
 
         self._metadata = metadata.copy()
@@ -215,12 +215,12 @@ class LesionData:
         --------
         >>> lesion = LesionData.from_nifti(
         ...     "lesion.nii.gz",
-        ...     metadata={"space": "MNI152_2mm"}
+        ...     metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         ... )
         >>> lesion = LesionData.from_nifti(
         ...     "lesion.nii.gz",
         ...     anatomical_path="T1w.nii.gz",
-        ...     metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
+        ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
         ... )
         """
         lesion_path = Path(lesion_path)
@@ -356,7 +356,7 @@ class LesionData:
         Returns
         -------
         str
-            Coordinate space identifier (e.g., 'native', 'MNI152_2mm').
+            Coordinate space identifier (e.g., 'native', 'MNI152NLin6Asym').
 
         Examples
         --------
