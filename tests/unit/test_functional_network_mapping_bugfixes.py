@@ -89,7 +89,7 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
         ]
     )
     lesion_img = nib.Nifti1Image(lesion_data_array, affine)
-    lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Call with LesionData object only - should not raise TypeError
     try:
@@ -130,7 +130,7 @@ def test_both_fixes_together(simple_connectome):
         ]
     )
     lesion_img = nib.Nifti1Image(lesion_data_array, affine)
-    lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # This should work without TypeErrors
     # (May raise ValidationError if no overlap, but that's expected)
@@ -184,7 +184,7 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
     # Save and load with LesionData
     lesion_path = tmp_path / "lesion.nii.gz"
     nib.save(lesion_img, lesion_path)
-    lesion = LesionData.from_nifti(str(lesion_path), metadata={"space": "MNI152_2mm"})
+    lesion = LesionData.from_nifti(str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Create analysis
     analysis = FunctionalNetworkMapping(

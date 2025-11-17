@@ -46,7 +46,7 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n2 {atlas_name}_Region2\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
             # Test 1: Process only atlas_B
             analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_B"])
@@ -104,7 +104,7 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
             # Request atlas_A and atlas_B (atlas_B doesn't exist)
             analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_A", "atlas_B"])
@@ -142,7 +142,7 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
             # Request only atlas_B (doesn't exist)
             analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_B"])
@@ -191,7 +191,7 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
             # Use AtlasAggregation with atlas_names filter
             analysis = AtlasAggregation(

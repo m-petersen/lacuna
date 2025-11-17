@@ -22,7 +22,7 @@ def test_atlas_aggregation_resamples_incompatible_atlas_shapes(tmp_path):
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
     lesion_array[20:40, 20:40, 20:40] = 1
     lesion_img = nib.Nifti1Image(lesion_array, np.eye(4))
-    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Create atlas directory
     atlas_dir = tmp_path / "atlases"
@@ -79,7 +79,7 @@ def test_regional_damage_with_mixed_atlas_sizes(tmp_path):
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
     lesion_array[40:50, 50:60, 40:50] = 1
     lesion_img = nib.Nifti1Image(lesion_array, np.eye(4))
-    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Create atlas directory
     atlas_dir = tmp_path / "atlases"
@@ -129,7 +129,7 @@ def test_all_atlases_incompatible_shape_are_resampled(tmp_path):
     # Use 2mm isotropic voxels
     affine_2mm = np.diag([2.0, 2.0, 2.0, 1.0])
     lesion_img = nib.Nifti1Image(lesion_array, affine_2mm)
-    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Create atlas directory with only incompatible atlases
     atlas_dir = tmp_path / "atlases"
@@ -174,7 +174,7 @@ def test_4d_atlas_spatial_compatibility(tmp_path):
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
     lesion_array[20:40, 20:40, 20:40] = 1
     lesion_img = nib.Nifti1Image(lesion_array, np.eye(4))
-    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Create atlas directory
     atlas_dir = tmp_path / "atlases"

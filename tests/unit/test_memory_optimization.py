@@ -67,7 +67,7 @@ def mock_lesions(tmp_path, mock_connectome_batched):
         lesion_path = tmp_path / f"lesion_{i}.nii.gz"
         nib.save(lesion_img, lesion_path)
         lesion = LesionData.from_nifti(
-            str(lesion_path), metadata={"space": "MNI152_2mm", "subject_id": f"test_{i:03d}"}
+            str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"test_{i:03d}"}
         )
         lesions.append(lesion)
 
