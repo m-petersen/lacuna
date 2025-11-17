@@ -19,7 +19,7 @@ def test_save_and_reload_lesion(tmp_path, synthetic_lesion_img):
         lesion_img=synthetic_lesion_img,
         metadata={
             "subject_id": "sub-test001",
-            "space": "MNI152_2mm",
+            "space": "MNI152NLin6Asym", "resolution": 2,
             "acquisition_date": "2025-01-15",
         },
     )
@@ -30,7 +30,7 @@ def test_save_and_reload_lesion(tmp_path, synthetic_lesion_img):
 
     # Reload and verify
     reloaded = LesionData.from_nifti(
-        str(output_path), metadata={"subject_id": "sub-test001", "space": "MNI152_2mm"}
+        str(output_path), metadata={"subject_id": "sub-test001", "space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Check image data matches
@@ -43,7 +43,7 @@ def test_save_lesion_with_results(tmp_path, synthetic_lesion_img):
     # Create lesion with results
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test002", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Add mock results
@@ -65,7 +65,7 @@ def test_save_lesion_and_anatomical(tmp_path, synthetic_lesion_img, synthetic_an
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         anatomical_img=synthetic_anatomical_img,
-        metadata={"subject_id": "sub-test003", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test003", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     lesion_path = tmp_path / "lesion.nii.gz"
@@ -92,7 +92,7 @@ def test_save_multiple_subjects(tmp_path, synthetic_lesion_img):
     for subject_id in subjects:
         lesion_data = LesionData(
             lesion_img=synthetic_lesion_img,
-            metadata={"subject_id": subject_id, "space": "MNI152_2mm"},
+            metadata={"subject_id": subject_id, "space": "MNI152NLin6Asym", "resolution": 2},
         )
 
         output_path = tmp_path / f"{subject_id}_lesion.nii.gz"
@@ -125,7 +125,7 @@ def test_save_preserves_affine_matrix(tmp_path):
     img = nib.Nifti1Image(data, custom_affine)
 
     lesion_data = LesionData(
-        lesion_img=img, metadata={"subject_id": "sub-test004", "space": "MNI152_2mm"}
+        lesion_img=img, metadata={"subject_id": "sub-test004", "space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Save and reload
@@ -142,7 +142,7 @@ def test_save_with_compression(tmp_path, synthetic_lesion_img):
     """Test that .nii.gz files are properly compressed."""
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test005", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test005", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Save as compressed

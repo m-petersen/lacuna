@@ -19,7 +19,7 @@ def test_export_single_subject_workflow(tmp_path, synthetic_lesion_img):
     # Create lesion data
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Export to BIDS derivatives
@@ -44,7 +44,7 @@ def test_export_with_analysis_results(tmp_path, synthetic_lesion_img):
     # Create lesion with results
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-002", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Add analysis results
@@ -92,7 +92,7 @@ def test_export_multi_session(tmp_path, synthetic_lesion_img):
     for session in sessions:
         lesion_data = LesionData(
             lesion_img=synthetic_lesion_img,
-            metadata={"subject_id": subject_id, "session_id": session, "space": "MNI152_2mm"},
+            metadata={"subject_id": subject_id, "session_id": session, "space": "MNI152NLin6Asym", "resolution": 2},
         )
 
         output_dir = tmp_path / "derivatives" / "lacuna"
@@ -116,7 +116,7 @@ def test_export_multiple_subjects(tmp_path, synthetic_lesion_img):
     for subject_id in subjects:
         lesion_data = LesionData(
             lesion_img=synthetic_lesion_img,
-            metadata={"subject_id": subject_id, "space": "MNI152_2mm"},
+            metadata={"subject_id": subject_id, "space": "MNI152NLin6Asym", "resolution": 2},
         )
         export_bids_derivatives(lesion_data, output_dir)
 
@@ -135,7 +135,7 @@ def test_export_and_reload_workflow(tmp_path, synthetic_lesion_img):
     # Create original lesion
     original = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-201", "space": "MNI152_2mm", "study": "test_study"},
+        metadata={"subject_id": "sub-201", "space": "MNI152NLin6Asym", "resolution": 2, "study": "test_study"},
     )
 
     # Export to BIDS
@@ -149,7 +149,7 @@ def test_export_and_reload_workflow(tmp_path, synthetic_lesion_img):
 
     # Reload lesion
     reloaded = LesionData.from_nifti(
-        str(lesion_file), metadata={"subject_id": "sub-201", "space": "MNI152_2mm"}
+        str(lesion_file), metadata={"subject_id": "sub-201", "space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Verify data matches
@@ -162,7 +162,7 @@ def test_export_with_anatomical_image(tmp_path, synthetic_lesion_img, synthetic_
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         anatomical_img=synthetic_anatomical_img,
-        metadata={"subject_id": "sub-301", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-301", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
@@ -180,7 +180,7 @@ def test_export_preserves_bids_naming(tmp_path, synthetic_lesion_img):
     """Test that BIDS naming conventions are followed."""
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-401", "session_id": "ses-01", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-401", "session_id": "ses-01", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
@@ -205,7 +205,7 @@ def test_export_selective_outputs(tmp_path, synthetic_lesion_img):
     # Create lesion with results
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-501", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-501", "space": "MNI152NLin6Asym", "resolution": 2},
     )
     lesion_with_results = lesion_data.add_result("TestAnalysis", {"metric": 42.0})
 
@@ -225,7 +225,7 @@ def test_export_creates_complete_derivatives_structure(tmp_path, synthetic_lesio
     """Test that complete BIDS derivatives structure is created."""
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-601", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-601", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
