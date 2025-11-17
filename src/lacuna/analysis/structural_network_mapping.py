@@ -6,15 +6,24 @@ through a lesion mask and comparing the resulting track density to the intact
 white matter connectivity.
 """
 
+import hashlib
+import logging
 import tempfile
+import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal
 
 import nibabel as nib
 import numpy as np
 
 from lacuna.analysis.base import BaseAnalysis
+from lacuna.assets import load_template
+from lacuna.assets.atlases import load_atlas, list_atlases
 from lacuna.core.lesion_data import LesionData
-from lacuna.data import get_bundled_atlas, get_template_path
+from lacuna.core.output import VoxelMapResult, ConnectivityMatrixResult, MiscResult, TractogramResult
+from lacuna.data import get_template_path
+from lacuna.spatial.transform import _canonicalize_space_variant
+from lacuna.utils.cache import get_tdi_cache_dir
 from lacuna.utils.logging import ConsoleLogger
 from lacuna.utils.mrtrix import (
     MRtrixError,
@@ -24,6 +33,11 @@ from lacuna.utils.mrtrix import (
     filter_tractogram_by_lesion,
     run_mrtrix_command,
 )
+
+if TYPE_CHECKING:
+    from lacuna.core.output import AnalysisResult
+
+logger = logging.getLogger(__name__)
 
 
 class StructuralNetworkMapping(BaseAnalysis):
@@ -39,6 +53,12 @@ class StructuralNetworkMapping(BaseAnalysis):
     **Outputs:**
     - **Voxel-wise disconnection map** (always): 3D NIfTI showing disconnection probability per voxel
     - **Connectivity matrices** (optional): Parcellated edge-wise disconnection when atlas is provided
+
+    **Computation Space:**
+    All computations are performed in the tractogram's native space (typically
+    MNI152NLin2009cAsym @ 1mm for high-resolution structural connectivity).
+    Lesions are transformed to this high-resolution template space for accurate
+    white matter fiber filtering.
 
     The analysis requires MRtrix3 to be installed and available in the system PATH.
 
@@ -124,7 +144,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     -----
     - Requires MRtrix3: https://www.mrtrix.org/download/
     - Lesion must be in MNI152 space (1mm or 2mm resolution supported)
-    - Set lesion.metadata['space'] = 'MNI152_2mm' or 'MNI152_1mm' before analysis
+    - Set lesion.metadata['space'] = 'MNI152NLin6Asym' or 'MNI152NLin2009cAsym' before analysis
     - Lesion must be binary (0/1 values only)
     - Template and TDI resolution should match your lesion resolution
     - Processing time scales with lesion size and tractogram density
@@ -143,15 +163,17 @@ class StructuralNetworkMapping(BaseAnalysis):
     def __init__(
         self,
         tractogram_path: str | Path,
-        whole_brain_tdi: str | Path,
+        tractogram_space: str = "MNI152NLin2009cAsym",
         template: str | Path | None = None,
-        atlas_path: str | Path | None = None,
+        atlas_name: str | None = None,
         compute_lesioned: bool = False,
+        output_resolution: Literal[1, 2] = 2,
+        cache_tdi: bool = True,
         n_jobs: int = 1,
         keep_intermediate: bool = False,
         load_to_memory: bool = True,
         check_dependencies: bool = True,
-        verbose: bool = True,
+        verbose: bool = False,
     ):
         """Initialize StructuralNetworkMapping analysis.
 
@@ -159,22 +181,33 @@ class StructuralNetworkMapping(BaseAnalysis):
         ----------
         tractogram_path : str | Path
             Path to whole-brain tractogram (.tck file)
-        whole_brain_tdi : str | Path
-            Path to pre-computed whole-brain TDI map
+        tractogram_space : str, default="MNI152NLin2009cAsym"
+            Coordinate space of the tractogram. This determines how lesions
+            in different spaces are transformed before analysis.
+            Supported: "MNI152NLin6Asym", "MNI152NLin2009cAsym"
         template : str | Path | None, optional
             Template image for output grid. Auto-detected if None.
-        atlas_path : str | Path | None, optional
-            Parcellation atlas for computing connectivity matrices.
+        atlas_name : str | None, optional
+            Name of atlas from registry for computing connectivity matrices.
             Options:
             - None: Skip matrix computation (default, voxel-wise map only)
-            - "schaefer100", "schaefer200", etc.: Use bundled atlas
-            - Path to custom atlas NIfTI file
+            - Atlas name from registry (e.g., "Schaefer2018_100Parcels7Networks")
+            Use list_atlases() to see available atlases.
             When provided, computes lesion connectivity matrix and
             disconnectivity percentage per edge.
         compute_lesioned : bool, default=False
-            If True and atlas_path provided, also compute the "lesioned"
+            If True and atlas_name provided, also compute the "lesioned"
             connectivity matrix (streamlines NOT passing through lesion),
             representing intact structural connectivity.
+        output_resolution : {1, 2}, default=2
+            Output resolution in millimeters. Determines the template resolution
+            and TDI computation grid.
+            - 1: High resolution (182×218×182 voxels)
+            - 2: Standard resolution (91×109×91 voxels, faster)
+        cache_tdi : bool, default=True
+            Cache computed whole-brain TDI for reuse in batch processing.
+            When True, TDI is computed once and reused across subjects.
+            When False, TDI is recomputed for each subject.
         n_jobs : int, default=1
             Number of threads for MRtrix3 operations
         keep_intermediate : bool, default=False
@@ -183,19 +216,37 @@ class StructuralNetworkMapping(BaseAnalysis):
             Load maps into memory (True) or use memory-mapped files (False)
         check_dependencies : bool, default=True
             Check MRtrix3 availability at initialization
+        
+        Raises
+        ------
+        ValueError
+            If output_resolution is not 1 or 2
         """
         super().__init__()
 
+        # Validate output_resolution
+        if output_resolution not in (1, 2):
+            raise ValueError(
+                f"output_resolution must be 1 or 2, got: {output_resolution}"
+            )
+
         self.tractogram_path = Path(tractogram_path)
-        self.whole_brain_tdi = Path(whole_brain_tdi)
+        self.tractogram_space = tractogram_space
+        self.output_resolution = output_resolution
+        self.cache_tdi = cache_tdi
+        self.whole_brain_tdi = None  # Will be set during validation
+        
         self.template = Path(template) if template is not None else None
-        self.atlas_path = atlas_path  # Can be str (bundled) or Path (custom)
+        self.atlas_name = atlas_name  # Atlas name from registry
         self.compute_lesioned = compute_lesioned
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
         self.load_to_memory = load_to_memory
         self._check_dependencies = check_dependencies
         self.verbose = verbose
+
+        # Target space matches tractogram space
+        self.TARGET_SPACE = self.tractogram_space
 
         # Initialize logger
         self.logger = ConsoleLogger(verbose=verbose, width=70)
@@ -204,6 +255,8 @@ class StructuralNetworkMapping(BaseAnalysis):
         self._atlas_resolved = None
         # Cache for full connectivity matrix (computed once if atlas provided)
         self._full_connectivity_matrix = None
+        # Cache for computed whole-brain TDI
+        self._cached_tdi_path = None
 
         # Check MRtrix3 availability if requested
         if check_dependencies:
@@ -213,6 +266,85 @@ class StructuralNetworkMapping(BaseAnalysis):
                 raise MRtrixError(
                     f"MRtrix3 is required for StructuralNetworkMapping but is not available.\n{e}"
                 ) from e
+
+    def _get_tdi_cache_path(self) -> Path:
+        """Get deterministic cache path for whole-brain TDI.
+        
+        Returns
+        -------
+        Path
+            Path to cached TDI file, unique to tractogram and resolution
+        """
+        # Create deterministic hash from tractogram path and resolution
+        tractogram_str = str(self.tractogram_path.resolve())
+        hash_input = f"{tractogram_str}_{self.output_resolution}mm"
+        file_hash = hashlib.md5(hash_input.encode()).hexdigest()[:12]
+        
+        # Use unified cache directory
+        cache_dir = get_tdi_cache_dir()
+        
+        cache_filename = f"tdi_{file_hash}_{self.output_resolution}mm.nii.gz"
+        return cache_dir / cache_filename
+
+    def _compute_tdi_to_path(self, output_path: Path) -> None:
+        """Compute whole-brain TDI and save to specified path.
+        
+        Parameters
+        ----------
+        output_path : Path
+            Where to save the computed TDI
+        """
+        compute_tdi_map(
+            tractogram_path=self.tractogram_path,
+            template=self.template,
+            output_path=output_path,
+            n_jobs=self.n_jobs,
+            verbose=self.verbose
+        )
+    
+    def _compute_and_cache_tdi(self, cache_path: Path) -> None:
+        """Compute whole-brain TDI and save to cache.
+        
+        Parameters
+        ----------
+        cache_path : Path
+            Cache file path from _get_tdi_cache_path()
+        """
+        self._compute_tdi_to_path(cache_path)
+        logger.info(f"Cached TDI to: {cache_path}")
+
+    def run(self, lesion_data: LesionData) -> LesionData:
+        """Run structural network mapping analysis.
+        
+        Automatically transforms lesion to tractogram space if needed.
+        
+        Parameters
+        ----------
+        lesion_data : LesionData
+            Lesion data to analyze (can be in any MNI152 space)
+        
+        Returns
+        -------
+        LesionData
+            Analysis results
+        
+        Raises
+        ------
+        ValueError
+            If lesion is in native space (cannot transform)
+        """
+        # Check for native space (cannot transform)
+        space = lesion_data.get_coordinate_space()
+        
+        if space.lower() == "native":
+            raise ValueError(
+                "Native space lesions are not supported for structural network mapping. "
+                f"Lesions must be in a standard space. Tractogram is in {self.tractogram_space}."
+            )
+        
+        # Transform to tractogram space (handled by base class)
+        # The base class will handle space equivalence and transformations
+        return super().run(lesion_data)
 
     def _validate_inputs(self, lesion_data: LesionData) -> None:
         """
@@ -233,49 +365,124 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Validate that required files exist
         if not self.tractogram_path.exists():
             raise FileNotFoundError(f"Tractogram file not found: {self.tractogram_path}")
-        if not self.whole_brain_tdi.exists():
-            raise FileNotFoundError(f"Whole-brain TDI not found: {self.whole_brain_tdi}")
-
-        # Check coordinate space - strict validation (case-sensitive)
-        space = lesion_data.get_coordinate_space()
-
-        # Validate exact format: must be exactly 'MNI152_1mm' or 'MNI152_2mm'
-        if space not in ("MNI152_1mm", "MNI152_2mm"):
-            raise ValueError(
-                f"Invalid coordinate space: '{space}'. "
-                f"Structural network mapping requires exactly 'MNI152_1mm' or 'MNI152_2mm' (case-sensitive). "
-                f"Got: '{space}'"
-            )
-
-        # Load template from bundled data if not provided
+        
+        # Load template from asset management if not provided (MUST BE DONE BEFORE TDI COMPUTATION)
         if self.template is None:
-            # Determine resolution from validated space
-            resolution_mm = 1 if space == "MNI152_1mm" else 2
-
-            # Get path to appropriate MNI152 template from bundled package data
-            self.template = get_template_path(resolution=resolution_mm)
+            # Use output_resolution for template (not lesion resolution)
+            # This ensures TDI and template match
+            template_name = f"{self.TARGET_SPACE}_res-{self.output_resolution}"
+            
+            try:
+                template_path = load_template(template_name)
+                self.template = template_path
+            except (KeyError, FileNotFoundError) as e:
+                raise FileNotFoundError(
+                    f"Could not load template for {self.TARGET_SPACE} at {self.output_resolution}mm resolution. "
+                    f"Template '{template_name}' not found in registry."
+                ) from e
         else:
-            # Template path was provided - verify it exists
-            if not self.template.exists():
-                raise FileNotFoundError(f"Template not found: {self.template}")
-
-        # Load atlas from bundled data or validate custom atlas path
-        if self.atlas_path is not None:
-            if isinstance(self.atlas_path, str):
-                # Bundled atlas requested (e.g., "schaefer100", "aal3")
-                try:
-                    atlas_file, labels_file = get_bundled_atlas(self.atlas_path)
-                    self._atlas_resolved = atlas_file
-                except (FileNotFoundError, ValueError) as e:
-                    raise ValueError(
-                        f"Bundled atlas '{self.atlas_path}' not found. "
-                        f"Use list_bundled_atlases() to see available options."
-                    ) from e
+            self.template = Path(self.template)
+        
+        # Compute or load TDI with caching (template must be set first!)
+        if self.cache_tdi:
+            tdi_cache_path = self._get_tdi_cache_path()
+            if tdi_cache_path.exists():
+                self.whole_brain_tdi = tdi_cache_path
+                logger.info(f"Using cached TDI: {tdi_cache_path}")
             else:
-                # Custom atlas path provided
-                self._atlas_resolved = Path(self.atlas_path)
-                if not self._atlas_resolved.exists():
-                    raise FileNotFoundError(f"Atlas file not found: {self._atlas_resolved}")
+                # Compute TDI and cache it
+                logger.info(f"Computing whole-brain TDI at {self.output_resolution}mm resolution...")
+                self._compute_and_cache_tdi(tdi_cache_path)
+                self.whole_brain_tdi = tdi_cache_path
+        else:
+            # Compute TDI without caching (temporary file)
+            temp_tdi = Path(tempfile.mkdtemp()) / "whole_brain_tdi.nii.gz"
+            logger.info(f"Computing whole-brain TDI at {self.output_resolution}mm resolution...")
+            self._compute_tdi_to_path(temp_tdi)
+            self.whole_brain_tdi = temp_tdi
+
+        # Space validation is handled in run() method before transformation
+        # At this point, lesion_data should already be in TARGET_SPACE
+        
+        # Verify template exists
+        if not self.template.exists():
+            raise FileNotFoundError(f"Template not found: {self.template}")
+
+        # Load atlas from registry
+        if self.atlas_name is not None:
+            try:
+                atlas = load_atlas(self.atlas_name)
+                # Store the atlas image for use in analysis
+                self._atlas_image = atlas.image
+                self._atlas_labels = atlas.labels
+                
+                # Check if atlas space matches tractogram space
+                atlas_space = atlas.metadata.space
+                atlas_resolution = atlas.metadata.resolution
+                
+                if atlas_space != self.tractogram_space:
+                    logger.info(
+                        f"Atlas space ({atlas_space}) differs from tractogram space ({self.tractogram_space}). "
+                        f"Transforming atlas to {self.tractogram_space}..."
+                    )
+                    
+                    # Transform atlas to tractogram space
+                    from lacuna.spatial.transform import transform_image
+                    from lacuna.core.spaces import CoordinateSpace
+                    from lacuna.utils.cache import get_cache_dir
+                    
+                    # Define target space matching tractogram
+                    template_img = nib.load(self.template) if isinstance(self.template, (str, Path)) else self.template
+                    target_space = CoordinateSpace(
+                        identifier=self.tractogram_space,
+                        resolution=self.output_resolution,
+                        reference_affine=template_img.affine
+                    )
+                    
+                    # Transform atlas (nearest neighbor interpolation for label preservation)
+                    transformed_atlas_img = transform_image(
+                        img=self._atlas_image,
+                        source_space=atlas_space,
+                        target_space=target_space,
+                        source_resolution=atlas_resolution,
+                        interpolation='nearest'  # Preserve integer labels
+                    )
+                    
+                    # Save transformed atlas to cache
+                    atlas_cache_dir = get_cache_dir() / "atlases"
+                    atlas_cache_dir.mkdir(exist_ok=True, parents=True)
+                    
+                    # Create deterministic filename based on atlas name and target space
+                    atlas_hash = hashlib.md5(
+                        f"{self.atlas_name}_{self.tractogram_space}_{self.output_resolution}".encode()
+                    ).hexdigest()[:12]
+                    transformed_atlas_path = atlas_cache_dir / f"atlas_{atlas_hash}.nii.gz"
+                    
+                    # Save and update references
+                    nib.save(transformed_atlas_img, transformed_atlas_path)
+                    self._atlas_resolved = transformed_atlas_path
+                    self._atlas_image = transformed_atlas_img
+                    
+                    logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
+                else:
+                    # No transformation needed - use original atlas file
+                    from lacuna.assets.atlases.loader import BUNDLED_ATLASES_DIR
+                    atlas_filename_path = Path(atlas.metadata.atlas_filename)
+                    if atlas_filename_path.is_absolute():
+                        self._atlas_resolved = atlas_filename_path
+                    else:
+                        self._atlas_resolved = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
+                    
+                    if not self._atlas_resolved.exists():
+                        raise FileNotFoundError(f"Atlas file not found: {self._atlas_resolved}")
+                        
+            except KeyError as e:
+                available = [a.name for a in list_atlases()]
+                raise ValueError(
+                    f"Atlas '{self.atlas_name}' not found in registry. "
+                    f"Available atlases: {', '.join(available[:5])}... "
+                    f"Use list_atlases() to see all options."
+                ) from e
 
         # Check that lesion is binary
         lesion_array = lesion_data.lesion_img.get_fdata()
@@ -288,7 +495,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 f"Use thresholding or binarization to convert continuous maps."
             )
 
-    def _run_analysis(self, lesion_data: LesionData) -> dict:
+    def _run_analysis(self, lesion_data: LesionData) -> list["AnalysisResult"]:
         """
         Execute structural network mapping analysis.
 
@@ -299,12 +506,11 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict
-            Analysis results containing:
-            - disconnection_map: nibabel.Nifti1Image of voxel-wise disconnection
-            - mean_disconnection: float, mean disconnection across brain
-            - lesion_streamline_count: int, number of streamlines through lesion
-            - metadata: dict with processing parameters
+        list[AnalysisResult]
+            List containing:
+            - VoxelMapResult for disconnection_map
+            - MiscResult for summary statistics (mean_disconnection, lesion_streamline_count)
+            - ConnectivityMatrixResult for parcellated connectivity (if atlas provided)
 
         Notes
         -----
@@ -394,12 +600,16 @@ class StructuralNetworkMapping(BaseAnalysis):
                     )
                 final_disconn_map = disconn_map
 
-            # Build results dictionary
-            results = {
-                "disconnection_map": final_disconn_map,
-                "mean_disconnection": mean_disconnection,
-                "lesion_streamline_count": lesion_streamline_count,
-                "metadata": {
+            # Build results list
+            results = []
+            
+            # VoxelMapResult for disconnection map
+            disconnection_result = VoxelMapResult(
+                name="disconnection_map",
+                data=final_disconn_map,
+                space=self.tractogram_space,
+                resolution=float(self.output_resolution),
+                metadata={
                     "tractogram": str(self.tractogram_path),
                     "whole_brain_tdi": str(self.whole_brain_tdi),
                     "template": str(self.template),
@@ -407,7 +617,51 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "keep_intermediate": self.keep_intermediate,
                     "load_to_memory": self.load_to_memory,
                 },
-            }
+            )
+            results.append(disconnection_result)
+            
+            # MiscResult for summary statistics
+            summary_result = MiscResult(
+                name="summary_statistics",
+                data={
+                    "mean_disconnection": mean_disconnection,
+                    "lesion_streamline_count": lesion_streamline_count,
+                },
+                metadata={
+                    "tractogram": str(self.tractogram_path),
+                },
+            )
+            results.append(summary_result)
+            
+            # Add intermediate results if keep_intermediate=True
+            if self.keep_intermediate:
+                # Add lesion tractogram as TractogramResult
+                lesion_tractogram_result = TractogramResult(
+                    name="lesion_tractogram",
+                    streamlines=None,  # Not loading into memory
+                    tractogram_path=lesion_tck_path,
+                    metadata={
+                        "description": "Tractogram filtered by lesion mask",
+                        "temp_directory": str(temp_dir_path),
+                    },
+                )
+                results.append(lesion_tractogram_result)
+                
+                # Add lesion TDI as VoxelMapResult
+                lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
+                if lesion_tdi_path.exists():
+                    lesion_tdi_img = nib.load(lesion_tdi_path)
+                    lesion_tdi_result = VoxelMapResult(
+                        name="lesion_tdi",
+                        data=lesion_tdi_img,
+                        space=self.tractogram_space,
+                        resolution=self.output_resolution,
+                        metadata={
+                            "description": "Track density image for lesion-filtered tractogram",
+                            "temp_directory": str(temp_dir_path),
+                        },
+                    )
+                    results.append(lesion_tdi_result)
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._atlas_resolved is not None:
@@ -418,7 +672,8 @@ class StructuralNetworkMapping(BaseAnalysis):
                     temp_dir_path=temp_dir_path,
                     subject_id=subject_id,
                 )
-                results.update(connectivity_results)
+                # Extend results with connectivity matrix results
+                results.extend(connectivity_results)
 
             return results
 
@@ -441,7 +696,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         lesion_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
-    ) -> dict:
+    ) -> list["AnalysisResult"]:
         """Compute parcellated connectivity matrices.
 
         Parameters
@@ -457,12 +712,12 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict
-            Dictionary with connectivity matrix results:
-            - lesion_connectivity_matrix: np.ndarray
-            - disconnectivity_percent: np.ndarray
-            - lesioned_connectivity_matrix: np.ndarray (optional)
-            - matrix_statistics: dict
+        list[AnalysisResult]
+            List containing:
+            - ConnectivityMatrixResult for lesion connectivity
+            - ConnectivityMatrixResult for disconnectivity percentage
+            - ConnectivityMatrixResult for lesioned (intact) connectivity (if compute_lesioned=True)
+            - MiscResult for matrix statistics
         """
 
         # Step 1: Compute full-brain connectivity matrix (cached)
@@ -531,13 +786,78 @@ class StructuralNetworkMapping(BaseAnalysis):
             lesioned_matrix=lesioned_matrix,
         )
 
-        return {
-            "lesion_connectivity_matrix": lesion_matrix,
-            "disconnectivity_percent": disconn_pct,
-            "full_connectivity_matrix": full_matrix,
-            "lesioned_connectivity_matrix": lesioned_matrix,
-            "matrix_statistics": matrix_stats,
-        }
+        # Build results list
+        results = []
+        
+        # Get atlas labels for ConnectivityMatrixResult
+        atlas_labels = [f"region_{i}" for i in range(lesion_matrix.shape[0])]
+        if hasattr(self._atlas_resolved, "labels"):
+            atlas_labels = self._atlas_resolved.labels
+        
+        # ConnectivityMatrixResult for lesion connectivity
+        lesion_connectivity_result = ConnectivityMatrixResult(
+            name="lesion_connectivity_matrix",
+            matrix=lesion_matrix,
+            region_labels=atlas_labels,
+            matrix_type="structural",
+            metadata={
+                "atlas": self.atlas_name,
+                "tractogram": str(self.tractogram_path),
+            },
+        )
+        results.append(lesion_connectivity_result)
+        
+        # ConnectivityMatrixResult for disconnectivity percentage
+        disconn_result = ConnectivityMatrixResult(
+            name="disconnectivity_percent",
+            matrix=disconn_pct,
+            region_labels=atlas_labels,
+            matrix_type="structural",
+            metadata={
+                "atlas": self.atlas_name,
+                "description": "Percentage of streamlines disconnected by lesion",
+            },
+        )
+        results.append(disconn_result)
+        
+        # ConnectivityMatrixResult for full connectivity (reference)
+        full_connectivity_result = ConnectivityMatrixResult(
+            name="full_connectivity_matrix",
+            matrix=full_matrix,
+            region_labels=atlas_labels,
+            matrix_type="structural",
+            metadata={
+                "atlas": self.atlas_name,
+                "description": "Full brain connectivity matrix (reference)",
+            },
+        )
+        results.append(full_connectivity_result)
+        
+        # Optional: lesioned (intact) connectivity matrix
+        if lesioned_matrix is not None:
+            lesioned_result = ConnectivityMatrixResult(
+                name="lesioned_connectivity_matrix",
+                matrix=lesioned_matrix,
+                region_labels=atlas_labels,
+                matrix_type="structural",
+                metadata={
+                    "atlas": self.atlas_name,
+                    "description": "Intact connectivity excluding lesion streamlines",
+                },
+            )
+            results.append(lesioned_result)
+        
+        # MiscResult for matrix statistics
+        stats_result = MiscResult(
+            name="matrix_statistics",
+            data=matrix_stats,
+            metadata={
+                "atlas": self.atlas_name,
+            },
+        )
+        results.append(stats_result)
+        
+        return results
 
     def _compute_connectivity_matrix(
         self,
@@ -671,7 +991,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             "tractogram_path": str(self.tractogram_path),
             "whole_brain_tdi": str(self.whole_brain_tdi),
             "template": str(self.template) if self.template else None,
-            "atlas_path": str(self.atlas_path) if self.atlas_path else None,
+            "atlas_name": str(self.atlas_name) if self.atlas_name else None,
             "compute_lesioned": self.compute_lesioned,
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
