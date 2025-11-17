@@ -1,4 +1,4 @@
-# lesion_decoding_toolkit Development Guidelines
+# Lacuna Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2025-11-11
 
