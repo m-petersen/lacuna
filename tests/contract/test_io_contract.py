@@ -137,7 +137,7 @@ def test_save_nifti_basic(tmp_path, synthetic_lesion_img):
     # Create LesionData
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Save to file
@@ -161,7 +161,7 @@ def test_save_nifti_with_anatomical(tmp_path, synthetic_lesion_img, synthetic_an
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
         anatomical_img=synthetic_anatomical_img,
-        metadata={"subject_id": "sub-test", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_path = tmp_path / "lesion.nii.gz"
@@ -180,7 +180,7 @@ def test_save_nifti_invalid_extension(tmp_path, synthetic_lesion_img):
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_path = tmp_path / "lesion.txt"
@@ -195,7 +195,7 @@ def test_export_bids_derivatives_basic(tmp_path, synthetic_lesion_img):
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
@@ -219,7 +219,7 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Add results
@@ -255,7 +255,7 @@ def test_export_bids_derivatives_session(tmp_path, synthetic_lesion_img):
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "session_id": "ses-01", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "session_id": "ses-01", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
@@ -272,7 +272,7 @@ def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_lesion_img):
     from lacuna.io import export_bids_derivatives
 
     # Create LesionData without subject_id (should not be possible via __init__, but test anyway)
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Manually remove subject_id for testing
     lesion_data._metadata = {}
@@ -289,7 +289,7 @@ def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_lesion
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
@@ -309,7 +309,7 @@ def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_lesion_im
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
@@ -329,7 +329,7 @@ def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_lesion_im
 
     lesion_data = LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"

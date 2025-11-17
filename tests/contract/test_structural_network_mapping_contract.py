@@ -27,13 +27,15 @@ def test_structural_network_mapping_can_instantiate():
     """Test that StructuralNetworkMapping can be instantiated with required parameters."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    # Should accept tractogram and TDI paths
+    # Should accept tractogram path
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
     assert analysis is not None
+    assert analysis.tractogram_space == "MNI152NLin2009cAsym"
+    assert analysis.output_resolution == 2  # default
 
 
 def test_structural_network_mapping_validates_mrtrix_available():
@@ -43,7 +45,7 @@ def test_structural_network_mapping_validates_mrtrix_available():
     # Should check if MRtrix3 commands are available during initialization
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
     # Should have check_dependencies parameter or _check_dependencies attribute
@@ -56,7 +58,7 @@ def test_structural_network_mapping_has_run_method():
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
     assert hasattr(analysis, "run")
@@ -73,15 +75,12 @@ def test_structural_network_mapping_validates_coordinate_space(synthetic_lesion_
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "native"})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
@@ -100,20 +99,17 @@ def test_structural_network_mapping_requires_binary_mask(synthetic_lesion_img, t
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
     # Create non-binary lesion data
     data = synthetic_lesion_img.get_fdata()
     data = data.astype(float) * 0.5  # Make it non-binary
 
     non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
-    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
@@ -128,13 +124,13 @@ def test_structural_network_mapping_returns_lesion_data(synthetic_lesion_img):
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Mark lesion as MNI152 space
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Note: This test will fail until implementation exists
     # It defines the expected behavior
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
 
@@ -150,7 +146,7 @@ def test_structural_network_mapping_result_structure():
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
 
@@ -171,7 +167,7 @@ def test_structural_network_mapping_accepts_n_jobs():
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
         n_jobs=8,
     )
@@ -184,12 +180,12 @@ def test_structural_network_mapping_preserves_input_immutability(synthetic_lesio
     from lacuna import LesionData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
     original_results = lesion_data.results.copy()
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
 
@@ -210,7 +206,7 @@ def test_structural_network_mapping_adds_provenance():
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
     )
 
@@ -236,15 +232,12 @@ def test_template_auto_loading_2mm(synthetic_lesion_img, tmp_path):
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
@@ -271,15 +264,12 @@ def test_template_auto_loading_1mm(synthetic_lesion_img, tmp_path):
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_1mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 1})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
@@ -296,7 +286,7 @@ def test_template_auto_loading_1mm(synthetic_lesion_img, tmp_path):
 
 
 def test_space_validation_requires_exact_format(synthetic_lesion_img, tmp_path):
-    """Test that space must be exactly 'MNI152_1mm' or 'MNI152_2mm'."""
+    """Test that native space is rejected."""
     import nibabel as nib
     import numpy as np
 
@@ -305,30 +295,21 @@ def test_space_validation_requires_exact_format(synthetic_lesion_img, tmp_path):
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
-    # Test invalid space formats - should all fail
-    invalid_spaces = [
-        "MNI152",  # Missing resolution
-        "MNI_2mm",  # Wrong format
-        "mni152_2mm",  # Wrong case
-        "MNI152_2",  # Missing 'mm'
-        "MNI152 2mm",  # Space instead of underscore
-    ]
-
-    for invalid_space in invalid_spaces:
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": invalid_space})
-
-        with pytest.raises(ValueError, match="Invalid coordinate space"):
-            analysis._validate_inputs(lesion_data)
+    # NOTE: With the new API, space validation is more flexible.
+    # As long as the space is not "native", the base class will attempt transformation.
+    # Invalid formats will fail during transformation, not during initial validation.
+    
+    # Test that native space is rejected
+    native_lesion = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "native"})
+    with pytest.raises(ValueError, match="Native space"):
+        analysis.run(native_lesion)
 
 
 def test_space_validation_rejects_non_mni(synthetic_lesion_img, tmp_path):
@@ -341,20 +322,18 @@ def test_space_validation_rejects_non_mni(synthetic_lesion_img, tmp_path):
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
     lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "native"})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
-    with pytest.raises(ValueError, match="Invalid coordinate space"):
-        analysis._validate_inputs(lesion_data)
+    # Space validation happens in run(), not _validate_inputs()
+    with pytest.raises(ValueError, match="Native space lesions are not supported"):
+        analysis.run(lesion_data)
 
 
 def test_bundled_template_exists():
@@ -435,7 +414,7 @@ def test_memory_management_parameters():
     # Test with default values
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
     )
     assert analysis.load_to_memory is True  # Default
     assert analysis.keep_intermediate is False  # Default
@@ -443,7 +422,7 @@ def test_memory_management_parameters():
     # Test with custom values
     analysis_batch = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         load_to_memory=False,
         keep_intermediate=True,
     )
@@ -459,7 +438,7 @@ def test_load_to_memory_requires_keep_intermediate():
     # This should raise an error during execution
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         load_to_memory=False,
         keep_intermediate=False,  # Conflicting settings
     )
@@ -482,15 +461,12 @@ def test_template_stored_as_path_not_image(synthetic_lesion_img, tmp_path):
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tdi = tmp_path / "tdi.nii.gz"
     dummy_tck.touch()
-    nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), dummy_tdi)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
-        whole_brain_tdi=dummy_tdi,
         check_dependencies=False,
     )
 
@@ -590,7 +566,7 @@ def test_provenance_includes_memory_settings():
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
         load_to_memory=False,
         keep_intermediate=True,
     )
@@ -610,42 +586,42 @@ def test_provenance_includes_memory_settings():
 
 
 def test_atlas_parameter_optional():
-    """Test that atlas_path is an optional parameter."""
+    """Test that atlas_name is an optional parameter."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should work without atlas (voxel-wise only)
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
     )
-    assert analysis.atlas_path is None
+    assert analysis.atlas_name is None
 
 
 def test_atlas_accepts_bundled_name():
-    """Test that atlas_path can be a bundled atlas name string."""
+    """Test that atlas_name can be a bundled atlas name string."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Should accept bundled atlas name
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
-        atlas_path="schaefer100",
+        tractogram_space="MNI152NLin2009cAsym",
+        atlas_name="schaefer100",
     )
-    assert analysis.atlas_path == "schaefer100"
+    assert analysis.atlas_name == "schaefer100"
 
 
 def test_atlas_accepts_custom_path():
-    """Test that atlas_path can be a custom file path."""
+    """Test that atlas_name accepts atlas registry names."""
 
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    # Should accept custom atlas path
+    # Should accept atlas name from registry
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
-        atlas_path="/path/to/custom_atlas.nii.gz",
+        tractogram_space="MNI152NLin2009cAsym",
+        atlas_name="Schaefer2018_100Parcels7Networks",
     )
-    assert analysis.atlas_path == "/path/to/custom_atlas.nii.gz"
+    assert analysis.atlas_name == "Schaefer2018_100Parcels7Networks"
 
 
 def test_compute_lesioned_parameter():
@@ -655,8 +631,8 @@ def test_compute_lesioned_parameter():
     # Should have compute_lesioned parameter
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
-        atlas_path="schaefer100",
+        tractogram_space="MNI152NLin2009cAsym",
+        atlas_name="schaefer100",
         compute_lesioned=True,
     )
     assert analysis.compute_lesioned is True
@@ -687,13 +663,13 @@ def test_atlas_resolved_during_validation():
         lesion_data = np.zeros((91, 109, 91))
         lesion_data[45:50, 54:59, 45:50] = 1
         lesion_img = nib.Nifti1Image(lesion_data, np.eye(4))
-        lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
         # Initialize with bundled atlas name
         analysis = StructuralNetworkMapping(
             tractogram_path=tck_file,
             whole_brain_tdi=tdi_file,
-            atlas_path="schaefer100",
+            atlas_name="schaefer100",
             check_dependencies=False,
         )
 
@@ -772,8 +748,8 @@ def test_full_connectivity_matrix_caching():
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
-        atlas_path="schaefer100",
+        tractogram_space="MNI152NLin2009cAsym",
+        atlas_name="schaefer100",
     )
 
     # Should have cache attribute
@@ -789,16 +765,16 @@ def test_lesioned_connectivity_optional():
     # Default: compute_lesioned=False
     analysis1 = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
-        atlas_path="schaefer100",
+        tractogram_space="MNI152NLin2009cAsym",
+        atlas_name="schaefer100",
     )
     assert analysis1.compute_lesioned is False
 
     # Explicit: compute_lesioned=True
     analysis2 = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
-        whole_brain_tdi="/path/to/tdi.nii.gz",
-        atlas_path="schaefer100",
+        tractogram_space="MNI152NLin2009cAsym",
+        atlas_name="schaefer100",
         compute_lesioned=True,
     )
     assert analysis2.compute_lesioned is True

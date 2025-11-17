@@ -74,7 +74,7 @@ def test_functional_network_mapping_validates_coordinate_space(synthetic_lesion_
     from lacuna import LesionData
 
     # Create lesion data with non-MNI space
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
 
@@ -95,7 +95,7 @@ def test_functional_network_mapping_requires_binary_mask(synthetic_lesion_img):
     import nibabel as nib
 
     non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
-    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
 
@@ -122,7 +122,7 @@ def test_functional_network_mapping_returns_lesion_data(synthetic_lesion_img, tm
         f.attrs["mask_shape"] = (64, 64, 64)
 
     # Mark lesion as MNI152 space (add metadata)
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = FunctionalNetworkMapping(connectome_path=str(connectome_path))
     result = analysis.run(lesion_data)
@@ -150,7 +150,7 @@ def test_functional_network_mapping_result_structure(synthetic_lesion_img, tmp_p
         f.create_dataset("mask_affine", data=np.eye(4))
         f.attrs["mask_shape"] = (64, 64, 64)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     analysis = FunctionalNetworkMapping(connectome_path=str(connectome_path))
     result = analysis.run(lesion_data)
@@ -194,7 +194,7 @@ def test_functional_network_mapping_preserves_input_immutability(synthetic_lesio
         f.create_dataset("mask_affine", data=np.eye(4))
         f.attrs["mask_shape"] = (64, 64, 64)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
     original_results = lesion_data.results.copy()
 
     analysis = FunctionalNetworkMapping(connectome_path=str(connectome_path))
@@ -224,7 +224,7 @@ def test_functional_network_mapping_adds_provenance(synthetic_lesion_img, tmp_pa
         f.create_dataset("mask_affine", data=np.eye(4))
         f.attrs["mask_shape"] = (64, 64, 64)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
     original_prov_len = len(lesion_data.provenance)
 
     analysis = FunctionalNetworkMapping(connectome_path=str(connectome_path))
