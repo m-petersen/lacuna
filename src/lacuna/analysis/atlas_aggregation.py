@@ -41,6 +41,7 @@ Examples
 """
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import nibabel as nib
 import numpy as np
@@ -48,10 +49,22 @@ from nilearn.image import resample_to_img
 from nilearn.maskers import NiftiLabelsMasker
 
 from lacuna.analysis.base import BaseAnalysis
+from lacuna.assets.atlases import load_atlas, list_atlases
+from lacuna.core.spaces import detect_space_from_header
 from lacuna.core.lesion_data import LesionData
+from lacuna.core.output import ROIResult
+
+if TYPE_CHECKING:
+    from lacuna.core.output import AnalysisResult
 
 
 class AtlasAggregation(BaseAnalysis):
+    """Atlas aggregation analysis.
+    
+    Computations performed in input data space (atlases transformed to match input).
+    """
+    TARGET_SPACE = None  # Space determined from input data
+    TARGET_RESOLUTION = None  # Resolution determined from input data
     """
     Aggregate voxel-level maps to ROI-level statistics using atlases.
 
@@ -63,19 +76,27 @@ class AtlasAggregation(BaseAnalysis):
     The analysis discovers all atlases in the specified directory and computes
     the specified aggregation method for each region in each atlas.
 
+    **Computation Space:**
+    Atlases are automatically transformed to match the input data's coordinate space
+    and resolution (parsed from metadata or BIDS-style filenames: tpl-{SPACE}_res-{RES}_...).
+    If an atlas is already in the input space, no transformation is performed.
+    After transformation, nilearn resamples the atlas to precisely match the input
+    resolution for exact alignment.
+
     Attributes
     ----------
+    TARGET_SPACE : None
+        Space is determined from the input data. Atlases are transformed to match
+        the input data's coordinate space automatically.
+    TARGET_RESOLUTION : None
+        Resolution is determined from the input data. Atlases are transformed to
+        match the input resolution, then nilearn resamples for precise alignment.
     batch_strategy : str
         Batch processing strategy. Set to "parallel" as atlas aggregation
         is independent per subject and benefits from parallel processing.
 
     Parameters
     ----------
-    atlas_dir : str, Path, or None, default=None
-        Directory containing atlas files. Each atlas should have:
-        - NIfTI file (.nii or .nii.gz)
-        - Labels file with same base name + "_labels.txt" or ".txt"
-        If None (default), uses bundled reference atlases included with the package.
     source : str, default="lesion_img"
         Source of data to aggregate. Options:
         - "lesion_img": Use the lesion mask directly
@@ -94,8 +115,9 @@ class AtlasAggregation(BaseAnalysis):
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
     atlas_names : list of str or None, default=None
-        If provided, only process atlases with these names (without file extensions).
-        Atlas names should match the base filename (e.g., "HCP1065" for "HCP1065.nii.gz").
+        Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
+        If None, all registered atlases are processed.
+        Use register_atlas() or register_atlases_from_directory() to add custom atlases.
         If None, all atlases found in atlas_dir will be processed.
         Example: ["HCP1065", "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm"]
 
@@ -123,26 +145,31 @@ class AtlasAggregation(BaseAnalysis):
 
     Examples
     --------
-    >>> # Regional damage analysis
+    >>> # Use all bundled/registered atlases
     >>> analysis = AtlasAggregation(
-    ...     atlas_dir="/data/atlases",
+    ...     source="lesion_img",
+    ...     aggregation="percent"
+    ... )
+    >>>
+    >>> # Use specific registered atlases
+    >>> analysis = AtlasAggregation(
+    ...     source="lesion_img",
+    ...     aggregation="percent",
+    ...     atlas_names=["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
+    ... )
+    >>>
+    >>> # Register custom atlases first, then use them
+    >>> from lacuna.assets.atlases import register_atlases_from_directory
+    >>> register_atlases_from_directory("/data/my_atlases")
+    >>> analysis = AtlasAggregation(
     ...     source="lesion_img",
     ...     aggregation="percent"
     ... )
     >>>
     >>> # Average functional connectivity per ROI
     >>> analysis = AtlasAggregation(
-    ...     atlas_dir="/data/atlases",
     ...     source="FunctionalNetworkMapping.network_map",
     ...     aggregation="mean"
-    ... )
-    >>>
-    >>> # Process only specific atlases
-    >>> analysis = AtlasAggregation(
-    ...     atlas_dir="/data/atlases",
-    ...     source="lesion_img",
-    ...     aggregation="percent",
-    ...     atlas_names=["HCP1065", "Schaefer2018_400Parcels"]  # Only these two
     ... )
 
     See Also
@@ -159,7 +186,6 @@ class AtlasAggregation(BaseAnalysis):
 
     def __init__(
         self,
-        atlas_dir: str | Path | None = None,
         source: str = "lesion_img",
         aggregation: str = "mean",
         threshold: float = 0.5,
@@ -168,13 +194,6 @@ class AtlasAggregation(BaseAnalysis):
         """Initialize AtlasAggregation analysis."""
         super().__init__()
 
-        # If no atlas_dir provided, use bundled atlases
-        if atlas_dir is None:
-            from lacuna.data import get_bundled_atlas_dir
-
-            atlas_dir = get_bundled_atlas_dir()
-
-        self.atlas_dir = atlas_dir  # Store as provided (str or Path)
         self.source = source
         self.aggregation = aggregation
         self.threshold = threshold
@@ -209,7 +228,7 @@ class AtlasAggregation(BaseAnalysis):
 
     def _validate_inputs(self, lesion_data: LesionData) -> None:
         """
-        Validate lesion data and discover atlases.
+        Validate lesion data and load atlases from registry.
 
         Parameters
         ----------
@@ -220,22 +239,7 @@ class AtlasAggregation(BaseAnalysis):
         ------
         ValueError
             If lesion data is invalid or source data not found
-        FileNotFoundError
-            If atlas directory doesn't exist
         """
-        # Convert to Path for internal use
-        atlas_dir = Path(self.atlas_dir)
-
-        # Validate atlas directory exists
-        if not atlas_dir.exists():
-            raise FileNotFoundError(
-                f"Atlas directory not found: {atlas_dir}\n"
-                "Create the directory and add atlas files, or check the path."
-            )
-
-        if not atlas_dir.is_dir():
-            raise ValueError(f"atlas_dir must be a directory, got file: {atlas_dir}")
-
         # Check that source data exists
         source_img = self._get_source_image(lesion_data)
 
@@ -247,20 +251,20 @@ class AtlasAggregation(BaseAnalysis):
                 f"or results from previous analyses."
             )
 
-        # Discover atlases in directory
-        self.atlases = self._discover_atlases()
+        # Load atlases from registry
+        self.atlases = self._load_atlases_from_registry()
 
         if not self.atlases:
             if self.atlas_names is not None:
                 raise ValueError(
                     f"No matching atlases found for specified names: {self.atlas_names}\n"
-                    f"Available atlases in {self.atlas_dir}: check directory contents\n"
-                    "Ensure atlas names match the base filename (without .nii.gz extension)"
+                    "Available atlases in registry: check list_atlases()\n"
+                    "Use register_atlas() or register_atlases_from_directory() to add atlases"
                 )
             else:
                 raise ValueError(
-                    f"No valid atlases found in {self.atlas_dir}\n"
-                    "Expected atlas files: <name>.nii.gz and <name>_labels.txt"
+                    "No valid atlases found in registry\n"
+                    "Use register_atlas() or register_atlases_from_directory() to add atlases"
                 )
 
         # Warn if some requested atlases weren't found
@@ -277,7 +281,158 @@ class AtlasAggregation(BaseAnalysis):
                     stacklevel=3,
                 )
 
-    def _run_analysis(self, lesion_data: LesionData) -> dict:
+    def _load_atlases_from_registry(self) -> list[dict]:
+        """
+        Load atlases from the registry (bundled or user-registered).
+        
+        Returns
+        -------
+        list[dict]
+            List of atlas dictionaries with keys: name, image, labels, space, resolution
+        """
+        from lacuna.assets.atlases.loader import BUNDLED_ATLASES_DIR
+        
+        # Get atlases from registry (filter by names if provided)
+        if self.atlas_names is not None:
+            # Load specific atlases by name
+            atlases_data = []
+            for name in self.atlas_names:
+                try:
+                    atlas = load_atlas(name)
+                    
+                    # Resolve paths (absolute or relative to bundled dir)
+                    atlas_filename_path = Path(atlas.metadata.atlas_filename)
+                    if atlas_filename_path.is_absolute():
+                        atlas_path = atlas_filename_path
+                    else:
+                        atlas_path = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
+                    
+                    labels_filename_path = Path(atlas.metadata.labels_filename)
+                    if labels_filename_path.is_absolute():
+                        labels_path = labels_filename_path
+                    else:
+                        labels_path = BUNDLED_ATLASES_DIR / atlas.metadata.labels_filename
+                    
+                    atlases_data.append({
+                        "name": name,
+                        "atlas_path": atlas_path,
+                        "labels_path": labels_path,
+                        "labels": atlas.labels,
+                        "space": atlas.metadata.space,
+                        "resolution": atlas.metadata.resolution,
+                        "is_4d": getattr(atlas.metadata, 'is_4d', False),
+                    })
+                except KeyError:
+                    # Atlas not in registry - will be caught by validation
+                    pass
+        else:
+            # Load all registered atlases
+            atlas_metadatas = list_atlases()
+            atlases_data = []
+            for metadata in atlas_metadatas:
+                atlas = load_atlas(metadata.name)
+                
+                # Resolve paths (absolute or relative to bundled dir)
+                atlas_filename_path = Path(atlas.metadata.atlas_filename)
+                if atlas_filename_path.is_absolute():
+                    atlas_path = atlas_filename_path
+                else:
+                    atlas_path = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
+                
+                labels_filename_path = Path(atlas.metadata.labels_filename)
+                if labels_filename_path.is_absolute():
+                    labels_path = labels_filename_path
+                else:
+                    labels_path = BUNDLED_ATLASES_DIR / atlas.metadata.labels_filename
+                
+                atlases_data.append({
+                    "name": metadata.name,
+                    "atlas_path": atlas_path,
+                    "labels_path": labels_path,
+                    "labels": atlas.labels,
+                    "space": metadata.space,
+                    "resolution": metadata.resolution,
+                    "is_4d": getattr(metadata, 'is_4d', False),
+                })
+        
+        return atlases_data
+
+    def _ensure_atlas_matches_input_space(
+        self, 
+        atlas_img: nib.Nifti1Image,
+        atlas_space: str,
+        atlas_resolution: int,
+        input_space: str,
+        input_resolution: int,
+        input_affine: np.ndarray
+    ) -> nib.Nifti1Image:
+        """
+        Transform atlas to match input data space if spaces don't match.
+        
+        This allows AtlasAggregation to work with any voxel-level image,
+        not just lesion data, by transforming the atlas to the input space.
+
+        Parameters
+        ----------
+        atlas_img : nib.Nifti1Image
+            Atlas image to potentially transform
+        atlas_space : str
+            Atlas coordinate space (e.g., 'MNI152NLin6Asym')
+        atlas_resolution : int
+            Atlas resolution in mm (e.g., 1 or 2)
+        input_space : str
+            Input data coordinate space
+        input_resolution : int
+            Input data resolution in mm
+        input_affine : np.ndarray
+            Input data affine matrix
+
+        Returns
+        -------
+        nib.Nifti1Image
+            Atlas in input space (transformed if needed, original if already matching)
+        """
+        # If atlas doesn't specify space, assume it matches
+        if atlas_space is None:
+            return atlas_img
+        
+        # Check if spaces are equivalent (handles aliases like aAsym == cAsym)
+        from lacuna.core.spaces import spaces_are_equivalent
+        
+        if spaces_are_equivalent(atlas_space, input_space):
+            # Same space or equivalent alias - no coordinate transformation needed
+            # (nilearn will handle resolution resampling during aggregation)
+            return atlas_img
+        
+        # Need to transform atlas to input space
+        from lacuna.core.spaces import CoordinateSpace
+        from lacuna.spatial.transform import transform_image
+        from lacuna.utils.logging import ConsoleLogger
+        
+        logger = ConsoleLogger()
+        
+        # Create target space matching input data
+        target_space = CoordinateSpace(
+            identifier=input_space,
+            resolution=input_resolution,
+            reference_affine=input_affine,
+        )
+        
+        logger.info(
+            f"Transforming atlas from {atlas_space}@{atlas_resolution}mm "
+            f"to {input_space}@{input_resolution}mm to match input data"
+        )
+        
+        # Transform atlas using nearest neighbor to preserve labels
+        return transform_image(
+            img=atlas_img,
+            source_space=atlas_space,
+            target_space=target_space,
+            source_resolution=atlas_resolution,
+            interpolation='nearest'  # Preserve integer labels
+        )
+
+    def _run_analysis(self, lesion_data: LesionData) -> list["AnalysisResult"]:
         """
         Compute ROI-level aggregation for all atlases.
 
@@ -288,38 +443,59 @@ class AtlasAggregation(BaseAnalysis):
 
         Returns
         -------
-        dict
-            Results dictionary with aggregated values per atlas region
+        list[AnalysisResult]
+            List containing ROIResult with aggregated values per atlas region
         """
-        # Get source data
-        source_img = self._get_source_image(lesion_data)
-        source_data = source_img.get_fdata()
+        results = {}
 
-        # Get voxel sizes for volume calculations
+        # Get input data space/resolution once
+        input_space = lesion_data.metadata.get('space')
+        input_resolution = lesion_data.metadata.get('resolution')
+        
+        # Get source image (this is what we'll aggregate)
+        source_img = self._get_source_image(lesion_data)
+        
+        # Calculate voxel volume from source data
         voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
 
-        results = {}
+        # Collect atlas names for metadata
+        atlas_names = []
 
         # Process each atlas
         for atlas_info in self.atlases:
             atlas_name = atlas_info["name"]
+            atlas_names.append(atlas_name)
+            atlas_space = atlas_info.get("space")
+            atlas_resolution = atlas_info.get("resolution")
+            
+            # Load atlas image
             atlas_img = nib.load(atlas_info["atlas_path"])
+            
+            # Transform atlas to match input data space if needed
+            atlas_img = self._ensure_atlas_matches_input_space(
+                atlas_img=atlas_img,
+                atlas_space=atlas_space,
+                atlas_resolution=atlas_resolution,
+                input_space=input_space,
+                input_resolution=input_resolution,
+                input_affine=source_img.affine
+            )
+            
             labels = atlas_info["labels"]
-
             atlas_data = atlas_img.get_fdata()
 
-            # Warn if resampling will occur
+            # Warn if nilearn will resample atlas to match source resolution
             atlas_shape = atlas_data.shape[:3]  # Handle 4D atlases
-            if source_data.shape != atlas_shape:
+            source_shape = source_img.get_fdata().shape
+            if source_shape != atlas_shape:
                 import warnings
-
                 warnings.warn(
                     f"Atlas '{atlas_name}' will be resampled to match source data.\n"
-                    f"Source shape: {source_data.shape}, Atlas shape: {atlas_shape}",
+                    f"Source shape: {source_shape}, Atlas shape: {atlas_shape}",
                     UserWarning,
                     stacklevel=2,
                 )
-
+            
             if atlas_data.ndim == 3:
                 # 3D integer-labeled atlas - use nilearn NiftiLabelsMasker
                 atlas_results = self._aggregate_3d_atlas(
@@ -345,7 +521,21 @@ class AtlasAggregation(BaseAnalysis):
                 key = f"{atlas_name}_{region_name}"
                 results[key] = value
 
-        return results
+        # Create ROIResult object
+        roi_result = ROIResult(
+            name="atlas_aggregation",
+            data=results,
+            atlas_names=atlas_names,
+            aggregation_method=self.aggregation,
+            metadata={
+                "source": self.source,
+                "threshold": self.threshold,
+                "n_atlases": len(atlas_names),
+                "n_regions": len(results)
+            }
+        )
+
+        return [roi_result]
 
     def _aggregate_3d_atlas(
         self,
@@ -649,124 +839,6 @@ class AtlasAggregation(BaseAnalysis):
 
         return None
 
-    def _discover_atlases(self) -> list[dict]:
-        """
-        Discover atlas files in atlas directory.
-
-        Looks for pairs of:
-        - Atlas NIfTI: <name>.nii or <name>.nii.gz
-        - Labels file: <name>_labels.txt or <name>.txt
-
-        If atlas_names is provided, only atlases with matching names are included.
-
-        Returns
-        -------
-        list[dict]
-            List of atlas info dicts with keys:
-            - name: Atlas name
-            - atlas_path: Path to NIfTI file
-            - labels_path: Path to labels file
-            - labels: Loaded labels dict
-        """
-        atlases = []
-        atlas_dir = Path(self.atlas_dir)
-
-        # Find all NIfTI files
-        nifti_files = list(atlas_dir.glob("*.nii.gz")) + list(atlas_dir.glob("*.nii"))
-
-        for nifti_path in nifti_files:
-            # Determine base name (remove .nii.gz or .nii)
-            if nifti_path.name.endswith(".nii.gz"):
-                base_name = nifti_path.name[:-7]
-            else:
-                base_name = nifti_path.name[:-4]
-
-            # Filter by atlas_names if provided
-            if self.atlas_names is not None and base_name not in self.atlas_names:
-                continue
-
-            # Look for corresponding labels file
-            labels_path = atlas_dir / f"{base_name}_labels.txt"
-            if not labels_path.exists():
-                labels_path = atlas_dir / f"{base_name}.txt"
-
-            if not labels_path.exists():
-                # Skip atlas without labels
-                continue
-
-            # Load labels
-            try:
-                labels = self._load_labels_file(labels_path)
-            except Exception:
-                # Skip atlas with invalid labels file
-                continue
-
-            atlases.append(
-                {
-                    "name": base_name,
-                    "atlas_path": nifti_path,
-                    "labels_path": labels_path,
-                    "labels": labels,
-                }
-            )
-
-        return atlases
-
-    def _load_labels_file(self, labels_path: Path) -> dict[int, str]:
-        """
-        Load atlas labels from text file.
-
-        Expected format: each line contains "region_id region_name"
-        Lines starting with # are treated as comments.
-
-        Parameters
-        ----------
-        labels_path : Path
-            Path to labels text file
-
-        Returns
-        -------
-        dict[int, str]
-            Mapping from region ID to region name
-        """
-        labels = {}
-
-        with open(labels_path) as f:
-            for line in f:
-                line = line.strip()
-
-                # Skip empty lines and comments
-                if not line or line.startswith("#"):
-                    continue
-
-                # Parse "region_id region_name" format
-                parts = line.split(maxsplit=1)
-                if len(parts) == 2:
-                    try:
-                        region_id = int(parts[0])
-                        region_name = parts[1]
-                        labels[region_id] = region_name
-                    except ValueError:
-                        # Skip lines that don't start with integer
-                        continue
-                elif len(parts) == 1:
-                    # Handle case where there's just a region name (use line number as ID)
-                    # This is for 4D atlases where regions are indexed by volume
-                    try:
-                        # Try to parse as just a name, assign sequential ID
-                        region_name = parts[0]
-                        region_id = len(labels) + 1
-                        labels[region_id] = region_name
-                    except Exception:
-                        continue
-
-        if not labels:
-            raise ValueError(
-                f"No valid labels found in {labels_path}\n"
-                "Expected format: 'region_id region_name' per line"
-            )
-
-        return labels
 
     def _get_parameters(self) -> dict:
         """Get analysis parameters for provenance and display.
@@ -777,7 +849,6 @@ class AtlasAggregation(BaseAnalysis):
             Dictionary of parameter names and values.
         """
         return {
-            "atlas_dir": str(self.atlas_dir) if self.atlas_dir else None,
             "source": self.source,
             "aggregation": self.aggregation,
             "threshold": self.threshold,

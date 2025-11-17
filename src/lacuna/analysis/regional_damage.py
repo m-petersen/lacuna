@@ -45,26 +45,18 @@ class RegionalDamage(AtlasAggregation):
 
     Parameters
     ----------
-    atlas_dir : str, Path, or None, default=None
-        Directory containing atlas files. Each atlas should have:
-        - NIfTI file (.nii or .nii.gz)
-        - Labels file with same base name + "_labels.txt" or ".txt"
-        If None (default), uses bundled reference atlases included with the package.
     threshold : float, default=0.5
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
     atlas_names : list of str or None, default=None
-        If provided, only process atlases with these names (without file extensions).
-        Atlas names should match the base filename (e.g., "HCP1065" for "HCP1065.nii.gz").
-        If None, all atlases found in atlas_dir will be processed.
-        Example: ["HCP1065", "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm"]
+        Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
+        If None, all registered atlases are processed.
+        Use list_atlases() to see available atlases.
 
     Raises
     ------
     ValueError
-        If atlas_dir doesn't exist or contains no valid atlas files.
-    FileNotFoundError
-        If specified atlas directory doesn't exist.
+        If atlas_names contains non-existent atlas names.
 
     Notes
     -----
@@ -75,12 +67,12 @@ class RegionalDamage(AtlasAggregation):
 
     Examples
     --------
-    >>> # Zero-config usage with bundled atlases
+    >>> # Use all registered atlases
     >>> from lacuna import LesionData
     >>> from lacuna.analysis import RegionalDamage
     >>>
     >>> lesion = LesionData.from_nifti("lesion.nii.gz")
-    >>> analysis = RegionalDamage()  # Uses bundled atlases!
+    >>> analysis = RegionalDamage()  # Uses all registered atlases
     >>> result = analysis.run(lesion)
     >>>
     >>> # Results are in AtlasAggregation namespace
@@ -89,13 +81,9 @@ class RegionalDamage(AtlasAggregation):
     ...     if pct > 10:  # Show regions with >10% damage
     ...         print(f"{region}: {pct:.1f}%")
     >>>
-    >>> # Use custom atlas directory
-    >>> analysis = RegionalDamage(atlas_dir="/data/atlases")
-    >>> result = analysis.run(lesion)
-    >>>
     >>> # Process only specific atlases
     >>> analysis = RegionalDamage(
-    ...     atlas_names=["Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm"]
+    ...     atlas_names=["Schaefer2018_100Parcels7Networks"]
     ... )
     >>> result = analysis.run(lesion)
 
@@ -109,7 +97,6 @@ class RegionalDamage(AtlasAggregation):
 
     def __init__(
         self,
-        atlas_dir: str | Path | None = None,
         threshold: float = 0.5,
         atlas_names: list[str] | None = None,
     ):
@@ -117,12 +104,11 @@ class RegionalDamage(AtlasAggregation):
         Initialize RegionalDamage analysis.
 
         This is equivalent to:
-        AtlasAggregation(atlas_dir=atlas_dir, source="lesion_img",
+        AtlasAggregation(source="lesion_img",
                         aggregation="percent", threshold=threshold,
                         atlas_names=atlas_names)
         """
         super().__init__(
-            atlas_dir=atlas_dir,
             source="lesion_img",
             aggregation="percent",
             threshold=threshold,
