@@ -2,13 +2,21 @@
 Coordinate space detection, validation, and alignment.
 
 This module provides utilities for preventing silent space mismatch errors.
+
+Note: ANTsPy-based registration functions require the optional 'preprocess' dependency.
+Install with: pip install lacuna[preprocess]
 """
 
 import re
 from pathlib import Path
 from typing import Literal
 
-import ants
+try:
+    import ants
+    HAS_ANTS = True
+except ImportError:
+    HAS_ANTS = False
+
 import nibabel as nib
 import numpy as np
 from nilearn.image import resample_img
@@ -355,6 +363,12 @@ def align_to_reference(
         raise ValueError(f"Unsupported source space: {source_space}")
     if target_space not in SUPPORTED_SPACES:
         raise ValueError(f"Unsupported target space: {target_space}")
+
+    if not HAS_ANTS:
+        raise ImportError(
+            "ANTsPy is required for align_to_reference but is not installed. "
+            "Install with: pip install lacuna[preprocess]"
+        )
 
     print(f"[ALIGN_TO_REFERENCE] Using ANTsPy backend")  # DEBUG
     print(f"[ALIGN_TO_REFERENCE] Source: {source_space} @ {source_resolution}mm")  # DEBUG

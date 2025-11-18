@@ -1,0 +1,21 @@
+name: Clean (Local)
+
+# This workflow is designed for local use with act
+# Run with: act -j clean
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean build artifacts
+        run: |
+          rm -rf build/ dist/ *.egg-info
+          rm -rf .pytest_cache .coverage htmlcov .mypy_cache .ruff_cache
+          find . -type d -name __pycache__ -exec rm -rf {} + || true
+          find . -type f -name "*.pyc" -delete
+          echo "✓ Cleaned build artifacts and cache files"

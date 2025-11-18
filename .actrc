@@ -1,0 +1,22 @@
+# act configuration - run GitHub Actions locally
+# Usage: act [event] [options]
+# Examples:
+#   act -l                    # List all workflows
+#   act -j test              # Run test job
+#   act push                 # Simulate push event
+
+# Use medium-sized container with common tools installed
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Container architecture
+--container-architecture linux/amd64
+
+# Performance optimizations
+--reuse                      # Reuse containers between runs (faster)
+--action-offline-mode        # Use cached actions/images when available
+
+# Bind mount workspace (avoid copying files into container)
+--bind
+
+# Dummy GitHub token (some actions check for it)
+-s GITHUB_TOKEN=dummy_token

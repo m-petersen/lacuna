@@ -192,7 +192,27 @@ MIT License - see LICENSE file for details
 
 ## Contributing
 
-Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
+Contributions are welcome! See [DEVELOPMENT.md](DEVELOPMENT.md) for:
+- Setting up your development environment
+- Running tests locally with `act`
+- Code formatting and linting
+- Versioning and release workflow
+
+Quick start for contributors:
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Install act (task runner)
+brew install act  # macOS
+# or: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Run tests
+act -j test
+
+# Format code
+act -j format -W .github/workflows/local-format.yml
+```
 
 ## Support
 
