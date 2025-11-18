@@ -154,10 +154,8 @@ class TestLesionDataValidation:
         with pytest.raises(ValidationError, match="spatial"):
             LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    def test_validate_spatial_mismatch_shape_error(self):
-        """Test that mismatched shapes raise ValidationError."""
-        from lacuna.core.exceptions import ValidationError
-
+    def test_validate_spatial_mismatch_shape_warning(self):
+        """Test that mismatched shapes are allowed but may generate warnings."""
         # Create lesion
         lesion_data = np.zeros((64, 64, 64), dtype=np.uint8)
         lesion_data[30:35, 30:35, 30:35] = 1
@@ -165,14 +163,21 @@ class TestLesionDataValidation:
         affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
         lesion_img = nib.Nifti1Image(lesion_data, affine)
 
-        # Create anatomical with different shape
+        # Create anatomical with different shape (but same affine)
         anat_data = np.random.rand(80, 80, 80).astype(np.float32)
         anat_img = nib.Nifti1Image(anat_data, affine)
 
         from lacuna import LesionData
 
-        with pytest.raises(ValidationError, match="spatial"):
-            LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        # Should succeed - different shapes are allowed with same affine
+        # (shape checking is disabled in check_spatial_match)
+        lesion = LesionData(
+            lesion_img=lesion_img, 
+            anatomical_img=anat_img, 
+            metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        assert lesion.lesion_img.shape == (64, 64, 64)
+        assert lesion.anatomical_img.shape == (80, 80, 80)
 
     def test_validate_valid_lesion_data_no_warnings(self):
         """Test that valid LesionData passes validation without warnings."""

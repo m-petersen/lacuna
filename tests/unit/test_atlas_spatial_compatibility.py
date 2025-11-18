@@ -169,6 +169,8 @@ def test_all_atlases_incompatible_shape_are_resampled(tmp_path):
 
 def test_4d_atlas_spatial_compatibility(tmp_path):
     """Test that 4D probabilistic atlases are automatically resampled."""
+    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    
     # Create lesion
     lesion_shape = (64, 64, 64)
     lesion_array = np.zeros(lesion_shape, dtype=np.uint8)
@@ -194,8 +196,11 @@ def test_4d_atlas_spatial_compatibility(tmp_path):
     nib.save(nib.Nifti1Image(atlas2_data, np.eye(4)), atlas_dir / "prob4d_incompatible.nii.gz")
     (atlas_dir / "prob4d_incompatible_labels.txt").write_text("Region_X\nRegion_Y\n")
 
+    # Register atlases
+    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    
     # Run analysis
-    analysis = RegionalDamage(atlas_dir=str(atlas_dir), threshold=0.5)
+    analysis = RegionalDamage(threshold=0.5)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -205,8 +210,10 @@ def test_4d_atlas_spatial_compatibility(tmp_path):
         assert any("resample" in str(warning.message).lower() for warning in w)
 
     # Should have results from BOTH 4D atlases (after resampling)
-    # Note: RegionalDamage stores results under its own class name "RegionalDamage"
-    atlas_results = result.results.get("RegionalDamage", {})
+    # RegionalDamage returns list[ROIResult]
+    results_list = result.results.get("RegionalDamage", [])
+    assert len(results_list) > 0
+    atlas_results = results_list[0].get_data()
     assert "prob4d_Region_1" in atlas_results
     assert "prob4d_Region_2" in atlas_results
     assert "prob4d_Region_3" in atlas_results
