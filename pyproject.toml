@@ -101,9 +101,12 @@ addopts = [
     "--cov-report=xml",
 ]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "contract: marks tests as contract tests",
+    "slow: marks tests as slow (e.g., downloads, heavy computation, >5s)",
+    "fast: marks tests as fast (unit tests, <1s each)",
+    "integration: marks tests as integration tests (multiple components)",
+    "contract: marks tests as contract/API tests (interface validation)",
+    "requires_mrtrix: requires MRtrix3 to be installed",
+    "requires_templateflow: requires internet access for template downloads",
 ]
 filterwarnings = [
     "error",

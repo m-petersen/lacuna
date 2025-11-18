@@ -1,4 +1,4 @@
-.PHONY: help setup test test-fast test-coverage lint format typecheck clean ci-native ci-act
+.PHONY: help setup test test-unit test-contract test-integration test-fast test-coverage lint format typecheck clean ci-native ci-act
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -8,11 +8,23 @@ help:  ## Show this help message
 setup:  ## Install dependencies
 	pip install -e ".[dev]"
 
-test:  ## Run tests (fast, native, use this constantly)
+test:  ## Run all tests (~2min with -n auto)
 	pytest -v -n auto
 
-test-fast:  ## Run tests without coverage (fastest)
-	pytest -v -n auto -x
+test-unit:  ## Run only unit tests (fast, ~30s)
+	pytest tests/unit/ -v -n auto
+
+test-contract:  ## Run only contract tests (fast, ~30s)
+	pytest tests/contract/ -v -n auto
+
+test-integration:  ## Run only integration tests (slower, ~1min)
+	pytest tests/integration/ -v -n auto
+
+test-fast:  ## Run fast tests only (unit + contract, ~1min)
+	pytest tests/unit/ tests/contract/ -v -n auto -x -m "not slow"
+
+test-slow:  ## Run slow tests only (integration + marked slow)
+	pytest -v -n auto -m "slow or integration"
 
 test-coverage:  ## Run tests with coverage report
 	pytest -v --cov=lacuna --cov-report=term-missing --cov-report=html -n auto
