@@ -20,8 +20,5 @@ jobs:
       - name: Install formatting tools
         run: pip install ruff black
 
-      - name: Format with ruff
-        run: ruff check --fix src tests
-
-      - name: Format with black
-        run: black src tests
+      - name: Format code
+        run: make format

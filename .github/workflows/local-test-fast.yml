@@ -20,7 +20,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: make setup
 
-      - name: Run fast tests (no coverage)
-        run: pytest -v -n auto
+      - name: Run fast tests
+        run: make test-fast

@@ -1,17 +1,147 @@
 # Development Workflow with act
 
-This project uses **nektos/act** to run GitHub Actions workflows locally, eliminating the need for Make or separate task runners. Git tags drive versioning via setuptools-scm.
+This project uses the **Task Runner Pattern**: Makefile is the single source of truth for all commands. Git tags drive versioning via setuptools-scm.
 
-## Philosophy: "Think Globally, Act Locally"
+## Philosophy: Three-Loop Testing Strategy
 
-Define tasks once as GitHub Actions workflows → run them anywhere:
-- ✅ Locally with `act` (instant feedback, no git push needed)
-- ✅ In CI on GitHub (automatic on push/PR)
-- ✅ Same Docker environment everywhere
+**Don't use act for every change!** Use the right tool for the right speed:
+
+1. **🔥 Inner Loop** (Every 5 mins): Native commands → Instant feedback
+2. **⚡ Outer Loop** (Before commit): Full CI natively → Catch all issues
+3. **🐳 Verification Loop** (Before push): act/Docker → Verify environment
 
 ## Quick Start
 
-### 1. Install act
+### 1. Install dependencies
+
+```bash
+make setup
+```
+
+### 2. Run tests (native, instant)
+
+```bash
+make test
+```
+
+### 3. Before commit (native CI)
+
+```bash
+make ci-native
+```
+
+### 4. Before push (verify with Docker)
+
+```bash
+make ci-act
+```
+
+## The Three Loops Explained
+
+### 🔥 INNER LOOP: Native Testing (Use Constantly)
+
+Run these **instantly** on your machine (no Docker overhead):
+
+```bash
+# Run tests (use this ALL THE TIME)
+make test                # ~5 seconds
+
+# Even faster (stops at first failure)
+make test-fast           # ~3 seconds
+
+# With coverage report
+make test-coverage       # ~10 seconds
+
+# Check code quality
+make lint                # ~2 seconds
+
+# Auto-format code
+make format              # ~1 second
+
+# Type check
+make typecheck           # ~5 seconds
+```
+
+**When to use**: After every code change. These are fast enough to run continuously.
+
+### ⚡ OUTER LOOP: Native CI (Before Commit)
+
+Run everything CI will run, but natively (no Docker):
+
+```bash
+make ci-native           # ~30 seconds
+```
+
+This runs: linting → type checking → tests with coverage.
+
+**When to use**: Before committing. Catches all issues without Docker overhead.
+
+### 🐳 VERIFICATION LOOP: Docker/act (Before Push)
+
+Verify your code works in the exact CI environment:
+
+```bash
+# With container reuse (faster after first run)
+make ci-act              # ~90 seconds
+
+# Clean slate (no cached containers)
+make ci-act-clean        # ~2 minutes
+```
+
+**When to use**: 
+- ✅ Before pushing to remote
+- ✅ Debugging CI failures (reproduces exact environment)
+- ✅ Testing workflow YAML changes
+- ❌ NOT after every code change (too slow!)
+
+## When to Use What
+
+| Scenario | Command | Speed | Purpose |
+|----------|---------|-------|---------|
+| Changed 1 function | `make test` | ~5s | Quick logic check |
+| Changed 3 files | `make test` | ~10s | Still instant |
+| Fixed linting | `make lint` | ~2s | Verify fixes |
+| About to commit | `make ci-native` | ~30s | Catch all issues |
+| About to push | `make ci-act` | ~90s | Verify Docker/OS |
+| CI failed on GitHub | `make ci-act-clean` | ~2m | Debug exact environment |
+
+## Common Tasks
+
+### Development
+
+```bash
+make help              # Show all commands
+make setup             # Install dependencies
+make test              # Run tests (your main command!)
+make test-fast         # Fastest tests
+make lint              # Check code quality
+make format            # Auto-format code
+make clean             # Clean build artifacts
+```
+
+### Before Commit
+
+```bash
+make ci-native         # Run full CI suite natively
+```
+
+### Before Push
+
+```bash
+make ci-act            # Verify in Docker
+```
+
+### Building & Releasing
+
+```bash
+make build             # Build package
+make check-dist        # Verify package
+make tag VERSION=0.2.0 # Tag and push release
+```
+
+## Installation
+
+### Install act (optional, only for Docker verification)
 
 ```bash
 # macOS
@@ -21,118 +151,37 @@ brew install act
 curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
 ```
 
-### 2. Install project
-
-```bash
-pip install -e ".[dev]"
-```
-
-### 3. Run a workflow locally
-
-```bash
-# List all available jobs
-act -l
-
-# Run tests
-act -j test
-
-# Run linting
-act -j lint -W .github/workflows/pre-commit.yml
-```
-
-## Common Tasks
-
-### Testing
-
-```bash
-# Full test suite with coverage (matches CI)
-act -j test
-
-# Fast tests without coverage
-act -j test-fast -W .github/workflows/local-test-fast.yml
-
-# Test specific Python version
-act -j test --matrix python-version:3.11
-
-# Test all Python versions (3.10, 3.11, 3.12)
-act -j test  # Runs full matrix
-```
-
-### Code Quality
-
-```bash
-# Run all linting checks
-act -j lint -W .github/workflows/pre-commit.yml
-
-# Auto-format code (ruff + black)
-act -j format -W .github/workflows/local-format.yml
-```
-
-### Cleanup
-
-```bash
-# Clean build artifacts and caches
-act -j clean -W .github/workflows/local-clean.yml
-```
-
-### Building & Releasing
-
-```bash
-# Build package distribution
-act -j build -W .github/workflows/release.yml
-
-# Test full release workflow (requires git tag)
-git tag v0.1.0
-act -j build -W .github/workflows/release.yml -e <(echo '{"ref": "refs/tags/v0.1.0"}')
-```
+**Note**: You don't need act for daily development! Only install if you want to verify Docker/CI compatibility before pushing.
 
 ## Workflow Organization
 
-### CI Workflows (`.github/workflows/`)
+### Makefile (Single Source of Truth)
 
-- **test.yml** - Full test suite, runs on push/PR
-  - Tests Python 3.10, 3.11, 3.12
-  - Coverage reporting to Codecov
-  - Use: `act -j test`
+All commands are defined in `Makefile`. GitHub Actions workflows call these same commands.
 
-- **pre-commit.yml** - Code quality checks
-  - Ruff linting
-  - Black formatting
-  - Mypy type checking
-  - Use: `act -j lint -W .github/workflows/pre-commit.yml`
+### GitHub Actions Workflows
 
-- **release.yml** - Package building and publishing
+- **test.yml** - Full test suite (runs `make setup`, `make lint`, `make test-coverage`)
+  - Python 3.10, 3.11, 3.12 matrix
+  - Coverage to Codecov
+  
+- **pre-commit.yml** - Code quality (runs `make lint`, `make typecheck`)
+  
+- **release.yml** - Package building
   - Triggered by version tags (`v*.*.*`)
-  - Builds wheel and sdist
-  - Creates GitHub release
-  - Publishes to PyPI (when configured)
-  - Use: `act -j build -W .github/workflows/release.yml`
+  - Builds and publishes to PyPI
 
-### Local Workflows (`.github/workflows/local-*.yml`)
+- **local-*.yml** - Helper workflows for act
+  - `local-test-fast.yml` - Quick tests
+  - `local-format.yml` - Auto-format
+  - `local-clean.yml` - Clean artifacts
 
-- **local-test-fast.yml** - Quick tests without coverage
-  - Use: `act -j test-fast -W .github/workflows/local-test-fast.yml`
+### Configuration Files
 
-- **local-format.yml** - Auto-format code
-  - Use: `act -j format -W .github/workflows/local-format.yml`
-
-- **local-clean.yml** - Clean build artifacts
-  - Use: `act -j clean -W .github/workflows/local-clean.yml`
-
-## Configuration
-
-### .actrc
-
-Project-wide act settings (already configured):
-- Uses `catthehacker/ubuntu:act-latest` Docker image
-- Enables container reuse for speed
-- Offline mode support (caches everything)
-
-### pyproject.toml
-
-- **Version**: Dynamic, from git tags via `setuptools-scm`
-- **Dependencies**: All in `[project.dependencies]`
-- **Optional deps**: `viz`, `bids`, `preprocess` (ANTsPy), `dev`, `doc`
+- `Makefile` - All commands (THE source of truth)
+- `.actrc` - act configuration (container reuse, offline mode)
+- `pyproject.toml` - Package metadata, dependencies
+- `.github/workflows/` - CI workflows (call make commands)
 
 ## Versioning Workflow
 
