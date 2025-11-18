@@ -85,15 +85,19 @@ class TestAtlasLabelAssignment:
             # Load lesion data
             lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+
             # Run analysis
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            results_list = result.results["AtlasAggregation"]
+            results = results_list[0].get_data()
 
             # Extract results
             right_damage = results.get("test_4d_atlas_Region_Right", None)
@@ -167,14 +171,19 @@ class TestAtlasLabelAssignment:
 
             # Load and analyze
             lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            results_list = result.results["AtlasAggregation"]
+            results = results_list[0].get_data()
 
             bottom_damage = results.get("atlas_1indexed_Bottom_Region", None)
             top_damage = results.get("atlas_1indexed_Top_Region", None)
@@ -233,14 +242,19 @@ class TestAtlasLabelAssignment:
 
             # Load and analyze
             lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            results_list = result.results["AtlasAggregation"]
+            results = results_list[0].get_data()
 
             first_damage = results.get("atlas_3d_First_Region", None)
             second_damage = results.get("atlas_3d_Second_Region", None)
