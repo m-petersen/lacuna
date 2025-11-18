@@ -42,6 +42,8 @@ def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
         "subject_id": "sub-001",
         "session_id": "ses-01",
         "age": 45,
+        "space": "MNI152NLin6Asym",
+        "resolution": 2,
     }
 
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
@@ -187,7 +189,7 @@ def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
     """Test to_dict serialization."""
     from lacuna.core.lesion_data import LesionData
 
-    metadata = {"subject_id": "sub-001", "age": 45}
+    metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
 
     data_dict = lesion.to_dict()
