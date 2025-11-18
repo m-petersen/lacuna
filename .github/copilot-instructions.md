@@ -51,11 +51,15 @@ Tests are categorized by speed and scope:
 
 Use pytest markers for fine-grained control:
 ```python
-@pytest.mark.fast          # Quick tests (<1s)
-@pytest.mark.slow          # Slow tests (>5s)
-@pytest.mark.integration   # Integration tests
-@pytest.mark.contract      # Contract/API tests
+@pytest.mark.fast                  # Quick tests (<1s)
+@pytest.mark.slow                  # Slow tests (>5s)
+@pytest.mark.integration           # Integration tests
+@pytest.mark.contract              # Contract/API tests
+@pytest.mark.requires_mrtrix       # Requires MRtrix3
+@pytest.mark.requires_templateflow # Requires internet
 ```
+
+**All test commands use pytest-xdist (`-n auto`) for parallel execution** (3-8x speedup).
 
 See `docs/testing_strategy.md` for comprehensive testing guide.
 
