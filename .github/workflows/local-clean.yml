@@ -12,10 +12,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clean build artifacts
-        run: |
-          rm -rf build/ dist/ *.egg-info
-          rm -rf .pytest_cache .coverage htmlcov .mypy_cache .ruff_cache
-          find . -type d -name __pycache__ -exec rm -rf {} + || true
-          find . -type f -name "*.pyc" -delete
-          echo "✓ Cleaned build artifacts and cache files"
+      - name: Clean artifacts
+        run: make clean
