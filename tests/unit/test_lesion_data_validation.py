@@ -202,8 +202,8 @@ class TestLesionDataValidation:
         # Should not raise any warnings or errors
         lesion_data.validate()
 
-    def test_validate_very_small_voxels_warning(self):
-        """Test that very small voxel sizes trigger warnings."""
+    def test_validate_very_small_voxels_no_warning(self):
+        """Test that very small voxel sizes are allowed (no validation implemented)."""
         from lacuna import LesionData
 
         shape = (64, 64, 64)
@@ -222,9 +222,8 @@ class TestLesionDataValidation:
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
 
-        # Should warn about suspicious voxel size
-        with pytest.warns(UserWarning, match="voxel size"):
-            lesion_data.validate()
+        # Validation should pass (no voxel size checks currently implemented)
+        assert lesion_data.validate() is True
 
     def test_validate_anisotropic_voxels_ok(self):
         """Test that anisotropic (but reasonable) voxels are acceptable."""

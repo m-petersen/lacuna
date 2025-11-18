@@ -248,16 +248,17 @@ class TestImmutability:
             def _run_analysis(self, lesion_data):
                 return {"result": "test"}
 
-        metadata = {"subject_id": "sub-001", "age": 45}
+        metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
         lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata=metadata)
 
         # Run analysis
         result = TestAnalysis().run(lesion_data)
 
-        # Original metadata should be unchanged
+        # Original metadata should be unchanged (except space and resolution are required)
         assert lesion_data.metadata["subject_id"] == "sub-001"
         assert lesion_data.metadata["age"] == 45
-        assert len(lesion_data.metadata) == 2
+        assert lesion_data.metadata["space"] == "MNI152NLin6Asym"
+        assert lesion_data.metadata["resolution"] == 2
 
     def test_chained_analyses_preserve_immutability(self, synthetic_lesion_img):
         """Test that chaining multiple analyses maintains immutability."""
