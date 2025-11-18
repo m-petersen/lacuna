@@ -18,57 +18,55 @@ def test_atlas_metadata_creation():
     """Test creating AtlasMetadata with required fields."""
     metadata = AtlasMetadata(
         name='TestAtlas',
-        full_name='Test Atlas Full Name',
         space='MNI152NLin6Asym',
-        resolution=2.0,
-        atlas_type='deterministic',
+        resolution=2,
+        atlas_filename='test_atlas.nii.gz',
+        labels_filename='test_atlas_labels.txt',
         n_regions=50,
         description='Test atlas for unit testing'
     )
     
     assert metadata.name == 'TestAtlas'
-    assert metadata.full_name == 'Test Atlas Full Name'
+    assert metadata.description == 'Test atlas for unit testing'
     assert metadata.space == 'MNI152NLin6Asym'
-    assert metadata.resolution == 2.0
-    assert metadata.atlas_type == 'deterministic'
+    assert metadata.resolution == 2
     assert metadata.n_regions == 50
-    assert metadata.bundled is False  # Default
-    assert metadata.filename is None  # Default
+    assert metadata.atlas_filename == 'test_atlas.nii.gz'
+    assert metadata.labels_filename == 'test_atlas_labels.txt'
 
 
 def test_atlas_metadata_bundled():
     """Test creating bundled atlas metadata."""
     metadata = AtlasMetadata(
         name='BundledAtlas',
-        full_name='Bundled Test Atlas',
         space='MNI152NLin6Asym',
-        resolution=1.0,
-        atlas_type='deterministic',
+        resolution=1,
+        atlas_filename='bundled_atlas.nii.gz',
+        labels_filename='bundled_atlas_labels.txt',
         n_regions=100,
-        description='Bundled atlas',
-        bundled=True,
-        filename='test_atlas_file'
+        description='Bundled atlas'
     )
     
-    assert metadata.bundled is True
-    assert metadata.filename == 'test_atlas_file'
+    assert metadata.name == 'BundledAtlas'
+    assert metadata.description == 'Bundled atlas'
+    assert metadata.n_regions == 100
 
 
 def test_atlas_registry_has_bundled_atlases():
     """Test that registry contains expected bundled atlases."""
-    # Check for Schaefer atlases
-    assert 'Schaefer100' in ATLAS_REGISTRY
-    assert 'Schaefer200' in ATLAS_REGISTRY
-    assert 'Schaefer400' in ATLAS_REGISTRY
-    assert 'Schaefer1000' in ATLAS_REGISTRY
+    # Check for Schaefer atlases (actual names with 2018 and full parcel count)
+    assert 'Schaefer2018_100Parcels7Networks' in ATLAS_REGISTRY
+    assert 'Schaefer2018_200Parcels7Networks' in ATLAS_REGISTRY
+    assert 'Schaefer2018_400Parcels7Networks' in ATLAS_REGISTRY
+    assert 'Schaefer2018_1000Parcels7Networks' in ATLAS_REGISTRY
     
-    # Check for Tian atlases
-    assert 'TianS1' in ATLAS_REGISTRY
-    assert 'TianS2' in ATLAS_REGISTRY
-    assert 'TianS3' in ATLAS_REGISTRY
+    # Check for Tian atlases (actual names with full details)
+    assert 'TianSubcortex_3TS1' in ATLAS_REGISTRY
+    assert 'TianSubcortex_3TS2' in ATLAS_REGISTRY
+    assert 'TianSubcortex_3TS3' in ATLAS_REGISTRY
     
-    # Check for HCP atlas
-    assert 'HCP1065' in ATLAS_REGISTRY
+    # Check for HCP atlas (actual name with threshold)
+    assert 'HCP1065_thr0p1' in ATLAS_REGISTRY
 
 
 def test_atlas_registry_metadata_validity():
@@ -135,12 +133,15 @@ def test_list_atlases_check_region_counts():
 
 def test_list_atlases_combined_filters():
     """Test combining multiple filters."""
-    # Atlases in NLin6 space at 1mm resolution
+    # No bundled atlases match NLin6Asym space + 1mm resolution
+    # (bundled are at 1mm, but we need to check what space they're in)
     filtered = list_atlases(
         space='MNI152NLin6Asym',
         resolution=1
     )
     
+    # If no matches, that's expected - bundled atlases are in NLin6Asym at 1mm
+    # so there should be matches
     assert len(filtered) > 0
     assert all(a.space == 'MNI152NLin6Asym' and a.resolution == 2 for a in filtered)
     

@@ -225,3 +225,30 @@ def batch_lesion_data_list(synthetic_lesion_img):
         lesion_list.append(lesion_data)
 
     return lesion_list
+
+
+@pytest.fixture(autouse=True)
+def clean_atlas_registry():
+    """Clean up atlas registry after each test to prevent cross-contamination.
+    
+    This fixture automatically runs after every test to remove any atlases
+    registered during the test. This prevents tests from interfering with
+    each other when they register temporary atlases.
+    """
+    # Store bundled atlas names before test
+    # (these are the atlases pre-registered in the module)
+    from lacuna.assets.atlases.registry import ATLAS_REGISTRY
+    
+    # On first call, save the bundled atlas names
+    if not hasattr(clean_atlas_registry, '_bundled_names'):
+        clean_atlas_registry._bundled_names = set(ATLAS_REGISTRY.keys())
+    
+    # Run the test
+    yield
+    
+    # After test: remove any atlases that weren't bundled
+    # (i.e., remove test-registered atlases)
+    bundled_names = clean_atlas_registry._bundled_names
+    to_remove = [name for name in ATLAS_REGISTRY.keys() if name not in bundled_names]
+    for name in to_remove:
+        del ATLAS_REGISTRY[name]
