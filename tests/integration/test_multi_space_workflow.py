@@ -203,8 +203,12 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
     shutil.copy(atlas_nlin2009c_2mm, atlas_dest)
     shutil.copy(atlas_nlin2009c_2mm.parent / "test_atlas_labels.txt", labels_dest)
     
+    # Register atlas
+    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    register_atlases_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
+    
     # Run analysis - should automatically detect and handle space mismatch
-    analyzer = RegionalDamage(atlas_dir=atlas_dir)
+    analyzer = RegionalDamage()
     
     # This should succeed despite space mismatch
     result = analyzer.run(lesion_nlin6_2mm)
@@ -213,8 +217,9 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
     assert "RegionalDamage" in result.results or "AtlasAggregation" in result.results
     
     # Check that we got regional damage values
-    results_dict = result.results.get("RegionalDamage") or result.results.get("AtlasAggregation")
-    assert len(results_dict) > 0
+    results_list = result.results.get("RegionalDamage") or result.results.get("AtlasAggregation")
+    assert len(results_list) > 0
+    results_dict = results_list[0].get_data()
     
     # Verify we got damage in the frontal region (where our lesion is)
     frontal_keys = [k for k in results_dict.keys() if "Frontal_L" in k]
@@ -245,8 +250,12 @@ def test_transformation_provenance_tracking(lesion_nlin6_2mm, atlas_nlin2009c_2m
     shutil.copy(atlas_nlin2009c_2mm, atlas_dest)
     shutil.copy(atlas_nlin2009c_2mm.parent / "test_atlas_labels.txt", labels_dest)
     
+    # Register atlas
+    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    register_atlases_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
+    
     # Run analysis
-    analyzer = RegionalDamage(atlas_dir=atlas_dir)
+    analyzer = RegionalDamage()
     result = analyzer.run(lesion_nlin6_2mm)
     
     # Check provenance chain
@@ -294,8 +303,12 @@ def test_matched_spaces_no_transformation_overhead(lesion_nlin2009c_2mm, atlas_n
     shutil.copy(atlas_nlin2009c_2mm, atlas_dest)
     shutil.copy(atlas_nlin2009c_2mm.parent / "test_atlas_labels.txt", labels_dest)
     
+    # Register atlas
+    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    register_atlases_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
+    
     # Time the analysis
-    analyzer = RegionalDamage(atlas_dir=atlas_dir)
+    analyzer = RegionalDamage()
     
     start_time = time.time()
     result = analyzer.run(lesion_nlin2009c_2mm)
