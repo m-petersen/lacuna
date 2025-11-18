@@ -219,6 +219,9 @@ def list_atlases(
     if resolution is not None:
         atlases = [a for a in atlases if a.resolution == resolution]
     
+    # Sort by name for consistent ordering
+    atlases = sorted(atlases, key=lambda a: a.name)
+    
     return atlases
 
 
