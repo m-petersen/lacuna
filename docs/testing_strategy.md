@@ -44,6 +44,21 @@ Use markers to categorize tests by characteristics:
 @pytest.mark.requires_templateflow # Requires internet for template downloads
 ```
 
+## Parallel Test Execution
+
+All test commands use **pytest-xdist** (`-n auto`) for parallel execution:
+
+- Automatically detects CPU cores and runs tests in parallel
+- Typical speedup: 3-8x faster than sequential execution
+- Example: 8 workers on 8-core machine runs 8 tests simultaneously
+- Already configured in all `make` commands (no manual setup needed)
+
+**Verification**: Check for "N workers" in pytest output:
+```bash
+$ make test-unit
+# Output shows: "8 workers [236 items]"  ← parallel execution active
+```
+
 ### Example Usage
 
 ```python
