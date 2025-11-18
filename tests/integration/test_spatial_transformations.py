@@ -24,6 +24,8 @@ from lacuna.core.spaces import CoordinateSpace
 class TestTransformLoading:
     """Test transform loading and TemplateFlow integration."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_load_transform_from_templateflow(self):
         """Transform should be downloaded from TemplateFlow if not cached."""
         from lacuna.assets.transforms.loader import load_transform
@@ -36,6 +38,8 @@ class TestTransformLoading:
         assert path.suffix == ".h5"
         assert path.stat().st_size > 1024  # At least 1KB
         
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_with_space_variant_aliasing(self):
         """Transform should work with space variants (aAsym/bAsym → cAsym)."""
         from lacuna.assets.transforms.loader import load_transform
@@ -48,6 +52,8 @@ class TestTransformLoading:
         # Should normalize to cAsym internally
         assert "MNI152NLin2009cAsym" in str(path) or "cAsym" in str(path)
         
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_corrupted_file_detection_and_retry(self, tmp_path, monkeypatch):
         """Corrupted transform files should be detected and re-downloaded."""
         from lacuna.assets.transforms.loader import load_transform
@@ -73,6 +79,8 @@ class TestTransformLoading:
 class TestImageDimensionHandling:
     """Test handling of 3D and 4D images."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_3d_image(self):
         """3D images should transform successfully."""
         # Create 3D test image
@@ -97,6 +105,8 @@ class TestImageDimensionHandling:
         assert result.ndim == 3
         assert result.shape[0] > 0
         
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_4d_image_with_singleton_dimension(self):
         """4D images with singleton 4th dimension should be squeezed."""
         # Create 4D test image with singleton dimension
@@ -170,6 +180,8 @@ class TestSpaceVariantCanonicalization:
 class TestAtlasTransformation:
     """Test atlas transformation in analysis pipeline."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_atlas_transformation_preserves_labels(self):
         """Atlas transformation should preserve integer labels."""
         # Create atlas with integer labels
@@ -197,6 +209,8 @@ class TestAtlasTransformation:
         # All values should be integers (or very close due to float conversion)
         assert np.allclose(result_data, np.round(result_data))
         
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_regional_damage_with_space_mismatch(self):
         """RegionalDamage should handle lesion/atlas in different spaces."""
         from lacuna import LesionData
@@ -228,6 +242,8 @@ class TestAtlasTransformation:
 class TestAsyncioCompatibility:
     """Test asyncio event loop compatibility for Jupyter."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_with_existing_event_loop(self):
         """Transformation should work even with existing asyncio event loop."""
         import asyncio
@@ -265,6 +281,8 @@ class TestAsyncioCompatibility:
 class TestTransformCaching:
     """Test transform caching behavior."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_cached_after_first_load(self):
         """Transform should be cached after first load."""
         from lacuna.assets.transforms.loader import load_transform
@@ -279,6 +297,8 @@ class TestTransformCaching:
         path2 = load_transform(transform_name)
         assert path1 == path2
         
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_can_transform_between_checks_availability(self):
         """can_transform_between should correctly report availability."""
         # Create source and target spaces
@@ -312,6 +332,8 @@ class TestTransformCaching:
 class TestLoggingTransparency:
     """Test that transformations log appropriately."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_logs_progress(self, caplog):
         """Transformations should log their progress."""
         import logging

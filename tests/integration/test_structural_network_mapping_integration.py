@@ -25,10 +25,15 @@ def _check_mrtrix():
 
 
 # Skip all tests if MRtrix3 is not available
-pytestmark = pytest.mark.skipif(
-    not _check_mrtrix(),
-    reason="MRtrix3 not available",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not _check_mrtrix(),
+        reason="MRtrix3 not available",
+    ),
+    pytest.mark.requires_mrtrix,
+    pytest.mark.slow,
+    pytest.mark.integration,
+]
 
 
 @pytest.fixture

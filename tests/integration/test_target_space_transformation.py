@@ -119,6 +119,8 @@ def test_no_transformation_when_already_in_target_space(lesion_mni152_2mm):
     assert result.results["TestAnalysis2mm"]["resolution"] == 2
 
 
+@pytest.mark.slow
+@pytest.mark.requires_templateflow
 def test_automatic_transformation_to_target_space(lesion_mni152_1mm):
     """Test that lesion is automatically transformed from 1mm to 2mm via resampling."""
     analysis = TestAnalysis2mm()
@@ -136,6 +138,8 @@ def test_automatic_transformation_to_target_space(lesion_mni152_1mm):
     assert transform_records[0]["method"] == "nilearn_resample"  # Should use resampling not transform
 
 
+@pytest.mark.slow
+@pytest.mark.requires_templateflow
 def test_automatic_transformation_different_space(lesion_mni152_2mm):
     """Test that lesion is transformed to different coordinate space."""
     analysis = TestAnalysis1mm()

@@ -179,6 +179,8 @@ def atlas_nlin6_2mm(tmp_path):
 
 
 @pytest.mark.integration
+@pytest.mark.slow
+@pytest.mark.requires_templateflow
 @pytest.mark.skip(reason="Automatic space transformation not yet fully implemented in analysis modules")
 def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin2009c_2mm, tmp_path):
     """
@@ -228,6 +230,8 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
 
 
 @pytest.mark.integration
+@pytest.mark.slow
+@pytest.mark.requires_templateflow
 @pytest.mark.skip(reason="Provenance tracking for transformations not yet fully integrated")
 def test_transformation_provenance_tracking(lesion_nlin6_2mm, atlas_nlin2009c_2mm, tmp_path):
     """
