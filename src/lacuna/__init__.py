@@ -5,7 +5,11 @@ Main package providing unified API for lesion data loading, preprocessing, analy
 and export.
 """
 
-__version__ = "0.1.0"
+try:
+    from ._version import __version__
+except ImportError:
+    # Fallback for development installations without setuptools-scm
+    __version__ = "0.0.0+unknown"
 
 # Core data structures
 # Bundled data access (convenience imports)
