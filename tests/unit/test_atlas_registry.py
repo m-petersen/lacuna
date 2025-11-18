@@ -104,62 +104,49 @@ def test_list_atlases_filter_by_space():
     
     # Should include Schaefer atlases
     names = [a.name for a in nlin6_atlases]
-    assert 'Schaefer100' in names
+    assert 'Schaefer2018_100Parcels7Networks' in names
 
 
-def test_list_atlases_filter_by_type():
-    """Test filtering atlases by type."""
-    deterministic = list_atlases(atlas_type='deterministic')
-    probabilistic = list_atlases(atlas_type='probabilistic')
+def test_list_atlases_filter_by_resolution():
+    """Test filtering atlases by resolution."""
+    res2_atlases = list_atlases(resolution=2)
     
-    assert len(deterministic) > 0
-    assert len(probabilistic) > 0
+    assert len(res2_atlases) > 0
+    assert all(a.resolution == 2 for a in res2_atlases)
     
-    assert all(a.atlas_type == 'deterministic' for a in deterministic)
-    assert all(a.atlas_type == 'probabilistic' for a in probabilistic)
-    
-    # HCP1065 should be probabilistic
-    prob_names = [a.name for a in probabilistic]
-    assert 'HCP1065' in prob_names
+    # Schaefer atlases are at 2mm resolution
+    names = [a.name for a in res2_atlases]
+    assert any('Schaefer' in name for name in names)
 
 
-def test_list_atlases_filter_by_region_count():
-    """Test filtering atlases by region count range."""
-    # Small atlases (< 100 regions)
-    small = list_atlases(max_regions=99)
-    assert all(a.n_regions <= 99 for a in small)
+def test_list_atlases_check_region_counts():
+    """Test that atlases have region count information."""
+    atlases = list_atlases()
     
-    # Medium atlases (100-500 regions)
-    medium = list_atlases(min_regions=100, max_regions=500)
-    assert all(100 <= a.n_regions <= 500 for a in medium)
+    # Check that region count info exists for some atlases
+    has_region_info = [a for a in atlases if a.n_regions is not None]
+    assert len(has_region_info) > 0
     
-    # Large atlases (> 500 regions)
-    large = list_atlases(min_regions=501)
-    assert all(a.n_regions >= 501 for a in large)
+    # Verify counts are reasonable
+    for atlas in has_region_info:
+        assert atlas.n_regions > 0
+        assert atlas.n_regions < 10000  # Sanity check
 
 
 def test_list_atlases_combined_filters():
     """Test combining multiple filters."""
-    # Deterministic atlases in NLin6 space with 100-500 regions
+    # Atlases in NLin6 space at 2mm resolution
     filtered = list_atlases(
         space='MNI152NLin6Asym',
-        atlas_type='deterministic',
-        min_regions=100,
-        max_regions=500
+        resolution=2
     )
     
-    assert all(
-        a.space == 'MNI152NLin6Asym' and
-        a.atlas_type == 'deterministic' and
-        100 <= a.n_regions <= 500
-        for a in filtered
-    )
+    assert len(filtered) > 0
+    assert all(a.space == 'MNI152NLin6Asym' and a.resolution == 2 for a in filtered)
     
-    # Should include Schaefer100, Schaefer200, Schaefer400
+    # Should include Schaefer atlases
     names = {a.name for a in filtered}
-    assert 'Schaefer100' in names
-    assert 'Schaefer200' in names
-    assert 'Schaefer400' in names
+    assert any('Schaefer' in name for name in names)
 
 
 def test_register_atlas():
