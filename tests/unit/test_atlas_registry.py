@@ -109,13 +109,13 @@ def test_list_atlases_filter_by_space():
 
 def test_list_atlases_filter_by_resolution():
     """Test filtering atlases by resolution."""
-    res2_atlases = list_atlases(resolution=2)
+    res1_atlases = list_atlases(resolution=1)
     
-    assert len(res2_atlases) > 0
-    assert all(a.resolution == 2 for a in res2_atlases)
+    assert len(res1_atlases) > 0
+    assert all(a.resolution == 1 for a in res1_atlases)
     
-    # Schaefer atlases are at 2mm resolution
-    names = [a.name for a in res2_atlases]
+    # Schaefer atlases are at 1mm resolution
+    names = [a.name for a in res1_atlases]
     assert any('Schaefer' in name for name in names)
 
 
@@ -135,10 +135,10 @@ def test_list_atlases_check_region_counts():
 
 def test_list_atlases_combined_filters():
     """Test combining multiple filters."""
-    # Atlases in NLin6 space at 2mm resolution
+    # Atlases in NLin6 space at 1mm resolution
     filtered = list_atlases(
         space='MNI152NLin6Asym',
-        resolution=2
+        resolution=1
     )
     
     assert len(filtered) > 0

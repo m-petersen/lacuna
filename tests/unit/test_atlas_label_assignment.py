@@ -89,17 +89,18 @@ class TestAtlasLabelAssignment:
             from lacuna.assets.atlases.registry import register_atlases_from_directory
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
-            # Run analysis
+            # Run analysis - use only this test's atlas
             analysis = AtlasAggregation(
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
+                atlas_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
             results_list = result.results["AtlasAggregation"]
             results = results_list[0].get_data()
 
-            # Extract results
+            right_damage = results.get("test_4d_atlas_Region_Right", None)
             right_damage = results.get("test_4d_atlas_Region_Right", None)
             left_damage = results.get("test_4d_atlas_Region_Left", None)
             middle_damage = results.get("test_4d_atlas_Region_Middle", None)
@@ -176,10 +177,12 @@ class TestAtlasLabelAssignment:
             from lacuna.assets.atlases.registry import register_atlases_from_directory
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
             
+            # Run analysis - use only this test's atlas
             analysis = AtlasAggregation(
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
+                atlas_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
             results_list = result.results["AtlasAggregation"]
@@ -247,10 +250,12 @@ class TestAtlasLabelAssignment:
             from lacuna.assets.atlases.registry import register_atlases_from_directory
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
             
+            # Use only this test's atlas
             analysis = AtlasAggregation(
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
+                atlas_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
             results_list = result.results["AtlasAggregation"]
