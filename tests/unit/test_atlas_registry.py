@@ -133,17 +133,15 @@ def test_list_atlases_check_region_counts():
 
 def test_list_atlases_combined_filters():
     """Test combining multiple filters."""
-    # No bundled atlases match NLin6Asym space + 1mm resolution
-    # (bundled are at 1mm, but we need to check what space they're in)
+    # Bundled atlases in NLin6Asym space at 1mm resolution
     filtered = list_atlases(
         space='MNI152NLin6Asym',
         resolution=1
     )
     
-    # If no matches, that's expected - bundled atlases are in NLin6Asym at 1mm
-    # so there should be matches
+    # Should find bundled atlases that match both filters
     assert len(filtered) > 0
-    assert all(a.space == 'MNI152NLin6Asym' and a.resolution == 2 for a in filtered)
+    assert all(a.space == 'MNI152NLin6Asym' and a.resolution == 1 for a in filtered)
     
     # Should include Schaefer atlases
     names = {a.name for a in filtered}
