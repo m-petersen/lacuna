@@ -1,4 +1,20 @@
-# Implementation Summary: Git-Tag Versioning + act-based CI/CD
+# Implementation Summary: Task Runner Pattern + Git-Tag Versioning
+
+## Final Implementation: Three-Loop Testing Strategy
+
+After initial implementation, we refined to use the **Task Runner Pattern** (industry best practice) instead of running act for every change.
+
+### The Problem with Act-Only
+- Docker overhead makes every test run take ~2 minutes
+- Too slow for active development (should be ~5 seconds)
+- Developers won't use it if it's slow
+- act should verify environment, not test code logic
+
+### The Solution: Three Loops
+
+1. **🔥 Inner Loop** (Every 5 mins): `make test` - Native Python, instant feedback
+2. **⚡ Outer Loop** (Before commit): `make ci-native` - Full CI suite natively
+3. **🐳 Verification** (Before push): `make ci-act` - Docker/act for OS compatibility
 
 ## What Was Implemented
 
@@ -20,64 +36,83 @@
 
 **Result**: Core package no longer requires ANTsPy. Only needed for native→MNI registration.
 
-### 3. act as Primary Task Runner (Replacing Make)
-- ✅ Created `.actrc` configuration for local GitHub Actions execution
-- ✅ Replaced Makefile/docker-compose with act workflows
-- ✅ All tasks defined once in `.github/workflows/` - work locally AND in CI
+### 3. Makefile as Task Runner (Single Source of Truth)
+- ✅ Created `Makefile` with all dev commands
+- ✅ Fast native commands: `make test` (~5s), `make lint` (~2s), `make format` (~1s)
+- ✅ CI suite command: `make ci-native` (runs everything CI will run, natively)
+- ✅ Docker verification: `make ci-act` (verifies with act/Docker before push)
+- ✅ GitHub Actions simplified to call make commands (no duplication)
 
-**Philosophy**: "Think Globally, Act Locally" - write workflows once, run anywhere.
+**Philosophy**: "Task Runner Pattern" - define commands once, run anywhere:
+- Native for speed during development
+- Docker for environment verification before push
+- Same commands work locally and in CI
 
-### 4. GitHub Actions Workflows
+### 4. GitHub Actions Workflows (Call Makefile Commands)
 
 **CI Workflows** (auto-run on GitHub):
-- `test.yml` - Full test matrix (Python 3.10, 3.11, 3.12) with coverage
-- `pre-commit.yml` - Linting and formatting checks
+- `test.yml` - Calls `make setup`, `make lint`, `make test-coverage`
+  - Python 3.10, 3.11, 3.12 matrix
+- `pre-commit.yml` - Calls `make lint`, `make typecheck`
 - `release.yml` - Build and publish on version tags
 
-**Local Workflows** (designed for act):
-- `local-test-fast.yml` - Quick tests without coverage
-- `local-format.yml` - Auto-format code with ruff + black
-- `local-clean.yml` - Clean build artifacts and caches
+**Local Workflows** (for act):
+- `local-test-fast.yml` - Calls `make test-fast`
+- `local-format.yml` - Calls `make format`
+- `local-clean.yml` - Calls `make clean`
 
-### 5. Documentation
-- ✅ Created `DEVELOPMENT.md` - Comprehensive dev workflow guide
-- ✅ Updated `README.md` - Added contributor quick start
+**Key Insight**: GitHub Actions are thin wrappers around make commands. This means:
+- No logic duplication between local and CI
+- Can run exact CI commands natively (no Docker needed)
+- act only used for final Docker/OS verification
+
+### 5. Documentation & Copilot Instructions
+- ✅ Created `DEVELOPMENT.md` - Three-loop workflow guide
+- ✅ Updated `README.md` - Contributor quick start
+- ✅ Updated `.github/copilot-instructions.md` - Three-loop strategy for AI assistant
 - ✅ Kept `Dockerfile` for pure Docker users (optional)
+- ✅ This file (`IMPLEMENTATION_NOTES.md`) - Implementation summary
+
+**Copilot will now**:
+- Run `make test` after code changes (instant feedback)
+- Run `make ci-native` before commits (catch all issues)
+- Suggest `make ci-act` only before pushes (Docker verification)
 
 ## How to Use
 
-### Install act
-```bash
-# macOS
-brew install act
+### Daily Development (Native - Instant)
 
-# Linux
-curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+```bash
+# Install
+make setup
+
+# Run tests (use this constantly!)
+make test           # ~5 seconds
+
+# Check code quality
+make lint           # ~2 seconds
+
+# Auto-format
+make format         # ~1 second
 ```
 
-### Common Commands
+### Before Commit (Native CI - ~30 seconds)
+
 ```bash
-# List all workflows
-act -l
-
-# Run tests (matches CI exactly)
-act -j test
-
-# Run fast tests
-act -j test-fast -W .github/workflows/local-test-fast.yml
-
-# Run linting
-act -j lint -W .github/workflows/pre-commit.yml
-
-# Format code
-act -j format -W .github/workflows/local-format.yml
-
-# Clean artifacts
-act -j clean -W .github/workflows/local-clean.yml
-
-# Test specific Python version
-act -j test --matrix python-version:3.11
+# Run everything CI will run, but natively
+make ci-native
 ```
+
+This is faster than act because it skips Docker overhead while still running the full CI suite.
+
+### Before Push (Docker Verification - ~90 seconds)
+
+```bash
+# Verify in exact CI environment
+make ci-act
+```
+
+Only use this to verify Docker/OS compatibility, not for testing code logic.
 
 ### Create a Release
 ```bash
@@ -97,12 +132,50 @@ git push origin v0.2.0
 
 ## Why This Approach?
 
-### Instead of Make
-- ✅ Same workflow runs locally and in CI (no duplication)
-- ✅ Docker-based ensures consistent environment
-- ✅ Matrix builds work identically
-- ✅ Better secret/variable management
-- ✅ YAML > Makefile (IDE support, validation)
+### Task Runner Pattern (Makefile) vs act-only
+
+**Problem with act-only**:
+- ❌ Docker overhead: 2+ minutes per test run
+- ❌ Too slow for active development
+- ❌ Developers won't use slow tools
+- ❌ Testing logic shouldn't require Docker
+
+**Solution with Task Runner Pattern**:
+- ✅ Native tests: 5 seconds (40x faster!)
+- ✅ Full CI natively: 30 seconds (4x faster than Docker)
+- ✅ Docker only for final verification
+- ✅ Same commands everywhere (no duplication)
+
+### The Three Loops
+
+| Loop | Command | Speed | When | Purpose |
+|------|---------|-------|------|---------|
+| Inner | `make test` | ~5s | Every change | Test code logic |
+| Outer | `make ci-native` | ~30s | Before commit | Full CI check |
+| Verify | `make ci-act` | ~90s | Before push | Docker/OS check |
+
+### Comparison
+
+**Act-only approach** (SLOW):
+```bash
+# Every code change requires Docker (~2 minutes each time)
+act -j test                    # 2 minutes
+# Make 10 changes = 20 minutes of waiting!
+```
+
+**Task Runner Pattern** (FAST):
+```bash
+# Most work is native (instant)
+make test                      # 5 seconds
+make test                      # 5 seconds  
+make test                      # 5 seconds
+# ...10 changes = 50 seconds total
+
+# Only verify with Docker at the end
+make ci-act                    # 90 seconds
+```
+
+**Result**: 10 changes take ~2 minutes instead of 20 minutes!
 
 ### Instead of Manual Versioning
 - ✅ No more forgetting to bump version numbers
