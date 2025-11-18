@@ -76,12 +76,11 @@ def test_atlas_registry_metadata_validity():
     for name, metadata in ATLAS_REGISTRY.items():
         assert isinstance(metadata, AtlasMetadata)
         assert metadata.name == name
-        assert len(metadata.full_name) > 0
+        assert len(metadata.description) > 0
         assert len(metadata.space) > 0
         assert metadata.resolution > 0
-        assert metadata.atlas_type in ['deterministic', 'probabilistic']
-        assert metadata.n_regions > 0
-        assert len(metadata.description) > 0
+        assert metadata.n_regions is None or metadata.n_regions > 0
+        assert isinstance(metadata.is_4d, bool)
 
 
 def test_list_atlases_all():
