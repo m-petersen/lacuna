@@ -6,7 +6,7 @@ from .exceptions import (
     AnalysisError,
     BIDSValidationError,
     CoordinateSpaceError,
-    LdkError,
+    LacunaError,
     NiftiLoadError,
     ProvenanceError,
     SpatialMismatchError,
@@ -36,7 +36,7 @@ from .validation import (
 
 __all__ = [
     # Exceptions
-    "LdkError",
+    "LacunaError",
     "ValidationError",
     "SpatialMismatchError",
     "CoordinateSpaceError",
