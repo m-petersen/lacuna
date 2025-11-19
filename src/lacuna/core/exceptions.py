@@ -6,13 +6,13 @@ while maintaining compatibility with standard Python exceptions.
 """
 
 
-class LdkError(Exception):
-    """Base exception for all ldk errors."""
+class LacunaError(Exception):
+    """Base exception for all lacuna errors."""
 
     pass
 
 
-class ValidationError(LdkError, ValueError):
+class ValidationError(LacunaError, ValueError):
     """Raised when data validation fails."""
 
     pass
@@ -24,43 +24,43 @@ class SpatialMismatchError(ValidationError):
     pass
 
 
-class CoordinateSpaceError(LdkError, ValueError):
+class CoordinateSpaceError(LacunaError, ValueError):
     """Raised when operations require specific coordinate space."""
 
     pass
 
 
-class BIDSValidationError(LdkError, ValueError):
+class BIDSValidationError(LacunaError, ValueError):
     """Raised when BIDS dataset structure is invalid."""
 
     pass
 
 
-class ProvenanceError(LdkError, RuntimeError):
+class ProvenanceError(LacunaError, RuntimeError):
     """Raised when provenance tracking encounters issues."""
 
     pass
 
 
-class NiftiLoadError(LdkError, IOError):
+class NiftiLoadError(LacunaError, IOError):
     """Raised when NIfTI file loading fails."""
 
     pass
 
 
-class AnalysisError(LdkError, RuntimeError):
+class AnalysisError(LacunaError, RuntimeError):
     """Raised when analysis computation fails."""
 
     pass
 
 
-class AtlasNotFoundError(LdkError, FileNotFoundError):
+class AtlasNotFoundError(LacunaError, FileNotFoundError):
     """Raised when atlas cannot be found or resolved."""
 
     pass
 
 
-class ConnectomeNotFoundError(LdkError, FileNotFoundError):
+class ConnectomeNotFoundError(LacunaError, FileNotFoundError):
     """Raised when connectome cannot be found or resolved."""
 
     pass
@@ -69,7 +69,7 @@ class ConnectomeNotFoundError(LdkError, FileNotFoundError):
 # Spatial coordinate space exceptions
 
 
-class SpaceDetectionError(LdkError):
+class SpaceDetectionError(LacunaError):
     """Raised when coordinate space cannot be detected from file."""
 
     def __init__(self, filepath, attempted_methods):
@@ -103,7 +103,7 @@ class SpaceMismatchError(ValidationError):
         super().__init__(message)
 
 
-class TransformNotAvailableError(LdkError):
+class TransformNotAvailableError(LacunaError):
     """Raised when spatial transform is not available."""
 
     def __init__(self, source_space: str, target_space: str, supported_transforms: list):
@@ -116,7 +116,7 @@ class TransformNotAvailableError(LdkError):
         super().__init__(message)
 
 
-class TransformDownloadError(LdkError):
+class TransformDownloadError(LacunaError):
     """Raised when transform file cannot be downloaded."""
 
     def __init__(self, source_space: str, target_space: str, reason: str):
