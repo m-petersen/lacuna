@@ -160,8 +160,7 @@ class LesionData:
                 "metadata must contain 'space' key to specify coordinate space.\n"
                 "This is required for spatial validation in analysis modules.\n"
                 "Common values:\n"
-                "  - 'MNI152_1mm' (1mm MNI152 template)\n"
-                "  - 'MNI152NLin6Asym' (2mm MNI152 template)\n"
+                "  - 'MNI152NLin6Asym' (MNI152 template incorporated used in FSL)\n"
                 "  - 'native' (subject's native space)\n"
                 "Example: LesionData(img, metadata={'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym'})"
             )
@@ -521,12 +520,12 @@ class LesionData:
         --------
         >>> from lacuna.core.provenance import create_provenance_record
         >>> prov = create_provenance_record(
-        ...     function="lacuna.preprocess.normalize_to_mni",
-        ...     parameters={"template": "MNI152_2mm"},
+        ...     function="lacuna.analysis.RegionalDamage",
+        ...     atlas_names=["Schaefer2018_100Parcels7Networks"],
         ...     version="0.1.0"
         ... )
-        >>> lesion_normalized = lesion.add_provenance(prov)
-        >>> len(lesion_normalized.provenance) == len(lesion.provenance) + 1
+        >>> lesion_regional_damage = lesion.add_provenance(prov)
+        >>> len(lesion_regional_damage.provenance) == len(lesion.provenance) + 1
         True
         """
         # Validate record has required fields
@@ -560,6 +559,7 @@ class LesionData:
         2. provenance (most recent transformation's output_space)
 
         Note: At least one of these must be present (validated in __init__).
+
         """
         # First check metadata (highest priority)
         if "space" in self._metadata:

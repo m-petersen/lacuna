@@ -67,7 +67,7 @@ def create_provenance_record(
     Parameters
     ----------
     function : str
-        Fully qualified function name (e.g., 'lacuna.preprocess.normalize_to_mni').
+        Fully qualified function name (e.g., 'lacuna.analysis.RegionalDamage').
     parameters : dict
         Function parameters (must be JSON-serializable).
     version : str
@@ -88,13 +88,12 @@ def create_provenance_record(
     Examples
     --------
     >>> record = create_provenance_record(
-    ...     function="lacuna.preprocess.normalize_to_mni",
-    ...     parameters={"template": "MNI152_2mm"},
+    ...     function="lacuna.analysis.RegionalDamage",
+    ...     parameters={"atlas_names": ["Schaefer2018_100Parcels7Networks"]},
     ...     version="0.1.0",
-    ...     output_space="MNI152_2mm"
     ... )
     >>> record['function']
-    'lacuna.preprocess.normalize_to_mni'
+    'lacuna.analysis.RegionalDamage'
     """
     # Validate parameters are serializable
     try:

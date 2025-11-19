@@ -85,12 +85,10 @@ class TestBatchTransformReuse:
 
         # Note: Since transform_lesion_data doesn't use result cache yet,
         # we test the transform cache for transform objects
-        from lacuna.spatial.assets import DataAssetManager
-
-        asset_manager = DataAssetManager()
+        from lacuna.assets import load_transform
 
         # Load transform once
-        transform_path = asset_manager.get_transform("MNI152NLin6Asym", "MNI152NLin2009cAsym")
+        transform_path = load_transform("MNI152NLin6Asym_to_MNI152NLin2009cAsym")
         assert transform_path is not None, "Transform should be available"
 
         # Simulate caching transform object

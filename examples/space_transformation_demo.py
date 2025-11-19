@@ -247,7 +247,7 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
 
     try:
         # Try to perform the actual transformation
-        print("\nStep 1: Loading transform from DataAssetManager...")
+        print("\nStep 1: Loading transform from lacuna.assets...")
         print("  (This may download from TemplateFlow on first use)")
 
         transformed_data = transform_lesion_data(lesion_data, target_space)
@@ -278,21 +278,11 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
         print("  transformed = transform_lesion_data(lesion_data, target_space)")
         return lesion_data
 
-    except AttributeError as e:
-        if "'NoneType' object has no attribute 'apply'" in str(e):
-            print("\n⚠️  Transform file not available")
-            print("\nThe DataAssetManager returned None, indicating:")
-            print("  • Transform files haven't been downloaded from TemplateFlow yet")
-            print("  • This is expected - full TemplateFlow integration pending")
-            print("\nTo enable full transformation:")
-            print("  1. DataAssetManager.get_transform() needs TemplateFlow download logic")
-            print("  2. Transform files (~200MB) would be cached at ~/.cache/lacuna/assets")
-            print("  3. Transforms would be automatically downloaded on first use")
-            print(
-                "\n✓ Current status: API infrastructure complete, TemplateFlow integration pending"
-            )
-        else:
-            print(f"\n⚠️  Transformation failed: {e}")
+    except FileNotFoundError as e:
+        print(f"\n⚠️  Transform file not available: {e}")
+        print("\nTransform files are downloaded from TemplateFlow on first use.")
+        print("Make sure you have an internet connection for the initial download.")
+        print(f"\nTransform files (~200MB) are cached at ~/.cache/templateflow/")
         print("\nAPI call demonstrated:")
         print("  transformed = transform_lesion_data(lesion_data, target_space)")
         return lesion_data
@@ -387,23 +377,18 @@ def demo_asset_management() -> None:
     """Demonstrate data asset management."""
     print_section("8. Data Asset Management")
 
-    from lacuna.spatial.assets import DataAssetManager
+    from lacuna.assets import load_transform, load_template
 
-    print("DataAssetManager handles:")
+    print("lacuna.assets handles:")
     print("  • Transform files (~200MB each)")
     print("  • MNI templates (various resolutions)")
     print("  • Atlas files (from TemplateFlow)")
     print()
 
-    # Create manager
-    manager = DataAssetManager()
-    print(f"Asset cache directory: {manager.cache_dir}")
-    print()
-
     # Check for transforms
     print("Checking transform availability:")
     try:
-        transform_path = manager.get_transform("MNI152NLin6Asym", "MNI152NLin2009cAsym")
+        transform_path = load_transform("MNI152NLin6Asym_to_MNI152NLin2009cAsym")
         if transform_path:
             print(f"  ✓ Transform found: {transform_path}")
         else:
@@ -414,7 +399,7 @@ def demo_asset_management() -> None:
     # Check for templates
     print("\nChecking template availability:")
     try:
-        template_path = manager.get_template("MNI152NLin6Asym", resolution=2)
+        template_path = load_template("MNI152NLin6Asym_res-2")
         if template_path:
             print(f"  ✓ Template found: {template_path}")
         else:

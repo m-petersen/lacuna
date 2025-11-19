@@ -91,7 +91,7 @@ def main():
     print(f"  This will use lacuna/spatial infrastructure:")
     print(f"    1. _ensure_target_space() detects space mismatch")
     print(f"    2. Calls transform_lesion_data()")
-    print(f"    3. DataAssetManager.get_transform() retrieves transform")
+    print(f"    3. load_transform() retrieves transform from assets")
     print(f"    4. Downloads from templateflow if needed")
     print(f"    5. Applies transformation using nitransforms")
 
