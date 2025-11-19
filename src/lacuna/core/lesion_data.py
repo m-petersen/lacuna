@@ -74,13 +74,10 @@ class LesionData:
     Parameters
     ----------
     lesion_img : nibabel.Nifti1Image
-        Binary or continuous lesion mask (3D only).
-    anatomical_img : nibabel.Nifti1Image, optional
-        Subject's anatomical scan (must match lesion coordinate space).
+        Binary lesion mask (3D only, values must be 0 or 1).
     metadata : dict, optional
-        Subject metadata. Must contain 'space' key (e.g., 'MNI152NLin6Asym', 'MNI152_1mm',
-        or 'native') unless provenance is provided. 'subject_id' defaults to
-        "sub-unknown" if not provided.
+        Subject metadata. Must contain 'space' and 'resolution' keys unless
+        provenance is provided. 'subject_id' defaults to "sub-unknown" if not provided.
     provenance : list of dict, optional
         Processing history (for deserialization only). If provided without
         metadata["space"], the most recent transformation's output_space is used.
@@ -90,19 +87,13 @@ class LesionData:
     Raises
     ------
     ValueError
-        If metadata is missing 'space' key and provenance is None, or if lesion_img
-        is not 3D.
-    ValidationError
-        If affines don't match between lesion and anatomical images.
-    SpatialMismatchError
-        If anatomical_img coordinate space doesn't match lesion_img.
+        If metadata is missing 'space' or 'resolution' keys and provenance is None,
+        if lesion_img is not 3D, or if lesion_img is not binary (0/1 values only).
 
     Attributes
     ----------
     lesion_img : nibabel.Nifti1Image
         The lesion mask image (read-only).
-    anatomical_img : nibabel.Nifti1Image or None
-        Optional anatomical scan (read-only).
     affine : np.ndarray
         4x4 affine transformation matrix (read-only).
     metadata : dict
@@ -127,7 +118,6 @@ class LesionData:
     def __init__(
         self,
         lesion_img: nib.Nifti1Image,
-        anatomical_img: nib.Nifti1Image | None = None,
         metadata: dict[str, Any] | None = None,
         provenance: list[dict[str, Any]] | None = None,
         results: dict[str, Any] | None = None,
@@ -135,18 +125,22 @@ class LesionData:
         # Validate lesion image
         validate_nifti_image(lesion_img, require_3d=True, check_affine=True)
 
-        # Store images
+        # Validate binary mask
+        lesion_data = lesion_img.get_fdata()
+        unique_values = np.unique(lesion_data)
+        if not np.all(np.isin(unique_values, [0, 1])):
+            raise ValueError(
+                "lesion_img must be a binary mask with only 0 and 1 values.\n"
+                f"Found unique values: {unique_values}\n"
+                "Please binarize your lesion mask before creating LesionData."
+            )
+
+        # Store image
         self._lesion_img = lesion_img
-        self._anatomical_img = anatomical_img
 
         # Extract and validate affine
         self._affine = lesion_img.affine.copy()
         validate_affine(self._affine)
-
-        # Validate anatomical image if provided
-        if anatomical_img is not None:
-            validate_nifti_image(anatomical_img, require_3d=True)
-            check_spatial_match(lesion_img, anatomical_img, check_shape=False, check_affine=True)
 
         # Setup metadata
         if metadata is None:
@@ -154,15 +148,24 @@ class LesionData:
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
 
-        # Require explicit coordinate space specification
+        # Import here to avoid circular dependency
+        from lacuna.core.spaces import SUPPORTED_SPACES
+
+        # Require explicit coordinate space and resolution specification
         if "space" not in metadata and provenance is None:
             raise ValueError(
                 "metadata must contain 'space' key to specify coordinate space.\n"
                 "This is required for spatial validation in analysis modules.\n"
-                "Common values:\n"
-                "  - 'MNI152NLin6Asym' (MNI152 template incorporated used in FSL)\n"
-                "  - 'native' (subject's native space)\n"
-                "Example: LesionData(img, metadata={'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym'})"
+                f"Supported spaces: {', '.join(SUPPORTED_SPACES)}\n"
+                "Example: LesionData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+            )
+        
+        if "resolution" not in metadata and provenance is None:
+            raise ValueError(
+                "metadata must contain 'resolution' key (in mm).\n"
+                "This is required for spatial validation and template matching.\n"
+                "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
+                "Example: LesionData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
             )
 
         self._metadata = metadata.copy()
@@ -232,19 +235,6 @@ class LesionData:
         except Exception as e:
             raise NiftiLoadError(f"Failed to load lesion from {lesion_path}: {e}") from e
 
-        # Load anatomical if provided
-        anatomical_img = None
-        if anatomical_path is not None:
-            anatomical_path = Path(anatomical_path)
-            try:
-                anatomical_img = nib.load(anatomical_path)
-            except FileNotFoundError:
-                raise
-            except Exception as e:
-                raise NiftiLoadError(
-                    f"Failed to load anatomical from {anatomical_path}: {e}"
-                ) from e
-
         # Auto-generate subject_id from filename if not provided
         if metadata is None:
             metadata = {}
@@ -279,7 +269,7 @@ class LesionData:
                 # Detection is best-effort; leave metadata untouched and allow
                 # __init__ to raise a helpful error if necessary.
                 pass
-        return cls(lesion_img, anatomical_img=anatomical_img, metadata=metadata)
+        return cls(lesion_img=lesion_img, metadata=metadata)
 
     def validate(self) -> bool:
         """
@@ -310,8 +300,6 @@ class LesionData:
         """
         # Validate images
         validate_nifti_image(self._lesion_img, require_3d=True)
-        if self._anatomical_img is not None:
-            validate_nifti_image(self._anatomical_img, require_3d=True)
 
         # Validate affine
         validate_affine(self._affine)
@@ -342,7 +330,6 @@ class LesionData:
         """
         return LesionData(
             lesion_img=self._lesion_img,
-            anatomical_img=self._anatomical_img,
             metadata=copy.deepcopy(self._metadata),
             provenance=copy.deepcopy(self._provenance),
             results=copy.deepcopy(self._results),
@@ -487,7 +474,6 @@ class LesionData:
         # Return new instance
         return LesionData(
             lesion_img=self._lesion_img,
-            anatomical_img=self._anatomical_img,
             metadata=copy.deepcopy(self._metadata),
             provenance=copy.deepcopy(self._provenance),
             results=new_results,
@@ -544,7 +530,6 @@ class LesionData:
         # Return new instance
         return LesionData(
             lesion_img=self._lesion_img,
-            anatomical_img=self._anatomical_img,
             metadata=copy.deepcopy(self._metadata),
             provenance=new_provenance,
             results=copy.deepcopy(self._results),
@@ -581,11 +566,6 @@ class LesionData:
     def lesion_img(self) -> nib.Nifti1Image:
         """Binary or continuous lesion mask."""
         return self._lesion_img
-
-    @property
-    def anatomical_img(self) -> nib.Nifti1Image | None:
-        """Subject's anatomical scan (if provided)."""
-        return self._anatomical_img
 
     @property
     def affine(self) -> np.ndarray:
