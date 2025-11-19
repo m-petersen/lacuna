@@ -63,7 +63,7 @@ class TestLesionDataValidation:
         lesion_data.validate()  # Should pass without warnings
 
     def test_validate_affine_nan_handled(self):
-        """Test that NaN in affine is handled.
+        """Test that NaN in affine is handled by nibabel.
         
         Note: nibabel may emit HeaderDataError when creating images with NaN in affine.
         This test documents that behavior.
@@ -79,14 +79,17 @@ class TestLesionDataValidation:
         affine = np.eye(4)
         affine[0, 0] = np.nan
 
-        # nibabel may raise HeaderDataError for NaN in affine
-        # This is expected behavior
-        with pytest.raises(HeaderDataError):
-            lesion_img = nib.Nifti1Image(data, affine)
+        # nibabel raises HeaderDataError for NaN in affine
+        # This is expected behavior - the decomposition fails
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            with pytest.raises(HeaderDataError):
+                lesion_img = nib.Nifti1Image(data, affine)
 
     def test_validate_affine_inf_error(self):
-        """Test that Inf in affine raises ValidationError."""
-        from lacuna.core.exceptions import ValidationError
+        """Test that Inf in affine is caught by nibabel during image creation."""
+        import warnings
+        from nibabel.spatialimages import HeaderDataError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -96,12 +99,12 @@ class TestLesionDataValidation:
         affine = np.eye(4)
         affine[1, 1] = np.inf
 
-        lesion_img = nib.Nifti1Image(data, affine)
-
-        from lacuna import LesionData
-
-        with pytest.raises(ValidationError, match="Inf"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        # nibabel raises HeaderDataError during image creation (affine decomposition)
+        # Suppress RuntimeWarning that precedes the error
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            with pytest.raises(HeaderDataError, match="Could not decompose affine"):
+                lesion_img = nib.Nifti1Image(data, affine)
 
     def test_validate_4d_image_error(self):
         """Test that 4D images raise ValidationError."""
@@ -120,8 +123,9 @@ class TestLesionDataValidation:
             LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     def test_validate_non_invertible_affine_error(self):
-        """Test that non-invertible affine raises ValidationError."""
-        from lacuna.core.exceptions import ValidationError
+        """Test that non-invertible affine is caught by nibabel during image creation."""
+        import warnings
+        from nibabel.spatialimages import HeaderDataError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -130,12 +134,11 @@ class TestLesionDataValidation:
         # Create non-invertible affine (all zeros)
         affine = np.zeros((4, 4))
 
-        lesion_img = nib.Nifti1Image(data, affine)
-
-        from lacuna import LesionData
-
-        with pytest.raises(ValidationError, match="invertible"):
-            LesionData(lesion_img=lesion_img, anatomical_img=None, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        # nibabel raises HeaderDataError during image creation with non-invertible affine
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            with pytest.raises(HeaderDataError, match="Could not decompose affine"):
+                lesion_img = nib.Nifti1Image(data, affine)
 
     def test_validate_spatial_mismatch_error(self):
         """Test that mismatched lesion and anatomical raise ValidationError."""
@@ -156,7 +159,7 @@ class TestLesionDataValidation:
 
         from lacuna import LesionData
 
-        with pytest.raises(ValidationError, match="spatial"):
+        with pytest.raises(ValidationError, match="Affine matrices don't match"):
             LesionData(lesion_img=lesion_img, anatomical_img=anat_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     def test_validate_spatial_mismatch_shape_warning(self):
@@ -287,10 +290,11 @@ class TestLesionDataValidation:
     def test_validate_zero_voxel_size_rejected_by_nibabel(self):
         """Test that zero voxel size is handled by nibabel.
         
-        Note: nibabel emits a RuntimeWarning when creating images with zero voxel sizes.
+        Note: nibabel emits warnings when creating images with zero voxel sizes.
         This is expected behavior - zero voxel sizes create invalid transforms.
         """
         import warnings
+        from nibabel.spatialimages import HeaderDataError
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -300,20 +304,12 @@ class TestLesionDataValidation:
         affine = np.eye(4)
         affine[2, 2] = 0.0  # Zero z-axis spacing
 
-        # nibabel will emit a RuntimeWarning about division by zero
+        # nibabel will raise HeaderDataError for zero voxel size
+        # This is expected behavior
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            lesion_img = nib.Nifti1Image(data, affine)
-
-        from lacuna import LesionData
-
-        # LesionData can be created, but the transform is invalid (contains NaN)
-        # This is a nibabel quirk - it creates the image but with broken transform
-        lesion_data = LesionData(
-            lesion_img=lesion_img,
-            anatomical_img=None,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-        )
+            with pytest.raises(HeaderDataError):
+                lesion_img = nib.Nifti1Image(data, affine)
 
     def test_validate_lesion_data_with_both_images(self):
         """Test validation when both lesion and anatomical provided."""

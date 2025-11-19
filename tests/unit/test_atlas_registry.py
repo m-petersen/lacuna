@@ -153,10 +153,10 @@ def test_register_atlas():
     # Create custom atlas metadata
     custom = AtlasMetadata(
         name='CustomTestAtlas',
-        full_name='Custom Test Atlas',
         space='MNI152NLin6Asym',
-        resolution=2.0,
-        atlas_type='deterministic',
+        resolution=2,
+        atlas_filename='custom_test_atlas.nii.gz',
+        labels_filename='custom_test_atlas_labels.txt',
         n_regions=25,
         description='Custom atlas for testing'
     )
@@ -178,72 +178,59 @@ def test_register_atlas():
 
 
 def test_register_atlas_overwrites_with_warning():
-    """Test that registering an existing atlas name shows a warning."""
+    """Test that registering an existing atlas name raises ValueError."""
     # Create atlas with same name as existing one
     duplicate = AtlasMetadata(
-        name='Schaefer100',
-        full_name='Duplicate Schaefer',
+        name='Schaefer2018_100Parcels7Networks',
         space='MNI152NLin6Asym',
-        resolution=2.0,
-        atlas_type='deterministic',
+        resolution=2,
+        atlas_filename='duplicate_atlas.nii.gz',
+        labels_filename='duplicate_labels.txt',
         n_regions=100,
         description='Duplicate for testing'
     )
     
-    original = ATLAS_REGISTRY['Schaefer100']
-    
-    # Register should emit warning
-    with pytest.warns(UserWarning, match="already exists"):
+    # Register should raise ValueError
+    with pytest.raises(ValueError, match="already registered"):
         register_atlas(duplicate)
-    
-    # Should be overwritten
-    assert ATLAS_REGISTRY['Schaefer100'] == duplicate
-    
-    # Restore original
-    ATLAS_REGISTRY['Schaefer100'] = original
 
 
 def test_schaefer_atlas_metadata():
     """Test specific Schaefer atlas metadata."""
-    schaefer400 = ATLAS_REGISTRY['Schaefer400']
+    schaefer400 = ATLAS_REGISTRY['Schaefer2018_400Parcels7Networks']
     
-    assert schaefer400.name == 'Schaefer400'
-    assert 'Schaefer' in schaefer400.full_name
-    assert '400' in schaefer400.full_name
+    assert schaefer400.name == 'Schaefer2018_400Parcels7Networks'
+    assert 'Schaefer' in schaefer400.atlas_filename
     assert schaefer400.space == 'MNI152NLin6Asym'
-    assert schaefer400.resolution == 1.0
-    assert schaefer400.atlas_type == 'deterministic'
+    assert schaefer400.resolution == 1
     assert schaefer400.n_regions == 400
-    assert schaefer400.bundled is True
-    assert schaefer400.filename is not None
-    assert 'Schaefer2018' in schaefer400.filename
+    assert schaefer400.atlas_filename is not None
+    assert 'Schaefer2018' in schaefer400.atlas_filename
 
 
 def test_tian_atlas_metadata():
     """Test specific Tian atlas metadata."""
-    tian_s2 = ATLAS_REGISTRY['TianS2']
+    tian_s2 = ATLAS_REGISTRY['TianSubcortex_3TS2']
     
-    assert tian_s2.name == 'TianS2'
-    assert 'Tian' in tian_s2.full_name
-    assert 'Scale 2' in tian_s2.full_name
-    assert tian_s2.space == 'MNI152NLin2009cAsym'
-    assert tian_s2.resolution == 1.0
-    assert tian_s2.atlas_type == 'deterministic'
+    assert tian_s2.name == 'TianSubcortex_3TS2'
+    assert 'Tian' in tian_s2.atlas_filename
+    assert tian_s2.space == 'MNI152NLin6Asym'
+    assert tian_s2.resolution == 1
     assert tian_s2.n_regions == 32
-    assert tian_s2.bundled is True
+    assert tian_s2.atlas_filename is not None
 
 
 def test_hcp_atlas_metadata():
     """Test HCP1065 atlas metadata."""
-    hcp = ATLAS_REGISTRY['HCP1065']
+    hcp = ATLAS_REGISTRY['HCP1065_thr0p1']
     
-    assert hcp.name == 'HCP1065'
-    assert 'HCP' in hcp.full_name or 'White Matter' in hcp.full_name
+    assert hcp.name == 'HCP1065_thr0p1'
+    assert 'HCP' in hcp.atlas_filename or 'White Matter' in hcp.atlas_filename
     assert hcp.space == 'MNI152NLin2009aAsym'
-    assert hcp.resolution == 1.0
-    assert hcp.atlas_type == 'probabilistic'  # White matter is probabilistic
-    assert hcp.n_regions == 72
-    assert hcp.bundled is True
+    assert hcp.resolution == 1
+    assert hcp.n_regions == 64  # HCP white matter atlas has 64 tracts
+    assert hcp.atlas_filename is not None
+    assert hcp.is_4d is True  # HCP is a 4D probabilistic atlas
 
 
 if __name__ == '__main__':
