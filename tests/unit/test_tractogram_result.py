@@ -54,7 +54,7 @@ def test_tractogram_result_get_data_returns_streamlines_when_loaded():
 
 @pytest.mark.unit
 def test_tractogram_result_load_on_demand(tmp_path):
-    """Test that get_data(load=True) loads streamlines from disk."""
+    """Test that get_data(load_if_needed=True) loads streamlines from disk."""
     from lacuna.core.output import TractogramResult
 
     # Create a fake .tck file (this test will fail until implementation)
@@ -70,10 +70,10 @@ def test_tractogram_result_load_on_demand(tmp_path):
     # First call: returns path
     assert isinstance(result.get_data(), Path)
 
-    # With load=True, should load from disk (will fail until implemented)
+    # With load_if_needed=True, should load from disk (will fail until implemented)
     # This is expected to fail - testing the intended API
     with pytest.raises((NotImplementedError, AttributeError)):
-        _ = result.get_data(load=True)
+        _ = result.get_data(load_if_needed=True)
 
 
 @pytest.mark.unit
