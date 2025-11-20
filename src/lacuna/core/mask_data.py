@@ -1,5 +1,5 @@
 """
-Core LesionData class - the central API contract for the toolkit.
+Core MaskData class - the central API contract for the toolkit.
 
 This class encapsulates a single subject's lesion data with metadata, provenance
 tracking, and analysis results. It serves as the stable interface between all
@@ -14,7 +14,7 @@ import nibabel as nib
 import numpy as np
 
 from .exceptions import NiftiLoadError
-from .validation import check_spatial_match, validate_affine, validate_nifti_image
+from .validation import validate_affine, validate_nifti_image
 
 
 class ImmutableDict(dict):
@@ -31,38 +31,36 @@ class ImmutableDict(dict):
 
     def __setitem__(self, key, value):
         raise TypeError(
-            f"Cannot modify LesionData.{self._attribute_name} - it is immutable.\n"
-            f"To update {self._attribute_name}, create a new LesionData instance instead."
+            f"Cannot modify MaskData.{self._attribute_name} - it is immutable.\n"
+            f"To update {self._attribute_name}, create a new MaskData instance instead."
         )
 
     def __delitem__(self, key):
         raise TypeError(
-            f"Cannot delete from LesionData.{self._attribute_name} - it is immutable.\n"
-            f"To modify {self._attribute_name}, create a new LesionData instance instead."
+            f"Cannot delete from MaskData.{self._attribute_name} - it is immutable.\n"
+            f"To modify {self._attribute_name}, create a new MaskData instance instead."
         )
 
     def update(self, *args, **kwargs):
         raise TypeError(
-            f"Cannot update LesionData.{self._attribute_name} - it is immutable.\n"
-            f"To update {self._attribute_name}, create a new LesionData instance instead."
+            f"Cannot update MaskData.{self._attribute_name} - it is immutable.\n"
+            f"To update {self._attribute_name}, create a new MaskData instance instead."
         )
 
     def pop(self, *args, **kwargs):
-        raise TypeError(f"Cannot pop from LesionData.{self._attribute_name} - it is immutable.")
+        raise TypeError(f"Cannot pop from MaskData.{self._attribute_name} - it is immutable.")
 
     def popitem(self):
-        raise TypeError(f"Cannot popitem from LesionData.{self._attribute_name} - it is immutable.")
+        raise TypeError(f"Cannot popitem from MaskData.{self._attribute_name} - it is immutable.")
 
     def clear(self):
-        raise TypeError(f"Cannot clear LesionData.{self._attribute_name} - it is immutable.")
+        raise TypeError(f"Cannot clear MaskData.{self._attribute_name} - it is immutable.")
 
     def setdefault(self, *args, **kwargs):
-        raise TypeError(
-            f"Cannot setdefault on LesionData.{self._attribute_name} - it is immutable."
-        )
+        raise TypeError(f"Cannot setdefault on MaskData.{self._attribute_name} - it is immutable.")
 
 
-class LesionData:
+class MaskData:
     """
     Central data container for a single subject's lesion analysis.
 
@@ -73,7 +71,7 @@ class LesionData:
 
     Parameters
     ----------
-    lesion_img : nibabel.Nifti1Image
+    mask_img : nibabel.Nifti1Image
         Binary lesion mask (3D only, values must be 0 or 1).
     metadata : dict, optional
         Subject metadata. Must contain 'space' and 'resolution' keys unless
@@ -88,11 +86,11 @@ class LesionData:
     ------
     ValueError
         If metadata is missing 'space' or 'resolution' keys and provenance is None,
-        if lesion_img is not 3D, or if lesion_img is not binary (0/1 values only).
+        if mask_img is not 3D, or if mask_img is not binary (0/1 values only).
 
     Attributes
     ----------
-    lesion_img : nibabel.Nifti1Image
+    mask_img : nibabel.Nifti1Image
         The lesion mask image (read-only).
     affine : np.ndarray
         4x4 affine transformation matrix (read-only).
@@ -106,9 +104,9 @@ class LesionData:
     Examples
     --------
     >>> import nibabel as nib
-    >>> lesion_img = nib.load("lesion.nii.gz")
-    >>> lesion = LesionData(
-    ...     lesion_img,
+    >>> mask_img = nib.load("lesion.nii.gz")
+    >>> lesion = MaskData(
+    ...     mask_img,
     ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     ... )
     >>> print(f"Volume: {lesion.get_volume_mm3()} mm³")
@@ -117,29 +115,29 @@ class LesionData:
 
     def __init__(
         self,
-        lesion_img: nib.Nifti1Image,
+        mask_img: nib.Nifti1Image,
         metadata: dict[str, Any] | None = None,
         provenance: list[dict[str, Any]] | None = None,
         results: dict[str, Any] | None = None,
     ):
         # Validate lesion image
-        validate_nifti_image(lesion_img, require_3d=True, check_affine=True)
+        validate_nifti_image(mask_img, require_3d=True, check_affine=True)
 
         # Validate binary mask
-        lesion_data = lesion_img.get_fdata()
-        unique_values = np.unique(lesion_data)
+        mask_data = mask_img.get_fdata()
+        unique_values = np.unique(mask_data)
         if not np.all(np.isin(unique_values, [0, 1])):
             raise ValueError(
-                "lesion_img must be a binary mask with only 0 and 1 values.\n"
+                "mask_img must be a binary mask with only 0 and 1 values.\n"
                 f"Found unique values: {unique_values}\n"
-                "Please binarize your lesion mask before creating LesionData."
+                "Please binarize your lesion mask before creating MaskData."
             )
 
         # Store image
-        self._lesion_img = lesion_img
+        self._mask_img = mask_img
 
         # Extract and validate affine
-        self._affine = lesion_img.affine.copy()
+        self._affine = mask_img.affine.copy()
         validate_affine(self._affine)
 
         # Setup metadata
@@ -148,24 +146,28 @@ class LesionData:
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
 
-        # Import here to avoid circular dependency
-        from lacuna.core.spaces import SUPPORTED_SPACES
+        # Define supported template spaces (MNI152 variants only)
+        SUPPORTED_TEMPLATE_SPACES = [
+            "MNI152NLin6Asym",
+            "MNI152NLin2009aAsym",
+            "MNI152NLin2009cAsym",
+        ]
 
         # Require explicit coordinate space and resolution specification
         if "space" not in metadata and provenance is None:
             raise ValueError(
                 "metadata must contain 'space' key to specify coordinate space.\n"
                 "This is required for spatial validation in analysis modules.\n"
-                f"Supported spaces: {', '.join(SUPPORTED_SPACES)}\n"
-                "Example: LesionData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+                f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
+                "Example: MaskData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
             )
-        
+
         if "resolution" not in metadata and provenance is None:
             raise ValueError(
                 "metadata must contain 'resolution' key (in mm).\n"
                 "This is required for spatial validation and template matching.\n"
                 "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
-                "Example: LesionData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+                "Example: MaskData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
             )
 
         self._metadata = metadata.copy()
@@ -174,16 +176,44 @@ class LesionData:
         self._provenance = list(provenance) if provenance is not None else []
 
         # Setup results (nested dict: analysis -> result_name -> result_object)
-        # Old format: dict[str, Any] for backward compat during deserialization
-        # New format: dict[str, dict[str, Any]]
+        # Handle format migration: dict[str, list] -> dict[str, dict[str, Any]]
         if results is not None:
-            # Support both old and new formats during transition
-            self._results = dict(results)
+            self._results = self._normalize_results_format(dict(results))
         else:
             self._results = {}
 
         # Track coordinate space (extracted from metadata or provenance)
         self._coordinate_space = self._infer_coordinate_space()
+
+    @staticmethod
+    def _normalize_results_format(results: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        """Convert old results format to new nested dict format.
+
+        Old format: dict[str, list] or dict[str, Any] with non-dict values
+        New format: dict[str, dict[str, Any]]
+
+        Parameters
+        ----------
+        results : dict
+            Results in old or new format
+
+        Returns
+        -------
+        dict[str, dict[str, Any]]
+            Results in new nested dict format
+        """
+        normalized = {}
+        for namespace, value in results.items():
+            if isinstance(value, dict):
+                # Already new format
+                normalized[namespace] = value
+            elif isinstance(value, list):
+                # Old format: list of results -> dict with index keys
+                normalized[namespace] = {f"result_{i}": v for i, v in enumerate(value)}
+            else:
+                # Single result object -> wrap in dict
+                normalized[namespace] = {"default": value}
+        return normalized
 
     @classmethod
     def from_nifti(
@@ -191,7 +221,7 @@ class LesionData:
         lesion_path: str | Path,
         anatomical_path: str | Path | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> "LesionData":
+    ) -> "MaskData":
         """
         Load lesion data from NIfTI file(s).
 
@@ -207,7 +237,7 @@ class LesionData:
 
         Returns
         -------
-        LesionData
+        MaskData
             Loaded lesion data object.
 
         Raises
@@ -221,11 +251,11 @@ class LesionData:
 
         Examples
         --------
-        >>> lesion = LesionData.from_nifti(
+        >>> lesion = MaskData.from_nifti(
         ...     "lesion.nii.gz",
         ...     metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         ... )
-        >>> lesion = LesionData.from_nifti(
+        >>> lesion = MaskData.from_nifti(
         ...     "lesion.nii.gz",
         ...     anatomical_path="T1w.nii.gz",
         ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
@@ -235,7 +265,7 @@ class LesionData:
 
         # Load lesion image
         try:
-            lesion_img = nib.load(lesion_path)
+            mask_img = nib.load(lesion_path)
         except FileNotFoundError:
             raise
         except Exception as e:
@@ -257,14 +287,14 @@ class LesionData:
         # If coordinate space information is missing from metadata, attempt
         # to detect it from the loaded NIfTI image (affine/header or filename)
         # using the central get_image_space utility. This keeps behavior
-        # convenient for users while ensuring LesionData always receives
+        # convenient for users while ensuring MaskData always receives
         # explicit space/resolution metadata downstream.
         if "space" not in metadata or "resolution" not in metadata:
             try:
                 # Import lazily to avoid circular imports at module load time
                 from .spaces import get_image_space
 
-                detected = get_image_space(lesion_img, filepath=lesion_path)
+                detected = get_image_space(mask_img, filepath=lesion_path)
                 if detected is not None:
                     # Populate metadata entries if not already present
                     if "space" not in metadata:
@@ -275,7 +305,7 @@ class LesionData:
                 # Detection is best-effort; leave metadata untouched and allow
                 # __init__ to raise a helpful error if necessary.
                 pass
-        return cls(lesion_img=lesion_img, metadata=metadata)
+        return cls(mask_img=mask_img, metadata=metadata)
 
     def validate(self) -> bool:
         """
@@ -305,27 +335,27 @@ class LesionData:
         True
         """
         # Validate images
-        validate_nifti_image(self._lesion_img, require_3d=True)
+        validate_nifti_image(self._mask_img, require_3d=True)
 
         # Validate affine
         validate_affine(self._affine)
 
         # Check lesion is not empty
-        lesion_data = self._lesion_img.get_fdata()
-        if not np.any(lesion_data > 0):
+        mask_data = self._mask_img.get_fdata()
+        if not np.any(mask_data > 0):
             import warnings
 
             warnings.warn("Lesion mask is empty (no non-zero voxels)", UserWarning, stacklevel=2)
 
         return True
 
-    def copy(self) -> "LesionData":
+    def copy(self) -> "MaskData":
         """
-        Create a deep copy of this LesionData instance.
+        Create a deep copy of this MaskData instance.
 
         Returns
         -------
-        LesionData
+        MaskData
             Independent copy with same data.
 
         Examples
@@ -334,8 +364,8 @@ class LesionData:
         >>> lesion_copy is lesion
         False
         """
-        return LesionData(
-            lesion_img=self._lesion_img,
+        return MaskData(
+            mask_img=self._mask_img,
             metadata=copy.deepcopy(self._metadata),
             provenance=copy.deepcopy(self._provenance),
             results=copy.deepcopy(self._results),
@@ -371,8 +401,8 @@ class LesionData:
         >>> volume = lesion.get_volume_mm3()
         >>> print(f"Lesion volume: {volume:.2f} mm³")
         """
-        lesion_data = self._lesion_img.get_fdata()
-        num_voxels = np.sum(lesion_data > 0)
+        mask_data = self._mask_img.get_fdata()
+        num_voxels = np.sum(mask_data > 0)
 
         # Calculate voxel volume from affine
         voxel_dims = np.abs(np.diag(self._affine[:3, :3]))
@@ -404,7 +434,7 @@ class LesionData:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], lesion_img: nib.Nifti1Image) -> "LesionData":
+    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> "MaskData":
         """
         Deserialize from dictionary + NIfTI image.
 
@@ -412,30 +442,30 @@ class LesionData:
         ----------
         data : dict
             Output from to_dict().
-        lesion_img : nibabel.Nifti1Image
+        mask_img : nibabel.Nifti1Image
             Lesion image (loaded separately).
 
         Returns
         -------
-        LesionData
+        MaskData
             Reconstructed object.
 
         Examples
         --------
         >>> data = lesion.to_dict()
-        >>> lesion_img = nib.load("lesion.nii.gz")
-        >>> lesion_restored = LesionData.from_dict(data, lesion_img)
+        >>> mask_img = nib.load("lesion.nii.gz")
+        >>> lesion_restored = MaskData.from_dict(data, mask_img)
         """
         return cls(
-            lesion_img=lesion_img,
+            mask_img=mask_img,
             metadata=data.get("metadata"),
             provenance=data.get("provenance"),
             results=data.get("results"),
         )
 
-    def add_result(self, namespace: str, results: dict[str, Any]) -> "LesionData":
+    def add_result(self, namespace: str, results: dict[str, Any]) -> "MaskData":
         """
-        Create new LesionData with additional analysis results.
+        Create new MaskData with additional analysis results.
 
         This method follows immutability-by-convention: it returns a new instance
         with the updated results rather than modifying the current instance.
@@ -452,7 +482,7 @@ class LesionData:
 
         Returns
         -------
-        LesionData
+        MaskData
             New instance with added results.
 
         Raises
@@ -467,17 +497,17 @@ class LesionData:
         >>> lesion_with_results = lesion.add_result("VolumeAnalysis", results)
         >>> "VolumeAnalysis" in lesion_with_results.results
         True
-        >>> 
+        >>>
         >>> # Multi-atlas results
         >>> results = {"Schaefer100": roi_result1, "Tian": roi_result2}
         >>> lesion_with_results = lesion.add_result("AtlasAggregation", results)
         >>> lesion_with_results.results["AtlasAggregation"]["Schaefer100"]
-        ROIResult(...)
+        AtlasAggregationResult(...)
         """
         if namespace in self._results:
             raise ValueError(
                 f"Result namespace '{namespace}' already exists. "
-                f"Use a different namespace or create a new LesionData instance."
+                f"Use a different namespace or create a new MaskData instance."
             )
 
         # Create new results dict with added namespace
@@ -485,16 +515,16 @@ class LesionData:
         new_results[namespace] = copy.deepcopy(results)
 
         # Return new instance
-        return LesionData(
-            lesion_img=self._lesion_img,
+        return MaskData(
+            mask_img=self._mask_img,
             metadata=copy.deepcopy(self._metadata),
             provenance=copy.deepcopy(self._provenance),
             results=new_results,
         )
 
-    def add_provenance(self, record: dict[str, Any]) -> "LesionData":
+    def add_provenance(self, record: dict[str, Any]) -> "MaskData":
         """
-        Create new LesionData with additional provenance record.
+        Create new MaskData with additional provenance record.
 
         This method follows immutability-by-convention: it returns a new instance
         with the updated provenance history rather than modifying the current instance.
@@ -507,7 +537,7 @@ class LesionData:
 
         Returns
         -------
-        LesionData
+        MaskData
             New instance with appended provenance.
 
         Raises
@@ -541,8 +571,8 @@ class LesionData:
         new_provenance.append(copy.deepcopy(record))
 
         # Return new instance
-        return LesionData(
-            lesion_img=self._lesion_img,
+        return MaskData(
+            mask_img=self._mask_img,
             metadata=copy.deepcopy(self._metadata),
             provenance=new_provenance,
             results=copy.deepcopy(self._results),
@@ -576,9 +606,9 @@ class LesionData:
     # Read-only properties
 
     @property
-    def lesion_img(self) -> nib.Nifti1Image:
+    def mask_img(self) -> nib.Nifti1Image:
         """Binary or continuous lesion mask."""
-        return self._lesion_img
+        return self._mask_img
 
     @property
     def affine(self) -> np.ndarray:
@@ -591,7 +621,7 @@ class LesionData:
         Subject and session metadata (read-only view).
 
         Returns an immutable dictionary that prevents modifications with clear
-        error messages. To update metadata, create a new LesionData instance
+        error messages. To update metadata, create a new MaskData instance
         with the desired metadata.
 
         Returns
@@ -606,9 +636,9 @@ class LesionData:
         >>> lesion.metadata["new_key"] = "value"  # Raises TypeError
         Traceback (most recent call last):
             ...
-        TypeError: Cannot modify LesionData.metadata - it is immutable.
-        LesionData follows the Value Object pattern for scientific reproducibility.
-        To update metadata, create a new LesionData instance instead.
+        TypeError: Cannot modify MaskData.metadata - it is immutable.
+        MaskData follows the Value Object pattern for scientific reproducibility.
+        To update metadata, create a new MaskData instance instead.
         """
         return ImmutableDict(self._metadata, "metadata")
 
@@ -620,10 +650,57 @@ class LesionData:
     @property
     def results(self) -> dict[str, dict[str, Any]]:
         """Analysis results (immutable view).
-        
+
         Returns dict mapping analysis namespace to result dict.
         Result dict maps result names to result objects.
-        
+
         Access pattern: results['AnalysisName']['result_name']
         """
         return copy.deepcopy(self._results)  # Deep copy for nested structures
+
+    def __getattr__(self, name: str) -> dict[str, Any]:
+        """Enable attribute-based access to analysis results.
+
+        Allows accessing results via `mask_data.AnalysisName` instead of
+        `mask_data.results['AnalysisName']`.
+
+        Parameters
+        ----------
+        name : str
+            Analysis namespace (e.g., "AtlasAggregation", "RegionalDamage")
+
+        Returns
+        -------
+        dict[str, Any]
+            Result dictionary for the requested analysis
+
+        Raises
+        ------
+        AttributeError
+            If the attribute doesn't exist in results
+
+        Examples
+        --------
+        >>> # After running AtlasAggregation:
+        >>> mask_data.AtlasAggregation["Schaefer100"]
+        AtlasAggregationResult(...)
+        >>> # Equivalent to:
+        >>> mask_data.results["AtlasAggregation"]["Schaefer100"]
+        AtlasAggregationResult(...)
+        """
+        # Only intercept result namespace lookups, not internal attributes
+        if name.startswith("_"):
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+
+        # Check if name exists in results
+        if name in self._results:
+            return copy.deepcopy(self._results[name])
+
+        # Not found - raise AttributeError with helpful message
+        available = ", ".join(self._results.keys()) if self._results else "none"
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'.\n"
+            f"Available analysis results: {available}"
+        )
