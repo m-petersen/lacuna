@@ -398,3 +398,77 @@ class TestProvenanceTracking:
         assert "parameters" in latest_prov
         assert latest_prov["parameters"]["threshold"] == 0.8
         assert latest_prov["parameters"]["method"] == "advanced"
+
+
+# T020: Unit test for result key generation with source context
+class TestResultKeyGeneration:
+    """Test that BaseAnalysis generates descriptive result keys with source context."""
+
+    def test_result_key_includes_source_name(self, synthetic_mask_img):
+        """Test that result keys include source information (e.g., atlas name)."""
+        from lacuna import MaskData
+        from lacuna.analysis.base import BaseAnalysis
+        from lacuna.core.output import AtlasAggregationResult
+
+        class MockAtlasAnalysis(BaseAnalysis):
+            def __init__(self, atlas_name):
+                super().__init__()
+                self.atlas_name = atlas_name
+
+            def _validate_inputs(self, mask_data):
+                pass
+
+            def _run_analysis(self, mask_data):
+                # Should generate key like "atlas_DKT"
+                result = AtlasAggregationResult(
+                    name=self.atlas_name,
+                    data={"region1": 0.5},
+                )
+                return {f"atlas_{self.atlas_name}": result}
+
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+
+        # Run analysis
+        result = MockAtlasAnalysis(atlas_name="DKT").run(mask_data)
+
+        # Result should be in dict with descriptive key
+        assert "MockAtlasAnalysis" in result.results
+        analysis_results = result.results["MockAtlasAnalysis"]
+        assert isinstance(analysis_results, dict)
+        assert "atlas_DKT" in analysis_results
+        assert isinstance(analysis_results["atlas_DKT"], AtlasAggregationResult)
+
+    def test_result_key_multiple_sources(self, synthetic_mask_img):
+        """Test that multiple source-specific results are stored separately."""
+        from lacuna import MaskData
+        from lacuna.analysis.base import BaseAnalysis
+        from lacuna.core.output import AtlasAggregationResult
+
+        class MultiAtlasAnalysis(BaseAnalysis):
+            def _validate_inputs(self, mask_data):
+                pass
+
+            def _run_analysis(self, mask_data):
+                # Generate results for multiple atlases
+                return {
+                    "atlas_DKT": AtlasAggregationResult(name="DKT", data={"r1": 0.1}),
+                    "atlas_Schaefer": AtlasAggregationResult(name="Schaefer", data={"r1": 0.2}),
+                    "atlas_HarvardOxford": AtlasAggregationResult(
+                        name="HarvardOxford", data={"r1": 0.3}
+                    ),
+                }
+
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+
+        result = MultiAtlasAnalysis().run(mask_data)
+
+        # All three atlas results should be accessible
+        analysis_results = result.results["MultiAtlasAnalysis"]
+        assert len(analysis_results) == 3
+        assert "atlas_DKT" in analysis_results
+        assert "atlas_Schaefer" in analysis_results
+        assert "atlas_HarvardOxford" in analysis_results

@@ -152,6 +152,8 @@ class AtlasAggregationResult(AnalysisResult):
         Name/identifier for this result
     data : dict
         Dictionary mapping ROI identifiers to values
+    region_labels : list of str, optional
+        Ordered list of region label names (from atlas metadata)
     atlas_names : list of str, optional
         Names of atlases used in the analysis
     aggregation_method : str, optional
@@ -162,6 +164,7 @@ class AtlasAggregationResult(AnalysisResult):
 
     name: str
     data: dict[str, float]
+    region_labels: list[str] | None = None
     atlas_names: list[str] | None = None
     aggregation_method: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
