@@ -55,35 +55,32 @@ class TestAtlasNamesFilter:
             # Test 1: Process only atlas_B
             analysis = RegionalDamage(atlas_names=["atlas_B"])
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["RegionalDamage"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["RegionalDamage"]
 
             # Should only have atlas_B results
-            assert any("atlas_B" in key for key in results.keys())
-            assert not any("atlas_A" in key for key in results.keys())
-            assert not any("atlas_C" in key for key in results.keys())
+            assert "atlas_B" in atlas_results
+            assert "atlas_A" not in atlas_results
+            assert "atlas_C" not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
             analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_C"])
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["RegionalDamage"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["RegionalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
-            assert any("atlas_A" in key for key in results.keys())
-            assert not any("atlas_B" in key for key in results.keys())
-            assert any("atlas_C" in key for key in results.keys())
+            assert "atlas_A" in atlas_results
+            assert "atlas_B" not in atlas_results
+            assert "atlas_C" in atlas_results
 
             # Test 3: None = process all atlases
             analysis = RegionalDamage(atlas_names=None)
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["RegionalDamage"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["RegionalDamage"]
 
             # Should have all three atlases
-            assert any("atlas_A" in key for key in results.keys())
-            assert any("atlas_B" in key for key in results.keys())
-            assert any("atlas_C" in key for key in results.keys())
+            assert "atlas_A" in atlas_results
+            assert "atlas_B" in atlas_results
+            assert "atlas_C" in atlas_results
 
     def test_atlas_names_warns_if_not_found(self):
         """Test that warning is issued if requested atlas not found."""
@@ -124,9 +121,8 @@ class TestAtlasNamesFilter:
                 result = analysis.run(lesion_data_obj)
 
             # Should still process atlas_A successfully
-            results_list = result.results["RegionalDamage"]
-            results = results_list[0].get_data()
-            assert any("atlas_A" in key for key in results.keys())
+            atlas_results = result.results["RegionalDamage"]
+            assert "atlas_A" in atlas_results
 
     def test_atlas_names_raises_if_none_found(self):
         """Test that error is raised if no matching atlases found."""
@@ -220,9 +216,8 @@ class TestAtlasNamesFilter:
                 atlas_names=["atlas_X"],
             )
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["AtlasAggregation"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["AtlasAggregation"]
 
             # Should only have atlas_X results
-            assert any("atlas_X" in key for key in results.keys())
-            assert not any("atlas_Y" in key for key in results.keys())
+            assert "atlas_X" in atlas_results
+            assert "atlas_Y" not in atlas_results

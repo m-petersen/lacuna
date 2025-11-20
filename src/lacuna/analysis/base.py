@@ -215,16 +215,12 @@ class BaseAnalysis(ABC):
         # For backward compatibility during transition, support both formats
         if isinstance(analysis_results, list):
             # Legacy format: list of results
-            # Wrap in dict with index-based keys for single result, or meaningful names
-            if len(analysis_results) == 1:
-                results_dict = {"default": analysis_results[0]}
-            else:
-                # Multiple results: use indices or result names if available
-                results_dict = {}
-                for i, result in enumerate(analysis_results):
-                    # Try to use result name if available, otherwise use index
-                    key = getattr(result, 'name', None) or f"result_{i}"
-                    results_dict[key] = result
+            # Convert to dict using result.name attribute
+            results_dict = {}
+            for i, result in enumerate(analysis_results):
+                # Use result name if available, otherwise fall back to index
+                key = getattr(result, 'name', None) or f"result_{i}"
+                results_dict[key] = result
         else:
             # New format: already a dict
             results_dict = analysis_results

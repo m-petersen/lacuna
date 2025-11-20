@@ -116,14 +116,16 @@ class TestAtlasRegistryWithAnalysis:
         assert "AtlasAggregation" in result.results
         aggregation_results = result.results["AtlasAggregation"]
         
-        # Should have results for Schaefer100 regions
-        schaefer_keys = [k for k in aggregation_results.keys() 
-                        if "Schaefer2018_100Parcels7Networks" in k]
-        assert len(schaefer_keys) > 0
+        # Should have ROIResult for Schaefer100
+        assert "Schaefer2018_100Parcels7Networks" in aggregation_results
+        roi_result = aggregation_results["Schaefer2018_100Parcels7Networks"]
+        region_data = roi_result.get_data()
+        
+        # Should have multiple regions
+        assert len(region_data) > 0
         
         # Values should be floats between 0 and 1 (mean of binary lesion)
-        for key in schaefer_keys:
-            value = aggregation_results[key]
+        for key, value in region_data.items():
             assert isinstance(value, (int, float))
             assert 0 <= value <= 1
 
@@ -143,13 +145,15 @@ class TestAtlasRegistryWithAnalysis:
         aggregation_results = result.results["AtlasAggregation"]
         
         # Should have results from both atlases
-        schaefer100_keys = [k for k in aggregation_results.keys() 
-                           if "Schaefer2018_100Parcels7Networks" in k]
-        schaefer200_keys = [k for k in aggregation_results.keys() 
-                           if "Schaefer2018_200Parcels7Networks" in k]
+        assert "Schaefer2018_100Parcels7Networks" in aggregation_results
+        assert "Schaefer2018_200Parcels7Networks" in aggregation_results
         
-        assert len(schaefer100_keys) > 0
-        assert len(schaefer200_keys) > 0
+        # Each should have region data
+        schaefer100_data = aggregation_results["Schaefer2018_100Parcels7Networks"].get_data()
+        schaefer200_data = aggregation_results["Schaefer2018_200Parcels7Networks"].get_data()
+        
+        assert len(schaefer100_data) > 0
+        assert len(schaefer200_data) > 0
 
     def test_atlas_aggregation_auto_uses_all_atlases(self, synthetic_lesion):
         """Test that atlas aggregation uses all compatible atlases when none specified."""
@@ -169,8 +173,9 @@ class TestAtlasRegistryWithAnalysis:
         aggregation_results = result.results["AtlasAggregation"]
         
         # Should have results from all three atlases
-        # Check by looking for atlas names in result keys
-        has_schaefer100 = any("Schaefer2018_100Parcels7Networks" in k for k in aggregation_results.keys())
+        assert "Schaefer2018_100Parcels7Networks" in aggregation_results
+        assert "Schaefer2018_200Parcels7Networks" in aggregation_results
+        assert "TianSubcortex_3TS1" in aggregation_results
         has_schaefer200 = any("Schaefer2018_200Parcels7Networks" in k for k in aggregation_results.keys())
         has_tian = any("TianSubcortex_3TS1" in k for k in aggregation_results.keys())
         
@@ -261,10 +266,10 @@ class TestCustomAtlasRegistration:
             
             # Check results
             aggregation_results = result.results["AtlasAggregation"]
-            custom_keys = [k for k in aggregation_results.keys() 
-                          if "CustomAnalysisAtlas" in k]
+            assert "CustomAnalysisAtlas" in aggregation_results
             
-            assert len(custom_keys) == 2  # Two regions
+            custom_data = aggregation_results["CustomAnalysisAtlas"].get_data()
+            assert len(custom_data) == 2  # Two regions
             
         finally:
             # Cleanup

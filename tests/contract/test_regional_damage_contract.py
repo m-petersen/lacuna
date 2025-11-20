@@ -103,13 +103,11 @@ def test_regional_damage_requires_binary_mask(synthetic_lesion_img, tmp_path):
     data = data.astype(float) * 0.5
 
     non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
-    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-
-    analysis = RegionalDamage()
-
+    
+    # LesionData now validates binary mask in __init__
     # Should raise error for non-binary mask
     with pytest.raises(ValueError, match="binary"):
-        analysis.run(lesion_data)
+        lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_regional_damage_returns_lesion_data(synthetic_lesion_img, tmp_path):
@@ -173,12 +171,12 @@ def test_regional_damage_result_structure(synthetic_lesion_img, tmp_path):
     analysis = RegionalDamage()
     result = analysis.run(lesion_data)
 
-    # Results are returned as a list of ROIResult objects
-    results_list = result.results["RegionalDamage"]
-    assert len(results_list) > 0, "Expected at least one ROIResult"
+    # Results are returned as dict with atlas name as key
+    atlas_results = result.results["RegionalDamage"]
+    assert "test_atlas" in atlas_results
     
-    # Get the data dict from the first ROIResult
-    roi_result = results_list[0]
+    # Get the ROIResult for this atlas
+    roi_result = atlas_results["test_atlas"]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level damage percentages
@@ -223,16 +221,16 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_lesion_img, tmp_pat
     analysis = RegionalDamage()
     result = analysis.run(lesion_data)
 
-    # Results are returned as a list of ROIResult objects
-    results_list = result.results["RegionalDamage"]
-    assert len(results_list) > 0, "Expected at least one ROIResult"
+    # Results are returned as dict with one entry per atlas
+    atlas_results = result.results["RegionalDamage"]
+    assert "atlas_3d" in atlas_results
+    assert "atlas_4d" in atlas_results
     
-    # Get the data dict from the first ROIResult
-    results_dict = results_list[0].get_data()
-    
-    # Should have results for both atlases
-    assert any("atlas_3d" in key for key in results_dict.keys())
-    assert any("atlas_4d" in key for key in results_dict.keys())
+    # Each atlas should have its own ROIResult
+    results_3d = atlas_results["atlas_3d"].get_data()
+    results_4d = atlas_results["atlas_4d"].get_data()
+    assert len(results_3d) > 0
+    assert len(results_4d) > 0
 
 
 def test_regional_damage_preserves_input_immutability(synthetic_lesion_img, tmp_path):

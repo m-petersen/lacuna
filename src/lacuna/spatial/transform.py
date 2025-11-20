@@ -637,7 +637,6 @@ def transform_lesion_data(
 
     return LesionData(
         lesion_img=transformed_img,
-        anatomical_img=lesion_data.anatomical_img,
         metadata=new_metadata,
         provenance=new_provenance,
         results=lesion_data.results,
