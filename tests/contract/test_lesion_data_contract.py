@@ -280,3 +280,80 @@ def synthetic_4d_img():
     data = np.random.rand(*shape).astype(np.float32)
     affine = np.eye(4)
     return nib.Nifti1Image(data, affine)
+
+
+# T017-T019: Contract tests for result attribute access
+def test_mask_data_attribute_result_access(synthetic_mask_img, lesion_metadata):
+    """Test that MaskData.AnalysisName returns results['AnalysisName']."""
+    from lacuna.core.mask_data import MaskData
+    from lacuna.core.output import VoxelMapResult
+
+    mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+
+    # Manually add a result to simulate analysis output
+    test_result = VoxelMapResult(
+        name="TestAnalysis",
+        space="MNI152NLin6Asym",
+        resolution=2,
+        data=synthetic_mask_img,  # Use actual NIfTI image
+    )
+    # Access internal _results since .results returns a deepcopy
+    mask_data._results["TestAnalysis"] = {"default": test_result}
+
+    # T017: Test attribute access returns same as dictionary access
+    attr_result = mask_data.TestAnalysis
+    dict_result = mask_data.results["TestAnalysis"]
+
+    # Both should have the same content (though dict_result is a copy)
+    assert isinstance(attr_result, dict)
+    assert isinstance(dict_result, dict)
+    assert "default" in attr_result
+    assert "default" in dict_result
+
+
+def test_mask_data_dictionary_result_access(synthetic_mask_img, lesion_metadata):
+    """Test dictionary-based result access works as expected."""
+    from lacuna.core.mask_data import MaskData
+    from lacuna.core.output import AtlasAggregationResult
+
+    mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+
+    # Add multiple results with different keys
+    result1 = AtlasAggregationResult(
+        name="AtlasA",
+        data={"region1": 0.5, "region2": 0.7},
+    )
+    result2 = AtlasAggregationResult(
+        name="AtlasB",
+        data={"region1": 0.3, "region2": 0.9},
+    )
+
+    mask_data._results["RegionalDamage"] = {
+        "atlas_AtlasA": result1,
+        "atlas_AtlasB": result2,
+    }
+
+    # T018: Test dictionary access pattern
+    regional_results = mask_data.results["RegionalDamage"]
+    assert isinstance(regional_results, dict)
+    assert "atlas_AtlasA" in regional_results
+    assert "atlas_AtlasB" in regional_results
+    # Note: results returns a deepcopy, so we check value equality not identity
+    assert regional_results["atlas_AtlasA"].name == result1.name
+    assert regional_results["atlas_AtlasB"].name == result2.name
+
+
+def test_mask_data_attribute_error_missing_result(synthetic_mask_img, lesion_metadata):
+    """Test AttributeError with helpful message when result doesn't exist."""
+    from lacuna.core.mask_data import MaskData
+
+    mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+
+    # T019: Test that accessing non-existent result raises AttributeError
+    with pytest.raises(AttributeError) as exc_info:
+        _ = mask_data.NonExistentAnalysis
+
+    # Verify the error message is helpful
+    error_message = str(exc_info.value)
+    assert "NonExistentAnalysis" in error_message
+    assert "results" in error_message.lower()

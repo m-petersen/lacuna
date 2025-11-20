@@ -615,7 +615,9 @@ class TestRegionalDamageOutputAPI:
 
             # Access the damage data via get_data()
             damage_data = roi_result.get_data()
-            assert isinstance(damage_data, dict), "AtlasAggregationResult.get_data() should return a dict"
+            assert isinstance(
+                damage_data, dict
+            ), "AtlasAggregationResult.get_data() should return a dict"
 
             # Damage data should be dict of region_name -> percentage
             assert all(

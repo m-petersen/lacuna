@@ -690,13 +690,11 @@ class MaskData:
         """
         # Only intercept result namespace lookups, not internal attributes
         if name.startswith("_"):
-            raise AttributeError(
-                f"'{type(self).__name__}' object has no attribute '{name}'"
-            )
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         # Check if name exists in results
         if name in self._results:
-            return copy.deepcopy(self._results[name])
+            return self._results[name]  # Return reference, not copy
 
         # Not found - raise AttributeError with helpful message
         available = ", ".join(self._results.keys()) if self._results else "none"
