@@ -191,12 +191,13 @@ def test_atlas_aggregation_result_structure(synthetic_lesion_img):
     )
     result = analysis.run(lesion_data)
 
-    # Results are returned as a list of ROIResult objects
-    results_list = result.results["AtlasAggregation"]
-    assert len(results_list) > 0, "Expected at least one ROIResult"
+    # Results are returned as dict with atlas name as key
+    atlas_results = result.results["AtlasAggregation"]
+    assert "Schaefer2018_100Parcels7Networks" in atlas_results
     
-    # Get the data dict from the first ROIResult
-    results_dict = results_list[0].get_data()
+    # Get the ROIResult for this atlas
+    roi_result = atlas_results["Schaefer2018_100Parcels7Networks"]
+    results_dict = roi_result.get_data()
 
     # Should contain ROI-level values
     # Format: {"Schaefer2018_100Parcels7Networks_7Networks_LH_Vis_1": 0.523, ...}
@@ -219,14 +220,16 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_lesion_img):
     )
     result = analysis.run(lesion_data)
 
-    # Results are returned as a list of ROIResult objects
-    results_list = result.results["AtlasAggregation"]
-    assert len(results_list) > 0, "Expected at least one ROIResult"
-    results_dict = results_list[0].get_data()
+    # Results are returned as dict with one entry per atlas
+    atlas_results = result.results["AtlasAggregation"]
+    assert "Schaefer2018_100Parcels7Networks" in atlas_results
+    assert "Schaefer2018_200Parcels7Networks" in atlas_results
 
-    # Should have results from both atlases
-    assert any("Schaefer2018_100Parcels7Networks" in key for key in results_dict.keys())
-    assert any("Schaefer2018_200Parcels7Networks" in key for key in results_dict.keys())
+    # Each atlas should have its own ROIResult with region data
+    roi_100 = atlas_results["Schaefer2018_100Parcels7Networks"].get_data()
+    roi_200 = atlas_results["Schaefer2018_200Parcels7Networks"].get_data()
+    assert len(roi_100) > 0
+    assert len(roi_200) > 0
 
 
 def test_atlas_aggregation_preserves_input_immutability(synthetic_lesion_img):

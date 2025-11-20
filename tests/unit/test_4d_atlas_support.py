@@ -393,9 +393,11 @@ class Test4DAtlasAggregation:
             
             # Check results
             damage_results = result.results["RegionalDamage"]
+            assert "Test4DAtlas_Aggregation" in damage_results
             
-            # Should have results for each tract
-            assert len(damage_results) > 0
+            # Get region data
+            region_data = damage_results["Test4DAtlas_Aggregation"].get_data()
+            assert len(region_data) > 0
             
             # Tract1 should have highest damage (full overlap)
             # Tract2 should have some damage
@@ -456,8 +458,10 @@ class Test4DAtlasAggregation:
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
             
-            # Verify we got results for each region
-            assert len(damage_results) > 0
+            # Verify we got results for the atlas
+            assert "Test4D_VaryingOverlap" in damage_results
+            region_data = damage_results["Test4D_VaryingOverlap"].get_data()
+            assert len(region_data) > 0
             
             # LargeOverlap should have more damage than SmallOverlap
             # NoOverlap should have 0 or minimal damage
@@ -544,9 +548,14 @@ class TestMixed3DAnd4DAtlases:
             damage_results = result.results["RegionalDamage"]
             
             # Should have results from both atlases
-            assert len(damage_results) > 0
+            assert "Mixed3D" in damage_results
+            assert "Mixed4D" in damage_results
             
-            # Results should include regions from both 3D and 4D atlases
+            # Each should have region data
+            mixed3d_data = damage_results["Mixed3D"].get_data()
+            mixed4d_data = damage_results["Mixed4D"].get_data()
+            assert len(mixed3d_data) > 0
+            assert len(mixed4d_data) > 0
             
         finally:
             try:
@@ -605,16 +614,15 @@ class TestRegionalDamageOutputAPI:
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
             
-            # NEW API: damage_results is a list, not a dict
-            assert isinstance(damage_results, list), \
-                "RegionalDamage results should be a list, not dict"
+            # NEW API: damage_results is a dict with atlas names as keys
+            assert isinstance(damage_results, dict), \
+                "RegionalDamage results should be a dict, not list"
             
-            # Filter for ROIResult objects
-            roi_results = [r for r in damage_results if isinstance(r, ROIResult)]
-            assert len(roi_results) > 0, "Should have at least one ROIResult"
+            # Should have the atlas
+            assert "TestOutputAPI" in damage_results
             
-            # Get the first ROI result
-            roi_result = roi_results[0]
+            # Get the ROI result
+            roi_result = damage_results["TestOutputAPI"]
             assert isinstance(roi_result, ROIResult)
             
             # Access the damage data via get_data()
@@ -632,11 +640,6 @@ class TestRegionalDamageOutputAPI:
             # CORRECT: Get data from ROIResult first
             sorted_regions = sorted(damage_data.items(), key=lambda x: x[1], reverse=True)
             assert isinstance(sorted_regions, list)
-            
-            # INCORRECT (old API): This should fail
-            with pytest.raises(AttributeError, match="'list' object has no attribute 'items'"):
-                # This is the old incorrect usage
-                sorted(damage_results.items(), key=lambda x: x[1], reverse=True)
             
         finally:
             try:

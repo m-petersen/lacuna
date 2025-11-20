@@ -1260,10 +1260,21 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Add results to lesion data (returns new instance with results)
-        # Wrap in nested dict structure: {result_name: result_object}
+        # Note: Using individual keys to match _run_analysis() structure
+        batch_results = {
+            "correlation_map": results["correlation_map"],
+            "z_map": results["z_map"],
+            "summary_statistics": results["summary_statistics"],
+        }
+        # Add optional results if present
+        if "t_map" in results:
+            batch_results["t_map"] = results["t_map"]
+        if "t_threshold_map" in results:
+            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        
         lesion_data_with_results = lesion_data.add_result(
             self.__class__.__name__, 
-            {"default": results}
+            batch_results
         )
 
         return lesion_data_with_results
@@ -1373,10 +1384,21 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Add results to lesion data (returns new instance with results)
-        # Wrap in nested dict structure: {result_name: result_object}
+        # Note: Using individual keys to match _run_analysis() structure
+        batch_results = {
+            "correlation_map": results["correlation_map"],
+            "z_map": results["z_map"],
+            "summary_statistics": results["summary_statistics"],
+        }
+        # Add optional results if present
+        if "t_map" in results:
+            batch_results["t_map"] = results["t_map"]
+        if "t_threshold_map" in results:
+            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        
         lesion_data_with_results = lesion_data.add_result(
             self.__class__.__name__, 
-            {"default": results}
+            batch_results
         )
 
         return lesion_data_with_results

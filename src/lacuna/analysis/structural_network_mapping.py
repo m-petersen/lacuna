@@ -253,6 +253,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Will be resolved to Path during validation
         self._atlas_resolved = None
+        self._atlas_labels = None
         # Cache for full connectivity matrix (computed once if atlas provided)
         self._full_connectivity_matrix = None
         # Cache for computed whole-brain TDI
@@ -790,9 +791,12 @@ class StructuralNetworkMapping(BaseAnalysis):
         results = []
         
         # Get atlas labels for ConnectivityMatrixResult
+        # Convert dict[int, str] to list[str] ordered by region ID
         atlas_labels = [f"region_{i}" for i in range(lesion_matrix.shape[0])]
-        if hasattr(self._atlas_resolved, "labels"):
-            atlas_labels = self._atlas_resolved.labels
+        if hasattr(self, "_atlas_labels") and self._atlas_labels is not None:
+            # Sort by region ID and extract names
+            sorted_regions = sorted(self._atlas_labels.items())
+            atlas_labels = [name for region_id, name in sorted_regions]
         
         # ConnectivityMatrixResult for lesion connectivity
         lesion_connectivity_result = ConnectivityMatrixResult(

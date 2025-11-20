@@ -97,13 +97,13 @@ class TestAtlasLabelAssignment:
                 atlas_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["AtlasAggregation"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["AtlasAggregation"]
+            results = atlas_results["test_4d_atlas"].get_data()
 
-            right_damage = results.get("test_4d_atlas_Region_Right", None)
-            right_damage = results.get("test_4d_atlas_Region_Right", None)
-            left_damage = results.get("test_4d_atlas_Region_Left", None)
-            middle_damage = results.get("test_4d_atlas_Region_Middle", None)
+            # With new structure, region names don't have atlas prefix
+            right_damage = results.get("Region_Right", None)
+            left_damage = results.get("Region_Left", None)
+            middle_damage = results.get("Region_Middle", None)
 
             # Debug output
             print("\n=== Label Assignment Test Results ===")
@@ -185,11 +185,12 @@ class TestAtlasLabelAssignment:
                 atlas_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["AtlasAggregation"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["AtlasAggregation"]
+            results = atlas_results["atlas_1indexed"].get_data()
 
-            bottom_damage = results.get("atlas_1indexed_Bottom_Region", None)
-            top_damage = results.get("atlas_1indexed_Top_Region", None)
+            # With new structure, region names don't have atlas prefix
+            bottom_damage = results.get("Bottom_Region", None)
+            top_damage = results.get("Top_Region", None)
 
             print("\n=== 1-Indexed Label Test Results ===")
             print(f"Bottom_Region damage: {bottom_damage:.2f}%")
@@ -258,12 +259,13 @@ class TestAtlasLabelAssignment:
                 atlas_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
-            results_list = result.results["AtlasAggregation"]
-            results = results_list[0].get_data()
+            atlas_results = result.results["AtlasAggregation"]
+            results = atlas_results["atlas_3d"].get_data()
 
-            first_damage = results.get("atlas_3d_First_Region", None)
-            second_damage = results.get("atlas_3d_Second_Region", None)
-            third_damage = results.get("atlas_3d_Third_Region", None)
+            # With new structure, region names don't have atlas prefix
+            first_damage = results.get("First_Region", None)
+            second_damage = results.get("Second_Region", None)
+            third_damage = results.get("Third_Region", None)
 
             # Region 2 should have high damage, others should have zero
             assert first_damage < 5.0, "First_Region should have no damage"

@@ -100,7 +100,6 @@ class AtlasAggregation(BaseAnalysis):
     source : str, default="lesion_img"
         Source of data to aggregate. Options:
         - "lesion_img": Use the lesion mask directly
-        - "anatomical_img": Use the anatomical image
         - "{AnalysisName}.{result_key}": Use result from previous analysis
           Example: "FunctionalNetworkMapping.network_map"
     aggregation : str, default="mean"
@@ -444,10 +443,8 @@ class AtlasAggregation(BaseAnalysis):
         Returns
         -------
         list[AnalysisResult]
-            List containing ROIResult with aggregated values per atlas region
+            List containing one ROIResult per atlas
         """
-        results = {}
-
         # Get input data space/resolution once
         input_space = lesion_data.metadata.get('space')
         input_resolution = lesion_data.metadata.get('resolution')
@@ -458,13 +455,12 @@ class AtlasAggregation(BaseAnalysis):
         # Calculate voxel volume from source data
         voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
 
-        # Collect atlas names for metadata
-        atlas_names = []
+        # Collect results per atlas
+        roi_results = []
 
         # Process each atlas
         for atlas_info in self.atlases:
             atlas_name = atlas_info["name"]
-            atlas_names.append(atlas_name)
             atlas_space = atlas_info.get("space")
             atlas_resolution = atlas_info.get("resolution")
             
@@ -516,26 +512,21 @@ class AtlasAggregation(BaseAnalysis):
                 )
                 continue
 
-            # Add results with atlas name prefix
-            for region_name, value in atlas_results.items():
-                key = f"{atlas_name}_{region_name}"
-                results[key] = value
+            # Create one ROIResult per atlas
+            roi_result = ROIResult(
+                name=atlas_name,
+                data=atlas_results,
+                atlas_names=[atlas_name],
+                aggregation_method=self.aggregation,
+                metadata={
+                    "source": self.source,
+                    "threshold": self.threshold,
+                    "n_regions": len(atlas_results)
+                }
+            )
+            roi_results.append(roi_result)
 
-        # Create ROIResult object
-        roi_result = ROIResult(
-            name="atlas_aggregation",
-            data=results,
-            atlas_names=atlas_names,
-            aggregation_method=self.aggregation,
-            metadata={
-                "source": self.source,
-                "threshold": self.threshold,
-                "n_atlases": len(atlas_names),
-                "n_regions": len(results)
-            }
-        )
-
-        return [roi_result]
+        return roi_results
 
     def _aggregate_3d_atlas(
         self,
