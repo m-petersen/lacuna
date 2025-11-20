@@ -17,34 +17,34 @@ logger = logging.getLogger(__name__)
 
 def load_template(name: str) -> Path:
     """Load a reference brain template by name.
-    
+
     Downloads from TemplateFlow on first use and caches locally.
-    
+
     Supports space equivalence: anatomically identical spaces like
     MNI152NLin2009[abc]Asym are automatically normalized to their
     canonical form (cAsym).
-    
+
     Parameters
     ----------
     name : str
         Template name from registry (e.g., "MNI152NLin2009cAsym_res-1")
-    
+
     Returns
     -------
     Path
         Path to template NIfTI file
-    
+
     Raises
     ------
     KeyError
         If template not found in registry
     FileNotFoundError
         If template download fails
-    
+
     Examples
     --------
     >>> from lacuna.assets.templates import load_template
-    >>> 
+    >>>
     >>> # Load MNI template
     >>> template_path = load_template("MNI152NLin2009cAsym_res-1")
     >>> import nibabel as nib
@@ -54,17 +54,17 @@ def load_template(name: str) -> Path:
     """
     # Get metadata from registry
     metadata = TEMPLATE_REGISTRY.get(name)
-    
+
     # Normalize space to handle equivalence
     space_normalized = _canonicalize_space_variant(metadata.space)
-    
+
     # Log if normalization occurred
     if space_normalized != metadata.space:
         logger.info(
             f"Using space equivalence: {metadata.space} → {space_normalized} "
             f"(anatomically identical spaces)"
         )
-    
+
     try:
         import templateflow.api as tflow
     except ImportError as e:
@@ -72,7 +72,7 @@ def load_template(name: str) -> Path:
             "TemplateFlow is required for template loading. "
             "Install with: pip install templateflow"
         ) from e
-    
+
     try:
         # Get template from TemplateFlow (using normalized space)
         template_path = tflow.get(
@@ -82,18 +82,18 @@ def load_template(name: str) -> Path:
             suffix=metadata.modality,
             extension=".nii.gz",
         )
-        
+
         if template_path is None or (isinstance(template_path, list) and not template_path):
             raise ValueError(
                 f"Template not found in TemplateFlow: {metadata.space} at {metadata.resolution}mm"
             )
-        
+
         # TemplateFlow can return a list, take first item
         if isinstance(template_path, list):
             template_path = template_path[0]
-        
+
         return Path(template_path)
-        
+
     except Exception as e:
         raise FileNotFoundError(
             f"Failed to load template {name} "
@@ -103,17 +103,17 @@ def load_template(name: str) -> Path:
 
 def is_template_cached(name: str) -> bool:
     """Check if template is already cached locally.
-    
+
     Parameters
     ----------
     name : str
         Template name from registry
-    
+
     Returns
     -------
     bool
         True if template is cached, False otherwise
-    
+
     Examples
     --------
     >>> from lacuna.assets.templates import is_template_cached

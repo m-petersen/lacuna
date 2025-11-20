@@ -118,14 +118,10 @@ class TestResultCaching:
             result_img = nib.Nifti1Image(result_data, affine=np.eye(4))
 
             # Store result
-            cache.put_result(
-                source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img
-            )
+            cache.put_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img)
 
             # Retrieve result
-            retrieved = cache.get_result(
-                source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym"
-            )
+            retrieved = cache.get_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym")
             assert retrieved is not None
             assert isinstance(retrieved, nib.Nifti1Image)
             np.testing.assert_array_almost_equal(retrieved.get_fdata(), result_data)
@@ -171,9 +167,7 @@ class TestCacheEviction:
                 source_img = nib.Nifti1Image(data, affine=np.eye(4))
                 result_img = nib.Nifti1Image(data, affine=np.eye(4))
 
-                cache.put_result(
-                    source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img
-                )
+                cache.put_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img)
 
             # Cache should have evicted oldest entries
             stats = cache.get_stats()
@@ -198,9 +192,7 @@ class TestCacheStats:
             cache.get_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym")
 
             # Store
-            cache.put_result(
-                source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img
-            )
+            cache.put_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img)
 
             # Hit
             cache.get_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym")
@@ -224,9 +216,7 @@ class TestCacheStats:
             cache.get_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym")
 
             # Store
-            cache.put_result(
-                source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img
-            )
+            cache.put_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img)
 
             # 2 hits
             cache.get_result(source_img, "MNI152NLin6Asym", "MNI152NLin2009cAsym")

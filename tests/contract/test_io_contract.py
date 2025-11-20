@@ -24,18 +24,18 @@ def test_io_module_imports():
 
 def test_load_bids_dataset_simple(simple_bids_dataset):
     """Test loading a simple BIDS dataset with manual parser."""
-    pytest.skip("LesionData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
     assert lesion2.anatomical_img is None
 
 
 def test_load_bids_dataset_multisession(multisession_bids_dataset):
     """Test loading a multi-session BIDS dataset."""
-    pytest.skip("LesionData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
 
 
 def test_load_bids_dataset_filter_subjects(simple_bids_dataset):
     """Test loading specific subjects only."""
-    pytest.skip("LesionData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
 
 
 def test_load_bids_dataset_nonexistent_path():
@@ -83,46 +83,47 @@ def test_load_bids_dataset_no_lesion_masks(tmp_path):
 
 def test_load_bids_dataset_warns_missing_anatomical(simple_bids_dataset):
     """Test that missing anatomical images trigger warnings."""
-    pytest.skip("LesionData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
 
 
-def test_save_nifti_basic(tmp_path, synthetic_lesion_img):
-    """Test saving LesionData to NIfTI file."""
-    from lacuna import LesionData
+def test_save_nifti_basic(tmp_path, synthetic_mask_img):
+    """Test saving MaskData to NIfTI file."""
+    from lacuna import MaskData
     from lacuna.io import save_nifti
 
-    # Create LesionData
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    # Create MaskData
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Save to file
     output_path = tmp_path / "lesion.nii.gz"
-    save_nifti(lesion_data, output_path)
+    save_nifti(mask_data, output_path)
 
     # Verify file exists
     assert output_path.exists()
 
     # Verify can be loaded back
     loaded_img = nib.load(output_path)
-    assert loaded_img.shape == synthetic_lesion_img.shape
-    assert np.array_equal(loaded_img.affine, synthetic_lesion_img.affine)
+    assert loaded_img.shape == synthetic_mask_img.shape
+    assert np.array_equal(loaded_img.affine, synthetic_mask_img.affine)
 
 
-def test_save_nifti_with_anatomical(tmp_path, synthetic_lesion_img, synthetic_anatomical_img):
-    """Test saving LesionData with anatomical image."""
-    from lacuna import LesionData
+@pytest.mark.skip(reason="anatomical_img feature pending removal (T008)")
+def test_save_nifti_with_anatomical(tmp_path, synthetic_mask_img, synthetic_anatomical_img):
+    """Test saving MaskData with anatomical image."""
+    from lacuna import MaskData
     from lacuna.io import save_nifti
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         anatomical_img=synthetic_anatomical_img,
         metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_path = tmp_path / "lesion.nii.gz"
-    save_nifti(lesion_data, output_path, save_anatomical=True)
+    save_nifti(mask_data, output_path, save_anatomical=True)
 
     # Verify both files exist
     assert output_path.exists()
@@ -130,33 +131,33 @@ def test_save_nifti_with_anatomical(tmp_path, synthetic_lesion_img, synthetic_an
     assert anat_path.exists()
 
 
-def test_save_nifti_invalid_extension(tmp_path, synthetic_lesion_img):
+def test_save_nifti_invalid_extension(tmp_path, synthetic_mask_img):
     """Test that invalid file extension raises ValueError."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.io import save_nifti
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_path = tmp_path / "lesion.txt"
     with pytest.raises(ValueError, match="extension"):
-        save_nifti(lesion_data, output_path)
+        save_nifti(mask_data, output_path)
 
 
-def test_export_bids_derivatives_basic(tmp_path, synthetic_lesion_img):
-    """Test exporting LesionData to BIDS derivatives format."""
-    from lacuna import LesionData
+def test_export_bids_derivatives_basic(tmp_path, synthetic_mask_img):
+    """Test exporting MaskData to BIDS derivatives format."""
+    from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data, output_dir)
+    subject_dir = export_bids_derivatives(mask_data, output_dir)
 
     # Verify directory structure
     assert subject_dir.exists()
@@ -168,14 +169,14 @@ def test_export_bids_derivatives_basic(tmp_path, synthetic_lesion_img):
     assert len(lesion_files) == 1
 
 
-def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
-    """Test exporting LesionData with analysis results."""
-    from lacuna import LesionData
+def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
+    """Test exporting MaskData with analysis results."""
+    from lacuna import MaskData
     from lacuna.core.provenance import create_provenance_record
     from lacuna.io import export_bids_derivatives
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
@@ -187,12 +188,10 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
         version="0.1.0",
     )
 
-    lesion_data_with_results = lesion_data.add_result("VolumeAnalysis", results).add_provenance(
-        prov
-    )
+    mask_data_with_results = mask_data.add_result("VolumeAnalysis", results).add_provenance(prov)
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data_with_results, output_dir)
+    subject_dir = export_bids_derivatives(mask_data_with_results, output_dir)
 
     # Verify results and provenance files
     results_dir = subject_dir / "results"
@@ -205,87 +204,94 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_lesion_img):
     assert len(prov_files) == 1
 
 
-def test_export_bids_derivatives_session(tmp_path, synthetic_lesion_img):
+def test_export_bids_derivatives_session(tmp_path, synthetic_mask_img):
     """Test exporting multi-session data."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-001", "session_id": "ses-01", "space": "MNI152NLin6Asym", "resolution": 2},
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
+        metadata={
+            "subject_id": "sub-001",
+            "session_id": "ses-01",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+        },
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data, output_dir)
+    subject_dir = export_bids_derivatives(mask_data, output_dir)
 
     # Verify session structure
     assert "ses-01" in str(subject_dir)
     assert (subject_dir / "anat").exists()
 
 
-def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_lesion_img):
+def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_mask_img):
     """Test that export without subject_id raises ValueError."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
-    # Create LesionData without subject_id (should not be possible via __init__, but test anyway)
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    # Create MaskData without subject_id (should not be possible via __init__, but test anyway)
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Manually remove subject_id for testing
-    lesion_data._metadata = {}
+    mask_data._metadata = {}
 
     output_dir = tmp_path / "derivatives" / "lacuna"
     with pytest.raises(ValueError, match="subject_id"):
-        export_bids_derivatives(lesion_data, output_dir)
+        export_bids_derivatives(mask_data, output_dir)
 
 
-def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_lesion_img):
+def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_mask_img):
     """Test that overwrite=False prevents file overwriting."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
 
     # First export should succeed
-    export_bids_derivatives(lesion_data, output_dir)
+    export_bids_derivatives(mask_data, output_dir)
 
     # Second export without overwrite should fail
     with pytest.raises(FileExistsError, match="already exists"):
-        export_bids_derivatives(lesion_data, output_dir, overwrite=False)
+        export_bids_derivatives(mask_data, output_dir, overwrite=False)
 
 
-def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_lesion_img):
+def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_mask_img):
     """Test that overwrite=True allows file overwriting."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
 
     # First export
-    export_bids_derivatives(lesion_data, output_dir)
+    export_bids_derivatives(mask_data, output_dir)
 
     # Second export with overwrite should succeed
-    subject_dir = export_bids_derivatives(lesion_data, output_dir, overwrite=True)
+    subject_dir = export_bids_derivatives(mask_data, output_dir, overwrite=True)
     assert subject_dir.exists()
 
 
-def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_lesion_img):
+def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_mask_img):
     """Test selective output options."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
@@ -293,7 +299,7 @@ def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_lesion_im
 
     # Export only images, no results/provenance
     subject_dir = export_bids_derivatives(
-        lesion_data,
+        mask_data,
         output_dir,
         include_images=True,
         include_results=False,

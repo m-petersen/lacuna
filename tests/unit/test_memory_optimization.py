@@ -10,7 +10,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis import FunctionalNetworkMapping
 from lacuna.batch import batch_process
 
@@ -61,13 +61,14 @@ def mock_lesions(tmp_path, mock_connectome_batched):
     lesions = []
 
     for i in range(10):
-        lesion_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
-        lesion_data_array[43:48, 52:57, 43:48] = 1
-        lesion_img = nib.Nifti1Image(lesion_data_array, affine)
+        mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
+        mask_data_array[43:48, 52:57, 43:48] = 1
+        mask_img = nib.Nifti1Image(mask_data_array, affine)
         lesion_path = tmp_path / f"lesion_{i}.nii.gz"
-        nib.save(lesion_img, lesion_path)
-        lesion = LesionData.from_nifti(
-            str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"test_{i:03d}"}
+        nib.save(mask_img, lesion_path)
+        lesion = MaskData.from_nifti(
+            str(lesion_path),
+            metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"test_{i:03d}"},
         )
         lesions.append(lesion)
 

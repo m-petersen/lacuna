@@ -12,7 +12,6 @@ from pathlib import Path
 from lacuna.assets.base import AssetRegistry
 from lacuna.assets.connectomes.registry import StructuralConnectomeMetadata
 
-
 # Global registry for structural connectomes
 _structural_connectome_registry = AssetRegistry[StructuralConnectomeMetadata](
     "structural connectome"
@@ -22,10 +21,10 @@ _structural_connectome_registry = AssetRegistry[StructuralConnectomeMetadata](
 @dataclass
 class StructuralConnectome:
     """Loaded structural connectome for sLNM analysis.
-    
+
     Provides paths to tractogram and TDI files needed for
     StructuralNetworkMapping analysis.
-    
+
     Attributes
     ----------
     metadata : StructuralConnectomeMetadata
@@ -37,7 +36,7 @@ class StructuralConnectome:
     template_path : Path | None
         Optional template image path
     """
-    
+
     metadata: StructuralConnectomeMetadata
     tractogram_path: Path
     tdi_path: Path
@@ -55,7 +54,7 @@ def register_structural_connectome(
     description: str = "",
 ) -> None:
     """Register a structural connectome for sLNM analysis.
-    
+
     Parameters
     ----------
     name : str
@@ -74,18 +73,18 @@ def register_structural_connectome(
         Path to template image for output grid
     description : str, optional
         Human-readable description
-    
+
     Raises
     ------
     FileNotFoundError
         If tractogram or TDI files don't exist
     ValueError
         If file validation fails
-    
+
     Examples
     --------
     >>> from lacuna.assets.connectomes import register_structural_connectome
-    >>> 
+    >>>
     >>> register_structural_connectome(
     ...     name="HCP842_dTOR",
     ...     space="MNI152NLin2009cAsym",
@@ -100,7 +99,7 @@ def register_structural_connectome(
     tractogram_path = Path(tractogram_path).resolve()
     tdi_path = Path(tdi_path).resolve()
     template_path = Path(template_path).resolve() if template_path else None
-    
+
     # Validate files exist
     if not tractogram_path.exists():
         raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
@@ -108,13 +107,13 @@ def register_structural_connectome(
         raise FileNotFoundError(f"TDI file not found: {tdi_path}")
     if template_path and not template_path.exists():
         raise FileNotFoundError(f"Template file not found: {template_path}")
-    
+
     # Validate file extensions
     if tractogram_path.suffix != ".tck":
         raise ValueError(f"Expected .tck file, got: {tractogram_path.suffix}")
     if tdi_path.suffix not in [".nii", ".gz"]:
         raise ValueError(f"Expected .nii/.nii.gz file, got: {tdi_path.suffix}")
-    
+
     # Create metadata
     metadata = StructuralConnectomeMetadata(
         name=name,
@@ -126,24 +125,24 @@ def register_structural_connectome(
         tdi_path=tdi_path,
         template_path=template_path,
     )
-    
+
     # Register
     _structural_connectome_registry.register(metadata)
 
 
 def unregister_structural_connectome(name: str) -> None:
     """Unregister a structural connectome.
-    
+
     Parameters
     ----------
     name : str
         Connectome name
-    
+
     Raises
     ------
     KeyError
         If connectome not registered
-    
+
     Examples
     --------
     >>> from lacuna.assets.connectomes import unregister_structural_connectome
@@ -157,26 +156,26 @@ def list_structural_connectomes(
     space: str | None = None,
 ) -> list[StructuralConnectomeMetadata]:
     """List registered structural connectomes.
-    
+
     Parameters
     ----------
     atlas : str, optional
         Filter by atlas name
     space : str, optional
         Filter by coordinate space
-    
+
     Returns
     -------
     list[StructuralConnectomeMetadata]
         Matching connectomes
-    
+
     Examples
     --------
     >>> from lacuna.assets.connectomes import list_structural_connectomes
-    >>> 
+    >>>
     >>> # List all
     >>> connectomes = list_structural_connectomes()
-    >>> 
+    >>>
     >>> # Filter by atlas
     >>> schaefer_connectomes = list_structural_connectomes(
     ...     atlas="Schaefer2018_100Parcels7Networks"
@@ -187,27 +186,27 @@ def list_structural_connectomes(
 
 def load_structural_connectome(name: str) -> StructuralConnectome:
     """Load a structural connectome for sLNM analysis.
-    
+
     Parameters
     ----------
     name : str
         Connectome name
-    
+
     Returns
     -------
     StructuralConnectome
         Loaded connectome with paths ready for StructuralNetworkMapping
-    
+
     Raises
     ------
     KeyError
         If connectome not registered
-    
+
     Examples
     --------
     >>> from lacuna.assets.connectomes import load_structural_connectome
     >>> from lacuna.analysis import StructuralNetworkMapping
-    >>> 
+    >>>
     >>> connectome = load_structural_connectome("HCP842_dTOR")
     >>> analysis = StructuralNetworkMapping(
     ...     tractogram_path=connectome.tractogram_path,
@@ -216,7 +215,7 @@ def load_structural_connectome(name: str) -> StructuralConnectome:
     ... )
     """
     metadata = _structural_connectome_registry.get(name)
-    
+
     return StructuralConnectome(
         metadata=metadata,
         tractogram_path=metadata.tractogram_path,

@@ -14,7 +14,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from lacuna import LesionData, batch_process
+from lacuna import MaskData, batch_process
 from lacuna.analysis import RegionalDamage
 from lacuna.batch.strategies import ParallelStrategy
 
@@ -32,13 +32,9 @@ def synthetic_lesions():
         affine = np.eye(4)
         img = nib.Nifti1Image(data, affine)
 
-        lesion = LesionData(
+        lesion = MaskData(
             img,
-            metadata={
-                "subject_id": f"sub-{i:03d}",
-                "space": "MNI152NLin6Asym",
-                "resolution": 2
-            }
+            metadata={"subject_id": f"sub-{i:03d}", "space": "MNI152NLin6Asym", "resolution": 2},
         )
         lesions.append(lesion)
 
@@ -72,10 +68,10 @@ def test_atlas_dir(tmp_path):
 def regional_damage_analysis(test_atlas_dir):
     """Create RegionalDamage analysis instance with minimal test atlas."""
     from lacuna.assets.atlases.registry import register_atlases_from_directory
-    
+
     # Register the test atlas
     register_atlases_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=2)
-    
+
     # Create analysis without atlas_dir parameter
     return RegionalDamage()
 
@@ -88,7 +84,7 @@ class TestThreadingBackend:
     ):
         """Threading backend should process all subjects successfully."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -96,12 +92,12 @@ class TestThreadingBackend:
         )
 
         assert len(results) == len(synthetic_lesions)
-        assert all(isinstance(r, LesionData) for r in results)
+        assert all(isinstance(r, MaskData) for r in results)
 
     def test_threading_backend_adds_results(self, synthetic_lesions, regional_damage_analysis):
         """Threading backend should add analysis results to lesion data."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -117,7 +113,7 @@ class TestThreadingBackend:
     ):
         """Threading backend should work with n_jobs=1."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=1,
             show_progress=False,
@@ -129,7 +125,7 @@ class TestThreadingBackend:
     def test_threading_backend_with_all_cores(self, synthetic_lesions, regional_damage_analysis):
         """Threading backend should work with n_jobs=-1."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=-1,
             show_progress=False,
@@ -145,7 +141,7 @@ class TestLokyBackend:
     def test_loky_backend_processes_all_subjects(self, synthetic_lesions, regional_damage_analysis):
         """Loky backend should process all subjects successfully."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -153,12 +149,12 @@ class TestLokyBackend:
         )
 
         assert len(results) == len(synthetic_lesions)
-        assert all(isinstance(r, LesionData) for r in results)
+        assert all(isinstance(r, MaskData) for r in results)
 
     def test_loky_backend_adds_results(self, synthetic_lesions, regional_damage_analysis):
         """Loky backend should add analysis results to lesion data."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -173,7 +169,7 @@ class TestLokyBackend:
         """Loky should be the default backend."""
         # Don't specify backend - should default to loky
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -191,7 +187,7 @@ class TestMultiprocessingBackend:
     def test_multiprocessing_backend_works(self, synthetic_lesions, regional_damage_analysis):
         """Multiprocessing backend should work for batch processing."""
         results = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -199,7 +195,7 @@ class TestMultiprocessingBackend:
         )
 
         assert len(results) == len(synthetic_lesions)
-        assert all(isinstance(r, LesionData) for r in results)
+        assert all(isinstance(r, MaskData) for r in results)
 
 
 class TestBackendComparison:
@@ -209,7 +205,7 @@ class TestBackendComparison:
         """Different backends should produce equivalent results."""
         # Process with threading
         results_threading = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=1,  # Use 1 to ensure deterministic order
             show_progress=False,
@@ -218,7 +214,7 @@ class TestBackendComparison:
 
         # Process with loky
         results_loky = batch_process(
-            lesion_data_list=synthetic_lesions,
+            mask_data_list=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=1,  # Use 1 to ensure deterministic order
             show_progress=False,
@@ -240,7 +236,7 @@ class TestParallelStrategyBackend:
         """ParallelStrategy should work with threading backend."""
         strategy = ParallelStrategy(n_jobs=2, backend="threading")
         results = strategy.execute(
-            lesion_data_list=synthetic_lesions, analysis=regional_damage_analysis
+            mask_data_list=synthetic_lesions, analysis=regional_damage_analysis
         )
 
         assert len(results) == len(synthetic_lesions)
@@ -250,7 +246,7 @@ class TestParallelStrategyBackend:
         """ParallelStrategy should work with loky backend."""
         strategy = ParallelStrategy(n_jobs=2, backend="loky")
         results = strategy.execute(
-            lesion_data_list=synthetic_lesions, analysis=regional_damage_analysis
+            mask_data_list=synthetic_lesions, analysis=regional_damage_analysis
         )
 
         assert len(results) == len(synthetic_lesions)

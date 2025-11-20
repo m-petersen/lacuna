@@ -3,7 +3,7 @@
 import nibabel as nib
 import numpy as np
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis.base import BaseAnalysis
 
 
@@ -12,19 +12,19 @@ class DemoAnalysis(BaseAnalysis):
     TARGET_SPACE = "MNI152NLin6Asym"
     TARGET_RESOLUTION = 2
     
-    def _validate_inputs(self, lesion_data):
-        space = lesion_data.metadata.get("space")
-        resolution = lesion_data.metadata.get("resolution")
+    def _validate_inputs(self, mask_data):
+        space = mask_data.metadata.get("space")
+        resolution = mask_data.metadata.get("resolution")
         print(f"  ✓ Validation: Lesion is now in {space} @ {resolution}mm")
         
         # This should always pass because _ensure_target_space ran first
         assert space == self.TARGET_SPACE
         assert resolution == self.TARGET_RESOLUTION
     
-    def _run_analysis(self, lesion_data):
-        space = lesion_data.metadata.get("space")
-        resolution = lesion_data.metadata.get("resolution")
-        shape = lesion_data.lesion_img.shape
+    def _run_analysis(self, mask_data):
+        space = mask_data.metadata.get("space")
+        resolution = mask_data.metadata.get("resolution")
+        shape = mask_data.mask_img.shape
         return {"space": space, "resolution": resolution, "shape": shape}
 
 
@@ -44,13 +44,13 @@ affine = np.array([
 ])
 
 img = nib.Nifti1Image(data, affine)
-lesion = LesionData(
-    lesion_img=img,
+lesion = MaskData(
+    mask_img=img,
     metadata={"space": "MNI152NLin6Asym", "resolution": 2}
 )
 
 print(f"\n1. Input lesion: {lesion.metadata.get('space')} @ {lesion.metadata.get('resolution')}mm")
-print(f"   Shape: {lesion.lesion_img.shape}")
+print(f"   Shape: {lesion.mask_img.shape}")
 
 print(f"\n2. DemoAnalysis requires: {DemoAnalysis.TARGET_SPACE} @ {DemoAnalysis.TARGET_RESOLUTION}mm")
 

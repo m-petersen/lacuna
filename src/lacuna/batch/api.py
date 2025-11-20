@@ -13,11 +13,11 @@ from tqdm import tqdm
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch.selection import select_strategy
-from lacuna.core.lesion_data import LesionData
+from lacuna.core.mask_data import MaskData
 
 
 def batch_process(
-    lesion_data_list: list[LesionData],
+    mask_data_list: list[MaskData],
     analysis: BaseAnalysis,
     n_jobs: int = -1,
     show_progress: bool = True,
@@ -25,7 +25,7 @@ def batch_process(
     backend: str = "loky",
     lesion_batch_size: int | None = None,
     batch_result_callback: Callable | None = None,
-) -> list[LesionData]:
+) -> list[MaskData]:
     """
     Process multiple lesions through an analysis pipeline with automatic optimization.
 
@@ -35,8 +35,8 @@ def batch_process(
 
     Parameters
     ----------
-    lesion_data_list : list[LesionData]
-        List of LesionData objects to process
+    mask_data_list : list[MaskData]
+        List of MaskData objects to process
     analysis : BaseAnalysis
         Analysis instance to apply to each lesion
     n_jobs : int, default=-1
@@ -61,7 +61,7 @@ def batch_process(
         Only applies when using vectorized strategy. Ignored for parallel strategy.
     batch_result_callback : callable or None, default=None
         Callback function called after each lesion batch is processed.
-        Signature: callback(batch_results: list[LesionData]) -> None
+        Signature: callback(batch_results: list[MaskData]) -> None
         Use this to save results immediately and free memory.
         Example: batch_result_callback=lambda batch: [save(r) for r in batch]
         - 'loky': Robust multiprocessing (best for standalone scripts)
@@ -71,14 +71,14 @@ def batch_process(
 
     Returns
     -------
-    list[LesionData]
-        List of processed LesionData objects with results added.
+    list[MaskData]
+        List of processed MaskData objects with results added.
         Subjects that failed processing are excluded (warnings are emitted).
 
     Raises
     ------
     ValueError
-        If lesion_data_list is empty or analysis is invalid
+        If mask_data_list is empty or analysis is invalid
     RuntimeError
         If strategy selection or execution fails
 
@@ -128,7 +128,7 @@ def batch_process(
     >>> after_regional = batch_process(lesions, regional)
     >>>
     >>> # Second analysis on results
-    >>> aggregation = AtlasAggregation(source="lesion_img")
+    >>> aggregation = AtlasAggregation(source="mask_img")
     >>> final = batch_process(after_regional, aggregation)
 
     Notes
@@ -139,8 +139,8 @@ def batch_process(
     - Strategy selection is automatic based on analysis.batch_strategy attribute
     """
     # Validate inputs
-    if not lesion_data_list:
-        raise ValueError("lesion_data_list cannot be empty")
+    if not mask_data_list:
+        raise ValueError("mask_data_list cannot be empty")
 
     if not isinstance(analysis, BaseAnalysis):
         raise ValueError(f"analysis must be a BaseAnalysis instance, got {type(analysis)}")
@@ -148,7 +148,7 @@ def batch_process(
     # Select processing strategy
     strategy_instance = select_strategy(
         analysis=analysis,
-        n_subjects=len(lesion_data_list),
+        n_subjects=len(mask_data_list),
         n_jobs=n_jobs,
         force_strategy=strategy,
         backend=backend,
@@ -160,7 +160,7 @@ def batch_process(
     progress_bar = None
     if show_progress:
         progress_bar = tqdm(
-            total=len(lesion_data_list),
+            total=len(mask_data_list),
             desc=f"Processing with {strategy_instance.name} strategy",
             unit="subject",
         )
@@ -176,7 +176,7 @@ def batch_process(
     # Execute batch processing
     try:
         results = strategy_instance.execute(
-            lesion_data_list=lesion_data_list,
+            mask_data_list=mask_data_list,
             analysis=analysis,
             progress_callback=progress_callback,
         )

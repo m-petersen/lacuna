@@ -15,12 +15,12 @@ except ImportError:
 # Bundled data access (convenience imports)
 from . import data
 from .batch import batch_process
-from .core.lesion_data import LesionData
+from .core.mask_data import MaskData
 
 # Exports
 __all__ = [
     "__version__",
-    "LesionData",
+    "MaskData",
     "data",
     "batch_process",
 ]

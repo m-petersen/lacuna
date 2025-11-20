@@ -12,7 +12,7 @@ import pytest
 
 
 @pytest.fixture
-def synthetic_lesion_img():
+def synthetic_mask_img():
     """Create a synthetic 3D lesion mask for testing."""
     shape = (64, 64, 64)
     data = np.zeros(shape, dtype=np.uint8)
@@ -189,40 +189,50 @@ def multisession_bids_dataset(tmp_path):
 
 
 @pytest.fixture
-def synthetic_lesion_data(synthetic_lesion_img):
-    """Create a LesionData object from synthetic lesion image."""
+def synthetic_mask_data(synthetic_mask_img):
+    """Create a MaskData object from synthetic lesion image."""
     import sys
 
     sys.path.insert(0, "/home/marvin/projects/lacuna/src")
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
-    return LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test", "source": "synthetic", "space": "MNI152NLin6Asym", "resolution": 2},
+    return MaskData(
+        mask_img=synthetic_mask_img,
+        metadata={
+            "subject_id": "sub-test",
+            "source": "synthetic",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+        },
     )
 
 
 @pytest.fixture
-def batch_lesion_data_list(synthetic_lesion_img):
-    """Create a list of LesionData objects for batch testing."""
+def batch_mask_data_list(synthetic_mask_img):
+    """Create a list of MaskData objects for batch testing."""
     import sys
 
     sys.path.insert(0, "/home/marvin/projects/lacuna/src")
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     lesion_list = []
     for i in range(1, 4):  # Create 3 test subjects
         # Create slightly different lesion for each subject
-        data = synthetic_lesion_img.get_fdata().copy()
+        data = synthetic_mask_img.get_fdata().copy()
         # Shift lesion slightly for each subject
         data = np.roll(data, shift=i * 2, axis=0)
 
-        lesion_img = nib.Nifti1Image(data.astype(np.uint8), synthetic_lesion_img.affine)
-        lesion_data = LesionData(
-            lesion_img=lesion_img,
-            metadata={"subject_id": f"sub-{i:03d}", "source": "synthetic_batch", "space": "MNI152NLin6Asym", "resolution": 2},
+        mask_img = nib.Nifti1Image(data.astype(np.uint8), synthetic_mask_img.affine)
+        mask_data = MaskData(
+            mask_img=mask_img,
+            metadata={
+                "subject_id": f"sub-{i:03d}",
+                "source": "synthetic_batch",
+                "space": "MNI152NLin6Asym",
+                "resolution": 2,
+            },
         )
-        lesion_list.append(lesion_data)
+        lesion_list.append(mask_data)
 
     return lesion_list
 
@@ -230,7 +240,7 @@ def batch_lesion_data_list(synthetic_lesion_img):
 @pytest.fixture(autouse=True)
 def clean_atlas_registry():
     """Clean up atlas registry after each test to prevent cross-contamination.
-    
+
     This fixture automatically runs after every test to remove any atlases
     registered during the test. This prevents tests from interfering with
     each other when they register temporary atlases.
@@ -238,14 +248,14 @@ def clean_atlas_registry():
     # Store bundled atlas names before test
     # (these are the atlases pre-registered in the module)
     from lacuna.assets.atlases.registry import ATLAS_REGISTRY
-    
+
     # On first call, save the bundled atlas names
-    if not hasattr(clean_atlas_registry, '_bundled_names'):
+    if not hasattr(clean_atlas_registry, "_bundled_names"):
         clean_atlas_registry._bundled_names = set(ATLAS_REGISTRY.keys())
-    
+
     # Run the test
     yield
-    
+
     # After test: remove any atlases that weren't bundled
     # (i.e., remove test-registered atlases)
     bundled_names = clean_atlas_registry._bundled_names

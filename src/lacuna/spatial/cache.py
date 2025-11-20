@@ -100,9 +100,7 @@ class TransformCache:
 
         return hasher.hexdigest()
 
-    def _make_result_key(
-        self, img: nib.Nifti1Image, source_space: str, target_space: str
-    ) -> str:
+    def _make_result_key(self, img: nib.Nifti1Image, source_space: str, target_space: str) -> str:
         """Create cache key for transformed result.
 
         Args:
@@ -163,9 +161,7 @@ class TransformCache:
         self._misses += 1
         return None
 
-    def put_transform(
-        self, source_space: str, target_space: str, transform: Any
-    ) -> None:
+    def put_transform(self, source_space: str, target_space: str, transform: Any) -> None:
         """Store transform object in cache.
 
         Args:

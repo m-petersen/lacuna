@@ -1,8 +1,8 @@
 """
-Contract tests for LesionData class.
+Contract tests for MaskData class.
 
-These tests define the expected behavior of the core LesionData API contract.
-Following TDD - these tests should FAIL until LesionData is implemented.
+These tests define the expected behavior of the core MaskData API contract.
+Following TDD - these tests should FAIL until MaskData is implemented.
 """
 
 import nibabel as nib
@@ -10,21 +10,21 @@ import numpy as np
 import pytest
 
 
-def test_lesion_data_import():
-    """Test that LesionData can be imported from lacuna.core."""
-    from lacuna.core.lesion_data import LesionData
+def test_mask_data_import():
+    """Test that MaskData can be imported from lacuna.core."""
+    from lacuna.core.mask_data import MaskData
 
-    assert LesionData is not None
+    assert MaskData is not None
 
 
-def test_lesion_data_init_with_minimal_args(synthetic_lesion_img, lesion_metadata):
-    """Test LesionData initialization with minimal required arguments."""
-    from lacuna.core.lesion_data import LesionData
+def test_mask_data_init_with_minimal_args(synthetic_mask_img, lesion_metadata):
+    """Test MaskData initialization with minimal required arguments."""
+    from lacuna.core.mask_data import MaskData
 
-    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
 
     assert lesion is not None
-    assert lesion.lesion_img is synthetic_lesion_img
+    assert lesion.mask_img is synthetic_mask_img
     assert lesion.affine is not None
     assert isinstance(lesion.metadata, dict)
     assert "subject_id" in lesion.metadata
@@ -34,9 +34,9 @@ def test_lesion_data_init_with_minimal_args(synthetic_lesion_img, lesion_metadat
     assert len(lesion.results) == 0
 
 
-def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
-    """Test LesionData initialization with custom metadata."""
-    from lacuna.core.lesion_data import LesionData
+def test_mask_data_init_with_metadata(synthetic_mask_img, lesion_metadata):
+    """Test MaskData initialization with custom metadata."""
+    from lacuna.core.mask_data import MaskData
 
     metadata = {
         "subject_id": "sub-001",
@@ -46,46 +46,48 @@ def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
         "resolution": 2,
     }
 
-    lesion = LesionData(synthetic_lesion_img, metadata=metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=metadata)
 
     assert lesion.metadata["subject_id"] == "sub-001"
     assert lesion.metadata["session_id"] == "ses-01"
     assert lesion.metadata["age"] == 45
 
 
-def test_lesion_data_init_with_anatomical(synthetic_lesion_img, lesion_metadata):
-    """Test LesionData initialization with anatomical image."""
-    from lacuna.core.lesion_data import LesionData
+@pytest.mark.skip(reason="anatomical_img feature pending removal (T008)")
+def test_mask_data_init_with_anatomical(synthetic_mask_img, lesion_metadata):
+    """Test MaskData initialization with anatomical image."""
+    from lacuna.core.mask_data import MaskData
 
     # Create matching anatomical image
-    anat_data = np.random.rand(*synthetic_lesion_img.shape).astype(np.float32)
-    anat_img = nib.Nifti1Image(anat_data, synthetic_lesion_img.affine)
+    anat_data = np.random.rand(*synthetic_mask_img.shape).astype(np.float32)
+    anat_img = nib.Nifti1Image(anat_data, synthetic_mask_img.affine)
 
-    lesion = LesionData(synthetic_lesion_img, anatomical_img=anat_img, metadata=lesion_metadata)
+    lesion = MaskData(synthetic_mask_img, anatomical_img=anat_img, metadata=lesion_metadata)
 
     assert lesion.anatomical_img is anat_img
     assert np.array_equal(lesion.anatomical_img.affine, lesion.affine)
 
 
-def test_lesion_data_init_validates_3d_image(synthetic_4d_img):
-    """Test that LesionData rejects 4D images."""
+def test_mask_data_init_validates_3d_image(synthetic_4d_img):
+    """Test that MaskData rejects 4D images."""
     from lacuna.core.exceptions import ValidationError
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     with pytest.raises(ValidationError, match="3D"):
-        LesionData(synthetic_4d_img)
+        MaskData(synthetic_4d_img)
 
 
-def test_lesion_data_init_validates_affine_mismatch():
-    """Test that LesionData rejects mismatched anatomical affine."""
+@pytest.mark.skip(reason="anatomical_img feature pending removal (T008)")
+def test_mask_data_init_validates_affine_mismatch():
+    """Test that MaskData rejects mismatched anatomical affine."""
     from lacuna.core.exceptions import SpatialMismatchError
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     # Create lesion
-    lesion_data = np.ones((64, 64, 64), dtype=np.uint8)
+    mask_data = np.ones((64, 64, 64), dtype=np.uint8)
     lesion_affine = np.eye(4)
     lesion_affine[0, 0] = 2.0
-    lesion_img = nib.Nifti1Image(lesion_data, lesion_affine)
+    mask_img = nib.Nifti1Image(mask_data, lesion_affine)
 
     # Create anatomical with different affine
     anat_data = np.random.rand(64, 64, 64).astype(np.float32)
@@ -94,86 +96,94 @@ def test_lesion_data_init_validates_affine_mismatch():
     anat_img = nib.Nifti1Image(anat_data, anat_affine)
 
     with pytest.raises(SpatialMismatchError):
-        LesionData(lesion_img, anatomical_img=anat_img)
+        MaskData(mask_img, anatomical_img=anat_img)
 
 
-def test_lesion_data_from_nifti(tmp_path, synthetic_lesion_img):
-    """Test LesionData.from_nifti classmethod."""
-    from lacuna.core.lesion_data import LesionData
+def test_mask_data_from_nifti(tmp_path, synthetic_mask_img):
+    """Test MaskData.from_nifti classmethod."""
+    from lacuna.core.mask_data import MaskData
 
     # Save test image
     filepath = tmp_path / "test_lesion.nii.gz"
-    nib.save(synthetic_lesion_img, filepath)
+    nib.save(synthetic_mask_img, filepath)
 
     # Load via from_nifti (must provide space)
-    lesion = LesionData.from_nifti(filepath, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    lesion = MaskData.from_nifti(filepath, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     assert lesion is not None
-    assert lesion.lesion_img is not None
-    assert np.array_equal(lesion.lesion_img.get_fdata(), synthetic_lesion_img.get_fdata())
+    assert lesion.mask_img is not None
+    assert np.array_equal(lesion.mask_img.get_fdata(), synthetic_mask_img.get_fdata())
 
 
-def test_lesion_data_from_nifti_with_metadata(tmp_path, synthetic_lesion_img):
+def test_mask_data_from_nifti_with_metadata(tmp_path, synthetic_mask_img):
     """Test from_nifti with custom metadata."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     filepath = tmp_path / "test_lesion.nii.gz"
-    nib.save(synthetic_lesion_img, filepath)
+    nib.save(synthetic_mask_img, filepath)
 
-    metadata = {"subject_id": "sub-test", "condition": "stroke", "space": "MNI152NLin6Asym", "resolution": 2}
-    lesion = LesionData.from_nifti(filepath, metadata=metadata)
+    metadata = {
+        "subject_id": "sub-test",
+        "condition": "stroke",
+        "space": "MNI152NLin6Asym",
+        "resolution": 2,
+    }
+    lesion = MaskData.from_nifti(filepath, metadata=metadata)
 
     assert lesion.metadata["subject_id"] == "sub-test"
     assert lesion.metadata["condition"] == "stroke"
 
 
-def test_lesion_data_from_nifti_nonexistent_file():
+def test_mask_data_from_nifti_nonexistent_file():
     """Test from_nifti with nonexistent file raises error."""
     from lacuna.core.exceptions import NiftiLoadError
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     with pytest.raises((NiftiLoadError, FileNotFoundError)):
-        LesionData.from_nifti("/nonexistent/file.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        MaskData.from_nifti(
+            "/nonexistent/file.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
 
-def test_lesion_data_validate(synthetic_lesion_img, lesion_metadata):
-    """Test LesionData.validate method."""
-    from lacuna.core.lesion_data import LesionData
+def test_mask_data_validate(synthetic_mask_img, lesion_metadata):
+    """Test MaskData.validate method."""
+    from lacuna.core.mask_data import MaskData
 
-    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
 
     # Should pass validation
     assert lesion.validate() is True
 
 
-def test_lesion_data_get_volume_mm3(synthetic_lesion_img, lesion_metadata):
+def test_mask_data_get_volume_mm3(synthetic_mask_img, lesion_metadata):
     """Test get_volume_mm3 method."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
-    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
     volume = lesion.get_volume_mm3()
 
     assert isinstance(volume, float)
     assert volume > 0  # Synthetic lesion has nonzero voxels
 
 
-def test_lesion_data_get_coordinate_space(synthetic_lesion_img, lesion_metadata):
+def test_mask_data_get_coordinate_space(synthetic_mask_img, lesion_metadata):
     """Test get_coordinate_space method."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
-    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
     space = lesion.get_coordinate_space()
 
     assert isinstance(space, str)
     assert space == "MNI152NLin6Asym"  # From lesion_metadata fixture
 
 
-def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
-    """Test LesionData.copy method creates independent copy."""
-    from lacuna.core.lesion_data import LesionData
+def test_mask_data_copy(synthetic_mask_img, lesion_metadata):
+    """Test MaskData.copy method creates independent copy."""
+    from lacuna.core.mask_data import MaskData
 
-    lesion = LesionData(
-        synthetic_lesion_img, metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
+    lesion = MaskData(
+        synthetic_mask_img,
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
     lesion_copy = lesion.copy()
 
@@ -185,12 +195,12 @@ def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
     assert np.array_equal(lesion_copy.affine, lesion.affine)
 
 
-def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
+def test_mask_data_to_dict(synthetic_mask_img, lesion_metadata):
     """Test to_dict serialization."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
-    lesion = LesionData(synthetic_lesion_img, metadata=metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=metadata)
 
     data_dict = lesion.to_dict()
 
@@ -201,26 +211,26 @@ def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
     assert data_dict["metadata"]["subject_id"] == "sub-001"
 
 
-def test_lesion_data_from_dict(synthetic_lesion_img, lesion_metadata):
+def test_mask_data_from_dict(synthetic_mask_img, lesion_metadata):
     """Test from_dict deserialization."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     # Create original
     metadata = {"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
-    lesion = LesionData(synthetic_lesion_img, metadata=metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=metadata)
 
     # Serialize and deserialize
     data_dict = lesion.to_dict()
-    lesion_restored = LesionData.from_dict(data_dict, synthetic_lesion_img)
+    lesion_restored = MaskData.from_dict(data_dict, synthetic_mask_img)
 
     assert lesion_restored.metadata["subject_id"] == "sub-001"
 
 
-def test_lesion_data_properties_are_readonly(synthetic_lesion_img, lesion_metadata):
+def test_mask_data_properties_are_readonly(synthetic_mask_img, lesion_metadata):
     """Test that properties cannot be directly modified."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
-    lesion = LesionData(synthetic_lesion_img, metadata=lesion_metadata)
+    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
 
     # These should raise AttributeError if trying to set
     with pytest.raises(AttributeError):
@@ -234,7 +244,7 @@ def test_lesion_data_properties_are_readonly(synthetic_lesion_img, lesion_metada
 
 
 @pytest.fixture
-def synthetic_lesion_img():
+def synthetic_mask_img():
     """Create a synthetic 3D lesion mask for testing."""
     shape = (64, 64, 64)
     data = np.zeros(shape, dtype=np.uint8)

@@ -1,7 +1,7 @@
 """
 Base exception hierarchy for the lesion decoding toolkit.
 
-All custom exceptions inherit from LdkError to enable precise error handling
+All custom exceptions inherit from LacunaError to enable precise error handling
 while maintaining compatibility with standard Python exceptions.
 """
 

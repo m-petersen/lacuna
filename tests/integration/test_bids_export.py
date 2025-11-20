@@ -1,7 +1,7 @@
 """
 Integration tests for BIDS derivatives export functionality.
 
-Tests the complete workflow of exporting LesionData with results to BIDS-compliant
+Tests the complete workflow of exporting MaskData with results to BIDS-compliant
 derivatives structure, including multi-subject and multi-session scenarios.
 """
 
@@ -9,22 +9,22 @@ import json
 
 import numpy as np
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.core.provenance import create_provenance_record
 from lacuna.io import export_bids_derivatives
 
 
-def test_export_single_subject_workflow(tmp_path, synthetic_lesion_img):
+def test_export_single_subject_workflow(tmp_path, synthetic_mask_img):
     """Test complete export workflow for single subject."""
     # Create lesion data
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Export to BIDS derivatives
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data, output_dir)
+    subject_dir = export_bids_derivatives(mask_data, output_dir)
 
     # Verify directory structure
     assert subject_dir.exists()
@@ -39,11 +39,11 @@ def test_export_single_subject_workflow(tmp_path, synthetic_lesion_img):
     assert "GeneratedBy" in ds_desc
 
 
-def test_export_with_analysis_results(tmp_path, synthetic_lesion_img):
+def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     """Test exporting lesion with analysis results."""
     # Create lesion with results
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
@@ -53,7 +53,7 @@ def test_export_with_analysis_results(tmp_path, synthetic_lesion_img):
         "n_voxels": 312,
         "regions_affected": ["Frontal_Sup_L", "Frontal_Mid_L"],
     }
-    lesion_with_results = lesion_data.add_result("RegionalDamage", results)
+    lesion_with_results = mask_data.add_result("RegionalDamage", results)
 
     # Add provenance
     prov = create_provenance_record(
@@ -84,19 +84,24 @@ def test_export_with_analysis_results(tmp_path, synthetic_lesion_img):
     assert len(prov_files) == 1
 
 
-def test_export_multi_session(tmp_path, synthetic_lesion_img):
+def test_export_multi_session(tmp_path, synthetic_mask_img):
     """Test exporting multi-session data."""
     sessions = ["ses-pre", "ses-post"]
     subject_id = "sub-003"
 
     for session in sessions:
-        lesion_data = LesionData(
-            lesion_img=synthetic_lesion_img,
-            metadata={"subject_id": subject_id, "session_id": session, "space": "MNI152NLin6Asym", "resolution": 2},
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img,
+            metadata={
+                "subject_id": subject_id,
+                "session_id": session,
+                "space": "MNI152NLin6Asym",
+                "resolution": 2,
+            },
         )
 
         output_dir = tmp_path / "derivatives" / "lacuna"
-        subject_dir = export_bids_derivatives(lesion_data, output_dir)
+        subject_dir = export_bids_derivatives(mask_data, output_dir)
 
         # Verify session is in the path
         assert session in str(subject_dir)
@@ -108,17 +113,17 @@ def test_export_multi_session(tmp_path, synthetic_lesion_img):
     assert (subject_base / "ses-post").exists()
 
 
-def test_export_multiple_subjects(tmp_path, synthetic_lesion_img):
+def test_export_multiple_subjects(tmp_path, synthetic_mask_img):
     """Test exporting multiple subjects to same derivatives directory."""
     subjects = ["sub-101", "sub-102", "sub-103", "sub-104", "sub-105"]
     output_dir = tmp_path / "derivatives" / "lacuna"
 
     for subject_id in subjects:
-        lesion_data = LesionData(
-            lesion_img=synthetic_lesion_img,
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img,
             metadata={"subject_id": subject_id, "space": "MNI152NLin6Asym", "resolution": 2},
         )
-        export_bids_derivatives(lesion_data, output_dir)
+        export_bids_derivatives(mask_data, output_dir)
 
     # Verify all subjects exist
     for subject_id in subjects:
@@ -130,12 +135,17 @@ def test_export_multiple_subjects(tmp_path, synthetic_lesion_img):
     assert (output_dir / "dataset_description.json").exists()
 
 
-def test_export_and_reload_workflow(tmp_path, synthetic_lesion_img):
+def test_export_and_reload_workflow(tmp_path, synthetic_mask_img):
     """Test complete save-export-load workflow."""
     # Create original lesion
-    original = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-201", "space": "MNI152NLin6Asym", "resolution": 2, "study": "test_study"},
+    original = MaskData(
+        mask_img=synthetic_mask_img,
+        metadata={
+            "subject_id": "sub-201",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+            "study": "test_study",
+        },
     )
 
     # Export to BIDS
@@ -148,25 +158,26 @@ def test_export_and_reload_workflow(tmp_path, synthetic_lesion_img):
     lesion_file = lesion_files[0]
 
     # Reload lesion
-    reloaded = LesionData.from_nifti(
-        str(lesion_file), metadata={"subject_id": "sub-201", "space": "MNI152NLin6Asym", "resolution": 2}
+    reloaded = MaskData.from_nifti(
+        str(lesion_file),
+        metadata={"subject_id": "sub-201", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Verify data matches
-    np.testing.assert_array_equal(reloaded.lesion_img.get_fdata(), original.lesion_img.get_fdata())
+    np.testing.assert_array_equal(reloaded.mask_img.get_fdata(), original.mask_img.get_fdata())
     np.testing.assert_array_equal(reloaded.affine, original.affine)
 
 
-def test_export_with_anatomical_image(tmp_path, synthetic_lesion_img, synthetic_anatomical_img):
+def test_export_with_anatomical_image(tmp_path, synthetic_mask_img, synthetic_anatomical_img):
     """Test exporting lesion with anatomical reference image."""
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         anatomical_img=synthetic_anatomical_img,
         metadata={"subject_id": "sub-301", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data, output_dir, include_anatomical=True)
+    subject_dir = export_bids_derivatives(mask_data, output_dir, include_anatomical=True)
 
     anat_dir = subject_dir / "anat"
     assert anat_dir.exists()
@@ -176,15 +187,20 @@ def test_export_with_anatomical_image(tmp_path, synthetic_lesion_img, synthetic_
     assert len(files) >= 1  # At least lesion, maybe anatomical too
 
 
-def test_export_preserves_bids_naming(tmp_path, synthetic_lesion_img):
+def test_export_preserves_bids_naming(tmp_path, synthetic_mask_img):
     """Test that BIDS naming conventions are followed."""
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-401", "session_id": "ses-01", "space": "MNI152NLin6Asym", "resolution": 2},
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
+        metadata={
+            "subject_id": "sub-401",
+            "session_id": "ses-01",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+        },
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data, output_dir)
+    subject_dir = export_bids_derivatives(mask_data, output_dir)
 
     # Find lesion file and check naming
     lesion_files = list((subject_dir / "anat").glob("*.nii.gz"))
@@ -200,14 +216,14 @@ def test_export_preserves_bids_naming(tmp_path, synthetic_lesion_img):
     assert filename.endswith("_lesion.nii.gz")
 
 
-def test_export_selective_outputs(tmp_path, synthetic_lesion_img):
+def test_export_selective_outputs(tmp_path, synthetic_mask_img):
     """Test selective output export options."""
     # Create lesion with results
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-501", "space": "MNI152NLin6Asym", "resolution": 2},
     )
-    lesion_with_results = lesion_data.add_result("TestAnalysis", {"metric": 42.0})
+    lesion_with_results = mask_data.add_result("TestAnalysis", {"metric": 42.0})
 
     output_dir = tmp_path / "derivatives" / "lacuna"
 
@@ -221,15 +237,15 @@ def test_export_selective_outputs(tmp_path, synthetic_lesion_img):
     assert not (subject_dir / "results").exists()
 
 
-def test_export_creates_complete_derivatives_structure(tmp_path, synthetic_lesion_img):
+def test_export_creates_complete_derivatives_structure(tmp_path, synthetic_mask_img):
     """Test that complete BIDS derivatives structure is created."""
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-601", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(lesion_data, output_dir)
+    subject_dir = export_bids_derivatives(mask_data, output_dir)
 
     # Check complete structure
     expected_paths = [

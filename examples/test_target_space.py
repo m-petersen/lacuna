@@ -1,7 +1,7 @@
 """Quick test to verify TARGET_SPACE automatic transformation works."""
 import numpy as np
 import nibabel as nib
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis import FunctionalNetworkMapping, StructuralNetworkMapping
 from lacuna.analysis.base import BaseAnalysis
 
@@ -41,8 +41,8 @@ affine_2mm = np.array([
 ])
 
 img = nib.Nifti1Image(data, affine_2mm)
-lesion = LesionData(
-    lesion_img=img,
+lesion = MaskData(
+    mask_img=img,
     metadata={'space': 'MNI152NLin6Asym', 'resolution': 2, 'subject_id': 'test-001'}
 )
 
@@ -54,14 +54,14 @@ class TestAnalysis(BaseAnalysis):
     TARGET_SPACE = "MNI152NLin6Asym"
     TARGET_RESOLUTION = 2
     
-    def _validate_inputs(self, lesion_data):
-        space = lesion_data.get_coordinate_space()
-        res = lesion_data.metadata.get("resolution")
+    def _validate_inputs(self, mask_data):
+        space = mask_data.get_coordinate_space()
+        res = mask_data.metadata.get("resolution")
         print(f"  ✓ Validation: Lesion is in {space} @ {res}mm")
         assert space == self.TARGET_SPACE
         assert res == self.TARGET_RESOLUTION
     
-    def _run_analysis(self, lesion_data):
+    def _run_analysis(self, mask_data):
         return {"test": "passed"}
 
 analysis = TestAnalysis()

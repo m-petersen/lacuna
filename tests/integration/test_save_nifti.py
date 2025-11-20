@@ -1,25 +1,26 @@
 """
 Integration tests for NIfTI export functionality.
 
-Tests the complete workflow of saving LesionData objects to NIfTI files,
+Tests the complete workflow of saving MaskData objects to NIfTI files,
 including round-trip testing (save → load → verify).
 """
 
 import nibabel as nib
 import numpy as np
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.io import save_nifti
 
 
-def test_save_and_reload_lesion(tmp_path, synthetic_lesion_img):
+def test_save_and_reload_lesion(tmp_path, synthetic_mask_img):
     """Test full save-load cycle for lesion data."""
     # Create lesion data
-    original_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    original_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={
             "subject_id": "sub-test001",
-            "space": "MNI152NLin6Asym", "resolution": 2,
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
             "acquisition_date": "2025-01-15",
         },
     )
@@ -29,26 +30,27 @@ def test_save_and_reload_lesion(tmp_path, synthetic_lesion_img):
     save_nifti(original_data, output_path)
 
     # Reload and verify
-    reloaded = LesionData.from_nifti(
-        str(output_path), metadata={"subject_id": "sub-test001", "space": "MNI152NLin6Asym", "resolution": 2}
+    reloaded = MaskData.from_nifti(
+        str(output_path),
+        metadata={"subject_id": "sub-test001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Check image data matches
-    assert np.array_equal(reloaded.lesion_img.get_fdata(), original_data.lesion_img.get_fdata())
+    assert np.array_equal(reloaded.mask_img.get_fdata(), original_data.mask_img.get_fdata())
     assert np.array_equal(reloaded.affine, original_data.affine)
 
 
-def test_save_lesion_with_results(tmp_path, synthetic_lesion_img):
+def test_save_lesion_with_results(tmp_path, synthetic_mask_img):
     """Test saving lesion data with analysis results."""
     # Create lesion with results
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Add mock results
     results = {"volume_mm3": 1500.0, "center_of_mass": [45, 54, 36]}
-    lesion_with_results = lesion_data.add_result("VolumeAnalysis", results)
+    lesion_with_results = mask_data.add_result("VolumeAnalysis", results)
 
     # Save (results not saved to NIfTI, just the image)
     output_path = tmp_path / "lesion_with_results.nii.gz"
@@ -57,19 +59,19 @@ def test_save_lesion_with_results(tmp_path, synthetic_lesion_img):
     # Verify file exists and is valid NIfTI
     assert output_path.exists()
     reloaded_img = nib.load(output_path)
-    assert reloaded_img.shape == synthetic_lesion_img.shape
+    assert reloaded_img.shape == synthetic_mask_img.shape
 
 
-def test_save_lesion_and_anatomical(tmp_path, synthetic_lesion_img, synthetic_anatomical_img):
+def test_save_lesion_and_anatomical(tmp_path, synthetic_mask_img, synthetic_anatomical_img):
     """Test saving both lesion and anatomical images."""
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         anatomical_img=synthetic_anatomical_img,
         metadata={"subject_id": "sub-test003", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     lesion_path = tmp_path / "lesion.nii.gz"
-    save_nifti(lesion_data, lesion_path, save_anatomical=True)
+    save_nifti(mask_data, lesion_path, save_anatomical=True)
 
     # Both files should exist
     assert lesion_path.exists()
@@ -77,26 +79,26 @@ def test_save_lesion_and_anatomical(tmp_path, synthetic_lesion_img, synthetic_an
     assert anat_path.exists()
 
     # Verify both are valid NIfTI files
-    lesion_img = nib.load(lesion_path)
+    mask_img = nib.load(lesion_path)
     anat_img = nib.load(anat_path)
 
-    assert lesion_img.shape == synthetic_lesion_img.shape
+    assert mask_img.shape == synthetic_mask_img.shape
     assert anat_img.shape == synthetic_anatomical_img.shape
 
 
-def test_save_multiple_subjects(tmp_path, synthetic_lesion_img):
+def test_save_multiple_subjects(tmp_path, synthetic_mask_img):
     """Test saving multiple subjects to different files."""
     subjects = ["sub-001", "sub-002", "sub-003"]
     saved_files = []
 
     for subject_id in subjects:
-        lesion_data = LesionData(
-            lesion_img=synthetic_lesion_img,
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img,
             metadata={"subject_id": subject_id, "space": "MNI152NLin6Asym", "resolution": 2},
         )
 
         output_path = tmp_path / f"{subject_id}_lesion.nii.gz"
-        save_nifti(lesion_data, output_path)
+        save_nifti(mask_data, output_path)
         saved_files.append(output_path)
 
     # Verify all files exist
@@ -105,7 +107,7 @@ def test_save_multiple_subjects(tmp_path, synthetic_lesion_img):
         assert file_path.exists()
         # Verify it's a valid NIfTI
         img = nib.load(file_path)
-        assert img.shape == synthetic_lesion_img.shape
+        assert img.shape == synthetic_mask_img.shape
 
 
 def test_save_preserves_affine_matrix(tmp_path):
@@ -124,13 +126,14 @@ def test_save_preserves_affine_matrix(tmp_path):
     data = np.random.randint(0, 2, size=(91, 109, 91), dtype=np.uint8)
     img = nib.Nifti1Image(data, custom_affine)
 
-    lesion_data = LesionData(
-        lesion_img=img, metadata={"subject_id": "sub-test004", "space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=img,
+        metadata={"subject_id": "sub-test004", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Save and reload
     output_path = tmp_path / "custom_affine.nii.gz"
-    save_nifti(lesion_data, output_path)
+    save_nifti(mask_data, output_path)
 
     reloaded_img = nib.load(output_path)
 
@@ -138,20 +141,20 @@ def test_save_preserves_affine_matrix(tmp_path):
     np.testing.assert_array_almost_equal(reloaded_img.affine, custom_affine)
 
 
-def test_save_with_compression(tmp_path, synthetic_lesion_img):
+def test_save_with_compression(tmp_path, synthetic_mask_img):
     """Test that .nii.gz files are properly compressed."""
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test005", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Save as compressed
     compressed_path = tmp_path / "lesion_compressed.nii.gz"
-    save_nifti(lesion_data, compressed_path)
+    save_nifti(mask_data, compressed_path)
 
     # File should exist and be smaller than uncompressed version
     assert compressed_path.exists()
 
     # Verify it can be loaded
     reloaded = nib.load(compressed_path)
-    assert reloaded.shape == synthetic_lesion_img.shape
+    assert reloaded.shape == synthetic_mask_img.shape

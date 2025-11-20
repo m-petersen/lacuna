@@ -17,7 +17,7 @@ import argparse
 import time
 from pathlib import Path
 
-from lacuna import LesionData, batch_process
+from lacuna import MaskData, batch_process
 from lacuna.analysis import AtlasAggregation, RegionalDamage
 from lacuna.io import batch_export_to_csv, batch_export_to_tsv
 
@@ -108,7 +108,7 @@ def main():
             subject_id = lesion_path.stem.split("_")[0]
 
             # Load lesion
-            lesion = LesionData.from_nifti(lesion_path)
+            lesion = MaskData.from_nifti(lesion_path)
             lesion.metadata["subject_id"] = subject_id
 
             lesions.append(lesion)
@@ -144,7 +144,7 @@ def main():
         print("-" * 70)
         start_time = time.time()
         results_sequential = batch_process(
-            lesion_data_list=lesions,
+            mask_data_list=lesions,
             analysis=analysis,
             n_jobs=1,
             show_progress=True,
@@ -163,7 +163,7 @@ def main():
 
     start_time = time.time()
     results = batch_process(
-        lesion_data_list=lesions,
+        mask_data_list=lesions,
         analysis=analysis,
         n_jobs=args.n_jobs,
         show_progress=True,

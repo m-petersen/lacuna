@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis import FunctionalNetworkMapping
 
 
@@ -65,8 +65,8 @@ def mock_lesion_mni152(tmp_path):
     """Create a mock lesion in MNI152 2mm space that overlaps with connectome mask."""
     # Create a small lesion (5x5x5 voxels) that overlaps with mask indices
     # The mock_connectome_batch has mask indices from 0-9 in each dimension
-    lesion_data = np.zeros((91, 109, 91), dtype=np.uint8)
-    lesion_data[2:7, 2:7, 2:7] = 1  # Overlaps with mask coordinates 0-9
+    mask_data = np.zeros((91, 109, 91), dtype=np.uint8)
+    mask_data[2:7, 2:7, 2:7] = 1  # Overlaps with mask coordinates 0-9
 
     # MNI152 2mm affine
     affine = np.array(
@@ -78,12 +78,14 @@ def mock_lesion_mni152(tmp_path):
         ]
     )
 
-    lesion_img = nib.Nifti1Image(lesion_data, affine)
+    mask_img = nib.Nifti1Image(mask_data, affine)
 
-    # Save to file and load with LesionData.from_nifti
+    # Save to file and load with MaskData.from_nifti
     lesion_path = tmp_path / "lesion.nii.gz"
-    nib.save(lesion_img, lesion_path)
-    lesion = LesionData.from_nifti(str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    nib.save(mask_img, lesion_path)
+    lesion = MaskData.from_nifti(
+        str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     return lesion
 
@@ -141,7 +143,7 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
 
 
 def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_mni152):
-    """Test that _get_lesion_voxel_indices() accepts only LesionData argument."""
+    """Test that _get_lesion_voxel_indices() accepts only MaskData argument."""
     analysis = FunctionalNetworkMapping(
         connectome_path=str(mock_connectome_batch), method="boes", verbose=False
     )
@@ -149,7 +151,7 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
     # Load mask info first (required for _get_lesion_voxel_indices)
     analysis._load_mask_info()
 
-    # Should accept LesionData object
+    # Should accept MaskData object
     voxel_indices = analysis._get_lesion_voxel_indices(mock_lesion_mni152)
 
     # Should return array of indices
@@ -174,9 +176,9 @@ def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152)
     assert isinstance(results, list)
     assert len(results) == 1
 
-    # Result should be LesionData with analysis results
+    # Result should be MaskData with analysis results
     result = results[0]
-    assert isinstance(result, LesionData)
+    assert isinstance(result, MaskData)
     assert "FunctionalNetworkMapping" in result.results
 
 
@@ -192,8 +194,8 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
     # Create multiple lesions (same lesion with different IDs)
     lesions = []
     for i in range(3):
-        lesion_copy = LesionData(
-            lesion_img=mock_lesion_mni152.lesion_img,
+        lesion_copy = MaskData(
+            mask_img=mock_lesion_mni152.mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"subject_{i}"},
         )
         lesions.append(lesion_copy)
@@ -207,7 +209,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
 
     # All results should have analysis output
     for result in results:
-        assert isinstance(result, LesionData)
+        assert isinstance(result, MaskData)
         assert "FunctionalNetworkMapping" in result.results
 
 
@@ -221,8 +223,13 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
     )
 
     # Add custom metadata
-    test_metadata = {"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": "test_123", "custom_field": "test_value"}
-    lesion = LesionData(lesion_img=mock_lesion_mni152.lesion_img, metadata=test_metadata)
+    test_metadata = {
+        "space": "MNI152NLin6Asym",
+        "resolution": 2,
+        "subject_id": "test_123",
+        "custom_field": "test_value",
+    }
+    lesion = MaskData(mask_img=mock_lesion_mni152.mask_img, metadata=test_metadata)
 
     # Process
     results = analysis.run_batch([lesion])

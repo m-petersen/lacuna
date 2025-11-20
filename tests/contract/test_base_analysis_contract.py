@@ -18,6 +18,7 @@ def test_base_analysis_import():
 def test_base_analysis_is_abstract():
     """Test that BaseAnalysis is an abstract base class."""
     from abc import ABC
+
     from lacuna.analysis.base import BaseAnalysis
 
     # Should be a subclass of ABC
@@ -39,7 +40,7 @@ def test_base_analysis_requires_validate_inputs():
 
     # Create incomplete subclass (missing _validate_inputs)
     class IncompleteAnalysis(BaseAnalysis):
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {}
 
     # Should raise TypeError when instantiating
@@ -53,7 +54,7 @@ def test_base_analysis_requires_run_analysis():
 
     # Create incomplete subclass (missing _run_analysis)
     class IncompleteAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
     # Should raise TypeError when instantiating
@@ -71,10 +72,10 @@ def test_base_analysis_complete_subclass_can_instantiate():
             super().__init__()
             self.param1 = param1
 
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"result": "test"}
 
     # Should be able to instantiate
@@ -88,10 +89,10 @@ def test_base_analysis_run_method_exists():
 
     # Create complete subclass
     class TestAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {}
 
     analysis = TestAnalysis()
@@ -107,14 +108,14 @@ def test_base_analysis_run_method_is_final():
 
     # Create subclass that tries to override run()
     class BadAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {}
 
-        def run(self, lesion_data):  # Should not be allowed!
-            return lesion_data
+        def run(self, mask_data):  # Should not be allowed!
+            return mask_data
 
     # Python's @final decorator is a type hint, not enforced at runtime
     # But we can check it exists in annotations
@@ -128,80 +129,77 @@ def test_base_analysis_run_method_is_final():
         assert hasattr(analysis, "run")
 
 
-def test_base_analysis_run_accepts_lesion_data(synthetic_lesion_img):
-    """Test that run() accepts LesionData and returns LesionData."""
-    from lacuna import LesionData
+def test_base_analysis_run_accepts_mask_data(synthetic_mask_img):
+    """Test that run() accepts MaskData and returns MaskData."""
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     # Create test analysis
     class TestAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
-            assert isinstance(lesion_data, LesionData)
+        def _validate_inputs(self, mask_data):
+            assert isinstance(mask_data, MaskData)
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"test_result": 42}
 
     analysis = TestAnalysis()
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Run should accept LesionData
-    result = analysis.run(lesion_data)
+    # Run should accept MaskData
+    result = analysis.run(mask_data)
 
-    # Should return LesionData
-    assert isinstance(result, LesionData)
+    # Should return MaskData
+    assert isinstance(result, MaskData)
 
 
-def test_base_analysis_run_validates_inputs(synthetic_lesion_img):
+def test_base_analysis_run_validates_inputs(synthetic_mask_img):
     """Test that run() calls _validate_inputs before analysis."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     validation_called = []
 
     class TestAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             validation_called.append(True)
             raise ValueError("Validation failed!")
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {}
 
     analysis = TestAnalysis()
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Should raise validation error
     with pytest.raises(ValueError, match="Validation failed"):
-        analysis.run(lesion_data)
+        analysis.run(mask_data)
 
     # Validation should have been called
     assert len(validation_called) == 1
 
 
-def test_base_analysis_run_namespaces_results(synthetic_lesion_img):
+def test_base_analysis_run_namespaces_results(synthetic_mask_img):
     """Test that run() automatically namespaces results under class name."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     class MyTestAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"score": 123, "metric": "test"}
 
     analysis = MyTestAnalysis()
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    result = analysis.run(lesion_data)
+    result = analysis.run(mask_data)
 
     # Results should be namespaced under class name
     assert "MyTestAnalysis" in result.results
@@ -209,32 +207,31 @@ def test_base_analysis_run_namespaces_results(synthetic_lesion_img):
     assert result.results["MyTestAnalysis"]["metric"] == "test"
 
 
-def test_base_analysis_run_preserves_existing_results(synthetic_lesion_img):
+def test_base_analysis_run_preserves_existing_results(synthetic_mask_img):
     """Test that run() preserves results from other analyses."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     class Analysis1(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"value": 1}
 
     class Analysis2(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"value": 2}
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Run first analysis
-    result1 = Analysis1().run(lesion_data)
+    result1 = Analysis1().run(mask_data)
     assert "Analysis1" in result1.results
 
     # Run second analysis on result
@@ -247,57 +244,55 @@ def test_base_analysis_run_preserves_existing_results(synthetic_lesion_img):
     assert result2.results["Analysis2"]["value"] == 2
 
 
-def test_base_analysis_run_does_not_modify_input(synthetic_lesion_img):
-    """Test that run() does not modify the input LesionData (immutability)."""
-    from lacuna import LesionData
+def test_base_analysis_run_does_not_modify_input(synthetic_mask_img):
+    """Test that run() does not modify the input MaskData (immutability)."""
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     class TestAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"result": "new"}
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
-    original_results = lesion_data.results.copy()
+    original_results = mask_data.results.copy()
 
     analysis = TestAnalysis()
-    result = analysis.run(lesion_data)
+    result = analysis.run(mask_data)
 
     # Input should not be modified
-    assert lesion_data.results == original_results
-    assert "TestAnalysis" not in lesion_data.results
+    assert mask_data.results == original_results
+    assert "TestAnalysis" not in mask_data.results
 
     # Result should be a new object
-    assert result is not lesion_data
+    assert result is not mask_data
     assert "TestAnalysis" in result.results
 
 
-def test_base_analysis_run_handles_analysis_errors(synthetic_lesion_img):
+def test_base_analysis_run_handles_analysis_errors(synthetic_mask_img):
     """Test that run() properly handles errors from _run_analysis."""
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     class FailingAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             raise RuntimeError("Analysis computation failed!")
 
     analysis = FailingAnalysis()
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Should propagate the error
     with pytest.raises(RuntimeError, match="Analysis computation failed"):
-        analysis.run(lesion_data)
+        analysis.run(mask_data)
 
 
 def test_base_analysis_supports_custom_parameters():
@@ -311,10 +306,10 @@ def test_base_analysis_supports_custom_parameters():
             self.method = method
             self.extra_params = kwargs
 
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
+        def _run_analysis(self, mask_data):
             return {"threshold": self.threshold, "method": self.method}
 
     # Create with different parameters
@@ -325,36 +320,35 @@ def test_base_analysis_supports_custom_parameters():
     assert analysis.extra_params["custom_param"] is True
 
 
-def test_base_analysis_chain_multiple_analyses(synthetic_lesion_img):
-    """Test that multiple analyses can be chained on the same LesionData."""
-    from lacuna import LesionData
+def test_base_analysis_chain_multiple_analyses(synthetic_mask_img):
+    """Test that multiple analyses can be chained on the same MaskData."""
+    from lacuna import MaskData
     from lacuna.analysis.base import BaseAnalysis
 
     class VolumeAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             pass
 
-        def _run_analysis(self, lesion_data):
-            volume = lesion_data.get_volume_mm3()
+        def _run_analysis(self, mask_data):
+            volume = mask_data.get_volume_mm3()
             return {"volume_mm3": volume}
 
     class NetworkAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data):
+        def _validate_inputs(self, mask_data):
             # Can access results from previous analyses
-            if "VolumeAnalysis" not in lesion_data.results:
+            if "VolumeAnalysis" not in mask_data.results:
                 raise ValueError("VolumeAnalysis must be run first")
 
-        def _run_analysis(self, lesion_data):
-            volume = lesion_data.results["VolumeAnalysis"]["volume_mm3"]
+        def _run_analysis(self, mask_data):
+            volume = mask_data.results["VolumeAnalysis"]["volume_mm3"]
             return {"network_score": volume * 0.5}
 
-    lesion_data = LesionData(
-        lesion_img=synthetic_lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
     # Chain analyses
-    result = VolumeAnalysis().run(lesion_data)
+    result = VolumeAnalysis().run(mask_data)
     result = NetworkAnalysis().run(result)
 
     # Both analyses should be present

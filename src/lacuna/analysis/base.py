@@ -6,9 +6,9 @@ analysis extensibility.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, final, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, final
 
-from lacuna.core.lesion_data import LesionData
+from lacuna.core.mask_data import MaskData
 from lacuna.core.provenance import create_provenance_record
 
 if TYPE_CHECKING:
@@ -55,19 +55,19 @@ class BaseAnalysis(ABC):
     ...         super().__init__()
     ...         self.threshold = threshold
     ...
-    ...     def _validate_inputs(self, lesion_data):
+    ...     def _validate_inputs(self, mask_data):
     ...         # Validation happens AFTER automatic transformation to TARGET_SPACE
-    ...         space = lesion_data.get_coordinate_space()
+    ...         space = mask_data.get_coordinate_space()
     ...         if space != self.TARGET_SPACE:
     ...             raise ValueError(f"Expected {self.TARGET_SPACE}, got {space}")
     ...
-    ...     def _run_analysis(self, lesion_data):
+    ...     def _run_analysis(self, mask_data):
     ...         # Lesion is guaranteed to be in TARGET_SPACE @ TARGET_RESOLUTION
-    ...         volume = lesion_data.get_volume_mm3()
+    ...         volume = mask_data.get_volume_mm3()
     ...         return {"volume": volume, "above_threshold": volume > self.threshold}
     ...
     >>> analysis = MyAnalysis(threshold=100.0)
-    >>> result = analysis.run(lesion_data)
+    >>> result = analysis.run(mask_data)
     >>> print(result.results["MyAnalysis"])
     {"volume": 523.5, "above_threshold": True}
     """
@@ -75,14 +75,25 @@ class BaseAnalysis(ABC):
     #: Preferred batch processing strategy (default: parallel)
     batch_strategy: str = "parallel"
 
-    def __init__(self) -> None:
+    def __init__(self, log_level: int = 1) -> None:
         """
         Initialize the analysis module.
 
+        Parameters
+        ----------
+        log_level : int, default=1
+            Logging verbosity level:
+            - 0: Silent (no output)
+            - 1: Standard (important messages only)
+            - 2: Verbose (detailed progress and debug info)
+
+        Notes
+        -----
         Subclasses should override this to accept analysis-specific parameters
         and store them as instance attributes for provenance tracking.
+        Always call super().__init__(log_level=log_level) when overriding.
         """
-        pass
+        self.log_level = log_level
 
     def __repr__(self) -> str:
         """
@@ -157,30 +168,30 @@ class BaseAnalysis(ABC):
         return "\n".join(lines)
 
     @final
-    def run(self, lesion_data: LesionData) -> LesionData:
+    def run(self, mask_data: MaskData) -> MaskData:
         """
-        Execute the analysis on a LesionData object.
+        Execute the analysis on a MaskData object.
 
         This is the ONLY public method users should call. It orchestrates
         the complete analysis workflow:
         1. Validate inputs via _validate_inputs()
         2. Run analysis via _run_analysis()
         3. Namespace results under the analysis class name
-        4. Create new LesionData with updated results
+        4. Create new MaskData with updated results
         5. Record provenance
-        6. Return new LesionData instance
+        6. Return new MaskData instance
 
-        The input LesionData is never modified (immutability principle).
+        The input MaskData is never modified (immutability principle).
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Input data containing lesion mask, metadata, and any prior results.
 
         Returns
         -------
-        LesionData
-            A NEW LesionData instance with analysis results added to the
+        MaskData
+            A NEW MaskData instance with analysis results added to the
             .results dictionary under a namespace key (the analysis class name).
 
         Raises
@@ -198,17 +209,17 @@ class BaseAnalysis(ABC):
         Examples
         --------
         >>> analysis = LesionNetworkMapping(connectome='HCP1200')
-        >>> result = analysis.run(lesion_data)
+        >>> result = analysis.run(mask_data)
         >>> print(result.results['LesionNetworkMapping']['network_scores'])
         """
         # Step 0: Transform to target space if TARGET_SPACE is defined
-        lesion_data = self._ensure_target_space(lesion_data)
+        mask_data = self._ensure_target_space(mask_data)
 
         # Step 1: Validate inputs
-        self._validate_inputs(lesion_data)
+        self._validate_inputs(mask_data)
 
         # Step 2: Run analysis computation
-        analysis_results = self._run_analysis(lesion_data)
+        analysis_results = self._run_analysis(mask_data)
 
         # Step 3: Namespace results under class name
         # Convert list[AnalysisResult] to dict[str, AnalysisResult]
@@ -219,22 +230,22 @@ class BaseAnalysis(ABC):
             results_dict = {}
             for i, result in enumerate(analysis_results):
                 # Use result name if available, otherwise fall back to index
-                key = getattr(result, 'name', None) or f"result_{i}"
+                key = getattr(result, "name", None) or f"result_{i}"
                 results_dict[key] = result
         else:
             # New format: already a dict
             results_dict = analysis_results
-        
+
         namespace_key = self.__class__.__name__
-        updated_results = lesion_data.results.copy()
+        updated_results = mask_data.results.copy()
         updated_results[namespace_key] = results_dict
 
-        # Step 4: Create new LesionData with updated results
+        # Step 4: Create new MaskData with updated results
         # Create a new instance with updated results (manual approach for namespace overwriting)
-        result_lesion_data = LesionData(
-            lesion_img=lesion_data.lesion_img,
-            metadata=lesion_data.metadata,
-            provenance=lesion_data.provenance,
+        result_mask_data = MaskData(
+            mask_img=mask_data.mask_img,
+            metadata=mask_data.metadata,
+            provenance=mask_data.provenance,
             results=updated_results,
         )
 
@@ -244,18 +255,18 @@ class BaseAnalysis(ABC):
             parameters=self._get_parameters(),
             version=self._get_version(),
         )
-        result_lesion_data = result_lesion_data.add_provenance(provenance_record)
+        result_mask_data = result_mask_data.add_provenance(provenance_record)
 
-        return result_lesion_data
+        return result_mask_data
 
     @abstractmethod
-    def _validate_inputs(self, lesion_data: LesionData) -> None:
+    def _validate_inputs(self, mask_data: MaskData) -> None:
         """
-        Validate that lesion_data meets the requirements for this analysis.
+        Validate that mask_data meets the requirements for this analysis.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Input data to validate.
 
         Raises
@@ -276,27 +287,27 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> def _validate_inputs(self, lesion_data: LesionData) -> None:
-        ...     if lesion_data.get_coordinate_space() != "MNI152_2mm":
+        >>> def _validate_inputs(self, mask_data: MaskData) -> None:
+        ...     if mask_data.get_coordinate_space() != "MNI152_2mm":
         ...         raise ValueError(
         ...             "LesionNetworkMapping requires data in MNI152 space. "
         ...             "Use ldk.preprocess.normalize_to_mni() first."
         ...         )
         ...
-        ...     data = lesion_data.lesion_img.get_fdata()
+        ...     data = mask_data.mask_img.get_fdata()
         ...     if not np.all(np.isin(data, [0, 1])):
         ...         raise ValueError("Lesion mask must be binary (0s and 1s).")
         """
         pass
 
     @abstractmethod
-    def _run_analysis(self, lesion_data: LesionData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
         """
         Perform the core analysis computation.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Validated input data.
 
         Returns
@@ -316,16 +327,16 @@ class BaseAnalysis(ABC):
         It is called automatically by run() after validation succeeds.
 
         The returned list will be automatically namespaced under
-        self.__class__.__name__ in the output LesionData.results attribute.
+        self.__class__.__name__ in the output MaskData.results attribute.
 
-        Do NOT modify the input lesion_data object. Extract what you need,
+        Do NOT modify the input mask_data object. Extract what you need,
         perform computations, and return results as a list of AnalysisResult objects.
 
         Examples
         --------
         >>> from lacuna.core.output import VoxelMapResult, MiscResult
-        >>> def _run_analysis(self, lesion_data: LesionData) -> list[AnalysisResult]:
-        ...     lesion_array = lesion_data.lesion_img.get_fdata()
+        >>> def _run_analysis(self, mask_data: MaskData) -> list[AnalysisResult]:
+        ...     lesion_array = mask_data.mask_img.get_fdata()
         ...
         ...     # Create voxel map result
         ...     correlation_img = self._compute_correlation_map(lesion_array)
@@ -333,7 +344,7 @@ class BaseAnalysis(ABC):
         ...         name="correlation_map",
         ...         data=correlation_img,
         ...         output_space=self.computation_space,
-        ...         lesion_space=lesion_data.coordinate_space
+        ...         lesion_space=mask_data.coordinate_space
         ...     )
         ...
         ...     # Create summary statistics result
@@ -358,20 +369,24 @@ class BaseAnalysis(ABC):
         Notes
         -----
         Override this method if your analysis has parameters that should
-        be recorded in provenance. Default implementation returns an empty dict.
+        be recorded in provenance. The base implementation returns log_level.
+        Subclasses should call super()._get_parameters() and merge with their
+        own parameters.
 
         Examples
         --------
         >>> def _get_parameters(self) -> Dict[str, Any]:
-        ...     return {
+        ...     params = super()._get_parameters()  # Get log_level
+        ...     params.update({
         ...         'threshold': self.threshold,
         ...         'method': self.method,
         ...         'connectome': self.connectome
-        ...     }
+        ...     })
+        ...     return params
         """
-        return {}
+        return {"log_level": self.log_level}
 
-    def _ensure_target_space(self, lesion_data: LesionData) -> LesionData:
+    def _ensure_target_space(self, mask_data: MaskData) -> MaskData:
         """
         Automatically transform lesion data to TARGET_SPACE if defined.
 
@@ -386,25 +401,25 @@ class BaseAnalysis(ABC):
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Input lesion data
 
         Returns
         -------
-        LesionData
+        MaskData
             Transformed lesion data (or original if no transformation needed)
         """
         # Check if this analysis defines a target space
-        target_space = getattr(self.__class__, 'TARGET_SPACE', None)
-        target_resolution = getattr(self.__class__, 'TARGET_RESOLUTION', None)
+        target_space = getattr(self.__class__, "TARGET_SPACE", None)
+        target_resolution = getattr(self.__class__, "TARGET_RESOLUTION", None)
 
         # Skip transformation if no target space defined or if set to "atlas" (adaptive)
         if target_space is None or target_space == "atlas":
-            return lesion_data
+            return mask_data
 
         # Get current space
-        current_space = lesion_data.metadata.get("space")
-        current_resolution = lesion_data.metadata.get("resolution")
+        current_space = mask_data.metadata.get("space")
+        current_resolution = mask_data.metadata.get("resolution")
 
         if current_space is None:
             raise ValueError(
@@ -424,31 +439,33 @@ class BaseAnalysis(ABC):
         # Check if transformation needed
         needs_space_transform = current_space != target_space
         needs_resolution_change = (
-            target_resolution is not None 
-            and current_resolution is not None 
+            target_resolution is not None
+            and current_resolution is not None
             and current_resolution != target_resolution
         )
 
         if not needs_space_transform and not needs_resolution_change:
             # Already in target space
-            return lesion_data
+            return mask_data
 
         # Import here to avoid circular imports
         from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
-        from lacuna.spatial.transform import transform_lesion_data
+        from lacuna.spatial.transform import transform_mask_data
         from lacuna.utils.logging import ConsoleLogger
 
-        logger = ConsoleLogger()
+        logger = ConsoleLogger(log_level=self.log_level)
 
         # Determine target resolution (use current if not specified)
-        final_resolution = target_resolution if target_resolution is not None else current_resolution
+        final_resolution = (
+            target_resolution if target_resolution is not None else current_resolution
+        )
 
         # Create target space object
         target_space_obj = CoordinateSpace(
             identifier=target_space,
             resolution=final_resolution,
             reference_affine=REFERENCE_AFFINES.get(
-                (target_space, final_resolution), lesion_data.affine
+                (target_space, final_resolution), mask_data.affine
             ),
         )
 
@@ -460,7 +477,7 @@ class BaseAnalysis(ABC):
         )
 
         # Transform
-        return transform_lesion_data(lesion_data, target_space_obj)
+        return transform_mask_data(mask_data, target_space_obj)
 
     def _get_version(self) -> str:
         """
@@ -485,10 +502,10 @@ class BaseAnalysis(ABC):
 
     def _validate_and_transform_space(
         self,
-        lesion_data: LesionData,
+        mask_data: MaskData,
         required_space: str,
         required_resolution: float | None = None,
-    ) -> LesionData:
+    ) -> MaskData:
         """Validate coordinate space and auto-transform if needed.
 
         This helper method provides a standard pattern for analysis modules
@@ -497,7 +514,7 @@ class BaseAnalysis(ABC):
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Input lesion data
         required_space : str
             Required coordinate space identifier (e.g., 'MNI152NLin2009cAsym')
@@ -506,7 +523,7 @@ class BaseAnalysis(ABC):
 
         Returns
         -------
-        LesionData
+        MaskData
             Original data (if already in required space) or transformed data
 
         Raises
@@ -516,18 +533,18 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> def _validate_inputs(self, lesion_data: LesionData) -> None:
+        >>> def _validate_inputs(self, mask_data: MaskData) -> None:
         ...     # Ensure data is in MNI152NLin2009cAsym space at 2mm
-        ...     lesion_data = self._validate_and_transform_space(
-        ...         lesion_data,
+        ...     mask_data = self._validate_and_transform_space(
+        ...         mask_data,
         ...         required_space='MNI152NLin2009cAsym',
         ...         required_resolution=2
         ...     )
-        ...     return lesion_data
+        ...     return mask_data
         """
         # Get current space from metadata
-        current_space = lesion_data.metadata.get("space")
-        current_resolution = lesion_data.metadata.get("resolution", 2)
+        current_space = mask_data.metadata.get("space")
+        current_resolution = mask_data.metadata.get("resolution", 2)
 
         if current_space is None:
             raise ValueError(
@@ -543,11 +560,11 @@ class BaseAnalysis(ABC):
 
         if not needs_space_transform and not needs_resolution_change:
             # Already in required space - no transformation needed
-            return lesion_data
+            return mask_data
 
         # Import transformation utilities
         from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
-        from lacuna.spatial.transform import transform_lesion_data
+        from lacuna.spatial.transform import transform_mask_data
 
         # Create target space
         target_resolution = (
@@ -557,9 +574,9 @@ class BaseAnalysis(ABC):
             identifier=required_space,
             resolution=target_resolution,
             reference_affine=REFERENCE_AFFINES.get(
-                (required_space, target_resolution), lesion_data.affine
+                (required_space, target_resolution), mask_data.affine
             ),
         )
 
         # Transform data
-        return transform_lesion_data(lesion_data, target_space)
+        return transform_mask_data(mask_data, target_space)

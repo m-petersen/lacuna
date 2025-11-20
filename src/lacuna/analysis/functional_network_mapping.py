@@ -24,8 +24,8 @@ from sklearn.decomposition import PCA
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.core.exceptions import ValidationError
-from lacuna.core.lesion_data import LesionData
-from lacuna.core.output import VoxelMapResult, MiscResult
+from lacuna.core.mask_data import MaskData
+from lacuna.core.output import MiscResult, VoxelMapResult
 from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
@@ -34,9 +34,10 @@ if TYPE_CHECKING:
 
 class FunctionalNetworkMapping(BaseAnalysis):
     """Functional network mapping analysis.
-    
+
     Computations performed in MNI152NLin6Asym @ 2mm (GSP1000 connectome space).
     """
+
     TARGET_SPACE = "MNI152NLin6Asym"
     TARGET_RESOLUTION = 2
     """Functional connectivity-based lesion network mapping.
@@ -82,14 +83,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
     Methods
     -------
-    run(lesion_data: LesionData) -> LesionData
+    run(mask_data: MaskData) -> MaskData
         Inherited from BaseAnalysis. Computes functional network mapping.
 
     Examples
     --------
-    >>> from lacuna import LesionData
+    >>> from lacuna import MaskData
     >>> from lacuna.analysis import FunctionalNetworkMapping
-    >>> lesion = LesionData.from_nifti("lesion_mni.nii.gz")
+    >>> lesion = MaskData.from_nifti("lesion_mni.nii.gz")
     >>>
     >>> # Single file
     >>> analysis = FunctionalNetworkMapping(
@@ -220,12 +221,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         return self._batch_files
 
-    def _validate_inputs(self, lesion_data: LesionData) -> None:
+    def _validate_inputs(self, mask_data: MaskData) -> None:
         """Validate inputs for functional network mapping.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Lesion data to validate.
 
         Raises
@@ -243,11 +244,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
         _ = self._get_connectome_files()  # Raises ValidationError if no files found
 
         # Validate MNI152 coordinate space
-        space = lesion_data.metadata.get("space", "")
+        space = mask_data.metadata.get("space", "")
         if "MNI152" not in space.upper() and space != "":
             # If no space specified, check affine approximately
             # (This is a simplified check - production should be more robust)
-            if not hasattr(lesion_data.lesion_img, "affine"):
+            if not hasattr(mask_data.mask_img, "affine"):
                 msg = "Lesion must be in MNI152 space for functional network mapping"
                 raise ValidationError(msg)
 
@@ -257,13 +258,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
             pass
 
         # Validate binary mask
-        lesion_data_array = lesion_data.lesion_img.get_fdata()
-        unique_values = np.unique(lesion_data_array)
+        mask_data_array = mask_data.mask_img.get_fdata()
+        unique_values = np.unique(mask_data_array)
         if not np.all(np.isin(unique_values, [0, 1])):
             msg = "Lesion mask must be binary (only 0 and 1 values)"
             raise ValidationError(msg)
 
-    def _run_analysis(self, lesion_data: LesionData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -272,7 +273,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Validated lesion data in MNI152 space.
 
         Returns
@@ -310,7 +311,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Get lesion voxel indices (computed once, reused for all batches)
         self.logger.info("Computing lesion-connectome overlap...")
-        lesion_voxel_indices = self._get_lesion_voxel_indices(lesion_data)
+        lesion_voxel_indices = self._get_lesion_voxel_indices(mask_data)
 
         if len(lesion_voxel_indices) == 0:
             msg = "No lesion voxels overlap with connectome mask"
@@ -466,7 +467,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Create result objects
         results = []
-        
+
         # Correlation map (r values)
         correlation_result = VoxelMapResult(
             name="correlation_map",
@@ -481,7 +482,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             },
         )
         results.append(correlation_result)
-        
+
         # Z-map (Fisher z-transformed correlations)
         z_result = VoxelMapResult(
             name="z_map",
@@ -496,7 +497,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             },
         )
         results.append(z_result)
-        
+
         # Summary statistics
         summary_dict = {
             "mean": mean_correlation,
@@ -506,7 +507,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             "n_subjects": total_subjects,
             "n_batches": len(connectome_files),
         }
-        
+
         # Add t-map results if computed
         if t_map_nifti is not None:
             t_result = VoxelMapResult(
@@ -523,7 +524,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             results.append(t_result)
             summary_dict["t_min"] = float(np.min(t_map_flat))
             summary_dict["t_max"] = float(np.max(t_map_flat))
-        
+
         if t_threshold_map_nifti is not None:
             threshold_result = VoxelMapResult(
                 name="t_threshold_map",
@@ -539,7 +540,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             results.append(threshold_result)
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
-        
+
         # Add summary statistics as MiscResult
         summary_result = MiscResult(
             name="summary_statistics",
@@ -550,7 +551,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             },
         )
         results.append(summary_result)
-        
+
         return results
 
     def _load_mask_info(self) -> tuple:
@@ -695,14 +696,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Return mean timeseries from selected voxels
         return np.mean(refined_lesion_ts, axis=2)
 
-    def _get_lesion_voxel_indices(self, lesion_data: LesionData) -> np.ndarray:
+    def _get_lesion_voxel_indices(self, mask_data: MaskData) -> np.ndarray:
         """Get indices of lesion voxels within the connectome mask.
 
         Automatically resamples lesion to connectome space if dimensions don't match.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Lesion data in MNI152 space.
 
         Returns
@@ -716,8 +717,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_affine = self._mask_info["mask_affine"]
 
         # Get lesion mask
-        lesion_img = lesion_data.lesion_img
-        lesion_shape = lesion_img.shape
+        mask_img = mask_data.mask_img
+        lesion_shape = mask_img.shape
 
         # Check if resampling is needed
         if lesion_shape != mask_shape:
@@ -732,18 +733,18 @@ class FunctionalNetworkMapping(BaseAnalysis):
             template_img = nib.Nifti1Image(np.zeros(mask_shape), mask_affine)
 
             # Resample lesion to match connectome
-            lesion_img_resampled = resample_to_img(
-                lesion_img,
+            mask_img_resampled = resample_to_img(
+                mask_img,
                 template_img,
                 interpolation="nearest",
                 force_resample=True,
                 copy_header=True,
             )
-            lesion_mask = lesion_img_resampled.get_fdata().astype(bool)
+            lesion_mask = mask_img_resampled.get_fdata().astype(bool)
 
             self.logger.success("Resampling complete", indent_level=2)
         else:
-            lesion_mask = lesion_img.get_fdata().astype(bool)
+            lesion_mask = mask_img.get_fdata().astype(bool)
 
         # Create connectome mask (3D boolean)
         connectome_mask_3d = np.zeros(mask_shape, dtype=bool)
@@ -820,7 +821,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         return r_maps.astype(np.float32)
 
-    def run_batch(self, lesion_data_list: list[LesionData]) -> list[LesionData]:
+    def run_batch(self, mask_data_list: list[MaskData]) -> list[MaskData]:
         """Process multiple lesions together using vectorized operations.
 
         This is 10-50x faster than sequential processing because it:
@@ -833,12 +834,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        lesion_data_list : list[LesionData]
+        mask_data_list : list[MaskData]
             Batch of lesions to process together
 
         Returns
         -------
-        list[LesionData]
+        list[MaskData]
             Processed lesions with results added
 
         Examples
@@ -848,14 +849,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
         >>>
         >>> analysis = FunctionalNetworkMapping(...)
         >>> strategy = VectorizedStrategy()
-        >>> results = strategy.execute(lesion_data_list, analysis)
+        >>> results = strategy.execute(mask_data_list, analysis)
         """
         self.logger.section("VECTORIZED BATCH PROCESSING")
-        self.logger.info(f"Processing {len(lesion_data_list)} lesions together")
+        self.logger.info(f"Processing {len(mask_data_list)} lesions together")
 
         # Validate all lesions first
-        for lesion_data in lesion_data_list:
-            self._validate_inputs(lesion_data)
+        for mask_data in mask_data_list:
+            self._validate_inputs(mask_data)
 
         # Load mask info once (shared across all batches)
         mask_indices, mask_affine, mask_shape = self._load_mask_info()
@@ -866,19 +867,19 @@ class FunctionalNetworkMapping(BaseAnalysis):
             details={
                 "connectome_batches": len(connectome_files),
                 "mask_shape": mask_shape,
-                "n_lesions": len(lesion_data_list),
+                "n_lesions": len(mask_data_list),
             },
         )
 
         # Prepare all lesions with resampling if needed
         lesion_batch = []
-        for i, lesion_data in enumerate(lesion_data_list):
-            subject_id = lesion_data.metadata.get("subject_id", f"lesion_{i}")
+        for i, mask_data in enumerate(mask_data_list):
+            subject_id = mask_data.metadata.get("subject_id", f"lesion_{i}")
             self.logger.info(
-                f"Preparing lesion {i + 1}/{len(lesion_data_list)}: {subject_id}", indent_level=1
+                f"Preparing lesion {i + 1}/{len(mask_data_list)}: {subject_id}", indent_level=1
             )
 
-            voxel_indices = self._get_lesion_voxel_indices(lesion_data)
+            voxel_indices = self._get_lesion_voxel_indices(mask_data)
 
             if len(voxel_indices) == 0:
                 raise ValidationError(
@@ -887,7 +888,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             lesion_batch.append(
                 {
-                    "lesion_data": lesion_data,
+                    "mask_data": mask_data,
                     "voxel_indices": voxel_indices,
                     "index": i,
                 }
@@ -982,7 +983,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.logger.subsection("Aggregating Results")
         results = []
         for i, lesion_info in enumerate(lesion_batch):
-            subject_id = lesion_info["lesion_data"].metadata.get("subject_id", f"lesion_{i}")
+            subject_id = lesion_info["mask_data"].metadata.get("subject_id", f"lesion_{i}")
             self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
 
             # Compute statistics from streaming aggregators
@@ -997,8 +998,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 var_z = (aggregators[i]["sum_z2"] / n) - (mean_z**2)
                 std_z = np.sqrt(np.maximum(var_z, 0))  # Avoid negative from numerical errors
 
-            # Create a copy of lesion_data to avoid modifying input
-            lesion_copy = lesion_info["lesion_data"].copy()
+            # Create a copy of mask_data to avoid modifying input
+            lesion_copy = lesion_info["mask_data"].copy()
 
             # Aggregate using optimized method that accepts pre-computed statistics
             result = self._aggregate_results_from_statistics(
@@ -1014,9 +1015,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             results.append(result)
 
-        self.logger.success("Batch processing complete", details={
-            "n_lesions_processed": len(results)
-        })
+        self.logger.success(
+            "Batch processing complete", details={"n_lesions_processed": len(results)}
+        )
 
         return results
 
@@ -1034,7 +1035,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         Parameters
         ----------
         lesion_batch : list[dict]
-            List of lesion dictionaries with 'voxel_indices' and 'lesion_data'
+            List of lesion dictionaries with 'voxel_indices' and 'mask_data'
         timeseries_data : np.ndarray
             Shape (n_subjects, n_timepoints, n_voxels). Connectome batch data.
 
@@ -1154,7 +1155,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
     def _aggregate_results_from_statistics(
         self,
-        lesion_data: LesionData,
+        mask_data: MaskData,
         mean_r_map: np.ndarray,
         mean_z_map: np.ndarray,
         std_z_map: np.ndarray | None,
@@ -1162,7 +1163,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_affine: np.ndarray,
         mask_shape: tuple,
         total_subjects: int,
-    ) -> LesionData:
+    ) -> MaskData:
         """Aggregate results from pre-computed statistics (memory-optimized).
 
         This method is used by vectorized batch processing with streaming
@@ -1172,7 +1173,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Original lesion data to add results to
         mean_r_map : np.ndarray
             Shape (n_voxels,). Mean correlation map (already Fisher z-averaged).
@@ -1192,7 +1193,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        LesionData
+        MaskData
             Lesion data with analysis results added
         """
         # Compute t-statistics if requested
@@ -1271,30 +1272,27 @@ class FunctionalNetworkMapping(BaseAnalysis):
             batch_results["t_map"] = results["t_map"]
         if "t_threshold_map" in results:
             batch_results["t_threshold_map"] = results["t_threshold_map"]
-        
-        lesion_data_with_results = lesion_data.add_result(
-            self.__class__.__name__, 
-            batch_results
-        )
 
-        return lesion_data_with_results
+        mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
+
+        return mask_data_with_results
 
     def _aggregate_results(
         self,
-        lesion_data: LesionData,
+        mask_data: MaskData,
         all_r_maps: np.ndarray,
         mask_indices: tuple,
         mask_affine: np.ndarray,
         mask_shape: tuple,
         total_subjects: int,
-    ) -> LesionData:
+    ) -> MaskData:
         """Aggregate correlation maps across all subjects into final results.
 
         This method is reused by both single and batch processing.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Original lesion data to add results to
         all_r_maps : np.ndarray
             Shape (n_subjects, n_voxels). All correlation maps.
@@ -1309,7 +1307,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        LesionData
+        MaskData
             Lesion data with analysis results added
         """
         # Fisher z-transform
@@ -1395,13 +1393,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
             batch_results["t_map"] = results["t_map"]
         if "t_threshold_map" in results:
             batch_results["t_threshold_map"] = results["t_threshold_map"]
-        
-        lesion_data_with_results = lesion_data.add_result(
-            self.__class__.__name__, 
-            batch_results
-        )
 
-        return lesion_data_with_results
+        mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
+
+        return mask_data_with_results
 
     def _get_parameters(self) -> dict:
         """Get analysis parameters for provenance and display.

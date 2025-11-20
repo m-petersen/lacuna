@@ -1,6 +1,5 @@
 """Transformation strategies for spatial coordinate space conversions."""
 
-import asyncio
 import logging
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
@@ -16,13 +15,14 @@ from lacuna.core.spaces import CoordinateSpace
 # nitransforms uses asyncio.run() which fails in Jupyter's existing event loop
 try:
     import nest_asyncio
+
     nest_asyncio.apply()
 except ImportError:
     # nest_asyncio not available - will provide helpful error if needed
     pass
 
 if TYPE_CHECKING:
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,13 @@ EQUIVALENT_SPACES = {
 
 def _canonicalize_space_variant(space_id: str) -> str:
     """Canonicalize MNI space variant identifiers to canonical forms.
-    
+
     For anatomically identical spaces (e.g., MNI152NLin2009[abc]Asym),
     returns the canonical representative (MNI152NLin2009cAsym).
-    
+
     Args:
         space_id: Space identifier to canonicalize
-        
+
     Returns:
         Canonical space identifier
     """
@@ -87,7 +87,7 @@ class TransformationStrategy:
         # Normalize space identifiers to handle equivalent spaces
         source_normalized = _canonicalize_space_variant(source.identifier)
         target_normalized = _canonicalize_space_variant(target.identifier)
-        
+
         # Same space (after normalization) - no transform needed
         if source_normalized == target_normalized and source.resolution == target.resolution:
             return "none"
@@ -175,11 +175,11 @@ class TransformationStrategy:
         # Calculate target affine with new resolution
         source_affine = img.affine
         target_affine = source_affine.copy()
-        
+
         # Get current resolution from affine diagonal
         current_res = abs(source_affine[0, 0])  # Assume isotropic for simplicity
         target_res = target_space.resolution
-        
+
         # Update affine diagonal to target resolution (preserve sign)
         for i in range(3):
             if source_affine[i, i] >= 0:
@@ -285,11 +285,11 @@ class TransformationStrategy:
         # Apply the transform
         # Handle asyncio event loop conflict in Jupyter notebooks
         # nitransforms uses asyncio.run() which fails if an event loop is already running
-        
+
         # Check image dimensionality and handle accordingly
         img_data = img.get_fdata()
         original_shape = img_data.shape
-        
+
         if img_data.ndim == 4:
             # Check if we have singleton dimensions we can squeeze
             if img_data.shape[3] == 1:
@@ -304,31 +304,30 @@ class TransformationStrategy:
                     f"{source.identifier}@{source.resolution}mm to "
                     f"{target.identifier}@{target.resolution}mm (shape: {img.shape})"
                 )
-                
+
                 # Transform each volume independently
                 transformed_volumes = []
                 for vol_idx in range(n_volumes):
                     logger.debug(f"Transforming volume {vol_idx + 1}/{n_volumes}")
-                    
+
                     # Extract single volume as 3D image
                     vol_data = img_data[..., vol_idx]
                     vol_img = nib.Nifti1Image(vol_data, img.affine, img.header)
-                    
+
                     # Transform this volume
                     try:
                         transformed_vol = transform.apply(
-                            vol_img, 
-                            order=self._get_interpolation_order(interp_method)
+                            vol_img, order=self._get_interpolation_order(interp_method)
                         )
                     except RuntimeError as e:
                         if "asyncio.run() cannot be called from a running event loop" in str(e):
                             # We're in Jupyter - use nest_asyncio
                             try:
                                 import nest_asyncio
+
                                 nest_asyncio.apply()
                                 transformed_vol = transform.apply(
-                                    vol_img, 
-                                    order=self._get_interpolation_order(interp_method)
+                                    vol_img, order=self._get_interpolation_order(interp_method)
                                 )
                             except ImportError:
                                 raise RuntimeError(
@@ -337,34 +336,34 @@ class TransformationStrategy:
                                 ) from e
                         else:
                             raise
-                    
+
                     transformed_volumes.append(transformed_vol.get_fdata())
-                
+
                 # Stack all transformed volumes back into 4D
                 transformed_4d_data = np.stack(transformed_volumes, axis=-1)
                 transformed = nib.Nifti1Image(
                     transformed_4d_data,
                     transformed_vol.affine,  # Use affine from last transformed volume
-                    transformed_vol.header
+                    transformed_vol.header,
                 )
-                
+
                 logger.info(
                     f"4D transformation complete. Output shape: {transformed.shape}, "
                     f"dtype: {transformed.get_fdata().dtype}"
                 )
-                
+
                 return transformed
         elif img_data.ndim > 4:
             raise ValueError(
                 f"Cannot transform {img_data.ndim}D image. Expected 3D or 4D image. Shape: {original_shape}"
             )
-        
+
         # 3D image transformation (original logic)
         logger.info(
             f"Transforming image from {source.identifier}@{source.resolution}mm "
             f"to {target.identifier}@{target.resolution}mm (shape: {img.shape})"
         )
-        
+
         try:
             transformed = transform.apply(img, order=self._get_interpolation_order(interp_method))
         except RuntimeError as e:
@@ -372,8 +371,11 @@ class TransformationStrategy:
                 # We're in a Jupyter notebook - use nest_asyncio to allow nested event loops
                 try:
                     import nest_asyncio
+
                     nest_asyncio.apply()
-                    transformed = transform.apply(img, order=self._get_interpolation_order(interp_method))
+                    transformed = transform.apply(
+                        img, order=self._get_interpolation_order(interp_method)
+                    )
                 except ImportError:
                     raise RuntimeError(
                         "Running spatial transformations in Jupyter notebooks requires nest_asyncio. "
@@ -381,7 +383,7 @@ class TransformationStrategy:
                     ) from e
             else:
                 raise
-        
+
         logger.info(
             f"Transformation complete. Output shape: {transformed.shape}, "
             f"dtype: {transformed.get_fdata().dtype}"
@@ -414,7 +416,7 @@ def transform_image(
     interpolation: InterpolationMethod | str | None = None,
 ) -> nib.Nifti1Image:
     """Transform a NIfTI image between coordinate spaces.
-    
+
     This is a low-level, generic function for transforming any NIfTI image
     between coordinate spaces. Use this when working with atlases, templates,
     or other non-lesion images.
@@ -445,33 +447,31 @@ def transform_image(
         >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target, interpolation='nearest')
     """
     from lacuna.core.spaces import REFERENCE_AFFINES
-    
+
     # Convert string interpolation to enum if needed
     if isinstance(interpolation, str):
         interp_map = {
-            'nearest': InterpolationMethod.NEAREST,
-            'linear': InterpolationMethod.LINEAR,
-            'cubic': InterpolationMethod.CUBIC,
+            "nearest": InterpolationMethod.NEAREST,
+            "linear": InterpolationMethod.LINEAR,
+            "cubic": InterpolationMethod.CUBIC,
         }
         interpolation = interp_map.get(interpolation.lower())
         if interpolation is None:
             raise ValueError(
-                f"Invalid interpolation string. Must be one of: 'nearest', 'linear', 'cubic'"
+                "Invalid interpolation string. Must be one of: 'nearest', 'linear', 'cubic'"
             )
-    
+
     # Infer source resolution if not provided
     if source_resolution is None:
         source_resolution = int(round(abs(img.affine[0, 0])))
-    
+
     # Create source CoordinateSpace
     source_space_obj = CoordinateSpace(
         identifier=source_space,
         resolution=source_resolution,
-        reference_affine=REFERENCE_AFFINES.get(
-            (source_space, source_resolution), img.affine
-        ),
+        reference_affine=REFERENCE_AFFINES.get((source_space, source_resolution), img.affine),
     )
-    
+
     # Convert target_space to CoordinateSpace if it's a string
     if isinstance(target_space, str):
         # Infer target resolution from source if not explicitly different
@@ -481,20 +481,20 @@ def transform_image(
             resolution=target_resolution,
             reference_affine=REFERENCE_AFFINES.get(
                 (target_space, target_resolution),
-                source_space_obj.reference_affine  # Use source as fallback
+                source_space_obj.reference_affine,  # Use source as fallback
             ),
         )
     else:
         target_space_obj = target_space
-    
+
     # Check if transformation needed
     strategy = TransformationStrategy()
     direction = strategy.determine_direction(source_space_obj, target_space_obj)
-    
+
     if direction == "none":
         logger.info("Source and target spaces match - no transformation needed")
         return img
-    
+
     # Handle resolution-only change (same space, different resolution)
     if direction == "resample":
         logger.info(
@@ -502,31 +502,33 @@ def transform_image(
             f"in {source_space_obj.identifier}"
         )
         return strategy.apply_resampling(img, target_space_obj, interpolation)
-    
+
     # Load transform from asset registry
     from lacuna.assets.transforms import load_transform
-    
+
     transform_name = f"{source_space_obj.identifier}_to_{target_space_obj.identifier}"
     try:
         transform_path = load_transform(transform_name)
     except (KeyError, FileNotFoundError) as e:
         from lacuna.core.exceptions import TransformNotAvailableError
+
         raise TransformNotAvailableError(
             source_space_obj.identifier,
             target_space_obj.identifier,
             supported_transforms=query_available_transforms(),
         ) from e
-    
+
     # Load transform with nitransforms
     try:
         from nitransforms import linear as nitl
+
         transform = nitl.load(transform_path)
     except ImportError as e:
         raise ImportError(
             "nitransforms package is required for spatial transformations. "
             "Install with: pip install nitransforms"
         ) from e
-    
+
     # Apply transformation
     return strategy.apply_transformation(
         img,
@@ -537,14 +539,14 @@ def transform_image(
     )
 
 
-def transform_lesion_data(
-    lesion_data: "LesionData",
+def transform_mask_data(
+    mask_data: "MaskData",
     target_space: CoordinateSpace,
     interpolation: InterpolationMethod | str | None = None,
-) -> "LesionData":
+) -> "MaskData":
     """Transform lesion data to target coordinate space.
 
-    This is the high-level API for transforming LesionData objects between
+    This is the high-level API for transforming MaskData objects between
     coordinate spaces. It handles:
     - Space detection and validation
     - Transform loading and caching
@@ -552,37 +554,38 @@ def transform_lesion_data(
     - Provenance tracking
 
     Args:
-        lesion_data: LesionData object to transform
+        mask_data: MaskData object to transform
         target_space: Target coordinate space
         interpolation: Interpolation method (auto-detected if None).
             Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
 
     Returns:
-        New LesionData object in target space
+        New MaskData object in target space
 
     Raises:
         TransformNotAvailableError: If transformation not supported
         SpaceDetectionError: If source space cannot be determined
 
     Examples:
-        >>> from lacuna.core.lesion_data import LesionData
+        >>> from lacuna.core.mask_data import MaskData
         >>> from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
         >>> # Load lesion in NLin6 space
-        >>> lesion = LesionData.from_nifti("lesion.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        >>> lesion = MaskData.from_nifti("lesion.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         >>> # Transform to NLin2009c
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
-        >>> transformed = transform_lesion_data(lesion, target)
+        >>> transformed = transform_mask_data(lesion, target)
     """
     # Import here to avoid circular imports
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
     from lacuna.core.provenance import TransformationRecord
 
     # Get source space from metadata
-    source_identifier = lesion_data.metadata.get("space")
-    source_resolution = lesion_data.metadata.get("resolution", 2)
+    source_identifier = mask_data.metadata.get("space")
+    source_resolution = mask_data.metadata.get("resolution", 2)
 
     if source_identifier is None:
         from pathlib import Path
+
         from lacuna.core.exceptions import SpaceDetectionError
 
         raise SpaceDetectionError(
@@ -592,54 +595,63 @@ def transform_lesion_data(
 
     # Use the generic transform_image function
     transformed_img = transform_image(
-        img=lesion_data.lesion_img,
+        img=mask_data.mask_img,
         source_space=source_identifier,
         target_space=target_space,
         source_resolution=source_resolution,
         interpolation=interpolation,
     )
-    
+
     # If image unchanged, no transformation was needed
-    if transformed_img is lesion_data.lesion_img:
-        return lesion_data
+    if transformed_img is mask_data.mask_img:
+        return mask_data
 
     # Create transformation record for provenance
     strategy = TransformationStrategy()
-    interp_method = strategy.select_interpolation(lesion_data.lesion_img, interpolation)
-    
+    interp_method = strategy.select_interpolation(mask_data.mask_img, interpolation)
+
     from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
+
     source_space_obj = CoordinateSpace(
         identifier=source_identifier,
         resolution=source_resolution,
         reference_affine=REFERENCE_AFFINES.get(
-            (source_identifier, source_resolution), lesion_data.affine
+            (source_identifier, source_resolution), mask_data.affine
         ),
     )
     direction = strategy.determine_direction(source_space_obj, target_space)
-    
+
     transform_record = TransformationRecord(
         source_space=source_identifier,
         source_resolution=source_resolution,
         target_space=target_space.identifier,
         target_resolution=target_space.resolution,
-        method="nitransforms" if direction == "forward" or direction == "reverse" else "nilearn_resample",
+        method=(
+            "nitransforms"
+            if direction == "forward" or direction == "reverse"
+            else "nilearn_resample"
+        ),
         interpolation=interp_method.value,
-        rationale=f"Automatic transformation for {direction} direction" if direction != "resample" else "Resolution change within same coordinate space",
+        rationale=(
+            f"Automatic transformation for {direction} direction"
+            if direction != "resample"
+            else "Resolution change within same coordinate space"
+        ),
     )
 
-    # Create new LesionData with transformed image
-    new_metadata = lesion_data.metadata.copy()
+    # Create new MaskData with transformed image
+    new_metadata = mask_data.metadata.copy()
     new_metadata["space"] = target_space.identifier
     new_metadata["resolution"] = target_space.resolution
 
-    new_provenance = lesion_data.provenance.copy()
+    new_provenance = mask_data.provenance.copy()
     new_provenance.append(transform_record.to_dict())
 
-    return LesionData(
-        lesion_img=transformed_img,
+    return MaskData(
+        mask_img=transformed_img,
         metadata=new_metadata,
         provenance=new_provenance,
-        results=lesion_data.results,
+        results=mask_data.results,
     )
 
 
@@ -669,27 +681,31 @@ def query_available_transforms() -> list[tuple[str, str]]:
         ("MNI152NLin6Asym", "MNI152NLin2009cAsym"),
         ("MNI152NLin2009cAsym", "MNI152NLin6Asym"),
     ]
-    
+
     # Add equivalent space transforms
     # Since a/b/cAsym are anatomically identical, we can transform between them
     all_transforms = base_transforms.copy()
-    
+
     # Add transforms from NLin6 to all NLin2009 variants
     for variant in ["MNI152NLin2009aAsym", "MNI152NLin2009bAsym"]:
-        all_transforms.extend([
-            ("MNI152NLin6Asym", variant),
-            (variant, "MNI152NLin6Asym"),
-        ])
-    
+        all_transforms.extend(
+            [
+                ("MNI152NLin6Asym", variant),
+                (variant, "MNI152NLin6Asym"),
+            ]
+        )
+
     # Add identity transforms for equivalent spaces (same anatomy, no actual transform needed)
     nlin2009_variants = ["MNI152NLin2009aAsym", "MNI152NLin2009bAsym", "MNI152NLin2009cAsym"]
     for i, space1 in enumerate(nlin2009_variants):
-        for space2 in nlin2009_variants[i+1:]:
-            all_transforms.extend([
-                (space1, space2),
-                (space2, space1),
-            ])
-    
+        for space2 in nlin2009_variants[i + 1 :]:
+            all_transforms.extend(
+                [
+                    (space1, space2),
+                    (space2, space1),
+                ]
+            )
+
     return all_transforms
 
 
@@ -724,7 +740,7 @@ def can_transform_between(source: CoordinateSpace, target: CoordinateSpace) -> b
     # Normalize space identifiers
     source_normalized = _canonicalize_space_variant(source.identifier)
     target_normalized = _canonicalize_space_variant(target.identifier)
-    
+
     # Same space (after normalization) - always possible (identity or resample)
     if source_normalized == target_normalized:
         return True
@@ -739,5 +755,5 @@ __all__ = [
     "can_transform_between",
     "TransformationStrategy",
     "InterpolationMethod",
-    "transform_lesion_data",
+    "transform_mask_data",
 ]

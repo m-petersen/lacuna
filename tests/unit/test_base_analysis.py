@@ -8,46 +8,50 @@ Tests automatic result namespacing, immutability enforcement, and provenance tra
 class TestResultNamespacing:
     """Test automatic result namespacing in BaseAnalysis.run()."""
 
-    def test_results_namespaced_by_class_name(self, synthetic_lesion_img):
+    def test_results_namespaced_by_class_name(self, synthetic_mask_img):
         """Test that results are automatically namespaced under class name."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class VolumeAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"volume_mm3": 123.45}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        result = VolumeAnalysis().run(lesion_data)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        result = VolumeAnalysis().run(mask_data)
 
         # Results should be under "VolumeAnalysis" key
         assert "VolumeAnalysis" in result.results
         assert result.results["VolumeAnalysis"]["volume_mm3"] == 123.45
 
-    def test_multiple_analyses_separate_namespaces(self, synthetic_lesion_img):
+    def test_multiple_analyses_separate_namespaces(self, synthetic_mask_img):
         """Test that different analyses have separate namespaces."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class Analysis1(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "first"}
 
         class Analysis2(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "second"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        result = Analysis1().run(lesion_data)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        result = Analysis1().run(mask_data)
         result = Analysis2().run(result)
 
         # Both namespaces should exist and be separate
@@ -56,9 +60,9 @@ class TestResultNamespacing:
         assert result.results["Analysis1"]["result"] == "first"
         assert result.results["Analysis2"]["result"] == "second"
 
-    def test_namespace_collision_overwrites(self, synthetic_lesion_img):
+    def test_namespace_collision_overwrites(self, synthetic_mask_img):
         """Test that running same analysis twice overwrites previous results."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
@@ -66,16 +70,18 @@ class TestResultNamespacing:
                 super().__init__()
                 self.value = value
 
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"value": self.value}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
         # Run first time
-        result1 = TestAnalysis(value=1).run(lesion_data)
+        result1 = TestAnalysis(value=1).run(mask_data)
         assert result1.results["TestAnalysis"]["value"] == 1
 
         # Run second time on same data
@@ -84,36 +90,38 @@ class TestResultNamespacing:
         # Second run should overwrite first
         assert result2.results["TestAnalysis"]["value"] == 2
 
-    def test_namespace_preserves_other_results(self, synthetic_lesion_img):
+    def test_namespace_preserves_other_results(self, synthetic_mask_img):
         """Test that new analysis preserves results from other analyses."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class AnalysisA(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"a": 1}
 
         class AnalysisB(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"b": 2}
 
         class AnalysisC(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"c": 3}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
         # Run three analyses in sequence
-        result = AnalysisA().run(lesion_data)
+        result = AnalysisA().run(mask_data)
         result = AnalysisB().run(result)
         result = AnalysisC().run(result)
 
@@ -123,16 +131,16 @@ class TestResultNamespacing:
         assert result.results["AnalysisB"]["b"] == 2
         assert result.results["AnalysisC"]["c"] == 3
 
-    def test_namespace_with_complex_results(self, synthetic_lesion_img):
+    def test_namespace_with_complex_results(self, synthetic_mask_img):
         """Test namespacing with complex nested result dictionaries."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class ComplexAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {
                     "metrics": {"mean": 10.5, "std": 2.3, "max": 15.2},
                     "regions": ["frontal", "temporal", "parietal"],
@@ -140,8 +148,10 @@ class TestResultNamespacing:
                     "metadata": {"method": "correlation", "threshold": 0.05},
                 }
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        result = ComplexAnalysis().run(lesion_data)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        result = ComplexAnalysis().run(mask_data)
 
         # Complex structure should be preserved under namespace
         assert "ComplexAnalysis" in result.results
@@ -153,54 +163,58 @@ class TestResultNamespacing:
 class TestImmutability:
     """Test that BaseAnalysis.run() enforces immutability."""
 
-    def test_input_lesion_data_not_modified(self, synthetic_lesion_img):
-        """Test that input LesionData object is never modified."""
-        from lacuna import LesionData
+    def test_input_mask_data_not_modified(self, synthetic_mask_img):
+        """Test that input MaskData object is never modified."""
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        original_results_keys = set(lesion_data.results.keys())
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        original_results_keys = set(mask_data.results.keys())
 
         # Run analysis
-        result = TestAnalysis().run(lesion_data)
+        result = TestAnalysis().run(mask_data)
 
         # Input should be unchanged
-        assert set(lesion_data.results.keys()) == original_results_keys
-        assert "TestAnalysis" not in lesion_data.results
+        assert set(mask_data.results.keys()) == original_results_keys
+        assert "TestAnalysis" not in mask_data.results
 
         # Result should be different object
-        assert result is not lesion_data
+        assert result is not mask_data
 
-    def test_input_results_dict_not_modified(self, synthetic_lesion_img):
+    def test_input_results_dict_not_modified(self, synthetic_mask_img):
         """Test that the input results dictionary is not modified."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class Analysis1(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"value": 1}
 
         class Analysis2(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"value": 2}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
         # Run first analysis
-        result1 = Analysis1().run(lesion_data)
+        result1 = Analysis1().run(mask_data)
 
         # Store keys from result1
         result1_keys = set(result1.results.keys())
@@ -214,80 +228,84 @@ class TestImmutability:
         # The dict object may be different (it's a copy), but contents should match
         assert result1.results["Analysis1"]["value"] == 1
 
-    def test_lesion_img_not_modified(self, synthetic_lesion_img):
-        """Test that running analysis doesn't affect original LesionData image reference."""
-        from lacuna import LesionData
+    def test_mask_img_not_modified(self, synthetic_mask_img):
+        """Test that running analysis doesn't affect original MaskData image reference."""
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 # The analysis can access data but shouldn't modify original
                 return {"modified": True}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        original_img_id = id(lesion_data.lesion_img)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        original_img_id = id(mask_data.mask_img)
 
         # Run analysis
-        TestAnalysis().run(lesion_data)
+        TestAnalysis().run(mask_data)
 
-        # Original LesionData should still reference the same image object
-        assert id(lesion_data.lesion_img) == original_img_id
+        # Original MaskData should still reference the same image object
+        assert id(mask_data.mask_img) == original_img_id
 
-    def test_metadata_not_modified(self, synthetic_lesion_img):
+    def test_metadata_not_modified(self, synthetic_mask_img):
         """Test that metadata is not modified."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
         metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata=metadata)
+        mask_data = MaskData(mask_img=synthetic_mask_img, metadata=metadata)
 
         # Run analysis
-        result = TestAnalysis().run(lesion_data)
+        result = TestAnalysis().run(mask_data)
 
         # Original metadata should be unchanged (except space and resolution are required)
-        assert lesion_data.metadata["subject_id"] == "sub-001"
-        assert lesion_data.metadata["age"] == 45
-        assert lesion_data.metadata["space"] == "MNI152NLin6Asym"
-        assert lesion_data.metadata["resolution"] == 2
+        assert mask_data.metadata["subject_id"] == "sub-001"
+        assert mask_data.metadata["age"] == 45
+        assert mask_data.metadata["space"] == "MNI152NLin6Asym"
+        assert mask_data.metadata["resolution"] == 2
 
-    def test_chained_analyses_preserve_immutability(self, synthetic_lesion_img):
+    def test_chained_analyses_preserve_immutability(self, synthetic_mask_img):
         """Test that chaining multiple analyses maintains immutability."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class A1(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"n": 1}
 
         class A2(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"n": 2}
 
         class A3(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"n": 3}
 
         # Start with clean data
-        ld0 = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        ld0 = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
         # Chain analyses
         ld1 = A1().run(ld0)
@@ -307,48 +325,52 @@ class TestImmutability:
 class TestProvenanceTracking:
     """Test provenance recording in BaseAnalysis.run()."""
 
-    def test_provenance_added_after_analysis(self, synthetic_lesion_img):
+    def test_provenance_added_after_analysis(self, synthetic_mask_img):
         """Test that provenance is recorded after running analysis."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        original_prov_len = len(lesion_data.provenance)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        original_prov_len = len(mask_data.provenance)
 
-        result = TestAnalysis().run(lesion_data)
+        result = TestAnalysis().run(mask_data)
 
         # Provenance should have been added
         assert len(result.provenance) == original_prov_len + 1
 
-    def test_provenance_contains_analysis_name(self, synthetic_lesion_img):
+    def test_provenance_contains_analysis_name(self, synthetic_mask_img):
         """Test that provenance records the analysis class name."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class MyCustomAnalysis(BaseAnalysis):
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        result = MyCustomAnalysis().run(lesion_data)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        result = MyCustomAnalysis().run(mask_data)
 
         # Latest provenance should reference the analysis
         latest_prov = result.provenance[-1]
         assert "MyCustomAnalysis" in latest_prov["function"]
 
-    def test_provenance_records_parameters(self, synthetic_lesion_img):
+    def test_provenance_records_parameters(self, synthetic_mask_img):
         """Test that analysis parameters are recorded in provenance."""
-        from lacuna import LesionData
+        from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
 
         class ParameterizedAnalysis(BaseAnalysis):
@@ -357,17 +379,19 @@ class TestProvenanceTracking:
                 self.threshold = threshold
                 self.method = method
 
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
             def _get_parameters(self):
                 return {"threshold": self.threshold, "method": self.method}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-        result = ParameterizedAnalysis(threshold=0.8, method="advanced").run(lesion_data)
+        mask_data = MaskData(
+            mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
+        result = ParameterizedAnalysis(threshold=0.8, method="advanced").run(mask_data)
 
         # Provenance should contain parameters
         latest_prov = result.provenance[-1]
