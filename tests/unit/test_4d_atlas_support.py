@@ -392,10 +392,10 @@ class Test4DAtlasAggregation:
 
             # Check results
             damage_results = result.results["RegionalDamage"]
-            assert "Test4DAtlas_Aggregation" in damage_results
+            assert "atlas_Test4DAtlas_Aggregation" in damage_results
 
             # Get region data
-            region_data = damage_results["Test4DAtlas_Aggregation"].get_data()
+            region_data = damage_results["atlas_Test4DAtlas_Aggregation"].get_data()
             assert len(region_data) > 0
 
             # Tract1 should have highest damage (full overlap)
@@ -454,8 +454,8 @@ class Test4DAtlasAggregation:
             damage_results = result.results["RegionalDamage"]
 
             # Verify we got results for the atlas
-            assert "Test4D_VaryingOverlap" in damage_results
-            region_data = damage_results["Test4D_VaryingOverlap"].get_data()
+            assert "atlas_Test4D_VaryingOverlap" in damage_results
+            region_data = damage_results["atlas_Test4D_VaryingOverlap"].get_data()
             assert len(region_data) > 0
 
             # LargeOverlap should have more damage than SmallOverlap
@@ -539,12 +539,12 @@ class TestMixed3DAnd4DAtlases:
             damage_results = result.results["RegionalDamage"]
 
             # Should have results from both atlases
-            assert "Mixed3D" in damage_results
-            assert "Mixed4D" in damage_results
+            assert "atlas_Mixed3D" in damage_results
+            assert "atlas_Mixed4D" in damage_results
 
             # Each should have region data
-            mixed3d_data = damage_results["Mixed3D"].get_data()
-            mixed4d_data = damage_results["Mixed4D"].get_data()
+            mixed3d_data = damage_results["atlas_Mixed3D"].get_data()
+            mixed4d_data = damage_results["atlas_Mixed4D"].get_data()
             assert len(mixed3d_data) > 0
             assert len(mixed4d_data) > 0
 
@@ -607,10 +607,10 @@ class TestRegionalDamageOutputAPI:
             ), "RegionalDamage results should be a dict, not list"
 
             # Should have the atlas
-            assert "TestOutputAPI" in damage_results
+            assert "atlas_TestOutputAPI" in damage_results
 
             # Get the ROI result
-            roi_result = damage_results["TestOutputAPI"]
+            roi_result = damage_results["atlas_TestOutputAPI"]
             assert isinstance(roi_result, AtlasAggregationResult)
 
             # Access the damage data via get_data()

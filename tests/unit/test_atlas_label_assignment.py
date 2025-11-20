@@ -101,7 +101,7 @@ class TestAtlasLabelAssignment:
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
-            results = atlas_results["test_4d_atlas"].get_data()
+            results = atlas_results["atlas_test_4d_atlas"].get_data()
 
             # With new structure, region names don't have atlas prefix
             right_damage = results.get("Region_Right", None)
@@ -192,7 +192,7 @@ class TestAtlasLabelAssignment:
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
-            results = atlas_results["atlas_1indexed"].get_data()
+            results = atlas_results["atlas_atlas_1indexed"].get_data()
 
             # With new structure, region names don't have atlas prefix
             bottom_damage = results.get("Bottom_Region", None)
@@ -269,7 +269,7 @@ class TestAtlasLabelAssignment:
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
-            results = atlas_results["atlas_3d"].get_data()
+            results = atlas_results["atlas_atlas_3d"].get_data()
 
             # With new structure, region names don't have atlas prefix
             first_damage = results.get("First_Region", None)

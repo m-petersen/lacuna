@@ -201,12 +201,12 @@ def test_atlas_aggregation_result_structure(synthetic_mask_img):
     )
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with atlas name as key
+    # Results are returned as dict with descriptive keys "atlas_{name}"
     atlas_results = result.results["AtlasAggregation"]
-    assert "Schaefer2018_100Parcels7Networks" in atlas_results
+    assert "atlas_Schaefer2018_100Parcels7Networks" in atlas_results
 
-    # Get the AtlasAggregationResult for this atlas
-    roi_result = atlas_results["Schaefer2018_100Parcels7Networks"]
+    # Get the AtlasAggregationResult for this atlas using descriptive key
+    roi_result = atlas_results["atlas_Schaefer2018_100Parcels7Networks"]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level values
@@ -232,14 +232,14 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img):
     )
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with one entry per atlas
+    # Results are returned as dict with descriptive keys per atlas
     atlas_results = result.results["AtlasAggregation"]
-    assert "Schaefer2018_100Parcels7Networks" in atlas_results
-    assert "Schaefer2018_200Parcels7Networks" in atlas_results
+    assert "atlas_Schaefer2018_100Parcels7Networks" in atlas_results
+    assert "atlas_Schaefer2018_200Parcels7Networks" in atlas_results
 
     # Each atlas should have its own AtlasAggregationResult with region data
-    roi_100 = atlas_results["Schaefer2018_100Parcels7Networks"].get_data()
-    roi_200 = atlas_results["Schaefer2018_200Parcels7Networks"].get_data()
+    roi_100 = atlas_results["atlas_Schaefer2018_100Parcels7Networks"].get_data()
+    roi_200 = atlas_results["atlas_Schaefer2018_200Parcels7Networks"].get_data()
     assert len(roi_100) > 0
     assert len(roi_200) > 0
 

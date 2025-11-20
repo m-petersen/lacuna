@@ -82,9 +82,9 @@ class TestAtlasAggregationOutputs:
 
         results = analysis._run_analysis(sample_mask_data)
 
-        assert isinstance(results, list)
-        # May be empty if no overlap, but should still be a list of AnalysisResult types
-        assert all(isinstance(r, AnalysisResult) for r in results)
+        assert isinstance(results, dict)
+        # May be empty if no overlap, but should still be a dict of AnalysisResult types
+        assert all(isinstance(r, AnalysisResult) for r in results.values())
 
     def test_atlas_aggregation_returns_roi_result(self, sample_mask_data, mock_atlas_file):
         """AtlasAggregation returns AtlasAggregationResult with region data."""

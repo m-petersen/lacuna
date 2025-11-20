@@ -434,7 +434,7 @@ class AtlasAggregation(BaseAnalysis):
             interpolation="nearest",  # Preserve integer labels
         )
 
-    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
         """
         Compute ROI-level aggregation for all atlases.
 
@@ -445,8 +445,8 @@ class AtlasAggregation(BaseAnalysis):
 
         Returns
         -------
-        list[AnalysisResult]
-            List containing one AtlasAggregationResult per atlas
+        dict[str, AnalysisResult]
+            Dictionary mapping "atlas_{name}" to AtlasAggregationResult objects
         """
         # Get input data space/resolution once
         input_space = mask_data.metadata.get("space")
@@ -458,8 +458,8 @@ class AtlasAggregation(BaseAnalysis):
         # Calculate voxel volume from source data
         voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
 
-        # Collect results per atlas
-        roi_results = []
+        # Collect results per atlas as dict with descriptive keys
+        atlas_results_dict = {}
 
         # Process each atlas
         for atlas_info in self.atlases:
@@ -528,9 +528,10 @@ class AtlasAggregation(BaseAnalysis):
                     "n_regions": len(atlas_results),
                 },
             )
-            roi_results.append(roi_result)
+            # Use descriptive key: "atlas_{name}"
+            atlas_results_dict[f"atlas_{atlas_name}"] = roi_result
 
-        return roi_results
+        return atlas_results_dict
 
     def _aggregate_3d_atlas(
         self,
