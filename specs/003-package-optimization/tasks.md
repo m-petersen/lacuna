@@ -1,0 +1,372 @@
+# Tasks: Package Optimization & Standardization
+
+**Input**: Design documents from `/specs/003-package-optimization/`
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
+
+**Tests**: This feature follows TDD principles. All test tasks are included and MUST be written before implementation.
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `- [ ] [ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- All paths are absolute from repository root
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Create backup compatibility module and logging infrastructure needed across all stories
+
+- [x] T001 Create backward compatibility module `src/lacuna/core/lesion_data.py` as deprecated alias to MaskData. NO backward compatibility needed. We are in early development so it can be a breaking change.
+- [x] T002 [P] Create three-level logging utility in `src/lacuna/utils/logging.py` (levels: 0=silent, 1=standard, 2=verbose)
+- [x] T003 [P] Update `src/lacuna/analysis/base.py` to add `log_level` parameter (default=1) to BaseAnalysis
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Core data model changes that ALL user stories depend on
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+
+- [x] T004 Rename `src/lacuna/core/lesion_data.py` to `src/lacuna/core/mask_data.py` (class LesionData → MaskData, lesion_img → mask_img, all references updated)
+- [x] T005 Add binary mask validation to `MaskData.__init__` in `src/lacuna/core/mask_data.py` (check np.unique(data) == [0, 1]) - ALREADY IMPLEMENTED
+- [x] T006 Add mandatory space and resolution validation to `MaskData.__init__` in `src/lacuna/core/mask_data.py` - ALREADY IMPLEMENTED
+- [x] T007 Update error messages in `src/lacuna/core/mask_data.py` to list only supported spaces (MNI152NLin6Asym, MNI152NLin2009aAsym, MNI152NLin2009cAsym)
+- [x] T008 Remove `anatomical_img` parameter from `MaskData.__init__` and `from_nifti` in `src/lacuna/core/mask_data.py`, remove from atlas_aggregation.py VALID_SOURCES and bids.py save logic
+- [x] T009 Change `MaskData._results` structure from `dict[str, list]` to `dict[str, dict[str, Any]]` in `src/lacuna/core/mask_data.py` - ALREADY IMPLEMENTED
+- [x] T010 Implement `MaskData.__getattr__` for dynamic result access in `src/lacuna/core/mask_data.py`
+- [x] T011 Update `MaskData.from_dict()` to detect old/new result format and convert in `src/lacuna/core/mask_data.py` (added _normalize_results_format method)
+- [x] T012 Rename ROIResult to AtlasAggregationResult in `src/lacuna/core/output.py` (18 references updated across codebase)
+- [x] T013 Update VoxelMapResult to separate space and resolution attributes in `src/lacuna/core/output.py` - ALREADY IMPLEMENTED (space and resolution are separate)
+- [x] T014 Remove lesion-specific attributes from ConnectivityMatrixResult in `src/lacuna/core/output.py` (lesioned_matrix, compute_disconnection) - Moved to structural_network_mapping analysis module
+- [x] T015 Simplify TractogramResult to path-only storage in `src/lacuna/core/output.py` (tractogram_path now required, streamlines optional for in-memory caching)
+- [x] T016 Update all result classes `__repr__` methods to show separated space/resolution in `src/lacuna/core/output.py`
+
+**Checkpoint**: ✅ Phase 2 COMPLETE (T004-T016) - Foundation ready for user story implementation
+
+---
+
+## Phase 3: User Story 1 - Improved Result Access and Management (Priority: P1) 🎯 MVP
+
+**Goal**: Enable intuitive dictionary-based and attribute-based result access with descriptive keys
+
+**Independent Test**: Run any analysis, access results via both `result.results['Analysis']['key']` and `mask_data.attribute`, verify consistent patterns
+
+### Tests for User Story 1
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [ ] T017 [P] [US1] Write contract test for MaskData result attribute access in `tests/contract/test_mask_data_contract.py`
+- [ ] T018 [P] [US1] Write contract test for dictionary-based result access in `tests/contract/test_mask_data_contract.py`
+- [ ] T019 [P] [US1] Write contract test for AttributeError when result doesn't exist in `tests/contract/test_mask_data_contract.py`
+- [ ] T020 [P] [US1] Write unit test for result key generation with source context in `tests/unit/test_base_analysis.py`
+- [ ] T021 [P] [US1] Write integration test for end-to-end result workflow in `tests/integration/test_result_workflows.py`
+- [ ] T022 [P] [US1] Write contract test for AtlasAggregationResult with actual region labels in `tests/contract/test_result_objects.py`
+- [ ] T023 [P] [US1] Write unit test for TractogramResult.get_data() in `tests/unit/test_tractogram_result.py`
+
+### Implementation for User Story 1
+
+- [ ] T024 [P] [US1] Update `BaseAnalysis.run()` to generate descriptive result keys in `src/lacuna/analysis/base.py`
+- [ ] T025 [P] [US1] Update `BaseAnalysis.add_result()` to use dict-based storage in `src/lacuna/analysis/base.py`
+- [ ] T026 [US1] Update `AtlasAggregation` to generate per-atlas AtlasAggregationResult with source context in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T027 [US1] Update atlas label extraction from atlas asset metadata in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T028 [US1] Update `StructuralNetworkMapping` to create separate results for disconnection_map and connectivity matrices in `src/lacuna/analysis/structural_network_mapping.py`
+- [ ] T029 [US1] Update `RegionalDamage` to generate per-atlas AtlasAggregationResult in `src/lacuna/analysis/regional_damage.py`
+- [ ] T030 [US1] Implement TractogramResult.get_data() method for on-demand loading in `src/lacuna/core/output.py`
+- [ ] T031 [US1] Update all analysis modules to use descriptive result keys in their run() methods across `src/lacuna/analysis/`
+
+**Checkpoint**: User Story 1 complete - results are accessible via intuitive dict keys and attributes
+
+---
+
+## Phase 4: User Story 2 - Explicit and Standardized Space Handling (Priority: P1)
+
+**Goal**: Enforce explicit space/resolution requirements and provide informative transformation messages
+
+**Independent Test**: Create MaskData with/without space, examine space/resolution as separate attributes, verify transformation logging
+
+### Tests for User Story 2
+
+- [ ] T032 [P] [US2] Write contract test for space requirement error in `tests/contract/test_space_handling.py`
+- [ ] T033 [P] [US2] Write contract test for resolution requirement error in `tests/contract/test_space_handling.py`
+- [ ] T034 [P] [US2] Write contract test for separated space/resolution attributes in `tests/contract/test_space_handling.py`
+- [ ] T035 [P] [US2] Write contract test for supported spaces error message in `tests/contract/test_space_handling.py`
+- [ ] T036 [P] [US2] Write integration test for transformation logging in `tests/integration/test_space_transformations.py`
+- [ ] T037 [P] [US2] Write unit test for CoordinateSpace consistent usage in `tests/unit/test_coordinate_space.py`
+
+### Implementation for User Story 2
+
+- [ ] T038 [P] [US2] Update space inference priority (metadata over provenance) in `src/lacuna/core/mask_data.py`
+- [ ] T039 [P] [US2] Ensure CoordinateSpace objects used in all transformation functions in `src/lacuna/spatial/transform.py`
+- [ ] T040 [US2] Add user-facing transformation logging with atlas/image names and space transitions in `src/lacuna/spatial/transform.py`
+- [ ] T041 [US2] Add TransformationRecord creation for all transformations in `src/lacuna/spatial/transform.py`
+- [ ] T042 [US2] Update transformation messages to use log_level parameter in `src/lacuna/spatial/transform.py`
+- [ ] T043 [P] [US2] Validate TransformationRecord fields before adding to provenance in `src/lacuna/spatial/provenance.py`
+- [ ] T044 [P] [US2] Update all analysis modules to pass log_level to transformation functions in `src/lacuna/analysis/`
+
+**Checkpoint**: User Stories 1 AND 2 complete - results accessible, space handling explicit and informative
+
+---
+
+## Phase 5: User Story 3 - Simplified and Validated Data Models (Priority: P2)
+
+**Goal**: Clear data model requirements with automatic validation and removed deprecated features
+
+**Independent Test**: Create MaskData with various inputs, verify binary validation, check removed features are inaccessible
+
+### Tests for User Story 3
+
+- [ ] T045 [P] [US3] Write contract test for binary mask validation in `tests/contract/test_mask_data_contract.py`
+- [ ] T046 [P] [US3] Write contract test for anatomical_img rejection in `tests/contract/test_mask_data_contract.py`
+- [ ] T047 [P] [US3] Write contract test for space inference priority in `tests/contract/test_mask_data_contract.py`
+- [ ] T048 [P] [US3] Write unit test for provenance TransformationRecord validation in `tests/unit/test_provenance.py`
+
+### Implementation for User Story 3
+
+- [ ] T049 [P] [US3] Add helpful error message for non-binary masks suggesting binarization in `src/lacuna/core/mask_data.py`
+- [ ] T050 [P] [US3] Remove registration-related code paths from analysis modules in `src/lacuna/analysis/`
+- [ ] T051 [P] [US3] Update validation.py with binary mask validation helper in `src/lacuna/core/validation.py`
+- [ ] T052 [US3] Review and update all MaskData instantiation points to ensure space/resolution provided across `src/lacuna/`
+
+**Checkpoint**: User Stories 1, 2, AND 3 complete - data models validated, deprecated features removed
+
+---
+
+## Phase 6: User Story 4 - Enhanced Analysis Flexibility (Priority: P2)
+
+**Goal**: Cross-analysis data flow, flexible thresholds, and nibabel image support for AtlasAggregation
+
+**Independent Test**: Run AtlasAggregation with "Analysis.key" syntax, test with nibabel images and lists, verify threshold accepts any float
+
+### Tests for User Story 4
+
+- [ ] T053 [P] [US4] Write contract test for cross-analysis source syntax in `tests/contract/test_atlas_aggregation.py`
+- [ ] T054 [P] [US4] Write contract test for threshold flexibility in `tests/contract/test_atlas_aggregation.py`
+- [ ] T055 [P] [US4] Write contract test for result key source context in `tests/contract/test_atlas_aggregation.py`
+- [ ] T056 [P] [US4] Write integration test for nibabel image input in `tests/integration/test_nibabel_input.py`
+- [ ] T057 [P] [US4] Write integration test for nibabel list input in `tests/integration/test_nibabel_input.py`
+- [ ] T058 [P] [US4] Write unit test for AtlasAggregation return type matching in `tests/unit/test_atlas_aggregation.py`
+
+### Implementation for User Story 4
+
+- [ ] T059 [US4] Update `AtlasAggregation._get_source_image()` to parse "Analysis.key" syntax in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T060 [US4] Add error message listing available sources when resolution fails in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T061 [US4] Remove threshold range validation (0.0-1.0 restriction) in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T062 [US4] Add input type detection (MaskData/nibabel/list) in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T063 [US4] Implement nibabel.Nifti1Image input handling with AtlasAggregationResult return in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T064 [US4] Implement list[nibabel.Nifti1Image] batch processing in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T065 [US4] Add log_level parameter to AtlasAggregation in `src/lacuna/analysis/atlas_aggregation.py`
+- [ ] T066 [US4] Remove whole_brain_tdi parameter from StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
+- [ ] T067 [US4] Add log_level parameter to StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
+- [ ] T068 [P] [US4] Update unit tests removing whole_brain_tdi references in `tests/unit/test_structural_network_mapping.py`
+
+**Checkpoint**: User Stories 1-4 complete - all P1/P2 functionality implemented
+
+---
+
+## Phase 7: User Story 5 - Comprehensive Code Quality and Testing (Priority: P3)
+
+**Goal**: Homogeneous codebase with optimized tests, consistent patterns, and integration tests
+
+**Independent Test**: Code review for patterns, test suite execution measuring coverage, integration tests with real fixtures
+
+### Tests for User Story 5
+
+- [ ] T069 [P] [US5] Create integration test fixtures with small real NIfTI data in `tests/fixtures/`
+- [ ] T070 [P] [US5] Write integration test for complete workflow (load → analyze → access) in `tests/integration/test_complete_workflow.py`
+- [ ] T071 [P] [US5] Write integration test for logging levels across analyses in `tests/integration/test_logging_levels.py`
+
+### Implementation for User Story 5
+
+- [ ] T072 [P] [US5] Review all analysis modules for consistent result storage patterns in `src/lacuna/analysis/`
+- [ ] T073 [P] [US5] Review all modules for consistent space handling patterns in `src/lacuna/`
+- [ ] T074 [P] [US5] Review all modules for consistent error message formatting in `src/lacuna/`
+- [ ] T075 [US5] Identify and merge overlapping unit/contract tests in `tests/`
+- [ ] T076 [US5] Remove redundant test cases while maintaining coverage in `tests/`
+- [ ] T077 [US5] Profile test suite and optimize slow tests in `tests/`
+- [ ] T078 [US5] Verify pytest -n auto parallelization effectiveness in `tests/`
+- [ ] T079 [US5] Ensure fast test suite (<45s) meets target in `tests/`
+- [ ] T080 [P] [US5] Remove deprecated code and unused functionality in `src/lacuna/`
+- [ ] T081 [P] [US5] Update all module docstrings for consistency in `src/lacuna/`
+
+**Checkpoint**: All user stories complete - codebase optimized, tests efficient
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
+
+**Purpose**: Documentation, examples, and final validation
+
+- [ ] T082 [P] Create migration guide in `docs/migration_guide.md` (MaskData→MaskData, result access patterns)
+- [ ] T083 [P] Update quickstart examples to use MaskData in `examples/result_access_demo.py`
+- [ ] T084 [P] Add logging level examples in `examples/result_access_demo.py`
+- [ ] T085 [P] Add nibabel input examples in `examples/result_access_demo.py`
+- [ ] T086 [P] Update all docstrings referencing MaskData to MaskData in `src/lacuna/`
+- [ ] T087 [P] Update README with new features and naming in `README.md`
+- [ ] T088 Run full test suite to verify all changes in `tests/`
+- [ ] T089 Run code quality checks (ruff, black, mypy) across `src/lacuna/`
+- [ ] T090 Validate quickstart.md examples still work
+- [ ] T091 Update CHANGELOG with all changes
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies - can start immediately
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **User Story 1 (Phase 3 - P1)**: Depends on Foundational - No dependencies on other stories
+- **User Story 2 (Phase 4 - P1)**: Depends on Foundational - No dependencies on other stories
+- **User Story 3 (Phase 5 - P2)**: Depends on Foundational - No dependencies on other stories
+- **User Story 4 (Phase 6 - P2)**: Depends on Foundational - No dependencies on other stories (though naturally integrates with US1 patterns)
+- **User Story 5 (Phase 7 - P3)**: Depends on all other stories being complete
+- **Polish (Phase 8)**: Depends on all user stories being complete
+
+### User Story Independence
+
+All user stories (US1-US4) can theoretically start in parallel after Phase 2, but:
+- **Recommended sequence**: US1 → US2 → US3 → US4 → US5 (by priority)
+- **MVP scope**: US1 + US2 (P1 stories provide core functionality)
+- US4 builds on US1's result patterns but is independently testable
+- US5 requires all other stories complete for comprehensive review
+
+### Within Each User Story
+
+- Tests MUST be written and FAIL before implementation
+- Models/result classes before services/analyses
+- Core implementation before integration
+- Story complete before moving to next priority
+
+### Parallel Opportunities
+
+**Within Setup (Phase 1)**:
+- T002 (logging) and T003 (BaseAnalysis update) can run in parallel
+
+**Within Foundational (Phase 2)**:
+- T012-T016 (result class updates in output.py) can run in parallel after T004-T011 complete
+
+**Within User Story 1**:
+- All test tasks (T017-T023) can run in parallel
+- T024-T025 (BaseAnalysis) can run in parallel with T030 (TractogramResult.get_data)
+- T026-T029 (analysis updates) can run in parallel after T024-T025
+
+**Within User Story 2**:
+- All test tasks (T032-T037) can run in parallel
+- T038-T043 implementation tasks have dependencies, but T044 can run in parallel
+
+**Within User Story 3**:
+- All test tasks (T045-T048) can run in parallel
+- T049-T051 can run in parallel
+
+**Within User Story 4**:
+- All test tasks (T053-T058) can run in parallel
+- T061, T065, T067, T068 can run in parallel with main implementation
+
+**Within User Story 5**:
+- T069-T071 (integration tests) can run in parallel
+- T072-T074 (reviews) can run in parallel
+- T080-T081 can run in parallel
+
+**Within Polish (Phase 8)**:
+- T082-T087 (documentation) can all run in parallel
+- T088-T091 must run sequentially at the end
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+# Write all tests first (can be done in parallel by different developers)
+- Developer A: T017, T018, T019 (contract tests)
+- Developer B: T020 (unit test)
+- Developer C: T021 (integration test)
+- Developer D: T022, T023 (result object tests)
+
+# Verify all tests fail
+
+# Implement in parallel where possible
+- Developer A: T024, T025 (BaseAnalysis changes)
+- Developer B: T030 (TractogramResult.get_data)
+- Wait for T024-T025 to complete, then:
+  - Developer A: T026 (AtlasAggregation)
+  - Developer C: T027 (atlas labels)
+  - Developer D: T028 (StructuralNetworkMapping)
+  - Developer B: T029 (RegionalDamage)
+
+# Final integration
+- Developer A: T031 (update all analysis modules)
+```
+
+---
+
+## MVP Definition
+
+**Minimum Viable Product**: User Stories 1 + 2 (Priority P1)
+
+This provides:
+- ✅ Intuitive result access (dict keys + attributes)
+- ✅ Explicit space/resolution requirements
+- ✅ Informative transformation logging
+- ✅ Separated space/resolution attributes
+- ✅ Actual atlas region labels
+- ✅ Basic logging system
+
+**Estimated Tasks for MVP**: T001-T044 (44 tasks including tests)
+
+**Post-MVP Increments**:
+- **Increment 1**: Add US3 (data validation) - Tasks T045-T052
+- **Increment 2**: Add US4 (analysis flexibility) - Tasks T053-T068
+- **Increment 3**: Add US5 (code quality) - Tasks T069-T081
+- **Final**: Polish - Tasks T082-T091
+
+---
+
+## Implementation Strategy
+
+### TDD Workflow
+
+For each user story:
+1. Write ALL tests for the story (contract, unit, integration)
+2. Verify ALL tests FAIL (red)
+3. Implement minimum code to make tests pass (green)
+4. Refactor while keeping tests green
+5. Move to next user story
+
+### Incremental Delivery
+
+- **Week 1**: Setup + Foundational (T001-T016)
+- **Week 2**: US1 Implementation (T017-T031) → MVP Feature 1
+- **Week 3**: US2 Implementation (T032-T044) → MVP Complete
+- **Week 4**: US3 Implementation (T045-T052) → Post-MVP Increment 1
+- **Week 5**: US4 Implementation (T053-T068) → Post-MVP Increment 2
+- **Week 6**: US5 Implementation (T069-T081) → Post-MVP Increment 3
+- **Week 7**: Polish (T082-T091) → Final Release
+
+### Validation Gates
+
+- After each phase, run: `make test-fast` (~30s)
+- After each user story, run: `make ci-native` (~2min)
+- Before committing, run: `make format` + `make ci-native`
+- Before pushing, run: `make ci-act` (~90s Docker validation)
+
+---
+
+## Task Summary
+
+- **Total Tasks**: 91
+- **Setup Tasks**: 3
+- **Foundational Tasks**: 13
+- **User Story 1 (P1)**: 15 tasks (7 tests + 8 implementation)
+- **User Story 2 (P1)**: 13 tasks (6 tests + 7 implementation)
+- **User Story 3 (P2)**: 8 tasks (4 tests + 4 implementation)
+- **User Story 4 (P2)**: 16 tasks (6 tests + 10 implementation)
+- **User Story 5 (P3)**: 13 tasks (3 tests + 10 implementation)
+- **Polish Tasks**: 10
+
+**Parallelizable Tasks**: 45 tasks marked with [P]
+**MVP Tasks (US1+US2)**: 44 tasks
+**Test Tasks**: 30 tasks across all stories (TDD approach)
