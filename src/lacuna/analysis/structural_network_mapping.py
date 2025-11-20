@@ -503,7 +503,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 f"Use thresholding or binarization to convert continuous maps."
             )
 
-    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
         """
         Execute structural network mapping analysis.
 
@@ -514,11 +514,13 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        list[AnalysisResult]
-            List containing:
-            - VoxelMapResult for disconnection_map
-            - MiscResult for summary statistics (mean_disconnection, lesion_streamline_count)
-            - ConnectivityMatrixResult for parcellated connectivity (if atlas provided)
+        dict[str, AnalysisResult]
+            Dictionary mapping result names to results:
+            - 'disconnection_map': VoxelMapResult for disconnection map
+            - 'summary_statistics': MiscResult for summary statistics
+            - 'lesion_tractogram': TractogramResult (if keep_intermediate=True)
+            - 'lesion_tdi': VoxelMapResult (if keep_intermediate=True)
+            - Connectivity results (if atlas provided): see _compute_connectivity_matrices
 
         Notes
         -----
@@ -608,8 +610,8 @@ class StructuralNetworkMapping(BaseAnalysis):
                     )
                 final_disconn_map = disconn_map
 
-            # Build results list
-            results = []
+            # Build results dict
+            results = {}
 
             # VoxelMapResult for disconnection map
             disconnection_result = VoxelMapResult(
@@ -626,7 +628,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "load_to_memory": self.load_to_memory,
                 },
             )
-            results.append(disconnection_result)
+            results["disconnection_map"] = disconnection_result
 
             # MiscResult for summary statistics
             summary_result = MiscResult(
@@ -639,7 +641,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "tractogram": str(self.tractogram_path),
                 },
             )
-            results.append(summary_result)
+            results["summary_statistics"] = summary_result
 
             # Add intermediate results if keep_intermediate=True
             if self.keep_intermediate:
@@ -653,7 +655,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                         "temp_directory": str(temp_dir_path),
                     },
                 )
-                results.append(lesion_tractogram_result)
+                results["lesion_tractogram"] = lesion_tractogram_result
 
                 # Add lesion TDI as VoxelMapResult
                 lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
@@ -669,7 +671,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                             "temp_directory": str(temp_dir_path),
                         },
                     )
-                    results.append(lesion_tdi_result)
+                    results["lesion_tdi"] = lesion_tdi_result
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._atlas_resolved is not None:
@@ -680,8 +682,8 @@ class StructuralNetworkMapping(BaseAnalysis):
                     temp_dir_path=temp_dir_path,
                     subject_id=subject_id,
                 )
-                # Extend results with connectivity matrix results
-                results.extend(connectivity_results)
+                # Merge connectivity matrix results into results dict
+                results.update(connectivity_results)
 
             return results
 
@@ -704,7 +706,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         lesion_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
-    ) -> list["AnalysisResult"]:
+    ) -> dict[str, "AnalysisResult"]:
         """Compute parcellated connectivity matrices.
 
         Parameters
@@ -720,12 +722,13 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        list[AnalysisResult]
-            List containing:
-            - ConnectivityMatrixResult for lesion connectivity
-            - ConnectivityMatrixResult for disconnectivity percentage
-            - ConnectivityMatrixResult for lesioned (intact) connectivity (if compute_lesioned=True)
-            - MiscResult for matrix statistics
+        dict[str, AnalysisResult]
+            Dictionary containing:
+            - 'lesion_connectivity_matrix': ConnectivityMatrixResult
+            - 'disconnectivity_percent': ConnectivityMatrixResult
+            - 'full_connectivity_matrix': ConnectivityMatrixResult
+            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_lesioned=True)
+            - 'matrix_statistics': MiscResult
         """
 
         # Step 1: Compute full-brain connectivity matrix (cached)
@@ -794,8 +797,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             lesioned_matrix=lesioned_matrix,
         )
 
-        # Build results list
-        results = []
+        # Build results dict
+        results = {}
 
         # Get atlas labels for ConnectivityMatrixResult
         # Convert dict[int, str] to list[str] ordered by region ID
@@ -816,7 +819,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "tractogram": str(self.tractogram_path),
             },
         )
-        results.append(lesion_connectivity_result)
+        results["lesion_connectivity_matrix"] = lesion_connectivity_result
 
         # ConnectivityMatrixResult for disconnectivity percentage
         disconn_result = ConnectivityMatrixResult(
@@ -829,7 +832,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "description": "Percentage of streamlines disconnected by lesion",
             },
         )
-        results.append(disconn_result)
+        results["disconnectivity_percent"] = disconn_result
 
         # ConnectivityMatrixResult for full connectivity (reference)
         full_connectivity_result = ConnectivityMatrixResult(
@@ -842,7 +845,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "description": "Full brain connectivity matrix (reference)",
             },
         )
-        results.append(full_connectivity_result)
+        results["full_connectivity_matrix"] = full_connectivity_result
 
         # Optional: lesioned (intact) connectivity matrix
         if lesioned_matrix is not None:
@@ -856,7 +859,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "description": "Intact connectivity excluding lesion streamlines",
                 },
             )
-            results.append(lesioned_result)
+            results["lesioned_connectivity_matrix"] = lesioned_result
 
         # MiscResult for matrix statistics
         stats_result = MiscResult(
@@ -866,7 +869,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "atlas": self.atlas_name,
             },
         )
-        results.append(stats_result)
+        results["matrix_statistics"] = stats_result
 
         return results
 

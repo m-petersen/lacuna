@@ -25,7 +25,7 @@ def test_io_module_imports():
 def test_load_bids_dataset_simple(simple_bids_dataset):
     """Test loading a simple BIDS dataset with manual parser."""
     pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
-    assert lesion2.anatomical_img is None
+    pass
 
 
 def test_load_bids_dataset_multisession(multisession_bids_dataset):
