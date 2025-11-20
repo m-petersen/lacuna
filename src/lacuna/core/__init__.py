@@ -12,15 +12,15 @@ from .exceptions import (
     SpatialMismatchError,
     ValidationError,
 )
-from .lesion_data import LesionData
+from .mask_data import MaskData
 from .output import (
     AnalysisResult,
-    VoxelMapResult,
-    ROIResult,
     ConnectivityMatrixResult,
+    MiscResult,
+    AtlasAggregationResult,
     SurfaceResult,
     TractogramResult,
-    MiscResult,
+    VoxelMapResult,
 )
 from .provenance import (
     create_provenance_record,
@@ -45,11 +45,11 @@ __all__ = [
     "NiftiLoadError",
     "AnalysisError",
     # Core data
-    "LesionData",
+    "MaskData",
     # Output classes
     "AnalysisResult",
     "VoxelMapResult",
-    "ROIResult",
+    "AtlasAggregationResult",
     "ConnectivityMatrixResult",
     "SurfaceResult",
     "TractogramResult",
