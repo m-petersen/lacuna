@@ -1,6 +1,8 @@
 # Lacuna Development Guidelines
 
 ## Active Technologies
+- Python 3.10+ (project constraint from existing implementation) + nibabel, nilearn, numpy, scipy, pandas, templateflow, pytest, pytest-xdist, ruff, black, mypy (003-package-optimization)
+- File-based (NIfTI images, HDF5 connectomes, .tck tractograms), no database (003-package-optimization)
 
 - Python 3.10+ (existing project constraint)
 
@@ -82,6 +84,33 @@ Before committing:
 2. `make ci-native` - Full CI check
 3. `make format` - Code formatted
 
+### Commit Message Requirements
+
+All commits must follow these requirements:
+
+1. **Type must be clear**: Use conventional commit types (feat, fix, refactor, test, docs, chore, perf, style, ci, build)
+2. **Subject must be imperative**: Use "add" not "added", "fix" not "fixed" (imperative mood)
+3. **Subject must be under 50 characters**: Keep it concise
+4. **Blank line between subject and body**: Required for multi-line commits
+5. **Body must explain why**: Describe the motivation and context, not what changed (code shows what)
+
+Examples:
+```
+feat: add binary mask validation to MaskData
+
+Enforce binary masks (0/1 values only) to prevent invalid analysis
+results. Users previously could pass continuous values, leading to
+incorrect atlas aggregation and connectivity mapping.
+```
+
+```
+refactor: rename LesionData to MaskData
+
+Breaking change to reflect broader use cases beyond lesions.
+Updated 200+ references across codebase. No backward compatibility
+maintained per user approval.
+```
+
 ### Version Management
 
 Version automatically derived from git tags via setuptools-scm:
@@ -93,10 +122,10 @@ Version automatically derived from git tags via setuptools-scm:
 ### Dependencies
 
 - **Core**: nibabel, numpy, scipy, nilearn, pandas, templateflow
-- **Optional**: `viz` (matplotlib), `bids` (pybids), `preprocess` (ANTsPy)
+- **Optional**: `viz` (matplotlib)
 - **Dev**: pytest, pytest-xdist, ruff, black, mypy
 
-ANTsPy is optional (only for native→MNI registration).
+
 
 ### Configuration Files
 
@@ -106,3 +135,6 @@ ANTsPy is optional (only for native→MNI registration).
 - `.github/workflows/` - CI workflows (call make commands)
 
 See `DEVELOPMENT.md` for detailed workflow documentation.
+
+## Recent Changes
+- 003-package-optimization: Added Python 3.10+ (project constraint from existing implementation) + nibabel, nilearn, numpy, scipy, pandas, templateflow, pytest, pytest-xdist, ruff, black, mypy
