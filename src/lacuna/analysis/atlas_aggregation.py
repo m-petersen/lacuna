@@ -7,13 +7,13 @@ from lesion masks, connectivity maps, or any other spatial maps.
 
 Examples
 --------
->>> from lacuna import LesionData
+>>> from lacuna import MaskData
 >>> from lacuna.analysis import AtlasAggregation
 >>>
 >>> # Use bundled atlases
->>> lesion = LesionData.from_nifti("lesion.nii.gz")
+>>> lesion = MaskData.from_nifti("lesion.nii.gz")
 >>> analysis = AtlasAggregation(
-...     source="lesion_img",
+...     source="mask_img",
 ...     aggregation="percent"
 ... )
 >>> result = analysis.run(lesion)
@@ -22,7 +22,7 @@ Examples
 >>> # Use custom atlas directory
 >>> analysis = AtlasAggregation(
 ...     atlas_dir="/data/atlases",
-...     source="lesion_img",
+...     source="mask_img",
 ...     aggregation="percent"
 ... )
 >>> result = analysis.run(lesion)
@@ -49,10 +49,9 @@ from nilearn.image import resample_to_img
 from nilearn.maskers import NiftiLabelsMasker
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.assets.atlases import load_atlas, list_atlases
-from lacuna.core.spaces import detect_space_from_header
-from lacuna.core.lesion_data import LesionData
-from lacuna.core.output import ROIResult
+from lacuna.assets.atlases import list_atlases, load_atlas
+from lacuna.core.mask_data import MaskData
+from lacuna.core.output import AtlasAggregationResult
 
 if TYPE_CHECKING:
     from lacuna.core.output import AnalysisResult
@@ -60,9 +59,10 @@ if TYPE_CHECKING:
 
 class AtlasAggregation(BaseAnalysis):
     """Atlas aggregation analysis.
-    
+
     Computations performed in input data space (atlases transformed to match input).
     """
+
     TARGET_SPACE = None  # Space determined from input data
     TARGET_RESOLUTION = None  # Resolution determined from input data
     """
@@ -97,9 +97,9 @@ class AtlasAggregation(BaseAnalysis):
 
     Parameters
     ----------
-    source : str, default="lesion_img"
+    source : str, default="mask_img"
         Source of data to aggregate. Options:
-        - "lesion_img": Use the lesion mask directly
+        - "mask_img": Use the lesion mask directly
         - "{AnalysisName}.{result_key}": Use result from previous analysis
           Example: "FunctionalNetworkMapping.network_map"
     aggregation : str, default="mean"
@@ -139,20 +139,20 @@ class AtlasAggregation(BaseAnalysis):
     - For 3D atlases: regions defined by integer labels (automatically rounded)
     - For 4D atlases: each volume is a binary or probability map for one region
     - 4D probabilistic maps are thresholded at `threshold` parameter (default 0.5)
-    - Results stored in LesionData.results["AtlasAggregation"] as dict
+    - Results stored in MaskData.results["AtlasAggregation"] as dict
       mapping atlas_name_region_name -> aggregated_value
 
     Examples
     --------
     >>> # Use all bundled/registered atlases
     >>> analysis = AtlasAggregation(
-    ...     source="lesion_img",
+    ...     source="mask_img",
     ...     aggregation="percent"
     ... )
     >>>
     >>> # Use specific registered atlases
     >>> analysis = AtlasAggregation(
-    ...     source="lesion_img",
+    ...     source="mask_img",
     ...     aggregation="percent",
     ...     atlas_names=["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
     ... )
@@ -161,7 +161,7 @@ class AtlasAggregation(BaseAnalysis):
     >>> from lacuna.assets.atlases import register_atlases_from_directory
     >>> register_atlases_from_directory("/data/my_atlases")
     >>> analysis = AtlasAggregation(
-    ...     source="lesion_img",
+    ...     source="mask_img",
     ...     aggregation="percent"
     ... )
     >>>
@@ -181,11 +181,11 @@ class AtlasAggregation(BaseAnalysis):
     batch_strategy: str = "parallel"
 
     VALID_AGGREGATIONS = ["mean", "sum", "percent", "volume", "median", "std"]
-    VALID_SOURCES = ["lesion_img", "anatomical_img"]
+    VALID_SOURCES = ["mask_img"]
 
     def __init__(
         self,
-        source: str = "lesion_img",
+        source: str = "mask_img",
         aggregation: str = "mean",
         threshold: float = 0.5,
         atlas_names: list[str] | None = None,
@@ -225,13 +225,13 @@ class AtlasAggregation(BaseAnalysis):
         # Will be populated in _validate_inputs
         self.atlases = []
 
-    def _validate_inputs(self, lesion_data: LesionData) -> None:
+    def _validate_inputs(self, mask_data: MaskData) -> None:
         """
         Validate lesion data and load atlases from registry.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Lesion data to validate
 
         Raises
@@ -240,14 +240,13 @@ class AtlasAggregation(BaseAnalysis):
             If lesion data is invalid or source data not found
         """
         # Check that source data exists
-        source_img = self._get_source_image(lesion_data)
+        source_img = self._get_source_image(mask_data)
 
         if source_img is None:
             raise ValueError(
                 f"Source data not found: {self.source}\n"
-                "Check that the source exists in LesionData.\n"
-                f"Available sources: lesion_img, anatomical_img, "
-                f"or results from previous analyses."
+                "Check that the source exists in MaskData.\n"
+                f"Available sources: mask_img, or results from previous analyses."
             )
 
         # Load atlases from registry
@@ -283,14 +282,14 @@ class AtlasAggregation(BaseAnalysis):
     def _load_atlases_from_registry(self) -> list[dict]:
         """
         Load atlases from the registry (bundled or user-registered).
-        
+
         Returns
         -------
         list[dict]
             List of atlas dictionaries with keys: name, image, labels, space, resolution
         """
         from lacuna.assets.atlases.loader import BUNDLED_ATLASES_DIR
-        
+
         # Get atlases from registry (filter by names if provided)
         if self.atlas_names is not None:
             # Load specific atlases by name
@@ -298,29 +297,31 @@ class AtlasAggregation(BaseAnalysis):
             for name in self.atlas_names:
                 try:
                     atlas = load_atlas(name)
-                    
+
                     # Resolve paths (absolute or relative to bundled dir)
                     atlas_filename_path = Path(atlas.metadata.atlas_filename)
                     if atlas_filename_path.is_absolute():
                         atlas_path = atlas_filename_path
                     else:
                         atlas_path = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
-                    
+
                     labels_filename_path = Path(atlas.metadata.labels_filename)
                     if labels_filename_path.is_absolute():
                         labels_path = labels_filename_path
                     else:
                         labels_path = BUNDLED_ATLASES_DIR / atlas.metadata.labels_filename
-                    
-                    atlases_data.append({
-                        "name": name,
-                        "atlas_path": atlas_path,
-                        "labels_path": labels_path,
-                        "labels": atlas.labels,
-                        "space": atlas.metadata.space,
-                        "resolution": atlas.metadata.resolution,
-                        "is_4d": getattr(atlas.metadata, 'is_4d', False),
-                    })
+
+                    atlases_data.append(
+                        {
+                            "name": name,
+                            "atlas_path": atlas_path,
+                            "labels_path": labels_path,
+                            "labels": atlas.labels,
+                            "space": atlas.metadata.space,
+                            "resolution": atlas.metadata.resolution,
+                            "is_4d": getattr(atlas.metadata, "is_4d", False),
+                        }
+                    )
                 except KeyError:
                     # Atlas not in registry - will be caught by validation
                     pass
@@ -330,44 +331,46 @@ class AtlasAggregation(BaseAnalysis):
             atlases_data = []
             for metadata in atlas_metadatas:
                 atlas = load_atlas(metadata.name)
-                
+
                 # Resolve paths (absolute or relative to bundled dir)
                 atlas_filename_path = Path(atlas.metadata.atlas_filename)
                 if atlas_filename_path.is_absolute():
                     atlas_path = atlas_filename_path
                 else:
                     atlas_path = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
-                
+
                 labels_filename_path = Path(atlas.metadata.labels_filename)
                 if labels_filename_path.is_absolute():
                     labels_path = labels_filename_path
                 else:
                     labels_path = BUNDLED_ATLASES_DIR / atlas.metadata.labels_filename
-                
-                atlases_data.append({
-                    "name": metadata.name,
-                    "atlas_path": atlas_path,
-                    "labels_path": labels_path,
-                    "labels": atlas.labels,
-                    "space": metadata.space,
-                    "resolution": metadata.resolution,
-                    "is_4d": getattr(metadata, 'is_4d', False),
-                })
-        
+
+                atlases_data.append(
+                    {
+                        "name": metadata.name,
+                        "atlas_path": atlas_path,
+                        "labels_path": labels_path,
+                        "labels": atlas.labels,
+                        "space": metadata.space,
+                        "resolution": metadata.resolution,
+                        "is_4d": getattr(metadata, "is_4d", False),
+                    }
+                )
+
         return atlases_data
 
     def _ensure_atlas_matches_input_space(
-        self, 
+        self,
         atlas_img: nib.Nifti1Image,
         atlas_space: str,
         atlas_resolution: int,
         input_space: str,
         input_resolution: int,
-        input_affine: np.ndarray
+        input_affine: np.ndarray,
     ) -> nib.Nifti1Image:
         """
         Transform atlas to match input data space if spaces don't match.
-        
+
         This allows AtlasAggregation to work with any voxel-level image,
         not just lesion data, by transforming the atlas to the input space.
 
@@ -394,64 +397,64 @@ class AtlasAggregation(BaseAnalysis):
         # If atlas doesn't specify space, assume it matches
         if atlas_space is None:
             return atlas_img
-        
+
         # Check if spaces are equivalent (handles aliases like aAsym == cAsym)
         from lacuna.core.spaces import spaces_are_equivalent
-        
+
         if spaces_are_equivalent(atlas_space, input_space):
             # Same space or equivalent alias - no coordinate transformation needed
             # (nilearn will handle resolution resampling during aggregation)
             return atlas_img
-        
+
         # Need to transform atlas to input space
         from lacuna.core.spaces import CoordinateSpace
         from lacuna.spatial.transform import transform_image
         from lacuna.utils.logging import ConsoleLogger
-        
+
         logger = ConsoleLogger()
-        
+
         # Create target space matching input data
         target_space = CoordinateSpace(
             identifier=input_space,
             resolution=input_resolution,
             reference_affine=input_affine,
         )
-        
+
         logger.info(
             f"Transforming atlas from {atlas_space}@{atlas_resolution}mm "
             f"to {input_space}@{input_resolution}mm to match input data"
         )
-        
+
         # Transform atlas using nearest neighbor to preserve labels
         return transform_image(
             img=atlas_img,
             source_space=atlas_space,
             target_space=target_space,
             source_resolution=atlas_resolution,
-            interpolation='nearest'  # Preserve integer labels
+            interpolation="nearest",  # Preserve integer labels
         )
 
-    def _run_analysis(self, lesion_data: LesionData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
         """
         Compute ROI-level aggregation for all atlases.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Validated lesion data
 
         Returns
         -------
         list[AnalysisResult]
-            List containing one ROIResult per atlas
+            List containing one AtlasAggregationResult per atlas
         """
         # Get input data space/resolution once
-        input_space = lesion_data.metadata.get('space')
-        input_resolution = lesion_data.metadata.get('resolution')
-        
+        input_space = mask_data.metadata.get("space")
+        input_resolution = mask_data.metadata.get("resolution")
+
         # Get source image (this is what we'll aggregate)
-        source_img = self._get_source_image(lesion_data)
-        
+        source_img = self._get_source_image(mask_data)
+
         # Calculate voxel volume from source data
         voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
 
@@ -463,10 +466,10 @@ class AtlasAggregation(BaseAnalysis):
             atlas_name = atlas_info["name"]
             atlas_space = atlas_info.get("space")
             atlas_resolution = atlas_info.get("resolution")
-            
+
             # Load atlas image
             atlas_img = nib.load(atlas_info["atlas_path"])
-            
+
             # Transform atlas to match input data space if needed
             atlas_img = self._ensure_atlas_matches_input_space(
                 atlas_img=atlas_img,
@@ -474,9 +477,9 @@ class AtlasAggregation(BaseAnalysis):
                 atlas_resolution=atlas_resolution,
                 input_space=input_space,
                 input_resolution=input_resolution,
-                input_affine=source_img.affine
+                input_affine=source_img.affine,
             )
-            
+
             labels = atlas_info["labels"]
             atlas_data = atlas_img.get_fdata()
 
@@ -485,13 +488,14 @@ class AtlasAggregation(BaseAnalysis):
             source_shape = source_img.get_fdata().shape
             if source_shape != atlas_shape:
                 import warnings
+
                 warnings.warn(
                     f"Atlas '{atlas_name}' will be resampled to match source data.\n"
                     f"Source shape: {source_shape}, Atlas shape: {atlas_shape}",
                     UserWarning,
                     stacklevel=2,
                 )
-            
+
             if atlas_data.ndim == 3:
                 # 3D integer-labeled atlas - use nilearn NiftiLabelsMasker
                 atlas_results = self._aggregate_3d_atlas(
@@ -512,8 +516,8 @@ class AtlasAggregation(BaseAnalysis):
                 )
                 continue
 
-            # Create one ROIResult per atlas
-            roi_result = ROIResult(
+            # Create one AtlasAggregationResult per atlas
+            roi_result = AtlasAggregationResult(
                 name=atlas_name,
                 data=atlas_results,
                 atlas_names=[atlas_name],
@@ -521,8 +525,8 @@ class AtlasAggregation(BaseAnalysis):
                 metadata={
                     "source": self.source,
                     "threshold": self.threshold,
-                    "n_regions": len(atlas_results)
-                }
+                    "n_regions": len(atlas_results),
+                },
             )
             roi_results.append(roi_result)
 
@@ -788,13 +792,13 @@ class AtlasAggregation(BaseAnalysis):
         else:
             raise ValueError(f"Unknown aggregation method: {self.aggregation}")
 
-    def _get_source_image(self, lesion_data: LesionData) -> nib.Nifti1Image | None:
+    def _get_source_image(self, mask_data: MaskData) -> nib.Nifti1Image | None:
         """
-        Get source image from LesionData based on source parameter.
+        Get source image from MaskData based on source parameter.
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Lesion data containing source
 
         Returns
@@ -803,17 +807,15 @@ class AtlasAggregation(BaseAnalysis):
             Source image, or None if not found
         """
         # Direct image sources
-        if self.source == "lesion_img":
-            return lesion_data.lesion_img
-        elif self.source == "anatomical_img":
-            return lesion_data.anatomical_img
+        if self.source == "mask_img":
+            return mask_data.mask_img
 
         # Result from previous analysis: "AnalysisName.result_key"
         if "." in self.source:
             analysis_name, result_key = self.source.split(".", 1)
 
-            if analysis_name in lesion_data.results:
-                analysis_results = lesion_data.results[analysis_name]
+            if analysis_name in mask_data.results:
+                analysis_results = mask_data.results[analysis_name]
 
                 if result_key in analysis_results:
                     result = analysis_results[result_key]
@@ -830,7 +832,6 @@ class AtlasAggregation(BaseAnalysis):
 
         return None
 
-
     def _get_parameters(self) -> dict:
         """Get analysis parameters for provenance and display.
 
@@ -844,5 +845,5 @@ class AtlasAggregation(BaseAnalysis):
             "aggregation": self.aggregation,
             "threshold": self.threshold,
             "atlas_names": self.atlas_names,
-            "num_atlases": len(self.atlases) if hasattr(self, 'atlases') else None,
+            "num_atlases": len(self.atlases) if hasattr(self, "atlases") else None,
         }
