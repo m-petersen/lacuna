@@ -14,22 +14,22 @@ def test_load_bids_dataset_complete_workflow(simple_bids_dataset):
     from lacuna.io import load_bids_dataset
 
     # Load entire dataset
-    lesion_data_dict = load_bids_dataset(simple_bids_dataset)
+    mask_data_dict = load_bids_dataset(simple_bids_dataset)
 
     # Should load both subjects
-    assert len(lesion_data_dict) == 2
-    assert "sub-001" in lesion_data_dict
-    assert "sub-002" in lesion_data_dict
+    assert len(mask_data_dict) == 2
+    assert "sub-001" in mask_data_dict
+    assert "sub-002" in mask_data_dict
 
     # sub-001 should have anatomical
-    assert lesion_data_dict["sub-001"].anatomical_img is not None
+    assert mask_data_dict["sub-001"].anatomical_img is not None
 
     # sub-002 should not have anatomical
-    assert lesion_data_dict["sub-002"].anatomical_img is None
+    assert mask_data_dict["sub-002"].anatomical_img is None
 
     # Both should have lesion masks
-    assert lesion_data_dict["sub-001"].lesion_img is not None
-    assert lesion_data_dict["sub-002"].lesion_img is not None
+    assert mask_data_dict["sub-001"].mask_img is not None
+    assert mask_data_dict["sub-002"].mask_img is not None
 
 
 def test_load_bids_dataset_subject_filtering(simple_bids_dataset):
@@ -37,11 +37,11 @@ def test_load_bids_dataset_subject_filtering(simple_bids_dataset):
     from lacuna.io import load_bids_dataset
 
     # Load only sub-001
-    lesion_data_dict = load_bids_dataset(simple_bids_dataset, subjects=["sub-001"])
+    mask_data_dict = load_bids_dataset(simple_bids_dataset, subjects=["sub-001"])
 
-    assert len(lesion_data_dict) == 1
-    assert "sub-001" in lesion_data_dict
-    assert "sub-002" not in lesion_data_dict
+    assert len(mask_data_dict) == 1
+    assert "sub-001" in mask_data_dict
+    assert "sub-002" not in mask_data_dict
 
 
 def test_load_bids_dataset_multisession(multisession_bids_dataset):
@@ -49,16 +49,16 @@ def test_load_bids_dataset_multisession(multisession_bids_dataset):
     from lacuna.io import load_bids_dataset
 
     # Load all sessions
-    lesion_data_dict = load_bids_dataset(multisession_bids_dataset)
+    mask_data_dict = load_bids_dataset(multisession_bids_dataset)
 
     # Should have 2 entries: sub-001_ses-01, sub-001_ses-02
-    assert len(lesion_data_dict) == 2
-    assert "sub-001_ses-01" in lesion_data_dict
-    assert "sub-001_ses-02" in lesion_data_dict
+    assert len(mask_data_dict) == 2
+    assert "sub-001_ses-01" in mask_data_dict
+    assert "sub-001_ses-02" in mask_data_dict
 
     # Both should have data
-    for key, ld in lesion_data_dict.items():
-        assert ld.lesion_img is not None
+    for key, ld in mask_data_dict.items():
+        assert ld.mask_img is not None
         assert ld.anatomical_img is not None
 
 
@@ -67,11 +67,11 @@ def test_load_bids_dataset_session_filtering(multisession_bids_dataset):
     from lacuna.io import load_bids_dataset
 
     # Load only ses-01
-    lesion_data_dict = load_bids_dataset(multisession_bids_dataset, sessions=["ses-01"])
+    mask_data_dict = load_bids_dataset(multisession_bids_dataset, sessions=["ses-01"])
 
-    assert len(lesion_data_dict) == 1
-    assert "sub-001_ses-01" in lesion_data_dict
-    assert "sub-001_ses-02" not in lesion_data_dict
+    assert len(mask_data_dict) == 1
+    assert "sub-001_ses-01" in mask_data_dict
+    assert "sub-001_ses-02" not in mask_data_dict
 
 
 def test_bids_dataset_batch_analysis(simple_bids_dataset):
@@ -79,18 +79,18 @@ def test_bids_dataset_batch_analysis(simple_bids_dataset):
     from lacuna.io import load_bids_dataset
 
     # Load dataset
-    lesion_data_dict = load_bids_dataset(simple_bids_dataset)
+    mask_data_dict = load_bids_dataset(simple_bids_dataset)
 
     # Analyze all subjects
     results = {}
-    for subject_id, lesion_data in lesion_data_dict.items():
-        volume_mm3 = lesion_data.get_volume_mm3()
-        coord_space = lesion_data.get_coordinate_space()
+    for subject_id, mask_data in mask_data_dict.items():
+        volume_mm3 = mask_data.get_volume_mm3()
+        coord_space = mask_data.get_coordinate_space()
 
         results[subject_id] = {
             "volume_mm3": volume_mm3,
             "coordinate_space": coord_space,
-            "has_anatomical": lesion_data.anatomical_img is not None,
+            "has_anatomical": mask_data.anatomical_img is not None,
         }
 
     # Verify results
@@ -105,13 +105,13 @@ def test_bids_dataset_export_derivatives(simple_bids_dataset, tmp_path):
     from lacuna.io import export_bids_derivatives, load_bids_dataset
 
     # Load dataset
-    lesion_data_dict = load_bids_dataset(simple_bids_dataset)
+    mask_data_dict = load_bids_dataset(simple_bids_dataset)
 
     # Analyze each subject
     analyzed_dict = {}
-    for subject_id, lesion_data in lesion_data_dict.items():
+    for subject_id, mask_data in mask_data_dict.items():
         # Compute results
-        volume_mm3 = lesion_data.get_volume_mm3()
+        volume_mm3 = mask_data.get_volume_mm3()
         results = {
             "volume_mm3": volume_mm3,
             "analysis_type": "VolumeCalculation",
@@ -125,13 +125,13 @@ def test_bids_dataset_export_derivatives(simple_bids_dataset, tmp_path):
         )
 
         # Add results and provenance
-        analyzed = lesion_data.add_result("VolumeAnalysis", results).add_provenance(prov)
+        analyzed = mask_data.add_result("VolumeAnalysis", results).add_provenance(prov)
         analyzed_dict[subject_id] = analyzed
 
     # Export derivatives
     output_dir = tmp_path / "derivatives"
     export_bids_derivatives(
-        lesion_data_dict=analyzed_dict,
+        mask_data_dict=analyzed_dict,
         output_dir=output_dir,
         pipeline_name="test_pipeline",
         pipeline_version="0.1.0",
@@ -179,15 +179,15 @@ def test_bids_dataset_missing_anatomicals(tmp_path):
     affine = np.eye(4)
     affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
 
-    lesion_data = np.zeros(shape, dtype=np.uint8)
-    lesion_data[30:35, 30:35, 30:35] = 1
+    mask_data = np.zeros(shape, dtype=np.uint8)
+    mask_data[30:35, 30:35, 30:35] = 1
 
     # sub-01: has anatomical
     sub01_dir = bids_root / "sub-01" / "anat"
     sub01_dir.mkdir(parents=True)
 
     nib.save(
-        nib.Nifti1Image(lesion_data, affine),
+        nib.Nifti1Image(mask_data, affine),
         sub01_dir / "sub-01_space-T1w_label-lesion_mask.nii.gz",
     )
 
@@ -199,32 +199,32 @@ def test_bids_dataset_missing_anatomicals(tmp_path):
     sub02_dir.mkdir(parents=True)
 
     nib.save(
-        nib.Nifti1Image(lesion_data, affine),
+        nib.Nifti1Image(mask_data, affine),
         sub02_dir / "sub-02_space-T1w_label-lesion_mask.nii.gz",
     )
 
     # Load dataset
-    lesion_data_dict = load_bids_dataset(bids_root)
+    mask_data_dict = load_bids_dataset(bids_root)
 
     # Verify mixed anatomical availability
-    assert len(lesion_data_dict) == 2
-    assert lesion_data_dict["sub-01"].anatomical_img is not None
-    assert lesion_data_dict["sub-02"].anatomical_img is None
+    assert len(mask_data_dict) == 2
+    assert mask_data_dict["sub-01"].anatomical_img is not None
+    assert mask_data_dict["sub-02"].anatomical_img is None
 
 
 def test_bids_dataset_metadata_extraction(simple_bids_dataset):
     """Test that BIDS metadata is properly extracted."""
     from lacuna.io import load_bids_dataset
 
-    lesion_data_dict = load_bids_dataset(simple_bids_dataset)
+    mask_data_dict = load_bids_dataset(simple_bids_dataset)
 
     # Verify metadata extraction
-    for subject_id, lesion_data in lesion_data_dict.items():
-        assert "subject_id" in lesion_data.metadata
-        assert lesion_data.metadata["subject_id"] == subject_id
+    for subject_id, mask_data in mask_data_dict.items():
+        assert "subject_id" in mask_data.metadata
+        assert mask_data.metadata["subject_id"] == subject_id
 
         # Should have source path info
-        assert "lesion_path" in lesion_data.metadata
+        assert "lesion_path" in mask_data.metadata
 
 
 def test_bids_dataset_empty(tmp_path):
@@ -253,13 +253,13 @@ def test_bids_dataset_load_with_custom_metadata(simple_bids_dataset, tmp_path):
     # Load with custom metadata template
     custom_metadata = {"study": "test_study", "scanner": "3T"}
 
-    lesion_data_dict = load_bids_dataset(simple_bids_dataset)
+    mask_data_dict = load_bids_dataset(simple_bids_dataset)
 
     # Add custom metadata to all subjects
     enriched_dict = {}
-    for subject_id, lesion_data in lesion_data_dict.items():
-        new_metadata = {**lesion_data.metadata, **custom_metadata, "subject_id": subject_id}
-        enriched = lesion_data.copy_with(metadata=new_metadata)
+    for subject_id, mask_data in mask_data_dict.items():
+        new_metadata = {**mask_data.metadata, **custom_metadata, "subject_id": subject_id}
+        enriched = mask_data.copy_with(metadata=new_metadata)
         enriched_dict[subject_id] = enriched
 
     # Verify custom metadata persists

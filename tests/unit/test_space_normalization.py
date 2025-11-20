@@ -4,9 +4,9 @@ Tests consistent handling of space aliases (e.g., MNI152NLin2009aAsym → cAsym)
 across the codebase to avoid unnecessary transformations.
 """
 
-import pytest
-import numpy as np
 import nibabel as nib
+import numpy as np
+import pytest
 
 
 class TestCanonicalizeSpaceVariant:
@@ -107,9 +107,7 @@ class TestValidateSpaceCompatibility:
 
         # Should not raise
         validate_space_compatibility(
-            actual_space="MNI152NLin2009aAsym",
-            expected_space="MNI152NLin2009cAsym",
-            context="test"
+            actual_space="MNI152NLin2009aAsym", expected_space="MNI152NLin2009cAsym", context="test"
         )
 
     def test_accepts_identical_spaces(self):
@@ -118,9 +116,7 @@ class TestValidateSpaceCompatibility:
 
         # Should not raise
         validate_space_compatibility(
-            actual_space="MNI152NLin6Asym",
-            expected_space="MNI152NLin6Asym",
-            context="test"
+            actual_space="MNI152NLin6Asym", expected_space="MNI152NLin6Asym", context="test"
         )
 
     def test_rejects_incompatible_spaces(self):
@@ -131,7 +127,7 @@ class TestValidateSpaceCompatibility:
             validate_space_compatibility(
                 actual_space="MNI152NLin6Asym",
                 expected_space="MNI152NLin2009cAsym",
-                context="test analysis"
+                context="test analysis",
             )
 
     def test_error_message_includes_context(self):
@@ -140,9 +136,7 @@ class TestValidateSpaceCompatibility:
 
         with pytest.raises(ValueError, match="test analysis"):
             validate_space_compatibility(
-                actual_space="native",
-                expected_space="MNI152NLin6Asym",
-                context="test analysis"
+                actual_space="native", expected_space="MNI152NLin6Asym", context="test analysis"
             )
 
     def test_error_message_shows_both_spaces(self):
@@ -151,9 +145,7 @@ class TestValidateSpaceCompatibility:
 
         with pytest.raises(ValueError, match="native.*MNI152NLin6Asym"):
             validate_space_compatibility(
-                actual_space="native",
-                expected_space="MNI152NLin6Asym",
-                context="test"
+                actual_space="native", expected_space="MNI152NLin6Asym", context="test"
             )
 
     def test_suggests_transformation_if_possible(self):
@@ -166,32 +158,26 @@ class TestValidateSpaceCompatibility:
                 actual_space="MNI152NLin6Asym",
                 expected_space="MNI152NLin2009cAsym",
                 context="test",
-                suggest_transform=True
+                suggest_transform=True,
             )
 
 
 class TestValidateSpaceAndResolution:
-    """Test validate_space_and_resolution for LesionData and metadata validation."""
+    """Test validate_space_and_resolution for MaskData and metadata validation."""
 
     def test_accepts_valid_space_and_resolution(self):
         """Should accept valid space + resolution combination."""
         from lacuna.core.spaces import validate_space_and_resolution
 
         # Should not raise
-        validate_space_and_resolution(
-            space="MNI152NLin6Asym",
-            resolution=2.0
-        )
+        validate_space_and_resolution(space="MNI152NLin6Asym", resolution=2.0)
 
     def test_rejects_missing_resolution_when_space_specified(self):
         """Should raise error if space specified but resolution is None."""
         from lacuna.core.spaces import validate_space_and_resolution
 
         with pytest.raises(ValueError, match="[Rr]esolution.*required"):
-            validate_space_and_resolution(
-                space="MNI152NLin6Asym",
-                resolution=None
-            )
+            validate_space_and_resolution(space="MNI152NLin6Asym", resolution=None)
 
     def test_rejects_invalid_resolution(self):
         """Should raise error for invalid resolution values."""
@@ -199,8 +185,7 @@ class TestValidateSpaceAndResolution:
 
         with pytest.raises(ValueError, match="resolution"):
             validate_space_and_resolution(
-                space="MNI152NLin6Asym",
-                resolution=3.0  # Invalid - must be 0.5, 1, or 2
+                space="MNI152NLin6Asym", resolution=3.0  # Invalid - must be 0.5, 1, or 2
             )
 
     def test_accepts_none_space_with_none_resolution(self):
@@ -208,56 +193,48 @@ class TestValidateSpaceAndResolution:
         from lacuna.core.spaces import validate_space_and_resolution
 
         # Should not raise
-        validate_space_and_resolution(
-            space=None,
-            resolution=None
-        )
+        validate_space_and_resolution(space=None, resolution=None)
 
     def test_validates_space_identifier(self):
         """Should validate space identifier is recognized."""
         from lacuna.core.spaces import validate_space_and_resolution
 
         with pytest.raises(ValueError, match="Unknown.*space"):
-            validate_space_and_resolution(
-                space="InvalidSpaceName",
-                resolution=2.0
-            )
+            validate_space_and_resolution(space="InvalidSpaceName", resolution=2.0)
 
 
 class TestAtlasAggregationSpaceHandling:
     """Test that AtlasAggregation correctly handles space aliases."""
 
     @pytest.fixture
-    def lesion_data_aAsym(self):
-        """Create LesionData in MNI152NLin2009aAsym space."""
-        from lacuna.core.lesion_data import LesionData
+    def mask_data_aAsym(self):
+        """Create MaskData in MNI152NLin2009aAsym space."""
+        from lacuna.core.mask_data import MaskData
 
         # 2mm MNI affine
-        affine = np.array([
-            [-2., 0., 0., 90.],
-            [0., 2., 0., -126.],
-            [0., 0., 2., -72.],
-            [0., 0., 0., 1.]
-        ])
+        affine = np.array(
+            [
+                [-2.0, 0.0, 0.0, 90.0],
+                [0.0, 2.0, 0.0, -126.0],
+                [0.0, 0.0, 2.0, -72.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
         img = nib.Nifti1Image(np.ones((91, 109, 91)), affine)
 
-        return LesionData(
-            lesion_img=img,
-            metadata={
-                "space": "MNI152NLin2009aAsym",
-                "resolution": 2.0
-            }
-        )
+        return MaskData(mask_img=img, metadata={"space": "MNI152NLin2009aAsym", "resolution": 2.0})
 
     @pytest.fixture
     def atlas_img_cAsym(self):
         """Create atlas image in MNI152NLin2009cAsym space."""
-        affine = np.array([
-            [-2., 0., 0., 90.],
-            [0., 2., 0., -126.],
-            [0., 0., 2., -72.],
-            [0., 0., 0., 1.]
-        ])
+        affine = np.array(
+            [
+                [-2.0, 0.0, 0.0, 90.0],
+                [0.0, 2.0, 0.0, -126.0],
+                [0.0, 0.0, 2.0, -72.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
         # Atlas with integer labels
         data = np.zeros((91, 109, 91))
         data[40:50, 50:60, 40:50] = 1  # Region 1
@@ -266,17 +243,17 @@ class TestAtlasAggregationSpaceHandling:
         return nib.Nifti1Image(data, affine)
 
     def test_no_transformation_for_equivalent_spaces(
-        self, lesion_data_aAsym, atlas_img_cAsym, monkeypatch
+        self, mask_data_aAsym, atlas_img_cAsym, monkeypatch
     ):
         """AtlasAggregation should NOT transform atlas when spaces are equivalent.
 
         This is the key bug: Previously atlas_aggregation.py line 398 did:
             if atlas_space == input_space:
                 return atlas_img
-        
+
         But "MNI152NLin2009aAsym" != "MNI152NLin2009cAsym" (string comparison)
         So it attempted transformation even though they're anatomically equivalent.
-        
+
         After fix, should normalize both spaces and recognize equivalence.
         """
         from lacuna.analysis.atlas_aggregation import AtlasAggregation
@@ -290,10 +267,7 @@ class TestAtlasAggregationSpaceHandling:
             return atlas_img_cAsym
 
         # Monkeypatch transform at the point where it's imported
-        monkeypatch.setattr(
-            "lacuna.spatial.transform.transform_image",
-            mock_transform_image
-        )
+        monkeypatch.setattr("lacuna.spatial.transform.transform_image", mock_transform_image)
 
         # Create analysis instance
         analysis = AtlasAggregation()
@@ -305,7 +279,7 @@ class TestAtlasAggregationSpaceHandling:
             atlas_resolution=2.0,
             input_space="MNI152NLin2009aAsym",
             input_resolution=2.0,
-            input_affine=lesion_data_aAsym.lesion_img.affine
+            input_affine=mask_data_aAsym.mask_img.affine,
         )
 
         # Assert: Transformation should NOT have been called
@@ -323,27 +297,31 @@ class TestResolutionValidationInBaseAnalysis:
     """Test that base analysis properly validates resolution is present."""
 
     @pytest.fixture
-    def lesion_data_missing_resolution(self):
-        """Create LesionData with space but no resolution."""
-        from lacuna.core.lesion_data import LesionData
+    def mask_data_missing_resolution(self):
+        """Create MaskData with space but no resolution."""
+        from lacuna.core.mask_data import MaskData
 
-        affine = np.array([
-            [-2., 0., 0., 90.],
-            [0., 2., 0., -126.],
-            [0., 0., 2., -72.],
-            [0., 0., 0., 1.]
-        ])
+        affine = np.array(
+            [
+                [-2.0, 0.0, 0.0, 90.0],
+                [0.0, 2.0, 0.0, -126.0],
+                [0.0, 0.0, 2.0, -72.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
         img = nib.Nifti1Image(np.ones((91, 109, 91)), affine)
 
-        return LesionData(
-            lesion_img=img,
+        # Use provenance to bypass validation (simulating loaded data)
+        return MaskData(
+            mask_img=img,
             metadata={
                 "space": "MNI152NLin6Asym"
                 # Note: no resolution key
-            }
+            },
+            provenance=[{"test": "bypass validation"}],  # Allows missing resolution
         )
 
-    def test_detects_missing_resolution(self, lesion_data_missing_resolution):
+    def test_detects_missing_resolution(self, mask_data_missing_resolution):
         """BaseAnalysis should detect and raise error for missing resolution.
 
         Currently base.py line 394 gets resolution with .get() returning None,
@@ -356,15 +334,15 @@ class TestResolutionValidationInBaseAnalysis:
             TARGET_SPACE = "MNI152NLin2009cAsym"
             TARGET_RESOLUTION = 2.0
 
-            def _validate_inputs(self, lesion_data):
+            def _validate_inputs(self, mask_data):
                 """Implement required abstract method."""
                 pass
 
-            def _run_analysis(self, lesion_data):
+            def _run_analysis(self, mask_data):
                 return []
 
         analysis = TestAnalysis()
 
         # Should raise clear error about missing resolution
         with pytest.raises(ValueError, match="[Rr]esolution.*required"):
-            analysis.run(lesion_data_missing_resolution)
+            analysis.run(mask_data_missing_resolution)

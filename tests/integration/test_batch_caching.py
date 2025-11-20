@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
 from lacuna.spatial.cache import TransformCache, get_global_cache
-from lacuna.spatial.transform import transform_lesion_data
 
 
 @pytest.fixture
@@ -30,7 +29,7 @@ def temp_cache(tmp_path):
 @pytest.fixture
 def synthetic_lesion_batch():
     """Create batch of synthetic lesions for cache testing."""
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     lesions = []
     source_affine = REFERENCE_AFFINES[("MNI152NLin6Asym", 2)]
@@ -53,8 +52,8 @@ def synthetic_lesion_batch():
         ] = 1.0
 
         img = nib.Nifti1Image(data, source_affine)
-        lesion = LesionData(
-            lesion_img=img,
+        lesion = MaskData(
+            mask_img=img,
             metadata={
                 "subject_id": f"sub-{i:03d}",
                 "space": "MNI152NLin6Asym",
@@ -83,7 +82,7 @@ class TestBatchTransformReuse:
         temp_cache._hits = 0
         temp_cache._misses = 0
 
-        # Note: Since transform_lesion_data doesn't use result cache yet,
+        # Note: Since transform_mask_data doesn't use result cache yet,
         # we test the transform cache for transform objects
         from lacuna.assets import load_transform
 
@@ -248,7 +247,9 @@ class TestCacheConfiguration:
             img = nib.Nifti1Image(data, source_affine)
             result = nib.Nifti1Image(data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
 
-            cache.put_result(img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result, data_id=f"sub-{i}")
+            cache.put_result(
+                img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result, data_id=f"sub-{i}"
+            )
 
         # Check that evictions occurred
         stats = cache.get_stats()
@@ -270,7 +271,6 @@ class TestBatchCachingIntegration:
         """
         # This would require full integration with batch_process
         # For now, we verify the components work together
-        from lacuna.spatial.cache import get_global_cache
 
         cache = get_global_cache()
         initial_stats = cache.get_stats()

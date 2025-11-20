@@ -17,9 +17,8 @@ def test_functional_network_mapping_import():
 
 def test_functional_network_mapping_inherits_base_analysis():
     """Test that FunctionalNetworkMapping inherits from BaseAnalysis."""
-    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-
     from lacuna.analysis.base import BaseAnalysis
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
     assert issubclass(FunctionalNetworkMapping, BaseAnalysis)
 
@@ -67,49 +66,45 @@ def test_functional_network_mapping_has_run_method():
     assert callable(analysis.run)
 
 
-def test_functional_network_mapping_validates_coordinate_space(synthetic_lesion_img):
+def test_functional_network_mapping_validates_coordinate_space(synthetic_mask_img):
     """Test that FunctionalNetworkMapping validates MNI152 coordinate space."""
+    from lacuna import MaskData
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-    from lacuna import LesionData
-
     # Create lesion data with non-MNI space
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
 
     # Should raise error for invalid connectome path
     with pytest.raises(ValueError, match="Connectome path not found"):
-        analysis.run(lesion_data)
+        analysis.run(mask_data)
 
 
-def test_functional_network_mapping_requires_binary_mask(synthetic_lesion_img):
-    """Test that FunctionalNetworkMapping requires binary lesion mask."""
-    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-
-    from lacuna import LesionData
+def test_functional_network_mapping_requires_binary_mask(synthetic_mask_img):
+    """Test that MaskData requires binary lesion mask (enforced at construction)."""
+    from lacuna import MaskData
 
     # Create non-binary lesion data
-    data = synthetic_lesion_img.get_fdata()
+    data = synthetic_mask_img.get_fdata()
     data = data.astype(float) * 0.5  # Make it non-binary
     import nibabel as nib
 
-    non_binary_img = nib.Nifti1Image(data, synthetic_lesion_img.affine)
-    lesion_data = LesionData(lesion_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    non_binary_img = nib.Nifti1Image(data, synthetic_mask_img.affine)
 
-    analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
-
-    # Should raise error for invalid connectome path (validation happens first)
-    with pytest.raises(ValueError, match="Connectome path not found"):
-        analysis.run(lesion_data)
+    # Should raise error when creating MaskData with non-binary mask
+    with pytest.raises(ValueError, match="mask_img must be a binary mask"):
+        MaskData(mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
-def test_functional_network_mapping_returns_lesion_data(synthetic_lesion_img, tmp_path):
-    """Test that run() returns a LesionData object with namespaced results."""
+def test_functional_network_mapping_returns_mask_data(synthetic_mask_img, tmp_path):
+    """Test that run() returns a MaskData object with namespaced results."""
     pytest.skip("Mask indexing shape mismatch - bug in functional_network_mapping.py line 411")
 
 
-def test_functional_network_mapping_result_structure(synthetic_lesion_img, tmp_path):
+def test_functional_network_mapping_result_structure(synthetic_mask_img, tmp_path):
     """Test that results contain expected keys and data types."""
     pytest.skip("Mask indexing shape mismatch - bug in functional_network_mapping.py line 411")
 
@@ -125,11 +120,11 @@ def test_functional_network_mapping_accepts_pini_percentile():
     assert analysis.pini_percentile == 20
 
 
-def test_functional_network_mapping_preserves_input_immutability(synthetic_lesion_img, tmp_path):
-    """Test that run() does not modify the input LesionData."""
+def test_functional_network_mapping_preserves_input_immutability(synthetic_mask_img, tmp_path):
+    """Test that run() does not modify the input MaskData."""
     pytest.skip("RuntimeWarning in arctanh with test data - needs proper mock data setup")
 
 
-def test_functional_network_mapping_adds_provenance(synthetic_lesion_img, tmp_path):
+def test_functional_network_mapping_adds_provenance(synthetic_mask_img, tmp_path):
     """Test that run() adds provenance record."""
     pytest.skip("RuntimeWarning in arctanh with test data - needs proper mock data setup")

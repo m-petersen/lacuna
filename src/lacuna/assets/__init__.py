@@ -3,7 +3,7 @@
 This module provides centralized management of all neuroimaging assets:
 - Atlases (bundled and user-registered)
 - Templates (from TemplateFlow)
-- Transforms (from TemplateFlow)  
+- Transforms (from TemplateFlow)
 - Connectomes (structural and functional, user-registered)
 
 All asset types follow a consistent registry pattern with register/list/load functions.
@@ -62,36 +62,10 @@ from lacuna.assets.transforms import (
 )
 
 # Connectomes
-from lacuna.assets.connectomes import (
-    FunctionalConnectome,
-    FunctionalConnectomeMetadata,
-    StructuralConnectome,
-    StructuralConnectomeMetadata,
-    list_functional_connectomes,
-    list_structural_connectomes,
-    load_functional_connectome,
-    load_structural_connectome,
-    register_functional_connectome,
-    register_structural_connectome,
-    unregister_functional_connectome,
-    unregister_structural_connectome,
-)
 
 # Templates
-from lacuna.assets.templates import (
-    TemplateMetadata,
-    is_template_cached,
-    list_templates,
-    load_template,
-)
 
 # Transforms
-from lacuna.assets.transforms import (
-    TransformMetadata,
-    is_transform_cached,
-    list_transforms,
-    load_transform,
-)
 
 __all__ = [
     # Base classes

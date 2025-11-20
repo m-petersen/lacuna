@@ -9,11 +9,11 @@ import json
 import warnings
 from pathlib import Path
 
-from ..core.exceptions import LdkError
-from ..core.lesion_data import LesionData
+from ..core.exceptions import LacunaError
+from ..core.mask_data import MaskData
 
 
-class BidsError(LdkError):
+class BidsError(LacunaError):
     """Raised when BIDS dataset operations fail."""
 
     pass
@@ -25,7 +25,7 @@ def load_bids_dataset(
     sessions: list[str] | None = None,
     derivatives: bool = False,
     validate_bids: bool = True,
-) -> dict[str, LesionData]:
+) -> dict[str, MaskData]:
     """
     Load lesion masks from a BIDS dataset.
 
@@ -46,8 +46,8 @@ def load_bids_dataset(
 
     Returns
     -------
-    dict of str -> LesionData
-        Dictionary mapping subject IDs to LesionData objects.
+    dict of str -> MaskData
+        Dictionary mapping subject IDs to MaskData objects.
         For multi-session data, keys are 'sub-XXX_ses-YYY'.
 
     Raises
@@ -104,7 +104,7 @@ def load_bids_dataset(
         return _load_bids_manual(bids_root, subjects, sessions, derivatives)
 
     # Load lesion masks using pybids
-    lesion_data_dict = {}
+    mask_data_dict = {}
 
     # Get all lesion masks
     lesion_files = layout.get(
@@ -157,13 +157,13 @@ def load_bids_dataset(
         if session_id:
             metadata["session_id"] = f"ses-{session_id}"
 
-        lesion_data = LesionData.from_nifti(
+        mask_data = MaskData.from_nifti(
             lesion_path=lesion_file.path, anatomical_path=anatomical_path, metadata=metadata
         )
 
-        lesion_data_dict[subject_key] = lesion_data
+        mask_data_dict[subject_key] = mask_data
 
-    return lesion_data_dict
+    return mask_data_dict
 
 
 def _load_bids_manual(
@@ -171,13 +171,13 @@ def _load_bids_manual(
     subjects: list[str] | None = None,
     sessions: list[str] | None = None,
     derivatives: bool = False,
-) -> dict[str, LesionData]:
+) -> dict[str, MaskData]:
     """
     Load BIDS dataset without pybids (manual parsing).
 
     This is a fallback implementation for when pybids is not installed.
     """
-    lesion_data_dict = {}
+    mask_data_dict = {}
 
     # Get all subject directories
     subject_dirs = sorted(bids_root.glob("sub-*"))
@@ -237,7 +237,7 @@ def _load_bids_manual(
                                 stacklevel=2,
                             )
 
-                        # Create LesionData
+                        # Create MaskData
                         subject_key = f"{subject_id}_{session_id}"
                         metadata = {
                             "subject_id": subject_id,
@@ -246,7 +246,7 @@ def _load_bids_manual(
                             "lesion_path": str(lesion_path),
                         }
 
-                        lesion_data_dict[subject_key] = LesionData.from_nifti(
+                        mask_data_dict[subject_key] = MaskData.from_nifti(
                             lesion_path=lesion_path,
                             anatomical_path=anatomical_path,
                             metadata=metadata,
@@ -273,25 +273,25 @@ def _load_bids_manual(
                             stacklevel=2,
                         )
 
-                    # Create LesionData
+                    # Create MaskData
                     metadata = {
                         "subject_id": subject_id,
                         "bids_root": str(bids_root),
                         "lesion_path": str(lesion_path),
                     }
 
-                    lesion_data_dict[subject_id] = LesionData.from_nifti(
+                    mask_data_dict[subject_id] = MaskData.from_nifti(
                         lesion_path=lesion_path, anatomical_path=anatomical_path, metadata=metadata
                     )
 
     if not found_any:
         raise BidsError(f"No lesion masks found in BIDS dataset: {bids_root}")
 
-    return lesion_data_dict
+    return mask_data_dict
 
 
 def export_bids_derivatives(
-    lesion_data: LesionData,
+    mask_data: MaskData,
     output_dir: str | Path,
     include_images: bool = True,
     include_results: bool = True,
@@ -299,11 +299,11 @@ def export_bids_derivatives(
     overwrite: bool = False,
 ) -> Path:
     """
-    Export LesionData to BIDS derivatives format.
+    Export MaskData to BIDS derivatives format.
 
     Parameters
     ----------
-    lesion_data : LesionData
+    mask_data : MaskData
         Processed lesion data with analysis results.
     output_dir : str or Path
         Root directory for derivatives (e.g., 'derivatives/lacuna-v0.1.0').
@@ -326,12 +326,12 @@ def export_bids_derivatives(
     FileExistsError
         If output files exist and overwrite=False.
     ValueError
-        If lesion_data has no subject_id in metadata.
+        If mask_data has no subject_id in metadata.
 
     Examples
     --------
     >>> output_path = export_bids_derivatives(
-    ...     lesion_data,
+    ...     mask_data,
     ...     'derivatives/lacuna-v0.1.0',
     ...     include_provenance=True
     ... )
@@ -342,11 +342,11 @@ def export_bids_derivatives(
     output_dir = Path(output_dir)
 
     # Validate metadata
-    if "subject_id" not in lesion_data.metadata:
-        raise ValueError("LesionData metadata must contain 'subject_id' for BIDS export")
+    if "subject_id" not in mask_data.metadata:
+        raise ValueError("MaskData metadata must contain 'subject_id' for BIDS export")
 
-    subject_id = lesion_data.metadata["subject_id"]
-    session_id = lesion_data.metadata.get("session_id")
+    subject_id = mask_data.metadata["subject_id"]
+    session_id = mask_data.metadata.get("session_id")
 
     # Create subject directory
     subject_dir = output_dir / subject_id
@@ -391,7 +391,7 @@ def export_bids_derivatives(
             base_name = subject_id
 
         # Get coordinate space from metadata
-        coord_space = lesion_data.get_coordinate_space()
+        coord_space = mask_data.get_coordinate_space()
         lesion_filename = f"{base_name}_space-{coord_space}_desc-lesion_mask.nii.gz"
         lesion_path = anat_dir / lesion_filename
 
@@ -401,11 +401,11 @@ def export_bids_derivatives(
             )
 
         # Save NIfTI
-        nib.save(lesion_data.lesion_img, lesion_path)
+        nib.save(mask_data.mask_img, lesion_path)
 
     # Save results
-    if include_results and lesion_data.results:
-        for namespace, results_data in lesion_data.results.items():
+    if include_results and mask_data.results:
+        for namespace, results_data in mask_data.results.items():
             results_filename = f"{base_name}_desc-{namespace.lower()}_results.json"
             results_path = results_dir / results_filename
 
@@ -418,7 +418,7 @@ def export_bids_derivatives(
                 json.dump(results_data, f, indent=2)
 
     # Save provenance
-    if include_provenance and lesion_data.provenance:
+    if include_provenance and mask_data.provenance:
         prov_filename = f"{base_name}_desc-provenance.json"
         prov_path = results_dir / prov_filename
 
@@ -428,20 +428,18 @@ def export_bids_derivatives(
             )
 
         with open(prov_path, "w") as f:
-            json.dump(lesion_data.provenance, f, indent=2)
+            json.dump(mask_data.provenance, f, indent=2)
 
     return subject_dir
 
 
-def save_nifti(
-    lesion_data: LesionData, output_path: str | Path, save_anatomical: bool = False
-) -> None:
+def save_nifti(mask_data: MaskData, output_path: str | Path, save_anatomical: bool = False) -> None:
     """
     Save lesion mask to NIfTI file.
 
     Parameters
     ----------
-    lesion_data : LesionData
+    mask_data : MaskData
         Lesion data to save.
     output_path : str or Path
         Path for output NIfTI file (e.g., 'lesion.nii.gz').
@@ -455,8 +453,8 @@ def save_nifti(
 
     Examples
     --------
-    >>> save_nifti(lesion_data, 'output/lesion.nii.gz')
-    >>> save_nifti(lesion_data, 'output/lesion.nii.gz', save_anatomical=True)
+    >>> save_nifti(mask_data, 'output/lesion.nii.gz')
+    >>> save_nifti(mask_data, 'output/lesion.nii.gz', save_anatomical=True)
     """
     import nibabel as nib
 
@@ -472,13 +470,7 @@ def save_nifti(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Save lesion mask
-    nib.save(lesion_data.lesion_img, output_path)
-
-    # Optionally save anatomical
-    if save_anatomical and lesion_data.anatomical_img is not None:
-        # Create anatomical filename
-        anat_path = output_path.parent / output_path.name.replace("lesion", "anat")
-        nib.save(lesion_data.anatomical_img, anat_path)
+    nib.save(mask_data.mask_img, output_path)
 
 
 def validate_bids_derivatives(

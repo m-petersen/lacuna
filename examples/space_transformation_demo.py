@@ -117,23 +117,23 @@ def demo_space_detection(lesion_path: Path) -> None:
     print(f"    {detected_space.reference_affine}")
 
 
-def demo_lesion_data_loading(lesion_path: Path) -> "LesionData":
+def demo_mask_data_loading(lesion_path: Path) -> "MaskData":
     """Demonstrate loading lesion data with automatic space detection."""
-    print_section("2. Loading LesionData with Automatic Space Detection")
+    print_section("2. Loading MaskData with Automatic Space Detection")
 
-    from lacuna.core.lesion_data import LesionData
+    from lacuna.core.mask_data import MaskData
 
     # Load with automatic space detection
     print("Loading lesion data...")
-    lesion_data = LesionData.from_nifti(lesion_path, metadata={"subject_id": "demo-001"})
+    mask_data = MaskData.from_nifti(lesion_path, metadata={"subject_id": "demo-001"})
 
     print("  ✓ Loaded successfully")
-    print(f"  ✓ Subject ID: {lesion_data.metadata['subject_id']}")
-    print(f"  ✓ Detected space: {lesion_data.metadata['space']}")
-    print(f"  ✓ Resolution: {lesion_data.metadata['resolution']}mm")
-    print(f"  ✓ Lesion volume: {lesion_data.get_volume_mm3():.1f} mm³")
+    print(f"  ✓ Subject ID: {mask_data.metadata['subject_id']}")
+    print(f"  ✓ Detected space: {mask_data.metadata['space']}")
+    print(f"  ✓ Resolution: {mask_data.metadata['resolution']}mm")
+    print(f"  ✓ Lesion volume: {mask_data.get_volume_mm3():.1f} mm³")
 
-    return lesion_data
+    return mask_data
 
 
 def demo_query_capabilities() -> None:
@@ -161,7 +161,7 @@ def demo_query_capabilities() -> None:
         print(f"  • {space:25s} @ {res}mm")
 
 
-def demo_transform_validation(lesion_data: "LesionData") -> None:
+def demo_transform_validation(mask_data: "MaskData") -> None:
     """Demonstrate space validation and transform availability checking."""
     print_section("4. Space Validation and Transform Availability")
 
@@ -170,10 +170,10 @@ def demo_transform_validation(lesion_data: "LesionData") -> None:
 
     # Get source space
     source_space = CoordinateSpace(
-        identifier=lesion_data.metadata["space"],
-        resolution=lesion_data.metadata["resolution"],
+        identifier=mask_data.metadata["space"],
+        resolution=mask_data.metadata["resolution"],
         reference_affine=REFERENCE_AFFINES[
-            (lesion_data.metadata["space"], lesion_data.metadata["resolution"])
+            (mask_data.metadata["space"], mask_data.metadata["resolution"])
         ],
     )
 
@@ -197,7 +197,7 @@ def demo_transform_validation(lesion_data: "LesionData") -> None:
     # Validate space declaration
     is_valid = validator.validate_space_declaration(
         source_space,
-        lesion_data.lesion_img,  # Property access, not method call
+        mask_data.mask_img,  # Property access, not method call
     )
     print(f"Space declaration valid: {'✓ YES' if is_valid else '✗ NO'}")
 
@@ -206,12 +206,12 @@ def demo_transform_validation(lesion_data: "LesionData") -> None:
     print(f"Spaces differ: {'✓ YES' if spaces_differ else '✗ NO'}")
 
 
-def demo_transformation(lesion_data: "LesionData") -> "LesionData":
+def demo_transformation(mask_data: "MaskData") -> "MaskData":
     """Demonstrate spatial transformation between coordinate spaces."""
     print_section("5. Spatial Transformation")
 
     from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
-    from lacuna.spatial.transform import TransformationStrategy, transform_lesion_data
+    from lacuna.spatial.transform import TransformationStrategy, transform_mask_data
 
     # Define target space
     target_space = CoordinateSpace(
@@ -220,16 +220,16 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
         reference_affine=REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)],
     )
 
-    print(f"Source: {lesion_data.metadata['space']} @ {lesion_data.metadata['resolution']}mm")
+    print(f"Source: {mask_data.metadata['space']} @ {mask_data.metadata['resolution']}mm")
     print(f"Target: {target_space.identifier} @ {target_space.resolution}mm")
 
     # Show transformation strategy
     strategy = TransformationStrategy()
     source_space = CoordinateSpace(
-        identifier=lesion_data.metadata["space"],
-        resolution=lesion_data.metadata["resolution"],
+        identifier=mask_data.metadata["space"],
+        resolution=mask_data.metadata["resolution"],
         reference_affine=REFERENCE_AFFINES[
-            (lesion_data.metadata["space"], lesion_data.metadata["resolution"])
+            (mask_data.metadata["space"], mask_data.metadata["resolution"])
         ],
     )
 
@@ -237,7 +237,7 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
     print(f"\nTransformation direction: {direction}")
 
     # Determine interpolation method
-    interp_method = strategy.select_interpolation(lesion_data.lesion_img)
+    interp_method = strategy.select_interpolation(mask_data.mask_img)
     print(f"Interpolation method: {interp_method.value} (auto-detected from data)")
 
     # Check if we can actually transform
@@ -250,21 +250,21 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
         print("\nStep 1: Loading transform from lacuna.assets...")
         print("  (This may download from TemplateFlow on first use)")
 
-        transformed_data = transform_lesion_data(lesion_data, target_space)
+        transformed_data = transform_mask_data(mask_data, target_space)
 
         print("  ✓ Transform loaded successfully")
         print("  ✓ Transformation applied")
-        print("  ✓ New LesionData created")
+        print("  ✓ New MaskData created")
         print("  ✓ Provenance record added")
 
         # Show results
         print("\nTransformation Results:")
-        print(f"  Original volume: {lesion_data.get_volume_mm3():.1f} mm³")
+        print(f"  Original volume: {mask_data.get_volume_mm3():.1f} mm³")
         print(f"  Transformed volume: {transformed_data.get_volume_mm3():.1f} mm³")
-        print(f"  Original space: {lesion_data.metadata['space']}")
+        print(f"  Original space: {mask_data.metadata['space']}")
         print(f"  Transformed space: {transformed_data.metadata['space']}")
         print(
-            f"  Provenance records: {len(lesion_data.provenance)} → {len(transformed_data.provenance)}"
+            f"  Provenance records: {len(mask_data.provenance)} → {len(transformed_data.provenance)}"
         )
 
         return transformed_data
@@ -275,8 +275,8 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
         print("  pip install nitransforms templateflow")
         print("\nShowing API structure instead...")
         print("\nAPI call for transformation:")
-        print("  transformed = transform_lesion_data(lesion_data, target_space)")
-        return lesion_data
+        print("  transformed = transform_mask_data(mask_data, target_space)")
+        return mask_data
 
     except FileNotFoundError as e:
         print(f"\n⚠️  Transform file not available: {e}")
@@ -284,8 +284,8 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
         print("Make sure you have an internet connection for the initial download.")
         print(f"\nTransform files (~200MB) are cached at ~/.cache/templateflow/")
         print("\nAPI call demonstrated:")
-        print("  transformed = transform_lesion_data(lesion_data, target_space)")
-        return lesion_data
+        print("  transformed = transform_mask_data(mask_data, target_space)")
+        return mask_data
 
     except Exception as e:
         print(f"\n⚠️  Transformation failed: {e}")
@@ -294,11 +294,11 @@ def demo_transformation(lesion_data: "LesionData") -> "LesionData":
         print("  - Network issues during download")
         print("  - Unsupported transformation pair")
         print("\nAPI call for transformation:")
-        print("  transformed = transform_lesion_data(lesion_data, target_space)")
-        return lesion_data
+        print("  transformed = transform_mask_data(mask_data, target_space)")
+        return mask_data
 
 
-def demo_provenance(lesion_data: "LesionData") -> None:
+def demo_provenance(mask_data: "MaskData") -> None:
     """Demonstrate provenance tracking."""
     print_section("6. Provenance Tracking")
 
@@ -307,7 +307,7 @@ def demo_provenance(lesion_data: "LesionData") -> None:
     from lacuna.core.provenance import TransformationRecord
 
     # Show current provenance
-    provenance = lesion_data.provenance  # Property access
+    provenance = mask_data.provenance  # Property access
     print(f"Current provenance records: {len(provenance)}")
 
     if provenance:
@@ -344,7 +344,7 @@ def demo_provenance(lesion_data: "LesionData") -> None:
         print(f"  {key}: {value}")
 
 
-def demo_analysis_integration(lesion_data: "LesionData") -> None:
+def demo_analysis_integration(mask_data: "MaskData") -> None:
     """Demonstrate how analysis modules use automatic space alignment."""
     print_section("7. Analysis Module Integration")
 
@@ -355,14 +355,14 @@ def demo_analysis_integration(lesion_data: "LesionData") -> None:
     print("Example usage in analysis module:")
     print("""
     class MyAnalysis(BaseAnalysis):
-        def _validate_inputs(self, lesion_data: LesionData) -> LesionData:
+        def _validate_inputs(self, mask_data: MaskData) -> MaskData:
             # Automatically transform to required space if needed
-            lesion_data = self._validate_and_transform_space(
-                lesion_data,
+            mask_data = self._validate_and_transform_space(
+                mask_data,
                 required_space='MNI152NLin2009cAsym',
                 required_resolution=2
             )
-            return lesion_data
+            return mask_data
     """)
 
     print("\nThis helper method:")
@@ -432,10 +432,10 @@ def main():
     try:
         # Run demonstrations
         demo_space_detection(lesion_path)
-        lesion_data = demo_lesion_data_loading(lesion_path)
+        mask_data = demo_mask_data_loading(lesion_path)
         demo_query_capabilities()
-        demo_transform_validation(lesion_data)
-        transformed_data = demo_transformation(lesion_data)
+        demo_transform_validation(mask_data)
+        transformed_data = demo_transformation(mask_data)
 
         # Show provenance of the transformed data (or original if transformation failed)
         demo_provenance(transformed_data)
@@ -463,7 +463,7 @@ def main():
 
         if len(transformed_data.provenance) > 0:
             print("Success! Full transformation pipeline completed.")
-            print(f"Original space: {lesion_data.metadata['space']}")
+            print(f"Original space: {mask_data.metadata['space']}")
             print(f"Transformed to: {transformed_data.metadata['space']}")
         else:
             print("Next Steps:")

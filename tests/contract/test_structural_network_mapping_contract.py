@@ -65,19 +65,17 @@ def test_structural_network_mapping_has_run_method():
     assert callable(analysis.run)
 
 
-def test_structural_network_mapping_validates_coordinate_space(synthetic_lesion_img, tmp_path):
+def test_structural_network_mapping_validates_coordinate_space(synthetic_mask_img, tmp_path):
     """Test that StructuralNetworkMapping validates MNI152 coordinate space."""
-    import nibabel as nib
-    import numpy as np
 
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
     dummy_tck.touch()
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "native"})
+    mask_data = MaskData(mask_img=synthetic_mask_img, metadata={"space": "native", "resolution": 2})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
@@ -86,52 +84,41 @@ def test_structural_network_mapping_validates_coordinate_space(synthetic_lesion_
 
     # Should raise error if not in MNI152 space
     with pytest.raises(ValueError, match="MNI152"):
-        analysis.run(lesion_data)
+        analysis.run(mask_data)
 
 
 def test_structural_network_mapping_validates_binary_mask():
-    """Test that StructuralNetworkMapping validates binary lesion mask.
-    
+    """Test that MaskData validates binary lesion mask at construction (enforced at MaskData level).
+
     This is a contract test - we verify the validation logic exists,
     not the full pipeline integration (which requires MRtrix and is tested in integration tests).
     """
     import nibabel as nib
     import numpy as np
 
-    from lacuna import LesionData
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna import MaskData
 
     # Create a simple lesion with non-binary values
     data = np.zeros((10, 10, 10))
     data[4:6, 4:6, 4:6] = 0.5  # Non-binary values
-    
-    lesion_img = nib.Nifti1Image(data, np.eye(4))
-    lesion_data = LesionData(
-        lesion_img=lesion_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-    )
 
-    # The validation should detect non-binary values
-    # We can test this by directly checking the validation logic
-    # without needing MRtrix or actual tractogram files
-    lesion_array = lesion_data.lesion_img.get_fdata()
-    unique_vals = np.unique(lesion_array)
-    
-    # This should NOT be all 0s and 1s
-    assert not np.all(np.isin(unique_vals, [0, 1])), "Test lesion should have non-binary values"
-    
-    # The actual error would be raised in _validate_inputs during run(),
-    # but that requires MRtrix. The contract is that non-binary masks are rejected.
-    # Full integration testing happens in test_structural_network_mapping_integration.py
+    mask_img = nib.Nifti1Image(data, np.eye(4))
+
+    # The validation should detect non-binary values at MaskData construction
+    # This is enforced at the MaskData level (T005), not in individual analysis modules
+    with pytest.raises(ValueError, match="mask_img must be a binary mask"):
+        MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
-def test_structural_network_mapping_returns_lesion_data(synthetic_lesion_img):
-    """Test that run() returns a LesionData object with namespaced results."""
-    from lacuna import LesionData
+def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
+    """Test that run() returns a MaskData object with namespaced results."""
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Mark lesion as MNI152 space
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Note: This test will fail until implementation exists
     # It defines the expected behavior
@@ -144,7 +131,7 @@ def test_structural_network_mapping_returns_lesion_data(synthetic_lesion_img):
     # For now, expect this to fail during actual run
     # The test documents the expected interface
     with pytest.raises((FileNotFoundError, RuntimeError)):
-        result = analysis.run(lesion_data)
+        result = analysis.run(mask_data)
 
 
 def test_structural_network_mapping_result_structure():
@@ -182,13 +169,15 @@ def test_structural_network_mapping_accepts_n_jobs():
     assert analysis.n_jobs == 8
 
 
-def test_structural_network_mapping_preserves_input_immutability(synthetic_lesion_img):
-    """Test that run() does not modify the input LesionData."""
-    from lacuna import LesionData
+def test_structural_network_mapping_preserves_input_immutability(synthetic_mask_img):
+    """Test that run() does not modify the input MaskData."""
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-    original_results = lesion_data.results.copy()
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
+    original_results = mask_data.results.copy()
 
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
@@ -198,10 +187,10 @@ def test_structural_network_mapping_preserves_input_immutability(synthetic_lesio
 
     # Expected to fail during execution, but documents immutability requirement
     try:
-        result = analysis.run(lesion_data)
+        result = analysis.run(mask_data)
         # If it somehow succeeds, check immutability
-        assert lesion_data.results == original_results
-        assert result is not lesion_data
+        assert mask_data.results == original_results
+        assert result is not mask_data
     except (FileNotFoundError, RuntimeError):
         # Expected until implementation exists
         pass
@@ -230,19 +219,21 @@ def test_structural_network_mapping_adds_provenance():
 
 @pytest.mark.requires_templateflow
 @pytest.mark.slow
-def test_template_auto_loading_2mm(synthetic_lesion_img, tmp_path):
+def test_template_auto_loading_2mm(synthetic_mask_img, tmp_path):
     """Test that 2mm template is auto-loaded for MNI152_2mm space."""
     import nibabel as nib
-    
-    from lacuna import LesionData
+
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
     from lacuna.data import get_template_path
-    
+
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
     dummy_tck.touch()
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
@@ -256,7 +247,7 @@ def test_template_auto_loading_2mm(synthetic_lesion_img, tmp_path):
     template_path = get_template_path(resolution=2)
     assert template_path is not None
     assert template_path.exists()
-    
+
     # Load template to check dimensions
     template_img = nib.load(template_path)
     assert template_img.shape == (91, 109, 91)
@@ -264,19 +255,21 @@ def test_template_auto_loading_2mm(synthetic_lesion_img, tmp_path):
 
 @pytest.mark.requires_templateflow
 @pytest.mark.slow
-def test_template_auto_loading_1mm(synthetic_lesion_img, tmp_path):
+def test_template_auto_loading_1mm(synthetic_mask_img, tmp_path):
     """Test that 1mm template is auto-loaded for MNI152_1mm space."""
     import nibabel as nib
-    
-    from lacuna import LesionData
+
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
     from lacuna.data import get_template_path
-    
+
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
     dummy_tck.touch()
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 1})
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 1}
+    )
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
@@ -286,23 +279,21 @@ def test_template_auto_loading_1mm(synthetic_lesion_img, tmp_path):
     )
 
     # Template loading happens during analysis setup
-    # Verify that get_template_path can be called with resolution=1  
+    # Verify that get_template_path can be called with resolution=1
     template_path = get_template_path(resolution=1)
     assert template_path is not None
     assert template_path.exists()
-    
+
     # Load template to check dimensions
     template_img = nib.load(template_path)
     assert template_img.shape == (182, 218, 182)
     assert template_img.shape == (182, 218, 182)
 
 
-def test_space_validation_requires_exact_format(synthetic_lesion_img, tmp_path):
+def test_space_validation_requires_exact_format(synthetic_mask_img, tmp_path):
     """Test that native space is rejected."""
-    import nibabel as nib
-    import numpy as np
 
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
@@ -317,26 +308,26 @@ def test_space_validation_requires_exact_format(synthetic_lesion_img, tmp_path):
     # NOTE: With the new API, space validation is more flexible.
     # As long as the space is not "native", the base class will attempt transformation.
     # Invalid formats will fail during transformation, not during initial validation.
-    
+
     # Test that native space is rejected
-    native_lesion = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "native"})
+    native_lesion = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "native", "resolution": 2}
+    )
     with pytest.raises(ValueError, match="Native space"):
         analysis.run(native_lesion)
 
 
-def test_space_validation_rejects_non_mni(synthetic_lesion_img, tmp_path):
+def test_space_validation_rejects_non_mni(synthetic_mask_img, tmp_path):
     """Test that non-MNI152 spaces are rejected."""
-    import nibabel as nib
-    import numpy as np
 
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy files
     dummy_tck = tmp_path / "tractogram.tck"
     dummy_tck.touch()
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "native"})
+    mask_data = MaskData(mask_img=synthetic_mask_img, metadata={"space": "native", "resolution": 2})
 
     analysis = StructuralNetworkMapping(
         tractogram_path=dummy_tck,
@@ -345,13 +336,14 @@ def test_space_validation_rejects_non_mni(synthetic_lesion_img, tmp_path):
 
     # Space validation happens in run(), not _validate_inputs()
     with pytest.raises(ValueError, match="Native space lesions are not supported"):
-        analysis.run(lesion_data)
+        analysis.run(mask_data)
+
 
 @pytest.mark.requires_templateflow
 @pytest.mark.slow
 def test_template_loading_api():
     """Test the template loading API functions.
-    
+
     This test requires TemplateFlow because it verifies that templates can be loaded.
     """
     from lacuna.data import get_mni_template, get_template_path, list_templates
@@ -436,18 +428,18 @@ def test_load_to_memory_requires_keep_intermediate():
     assert analysis.keep_intermediate is False
 
 
-def test_template_stored_as_path_not_image(synthetic_lesion_img, tmp_path):
+def test_template_stored_as_path_not_image(synthetic_mask_img, tmp_path):
     """Test that template is stored as Path, not loaded as nibabel image.
-    
+
     This is a contract test - verify the API behavior without executing MRtrix.
     """
     from pathlib import Path
-    from unittest.mock import Mock, patch
+    from unittest.mock import patch
 
     import nibabel as nib
     import numpy as np
 
-    from lacuna import LesionData
+    from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Create dummy tractogram file (doesn't need to be valid for this test)
@@ -458,10 +450,14 @@ def test_template_stored_as_path_not_image(synthetic_lesion_img, tmp_path):
     mock_template = tmp_path / "template.nii.gz"
     nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), mock_template)
 
-    lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Mock the template loading to avoid TemplateFlow dependency
-    with patch('lacuna.analysis.structural_network_mapping.load_template', return_value=mock_template):
+    with patch(
+        "lacuna.analysis.structural_network_mapping.load_template", return_value=mock_template
+    ):
         analysis = StructuralNetworkMapping(
             tractogram_path=dummy_tck,
             tractogram_space="MNI152NLin6Asym",
@@ -472,9 +468,9 @@ def test_template_stored_as_path_not_image(synthetic_lesion_img, tmp_path):
         # Template should be set during initialization
         # The actual template would be loaded from TemplateFlow in real usage
         # Here we verify it's stored as Path, not nibabel image
-        assert analysis.template is None or isinstance(analysis.template, Path), (
-            f"Template should be None or Path, got {type(analysis.template)}"
-        )
+        assert analysis.template is None or isinstance(
+            analysis.template, Path
+        ), f"Template should be None or Path, got {type(analysis.template)}"
 
 
 # ============================================================================

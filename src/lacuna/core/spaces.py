@@ -36,22 +36,22 @@ SPACE_ALIASES = {
 
 def canonicalize_space_variant(space: str) -> str:
     """Canonicalize MNI space variant identifiers to their standard forms.
-    
+
     Handles space variant aliases by converting them to their canonical representations:
     - MNI152NLin2009aAsym -> MNI152NLin2009cAsym
-    - MNI152NLin2009bAsym -> MNI152NLin2009cAsym  
+    - MNI152NLin2009bAsym -> MNI152NLin2009cAsym
     - MNI152NLin2009cAsym -> MNI152NLin2009cAsym (unchanged)
     - Other spaces remain unchanged
-    
+
     This canonicalization enables consistent space comparisons and transform lookups.
     Note: This is NOT related to spatial normalization (warping images to standard space).
-    
+
     Args:
         space: Space identifier string
-        
+
     Returns:
         Canonical space identifier
-        
+
     Examples:
         >>> canonicalize_space_variant("MNI152NLin2009aAsym")
         'MNI152NLin2009cAsym'
@@ -63,17 +63,17 @@ def canonicalize_space_variant(space: str) -> str:
 
 def spaces_are_equivalent(space1: str, space2: str) -> bool:
     """Check if two space identifiers are anatomically equivalent.
-    
+
     Returns True if spaces are identical or are aliases of each other
     (e.g., aAsym and cAsym are equivalent).
-    
+
     Args:
         space1: First space identifier
         space2: Second space identifier
-        
+
     Returns:
         True if spaces are equivalent, False otherwise
-        
+
     Examples:
         >>> spaces_are_equivalent("MNI152NLin2009aAsym", "MNI152NLin2009cAsym")
         True
@@ -87,22 +87,22 @@ def validate_space_compatibility(
     actual_space: str,
     expected_space: str,
     context: str = "operation",
-    suggest_transform: bool = False
+    suggest_transform: bool = False,
 ) -> None:
     """Validate that actual space is compatible with expected space.
-    
+
     Raises ValueError if spaces are incompatible (not equivalent).
     Handles space aliases automatically.
-    
+
     Args:
         actual_space: The actual space of the data
         expected_space: The expected/required space
         context: Description of operation for error messages
         suggest_transform: Whether to suggest transformation in error message
-        
+
     Raises:
         ValueError: If spaces are incompatible
-        
+
     Examples:
         >>> validate_space_compatibility("MNI152NLin2009aAsym", "MNI152NLin2009cAsym", "test")
         # No error - spaces are equivalent
@@ -110,44 +110,39 @@ def validate_space_compatibility(
         ValueError: Space mismatch in test: got 'native', expected 'MNI152NLin6Asym'
     """
     if not spaces_are_equivalent(actual_space, expected_space):
-        msg = (
-            f"Space mismatch in {context}: "
-            f"got '{actual_space}', expected '{expected_space}'"
-        )
-        
+        msg = f"Space mismatch in {context}: " f"got '{actual_space}', expected '{expected_space}'"
+
         if suggest_transform:
             # Check if transform might be available
             norm_actual = canonicalize_space_variant(actual_space)
             norm_expected = canonicalize_space_variant(expected_space)
-            
+
             # Basic check for common transform pairs
             if {norm_actual, norm_expected} == {"MNI152NLin6Asym", "MNI152NLin2009cAsym"}:
                 msg += (
                     ". Transform available between these spaces. "
-                    "Consider using transform_lesion_data() to align spaces."
+                    "Consider using transform_mask_data() to align spaces."
                 )
-        
+
         raise ValueError(msg)
 
 
 def validate_space_and_resolution(
-    space: str | None,
-    resolution: float | None,
-    strict: bool = True
+    space: str | None, resolution: float | None, strict: bool = True
 ) -> None:
     """Validate space identifier and resolution are consistent.
-    
+
     Ensures that if a space is specified, resolution is also provided,
     and both are valid values.
-    
+
     Args:
         space: Space identifier (can be None for native/unknown space)
         resolution: Resolution in mm (can be None if space is None)
         strict: Whether to require resolution when space is provided
-        
+
     Raises:
         ValueError: If validation fails
-        
+
     Examples:
         >>> validate_space_and_resolution("MNI152NLin6Asym", 2.0)
         # No error
@@ -159,28 +154,27 @@ def validate_space_and_resolution(
     # Both None is acceptable (native/unknown space)
     if space is None and resolution is None:
         return
-    
+
     # If space is provided, resolution must be provided in strict mode
     if space is not None and resolution is None and strict:
         raise ValueError(
             "Resolution is required when space is specified. "
             f"Got space='{space}' but resolution=None"
         )
-    
+
     # Validate space identifier if provided
     if space is not None and space not in SUPPORTED_SPACES:
         raise ValueError(
             f"Unknown or unsupported space identifier: '{space}'. "
             f"Supported spaces: {SUPPORTED_SPACES}"
         )
-    
+
     # Validate resolution if provided
     if resolution is not None:
         valid_resolutions = [0.5, 1, 2]
         if resolution not in valid_resolutions:
             raise ValueError(
-                f"Invalid resolution: {resolution}mm. "
-                f"Must be one of {valid_resolutions}mm"
+                f"Invalid resolution: {resolution}mm. " f"Must be one of {valid_resolutions}mm"
             )
 
 
@@ -204,7 +198,7 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
-    # MNI152NLin2009aAsym - anatomically identical to cAsym 
+    # MNI152NLin2009aAsym - anatomically identical to cAsym
     ("MNI152NLin2009aAsym", 1): np.array(
         [
             [1.0, 0.0, 0.0, -96.0],

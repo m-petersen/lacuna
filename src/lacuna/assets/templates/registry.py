@@ -14,7 +14,7 @@ from lacuna.assets.base import AssetRegistry, SpatialAssetMetadata
 @dataclass(frozen=True)
 class TemplateMetadata(SpatialAssetMetadata):
     """Metadata for a reference brain template.
-    
+
     Attributes
     ----------
     name : str
@@ -30,7 +30,7 @@ class TemplateMetadata(SpatialAssetMetadata):
     source : str
         Source of template (always "templateflow")
     """
-    
+
     modality: str = "T1w"
     source: str = "templateflow"
 
@@ -80,7 +80,7 @@ def list_templates(
     modality: str | None = None,
 ) -> list[TemplateMetadata]:
     """List available templates from TemplateFlow.
-    
+
     Parameters
     ----------
     space : str, optional
@@ -89,19 +89,19 @@ def list_templates(
         Filter by resolution in mm
     modality : str, optional
         Filter by modality (e.g., "T1w", "T2w")
-    
+
     Returns
     -------
     list[TemplateMetadata]
         Matching templates
-    
+
     Examples
     --------
     >>> from lacuna.assets.templates import list_templates
-    >>> 
+    >>>
     >>> # List all available templates
     >>> templates = list_templates()
-    >>> 
+    >>>
     >>> # Filter by space and resolution
     >>> mni_1mm = list_templates(space="MNI152NLin2009cAsym", resolution=1.0)
     """

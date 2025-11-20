@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis import FunctionalNetworkMapping
 
 
@@ -64,11 +64,11 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
 
     Previously: run_batch() called with 5 arguments (self, img, indices, shape, affine)
     Bug: TypeError: takes 2 positional arguments but 5 were given
-    Fix: Method takes only 2 arguments (self, lesion_data), uses self._mask_info internally
+    Fix: Method takes only 2 arguments (self, mask_data), uses self._mask_info internally
     """
     import nibabel as nib
 
-    from lacuna import LesionData
+    from lacuna import MaskData
 
     analysis = FunctionalNetworkMapping(
         connectome_path=str(simple_connectome), method="boes", verbose=False
@@ -78,8 +78,8 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
     analysis._load_mask_info()
 
     # Create a dummy lesion
-    lesion_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
-    lesion_data_array[45, 50, 45] = 1
+    mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
+    mask_data_array[45, 50, 45] = 1
     affine = np.array(
         [
             [-2.0, 0.0, 0.0, 90.0],
@@ -88,10 +88,10 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
             [0.0, 0.0, 0.0, 1.0],
         ]
     )
-    lesion_img = nib.Nifti1Image(lesion_data_array, affine)
-    lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    mask_img = nib.Nifti1Image(mask_data_array, affine)
+    lesion = MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    # Call with LesionData object only - should not raise TypeError
+    # Call with MaskData object only - should not raise TypeError
     try:
         result = analysis._get_lesion_voxel_indices(lesion)
         # Success - method accepts correct signature
@@ -112,15 +112,15 @@ def test_both_fixes_together(simple_connectome):
     """
     import nibabel as nib
 
-    from lacuna import LesionData
+    from lacuna import MaskData
 
     analysis = FunctionalNetworkMapping(
         connectome_path=str(simple_connectome), method="boes", verbose=False, compute_t_map=False
     )
 
     # Create a dummy lesion
-    lesion_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
-    lesion_data_array[40:50, 50:60, 40:50] = 1  # Larger lesion
+    mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
+    mask_data_array[40:50, 50:60, 40:50] = 1  # Larger lesion
     affine = np.array(
         [
             [-2.0, 0.0, 0.0, 90.0],
@@ -129,8 +129,8 @@ def test_both_fixes_together(simple_connectome):
             [0.0, 0.0, 0.0, 1.0],
         ]
     )
-    lesion_img = nib.Nifti1Image(lesion_data_array, affine)
-    lesion = LesionData(lesion_img=lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    mask_img = nib.Nifti1Image(mask_data_array, affine)
+    lesion = MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # This should work without TypeErrors
     # (May raise ValidationError if no overlap, but that's expected)
@@ -149,9 +149,9 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
     """
     REGRESSION TEST: Verify _aggregate_results() captures add_result() return value.
 
-    Previously: lesion_data.add_result() was called but return value not captured
+    Previously: mask_data.add_result() was called but return value not captured
     Bug: Results dictionary empty, saved_files empty, output directory empty
-    Fix: lesion_data_with_results = lesion_data.add_result() and return it
+    Fix: mask_data_with_results = mask_data.add_result() and return it
     """
     # Create mock connectome with KNOWN coordinates
     n_voxels = 125  # 5x5x5 cube
@@ -176,15 +176,17 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         f.attrs["mask_shape"] = (91, 109, 91)
 
     # Create mock lesion IN THE SAME REGION
-    lesion_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
-    lesion_data_array[43:48, 52:57, 43:48] = 1  # Same 5x5x5 cube
+    mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
+    mask_data_array[43:48, 52:57, 43:48] = 1  # Same 5x5x5 cube
 
-    lesion_img = nib.Nifti1Image(lesion_data_array, affine)
+    mask_img = nib.Nifti1Image(mask_data_array, affine)
 
-    # Save and load with LesionData
+    # Save and load with MaskData
     lesion_path = tmp_path / "lesion.nii.gz"
-    nib.save(lesion_img, lesion_path)
-    lesion = LesionData.from_nifti(str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    nib.save(mask_img, lesion_path)
+    lesion = MaskData.from_nifti(
+        str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     # Create analysis
     analysis = FunctionalNetworkMapping(
@@ -216,16 +218,16 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         assert key in flnm_results, f"Missing expected key: {key}"
 
     # Verify NIfTI images are present
-    assert isinstance(flnm_results["correlation_map"], nib.Nifti1Image), (
-        "correlation_map should be NIfTI image"
-    )
+    assert isinstance(
+        flnm_results["correlation_map"], nib.Nifti1Image
+    ), "correlation_map should be NIfTI image"
     assert isinstance(flnm_results["z_map"], nib.Nifti1Image), "z_map should be NIfTI image"
 
     # Since compute_t_map=True, these should also be present
     assert "t_map" in flnm_results, "t_map should be present when compute_t_map=True"
-    assert "t_threshold_map" in flnm_results, (
-        "t_threshold_map should be present when t_threshold is set"
-    )
+    assert (
+        "t_threshold_map" in flnm_results
+    ), "t_threshold_map should be present when t_threshold is set"
 
 
 if __name__ == "__main__":

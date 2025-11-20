@@ -5,10 +5,10 @@ ensuring bundled atlases are properly registered with metadata and can be
 loaded via the DataAssetManager integration.
 """
 
-import pytest
-from pathlib import Path
 from dataclasses import is_dataclass
+
 import nibabel as nib
+import pytest
 
 
 class TestAtlasMetadataContract:
@@ -96,7 +96,9 @@ class TestAtlasRegistryContract:
         from lacuna.assets.atlases.registry import ATLAS_REGISTRY, AtlasMetadata
 
         for atlas_name, metadata in ATLAS_REGISTRY.items():
-            assert isinstance(metadata, AtlasMetadata), f"{atlas_name} metadata is not AtlasMetadata"
+            assert isinstance(
+                metadata, AtlasMetadata
+            ), f"{atlas_name} metadata is not AtlasMetadata"
             assert metadata.name == atlas_name
             assert metadata.space is not None
             assert metadata.resolution is not None
@@ -276,7 +278,12 @@ class TestAtlasRegistrationContract:
 
     def test_register_atlas_adds_to_registry(self, tmp_path):
         """register_atlas() must add atlas to ATLAS_REGISTRY."""
-        from lacuna.assets.atlases.registry import register_atlas, unregister_atlas, ATLAS_REGISTRY, AtlasMetadata
+        from lacuna.assets.atlases.registry import (
+            ATLAS_REGISTRY,
+            AtlasMetadata,
+            register_atlas,
+            unregister_atlas,
+        )
 
         # Create dummy files
         atlas_file = tmp_path / "test_atlas.nii.gz"
@@ -306,7 +313,7 @@ class TestAtlasRegistrationContract:
 
     def test_register_atlas_duplicate_name_raises_error(self):
         """register_atlas() must raise ValueError for duplicate names."""
-        from lacuna.assets.atlases.registry import register_atlas, AtlasMetadata
+        from lacuna.assets.atlases.registry import AtlasMetadata, register_atlas
 
         # Try to register with name that already exists
         metadata = AtlasMetadata(
@@ -323,7 +330,12 @@ class TestAtlasRegistrationContract:
 
     def test_unregister_atlas_removes_from_registry(self, tmp_path):
         """unregister_atlas() must remove atlas from registry."""
-        from lacuna.assets.atlases.registry import register_atlas, unregister_atlas, ATLAS_REGISTRY, AtlasMetadata
+        from lacuna.assets.atlases.registry import (
+            ATLAS_REGISTRY,
+            AtlasMetadata,
+            register_atlas,
+            unregister_atlas,
+        )
 
         # Create and register
         atlas_file = tmp_path / "test_atlas2.nii.gz"

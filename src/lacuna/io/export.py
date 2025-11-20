@@ -1,7 +1,7 @@
 """
 Export utilities for analysis results.
 
-Provides convenient functions for exporting LesionData analysis results
+Provides convenient functions for exporting MaskData analysis results
 to various formats (CSV, TSV, JSON) for downstream analysis and visualization.
 """
 
@@ -11,11 +11,11 @@ from typing import Any
 
 import pandas as pd
 
-from ..core.lesion_data import LesionData
+from ..core.mask_data import MaskData
 
 
 def export_results_to_csv(
-    lesion_data: LesionData,
+    mask_data: MaskData,
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
@@ -28,8 +28,8 @@ def export_results_to_csv(
 
     Parameters
     ----------
-    lesion_data : LesionData
-        LesionData object with analysis results
+    mask_data : MaskData
+        MaskData object with analysis results
     output_path : str or Path
         Output CSV file path
     analysis_name : str, optional
@@ -46,15 +46,15 @@ def export_results_to_csv(
     Raises
     ------
     ValueError
-        If lesion_data has no results or specified analysis not found
+        If mask_data has no results or specified analysis not found
 
     Examples
     --------
-    >>> from lacuna import LesionData
+    >>> from lacuna import MaskData
     >>> from lacuna.analysis import RegionalDamage
     >>> from lacuna.io import export_results_to_csv
     >>>
-    >>> lesion = LesionData.from_nifti("lesion.nii.gz")
+    >>> lesion = MaskData.from_nifti("lesion.nii.gz")
     >>> analysis = RegionalDamage()
     >>> result = analysis.run(lesion)
     >>>
@@ -74,28 +74,28 @@ def export_results_to_csv(
     """
     output_path = Path(output_path)
 
-    if not lesion_data.results:
-        raise ValueError("LesionData has no results to export")
+    if not mask_data.results:
+        raise ValueError("MaskData has no results to export")
 
     # Filter by analysis name if specified
     if analysis_name:
-        if analysis_name not in lesion_data.results:
-            available = list(lesion_data.results.keys())
+        if analysis_name not in mask_data.results:
+            available = list(mask_data.results.keys())
             raise ValueError(
                 f"Analysis '{analysis_name}' not found in results.\nAvailable analyses: {available}"
             )
-        results_to_export = {analysis_name: lesion_data.results[analysis_name]}
+        results_to_export = {analysis_name: mask_data.results[analysis_name]}
     else:
-        results_to_export = lesion_data.results
+        results_to_export = mask_data.results
 
     # Flatten results to single row
     row_data = {}
 
     # Add metadata if requested
     if include_metadata:
-        row_data["subject_id"] = lesion_data.metadata.get("subject_id", "unknown")
-        row_data["session_id"] = lesion_data.metadata.get("session_id", "")
-        row_data["coordinate_space"] = lesion_data.get_coordinate_space()
+        row_data["subject_id"] = mask_data.metadata.get("subject_id", "unknown")
+        row_data["session_id"] = mask_data.metadata.get("session_id", "")
+        row_data["coordinate_space"] = mask_data.get_coordinate_space()
 
     # Flatten nested results
     for analysis, results_dict in results_to_export.items():
@@ -120,7 +120,7 @@ def export_results_to_csv(
 
 
 def export_results_to_tsv(
-    lesion_data: LesionData,
+    mask_data: MaskData,
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
@@ -133,8 +133,8 @@ def export_results_to_tsv(
 
     Parameters
     ----------
-    lesion_data : LesionData
-        LesionData object with analysis results
+    mask_data : MaskData
+        MaskData object with analysis results
     output_path : str or Path
         Output TSV file path
     analysis_name : str, optional
@@ -150,7 +150,7 @@ def export_results_to_tsv(
     Raises
     ------
     ValueError
-        If lesion_data has no results or specified analysis not found
+        If mask_data has no results or specified analysis not found
 
     Examples
     --------
@@ -173,28 +173,28 @@ def export_results_to_tsv(
     """
     output_path = Path(output_path)
 
-    if not lesion_data.results:
-        raise ValueError("LesionData has no results to export")
+    if not mask_data.results:
+        raise ValueError("MaskData has no results to export")
 
     # Filter by analysis name if specified
     if analysis_name:
-        if analysis_name not in lesion_data.results:
-            available = list(lesion_data.results.keys())
+        if analysis_name not in mask_data.results:
+            available = list(mask_data.results.keys())
             raise ValueError(
                 f"Analysis '{analysis_name}' not found in results.\nAvailable analyses: {available}"
             )
-        results_to_export = {analysis_name: lesion_data.results[analysis_name]}
+        results_to_export = {analysis_name: mask_data.results[analysis_name]}
     else:
-        results_to_export = lesion_data.results
+        results_to_export = mask_data.results
 
     # Flatten results to single row
     row_data = {}
 
     # Add metadata if requested
     if include_metadata:
-        row_data["subject_id"] = lesion_data.metadata.get("subject_id", "unknown")
-        row_data["session_id"] = lesion_data.metadata.get("session_id", "")
-        row_data["coordinate_space"] = lesion_data.get_coordinate_space()
+        row_data["subject_id"] = mask_data.metadata.get("subject_id", "unknown")
+        row_data["session_id"] = mask_data.metadata.get("session_id", "")
+        row_data["coordinate_space"] = mask_data.get_coordinate_space()
 
     # Flatten nested results
     for analysis, results_dict in results_to_export.items():
@@ -216,7 +216,7 @@ def export_results_to_tsv(
 
 
 def export_provenance_to_json(
-    lesion_data: LesionData,
+    mask_data: MaskData,
     output_path: str | Path,
     indent: int = 2,
 ) -> Path:
@@ -228,8 +228,8 @@ def export_provenance_to_json(
 
     Parameters
     ----------
-    lesion_data : LesionData
-        LesionData object with provenance data
+    mask_data : MaskData
+        MaskData object with provenance data
     output_path : str or Path
         Output JSON file path
     indent : int, default=2
@@ -243,7 +243,7 @@ def export_provenance_to_json(
     Raises
     ------
     ValueError
-        If lesion_data has no provenance data
+        If mask_data has no provenance data
 
     Examples
     --------
@@ -266,9 +266,9 @@ def export_provenance_to_json(
     """
     output_path = Path(output_path)
 
-    if not lesion_data.provenance:
+    if not mask_data.provenance:
         raise ValueError(
-            "LesionData has no provenance data to export.\n"
+            "MaskData has no provenance data to export.\n"
             "Provenance is automatically tracked during analysis operations."
         )
 
@@ -277,13 +277,13 @@ def export_provenance_to_json(
 
     # Write provenance as JSON
     with open(output_path, "w") as f:
-        json.dump(lesion_data.provenance, f, indent=indent if indent > 0 else None)
+        json.dump(mask_data.provenance, f, indent=indent if indent > 0 else None)
 
     return output_path
 
 
 def export_results_to_json(
-    lesion_data: LesionData,
+    mask_data: MaskData,
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
@@ -299,8 +299,8 @@ def export_results_to_json(
 
     Parameters
     ----------
-    lesion_data : LesionData
-        LesionData object with analysis results
+    mask_data : MaskData
+        MaskData object with analysis results
     output_path : str or Path
         Output JSON file path
     analysis_name : str, optional
@@ -320,7 +320,7 @@ def export_results_to_json(
     Raises
     ------
     ValueError
-        If lesion_data has no results or specified analysis not found
+        If mask_data has no results or specified analysis not found
 
     Examples
     --------
@@ -351,31 +351,31 @@ def export_results_to_json(
     """
     output_path = Path(output_path)
 
-    if not lesion_data.results:
-        raise ValueError("LesionData has no results to export")
+    if not mask_data.results:
+        raise ValueError("MaskData has no results to export")
 
     # Build export data structure
     export_data: dict[str, Any] = {}
 
     # Add metadata if requested
     if include_metadata:
-        export_data["metadata"] = dict(lesion_data.metadata)
-        export_data["metadata"]["coordinate_space"] = lesion_data.get_coordinate_space()
+        export_data["metadata"] = dict(mask_data.metadata)
+        export_data["metadata"]["coordinate_space"] = mask_data.get_coordinate_space()
 
     # Add results
     if analysis_name:
-        if analysis_name not in lesion_data.results:
-            available = list(lesion_data.results.keys())
+        if analysis_name not in mask_data.results:
+            available = list(mask_data.results.keys())
             raise ValueError(
                 f"Analysis '{analysis_name}' not found in results.\nAvailable analyses: {available}"
             )
-        export_data["results"] = {analysis_name: lesion_data.results[analysis_name]}
+        export_data["results"] = {analysis_name: mask_data.results[analysis_name]}
     else:
-        export_data["results"] = lesion_data.results
+        export_data["results"] = mask_data.results
 
     # Add provenance if requested
-    if include_provenance and lesion_data.provenance:
-        export_data["provenance"] = lesion_data.provenance
+    if include_provenance and mask_data.provenance:
+        export_data["provenance"] = mask_data.provenance
 
     # Ensure parent directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -388,21 +388,21 @@ def export_results_to_json(
 
 
 def batch_export_to_csv(
-    lesion_data_list: list[LesionData],
+    mask_data_list: list[MaskData],
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
 ) -> Path:
     """
-    Export results from multiple LesionData objects to a single CSV.
+    Export results from multiple MaskData objects to a single CSV.
 
     Combines results from multiple subjects into one CSV file with each
     row representing one subject. Ideal for group-level statistical analysis.
 
     Parameters
     ----------
-    lesion_data_list : list[LesionData]
-        List of LesionData objects (typically from batch processing)
+    mask_data_list : list[MaskData]
+        List of MaskData objects (typically from batch processing)
     output_path : str or Path
         Output CSV file path
     analysis_name : str, optional
@@ -442,32 +442,32 @@ def batch_export_to_csv(
     - Each row represents one subject
     - Columns are shared across all subjects
     """
-    if not lesion_data_list:
-        raise ValueError("lesion_data_list is empty")
+    if not mask_data_list:
+        raise ValueError("mask_data_list is empty")
 
     output_path = Path(output_path)
 
     # Collect all rows
     rows = []
-    for lesion_data in lesion_data_list:
-        if not lesion_data.results:
+    for mask_data in mask_data_list:
+        if not mask_data.results:
             continue  # Skip subjects without results
 
         row_data = {}
 
         # Add metadata if requested
         if include_metadata:
-            row_data["subject_id"] = lesion_data.metadata.get("subject_id", "unknown")
-            row_data["session_id"] = lesion_data.metadata.get("session_id", "")
-            row_data["coordinate_space"] = lesion_data.get_coordinate_space()
+            row_data["subject_id"] = mask_data.metadata.get("subject_id", "unknown")
+            row_data["session_id"] = mask_data.metadata.get("session_id", "")
+            row_data["coordinate_space"] = mask_data.get_coordinate_space()
 
         # Filter by analysis name
         if analysis_name:
-            if analysis_name not in lesion_data.results:
+            if analysis_name not in mask_data.results:
                 continue  # Skip subjects without this analysis
-            results_to_export = {analysis_name: lesion_data.results[analysis_name]}
+            results_to_export = {analysis_name: mask_data.results[analysis_name]}
         else:
-            results_to_export = lesion_data.results
+            results_to_export = mask_data.results
 
         # Flatten results
         for analysis, results_dict in results_to_export.items():
@@ -494,21 +494,21 @@ def batch_export_to_csv(
 
 
 def batch_export_to_tsv(
-    lesion_data_list: list[LesionData],
+    mask_data_list: list[MaskData],
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
 ) -> Path:
     """
-    Export results from multiple LesionData objects to a single TSV.
+    Export results from multiple MaskData objects to a single TSV.
 
     Identical to batch_export_to_csv but uses tab delimiter.
     TSV is preferred in neuroimaging for BIDS compatibility.
 
     Parameters
     ----------
-    lesion_data_list : list[LesionData]
-        List of LesionData objects
+    mask_data_list : list[MaskData]
+        List of MaskData objects
     output_path : str or Path
         Output TSV file path
     analysis_name : str, optional
@@ -537,30 +537,30 @@ def batch_export_to_tsv(
     --------
     batch_export_to_csv : CSV batch export
     """
-    if not lesion_data_list:
-        raise ValueError("lesion_data_list is empty")
+    if not mask_data_list:
+        raise ValueError("mask_data_list is empty")
 
     output_path = Path(output_path)
 
     # Collect all rows (same as CSV version)
     rows = []
-    for lesion_data in lesion_data_list:
-        if not lesion_data.results:
+    for mask_data in mask_data_list:
+        if not mask_data.results:
             continue
 
         row_data = {}
 
         if include_metadata:
-            row_data["subject_id"] = lesion_data.metadata.get("subject_id", "unknown")
-            row_data["session_id"] = lesion_data.metadata.get("session_id", "")
-            row_data["coordinate_space"] = lesion_data.get_coordinate_space()
+            row_data["subject_id"] = mask_data.metadata.get("subject_id", "unknown")
+            row_data["session_id"] = mask_data.metadata.get("session_id", "")
+            row_data["coordinate_space"] = mask_data.get_coordinate_space()
 
         if analysis_name:
-            if analysis_name not in lesion_data.results:
+            if analysis_name not in mask_data.results:
                 continue
-            results_to_export = {analysis_name: lesion_data.results[analysis_name]}
+            results_to_export = {analysis_name: mask_data.results[analysis_name]}
         else:
-            results_to_export = lesion_data.results
+            results_to_export = mask_data.results
 
         for analysis, results_dict in results_to_export.items():
             if isinstance(results_dict, dict):

@@ -16,7 +16,7 @@ from collections.abc import Callable
 from joblib import Parallel, delayed
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.core.lesion_data import LesionData
+from lacuna.core.mask_data import MaskData
 
 
 class BatchStrategy(ABC):
@@ -41,16 +41,16 @@ class BatchStrategy(ABC):
     @abstractmethod
     def execute(
         self,
-        lesion_data_list: list[LesionData],
+        mask_data_list: list[MaskData],
         analysis: BaseAnalysis,
         progress_callback: Callable[[int], None] | None = None,
-    ) -> list[LesionData]:
+    ) -> list[MaskData]:
         """
         Execute analysis on all lesions using this strategy.
 
         Parameters
         ----------
-        lesion_data_list : list[LesionData]
+        mask_data_list : list[MaskData]
             List of lesions to process
         analysis : BaseAnalysis
             Analysis instance to apply to each lesion
@@ -60,8 +60,8 @@ class BatchStrategy(ABC):
 
         Returns
         -------
-        list[LesionData]
-            List of processed LesionData objects with results added
+        list[MaskData]
+            List of processed MaskData objects with results added
 
         Raises
         ------
@@ -134,10 +134,10 @@ class ParallelStrategy(BatchStrategy):
 
     def execute(
         self,
-        lesion_data_list: list[LesionData],
+        mask_data_list: list[MaskData],
         analysis: BaseAnalysis,
         progress_callback: Callable[[int], None] | None = None,
-    ) -> list[LesionData]:
+    ) -> list[MaskData]:
         """
         Execute parallel batch processing.
 
@@ -147,7 +147,7 @@ class ParallelStrategy(BatchStrategy):
 
         Parameters
         ----------
-        lesion_data_list : list[LesionData]
+        mask_data_list : list[MaskData]
             Subjects to process
         analysis : BaseAnalysis
             Analysis to apply
@@ -156,20 +156,20 @@ class ParallelStrategy(BatchStrategy):
 
         Returns
         -------
-        list[LesionData]
+        list[MaskData]
             Successfully processed subjects (failures are filtered out)
         """
 
-        def _process_one(lesion_data: LesionData, idx: int) -> tuple[int, LesionData | None]:
+        def _process_one(mask_data: MaskData, idx: int) -> tuple[int, MaskData | None]:
             """Process single subject with error handling."""
 
             try:
-                result = analysis.run(lesion_data)
+                result = analysis.run(mask_data)
                 # Note: progress_callback not used here - progress tracking handled differently
                 return idx, result
             except Exception as e:
                 # Get subject ID from metadata if available
-                subject_id = lesion_data.metadata.get("subject_id", f"index_{idx}")
+                subject_id = mask_data.metadata.get("subject_id", f"index_{idx}")
                 warnings.warn(
                     f"Analysis failed for subject {subject_id} (index {idx}): {e}",
                     RuntimeWarning,
@@ -181,7 +181,7 @@ class ParallelStrategy(BatchStrategy):
         if self.n_jobs == 1:
             # Sequential processing (useful for debugging)
             results = []
-            for i, lesion in enumerate(lesion_data_list):
+            for i, lesion in enumerate(mask_data_list):
                 result = _process_one(lesion, i)
                 results.append(result)
                 if progress_callback:
@@ -191,7 +191,7 @@ class ParallelStrategy(BatchStrategy):
             # Note: We can't pass progress_callback to workers due to pickling issues
             # Progress bar will update in chunks instead
             results = Parallel(n_jobs=self.n_jobs, backend=self.backend)(
-                delayed(_process_one)(lesion, i) for i, lesion in enumerate(lesion_data_list)
+                delayed(_process_one)(lesion, i) for i, lesion in enumerate(mask_data_list)
             )
             # Update progress bar all at once after parallel processing
             if progress_callback:
@@ -203,10 +203,10 @@ class ParallelStrategy(BatchStrategy):
         successful_results = [r[1] for r in results if r[1] is not None]
 
         # Warn if any subjects failed
-        n_failed = len(lesion_data_list) - len(successful_results)
+        n_failed = len(mask_data_list) - len(successful_results)
         if n_failed > 0:
             warnings.warn(
-                f"{n_failed} out of {len(lesion_data_list)} subjects failed processing. "
+                f"{n_failed} out of {len(mask_data_list)} subjects failed processing. "
                 "Check warnings above for details.",
                 RuntimeWarning,
                 stacklevel=2,
@@ -240,7 +240,7 @@ class VectorizedStrategy(BatchStrategy):
     This dramatically reduces overhead and enables efficient BLAS operations.
 
     The analysis class must implement:
-        run_batch(lesion_data_list: list[LesionData]) -> list[LesionData]
+        run_batch(mask_data_list: list[MaskData]) -> list[MaskData]
 
     Parameters
     ----------
@@ -271,7 +271,7 @@ class VectorizedStrategy(BatchStrategy):
         self,
         n_jobs: int = -1,
         lesion_batch_size: int | None = None,
-        batch_result_callback: Callable[[list[LesionData]], None] | None = None,
+        batch_result_callback: Callable[[list[MaskData]], None] | None = None,
     ):
         super().__init__(n_jobs)
         self.lesion_batch_size = lesion_batch_size
@@ -279,10 +279,10 @@ class VectorizedStrategy(BatchStrategy):
 
     def execute(
         self,
-        lesion_data_list: list[LesionData],
+        mask_data_list: list[MaskData],
         analysis: BaseAnalysis,
         progress_callback: Callable[[int], None] | None = None,
-    ) -> list[LesionData]:
+    ) -> list[MaskData]:
         """
         Execute vectorized batch processing.
 
@@ -292,7 +292,7 @@ class VectorizedStrategy(BatchStrategy):
 
         Parameters
         ----------
-        lesion_data_list : list[LesionData]
+        mask_data_list : list[MaskData]
             Subjects to process
         analysis : BaseAnalysis
             Analysis to apply (must implement run_batch method)
@@ -301,7 +301,7 @@ class VectorizedStrategy(BatchStrategy):
 
         Returns
         -------
-        list[LesionData]
+        list[MaskData]
             Processed subjects
 
         Raises
@@ -319,7 +319,7 @@ class VectorizedStrategy(BatchStrategy):
 
         # Process all lesions together if no batch size specified
         if self.lesion_batch_size is None:
-            results = analysis.run_batch(lesion_data_list)
+            results = analysis.run_batch(mask_data_list)
 
             # Call batch result callback if provided
             if self.batch_result_callback:
@@ -334,19 +334,19 @@ class VectorizedStrategy(BatchStrategy):
 
         # Process lesions in batches
         all_results = []
-        n_lesions = len(lesion_data_list)
+        n_lesions = len(mask_data_list)
 
         for batch_start in range(0, n_lesions, self.lesion_batch_size):
             batch_end = min(batch_start + self.lesion_batch_size, n_lesions)
-            lesion_batch = lesion_data_list[batch_start:batch_end]
+            lesion_batch = mask_data_list[batch_start:batch_end]
 
             # Process this batch
             batch_results = analysis.run_batch(lesion_batch)
-            
+
             # Call batch result callback if provided (for immediate saving)
             if self.batch_result_callback:
                 self.batch_result_callback(batch_results)
-            
+
             all_results.extend(batch_results)
 
             # Update progress

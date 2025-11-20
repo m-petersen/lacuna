@@ -102,7 +102,9 @@ class TestTransformationDirectionChoices:
         direction = strategy.determine_direction(source, target, check_cache=False)
 
         # Should prefer reverse to avoid downsampling source data
-        assert direction == "reverse", "Should preserve higher resolution source by transforming target"
+        assert (
+            direction == "reverse"
+        ), "Should preserve higher resolution source by transforming target"
 
     def test_resolution_based_direction_target_finer(self):
         """Test that higher target resolution prefers forward transformation."""
@@ -172,7 +174,9 @@ class TestTransformationDirectionChoices:
         strategy = TransformationStrategy()
 
         with caplog.at_level(logging.DEBUG):
-            direction = strategy.determine_direction(source, target, source_img=img, check_cache=False)
+            direction = strategy.determine_direction(
+                source, target, source_img=img, check_cache=False
+            )
 
         # Check that rationale is logged
         assert any(
@@ -193,8 +197,12 @@ class TestTransformationDirectionChoices:
 
         # Estimate may be 2x expected due to internal data handling
         # Accept if within reasonable range (2x-3x original size)
-        assert size_mb >= expected_mb * 0.9, f"Size estimate {size_mb:.1f}MB should be at least {expected_mb * 0.9:.1f}MB"
-        assert size_mb <= expected_mb * 3, f"Size estimate {size_mb:.1f}MB should not exceed {expected_mb * 3:.1f}MB"
+        assert (
+            size_mb >= expected_mb * 0.9
+        ), f"Size estimate {size_mb:.1f}MB should be at least {expected_mb * 0.9:.1f}MB"
+        assert (
+            size_mb <= expected_mb * 3
+        ), f"Size estimate {size_mb:.1f}MB should not exceed {expected_mb * 3:.1f}MB"
 
 
 class TestCacheInfluencedOptimization:
@@ -252,7 +260,7 @@ class TestTransformationOptimizationIntegration:
 
     def test_rationale_appears_in_provenance(self):
         """Test that transformation rationale is recorded in provenance."""
-        # This test would require full LesionData transformation
+        # This test would require full MaskData transformation
         # For now, we verify TransformationRecord accepts rationale
         from lacuna.core.provenance import TransformationRecord
 

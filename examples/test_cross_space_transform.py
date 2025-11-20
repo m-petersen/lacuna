@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.core.lesion_data import LesionData
+from lacuna.core.mask_data import MaskData
 
 
 class TestAnalysis(BaseAnalysis):
@@ -20,10 +20,10 @@ class TestAnalysis(BaseAnalysis):
     TARGET_SPACE = "MNI152NLin6Asym"
     TARGET_RESOLUTION = 2
 
-    def _validate_inputs(self, lesion_data: LesionData) -> None:
+    def _validate_inputs(self, mask_data: MaskData) -> None:
         """Validate that transformation occurred."""
-        space = lesion_data.get_coordinate_space()
-        resolution = lesion_data.metadata.get("resolution")
+        space = mask_data.get_coordinate_space()
+        resolution = mask_data.metadata.get("resolution")
         print(f"\n✓ Validation check:")
         print(f"  Received: {space} @ {resolution}mm")
         print(f"  Expected: {self.TARGET_SPACE} @ {self.TARGET_RESOLUTION}mm")
@@ -32,12 +32,12 @@ class TestAnalysis(BaseAnalysis):
             f"Resolution mismatch: {resolution} != {self.TARGET_RESOLUTION}"
         )
 
-    def _run_analysis(self, lesion_data: LesionData) -> dict:
+    def _run_analysis(self, mask_data: MaskData) -> dict:
         """Minimal analysis that just returns basic info."""
         return {
-            "lesion_volume_mm3": float(np.sum(lesion_data.lesion_img.get_fdata() > 0)),
-            "space": lesion_data.get_coordinate_space(),
-            "resolution": lesion_data.metadata.get("resolution"),
+            "lesion_volume_mm3": float(np.sum(mask_data.mask_img.get_fdata() > 0)),
+            "space": mask_data.get_coordinate_space(),
+            "resolution": mask_data.metadata.get("resolution"),
         }
 
 
@@ -61,11 +61,11 @@ def main():
         ]
     )
 
-    lesion_img = nib.Nifti1Image(lesion_array, affine)
+    mask_img = nib.Nifti1Image(lesion_array, affine)
 
-    # Create LesionData with space metadata
-    lesion_data = LesionData(
-        lesion_img=lesion_img,
+    # Create MaskData with space metadata
+    mask_data = MaskData(
+        mask_img=mask_img,
         metadata={
             "space": "MNI152NLin2009cAsym",
             "resolution": 2,
@@ -75,7 +75,7 @@ def main():
 
     print(f"\n✓ Created lesion:")
     print(f"  Space: MNI152NLin2009cAsym @ 2mm")
-    print(f"  Shape: {lesion_img.shape}")
+    print(f"  Shape: {mask_img.shape}")
     print(f"  Non-zero voxels: {np.sum(lesion_array > 0)}")
 
     # 2. Initialize analysis with different target space
@@ -90,13 +90,13 @@ def main():
     print(f"  Expected transformation: MNI152NLin2009cAsym @ 2mm → {analysis.TARGET_SPACE} @ {analysis.TARGET_RESOLUTION}mm")
     print(f"  This will use lacuna/spatial infrastructure:")
     print(f"    1. _ensure_target_space() detects space mismatch")
-    print(f"    2. Calls transform_lesion_data()")
+    print(f"    2. Calls transform_mask_data()")
     print(f"    3. load_transform() retrieves transform from assets")
     print(f"    4. Downloads from templateflow if needed")
     print(f"    5. Applies transformation using nitransforms")
 
     try:
-        result = analysis.run(lesion_data)
+        result = analysis.run(mask_data)
         print(f"\n✓ Analysis completed successfully!")
 
         # Verify transformation happened
@@ -104,8 +104,8 @@ def main():
         result_resolution = result.metadata.get("resolution")
         print(f"\n✓ Result verification:")
         print(f"  Final space: {result_space} @ {result_resolution}mm")
-        print(f"  Result shape: {result.lesion_img.shape}")
-        print(f"  Non-zero voxels: {np.sum(result.lesion_img.get_fdata() > 0)}")
+        print(f"  Result shape: {result.mask_img.shape}")
+        print(f"  Non-zero voxels: {np.sum(result.mask_img.get_fdata() > 0)}")
 
         # Verify correct target space
         assert result_space == analysis.TARGET_SPACE, (

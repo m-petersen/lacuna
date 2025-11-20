@@ -30,29 +30,28 @@ class TransformMetadata(AssetMetadata):
     source : str
         Source of transform (always "templateflow")
     """
-    
+
     from_space: str = ""
     to_space: str = ""
     transform_type: str = "nonlinear"
     source: str = "templateflow"
-    
+
     def validate(self) -> None:
         """Validate transform metadata.
-        
+
         Raises
         ------
         ValueError
             If metadata is invalid
         """
-        from lacuna.core.spaces import SUPPORTED_SPACES, SPACE_ALIASES
-        
+        from lacuna.core.spaces import SPACE_ALIASES, SUPPORTED_SPACES
+
         # Check spaces
         for space in [self.from_space, self.to_space]:
             if space and space not in SUPPORTED_SPACES and space not in SPACE_ALIASES:
-                raise ValueError(
-                    f"Unsupported space: {space}. "
-                    f"Supported: {SUPPORTED_SPACES}"
-                )
+                raise ValueError(f"Unsupported space: {space}. " f"Supported: {SUPPORTED_SPACES}")
+
+
 # Create registry and populate with known transforms
 TRANSFORM_REGISTRY = AssetRegistry[TransformMetadata]("transform")
 
@@ -85,26 +84,26 @@ def list_transforms(
     to_space: str | None = None,
 ) -> list[TransformMetadata]:
     """List available transforms from TemplateFlow.
-    
+
     Parameters
     ----------
     from_space : str, optional
         Filter by source coordinate space
     to_space : str, optional
         Filter by target coordinate space
-    
+
     Returns
     -------
     list[TransformMetadata]
         Matching transforms
-    
+
     Examples
     --------
     >>> from lacuna.assets.transforms import list_transforms
-    >>> 
+    >>>
     >>> # List all available transforms
     >>> transforms = list_transforms()
-    >>> 
+    >>>
     >>> # Find transforms from NLin6 to NLin2009c
     >>> transforms = list_transforms(
     ...     from_space="MNI152NLin6Asym",
@@ -115,13 +114,13 @@ def list_transforms(
     # Note: AssetRegistry.list() doesn't support from_space/to_space directly,
     # so we need to filter manually
     all_transforms = TRANSFORM_REGISTRY.list()
-    
+
     if from_space is not None:
         all_transforms = [t for t in all_transforms if t.from_space == from_space]
-    
+
     if to_space is not None:
         all_transforms = [t for t in all_transforms if t.to_space == to_space]
-    
+
     return all_transforms
 
 

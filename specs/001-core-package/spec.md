@@ -17,9 +17,9 @@ A neuroimaging researcher has lesion mask data (NIfTI files) in MNI152 for multi
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid NIfTI lesion mask file, **When** the researcher loads it using the I/O module, **Then** a LesionData object is created with the image data, affine matrix, and any provided metadata
-2. **Given** a BIDS-compliant dataset directory, **When** the researcher loads the dataset, **Then** LesionData objects are created for all subjects with lesion masks, with metadata automatically parsed from BIDS structure
-3. **Given** a LesionData object, **When** the researcher inspects it, **Then** they can access the lesion image, anatomical image (if provided), spatial metadata, and subject identifiers
+1. **Given** a valid NIfTI lesion mask file, **When** the researcher loads it using the I/O module, **Then** a MaskData object is created with the image data, affine matrix, and any provided metadata
+2. **Given** a BIDS-compliant dataset directory, **When** the researcher loads the dataset, **Then** MaskData objects are created for all subjects with lesion masks, with metadata automatically parsed from BIDS structure
+3. **Given** a MaskData object, **When** the researcher inspects it, **Then** they can access the lesion image, anatomical image (if provided), spatial metadata, and subject identifiers
 4. **Given** invalid or corrupted NIfTI files, **When** the researcher attempts to load them, **Then** clear error messages are provided explaining what is wrong
 
 ---
@@ -34,7 +34,7 @@ After completing analyses, a researcher needs to save the results in standard fo
 
 **Acceptance Scenarios**:
 
-1. **Given** a LesionData object with analysis results, **When** the researcher saves it, **Then** image data is written as NIfTI files and tabular results as CSV files in a structured directory
+1. **Given** a MaskData object with analysis results, **When** the researcher saves it, **Then** image data is written as NIfTI files and tabular results as CSV files in a structured directory
 2. **Given** BIDS-derivative output format is requested, **When** results are saved, **Then** they follow BIDS-derivative naming conventions and include appropriate metadata files
 3. **Given** a saved analysis, **When** the researcher reloads it later, **Then** all results and provenance information are preserved
 
@@ -50,8 +50,8 @@ A researcher wants to understand the functional network impacts of a lesion by m
 
 **Acceptance Scenarios**:
 
-1. **Given** a LesionData object in MNI152 space and a connectome atlas, **When** the researcher performs lesion network mapping, **Then** network disruption metrics are calculated and added to the LesionData results
-2. **Given** analysis results in a LesionData object, **When** the researcher accesses them, **Then** they can retrieve network-level statistics and affected regions
+1. **Given** a MaskData object in MNI152 space and a connectome atlas, **When** the researcher performs lesion network mapping, **Then** network disruption metrics are calculated and added to the MaskData results
+2. **Given** analysis results in a MaskData object, **When** the researcher accesses them, **Then** they can retrieve network-level statistics and affected regions
 3. **Given** multiple subjects with lesion data in MNI152 space, **When** batch analysis is performed, **Then** results are computed for all subjects and can be exported in a structured format
 
 ---
@@ -66,10 +66,10 @@ A researcher needs to transform lesion masks from native subject space to a stan
 
 **Acceptance Scenarios**:
 
-1. **Given** a LesionData object in native space, **When** the researcher applies spatial normalization, **Then** a new LesionData object is returned with the lesion transformed to standard space with updated affine matrix
-2. **Given** a LesionData object, **When** the researcher resamples it to a different resolution, **Then** a new LesionData object is returned with the correctly resampled image and updated header
-3. **Given** two LesionData objects in different spaces, **When** the researcher checks spatial compatibility, **Then** the system correctly identifies whether they share the same coordinate space
-4. **Given** a spatial transformation operation, **When** it is applied, **Then** the provenance is recorded in the LesionData object's history
+1. **Given** a MaskData object in native space, **When** the researcher applies spatial normalization, **Then** a new MaskData object is returned with the lesion transformed to standard space with updated affine matrix
+2. **Given** a MaskData object, **When** the researcher resamples it to a different resolution, **Then** a new MaskData object is returned with the correctly resampled image and updated header
+3. **Given** two MaskData objects in different spaces, **When** the researcher checks spatial compatibility, **Then** the system correctly identifies whether they share the same coordinate space
+4. **Given** a spatial transformation operation, **When** it is applied, **Then** the provenance is recorded in the MaskData object's history
 
 ---
 
@@ -83,7 +83,7 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 
 **Acceptance Scenarios**:
 
-1. **Given** a LesionData object, **When** the researcher creates a visualization, **Then** the lesion is overlaid on an anatomical template with appropriate color mapping
+1. **Given** a MaskData object, **When** the researcher creates a visualization, **Then** the lesion is overlaid on an anatomical template with appropriate color mapping
 2. **Given** analysis results, **When** visualizations are generated, **Then** plots show network disruption patterns or other analysis outcomes
 3. **Given** visualization functions, **When** optional visualization dependencies are not installed, **Then** clear error messages guide users to install the `viz` extra
 
@@ -104,7 +104,7 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 - **What happens when BIDS metadata is incomplete or malformed?**
   - System validates required BIDS fields (subject_id) and raises `BIDSValidationError` with specific missing fields
   - Optional fields are logged as warnings but don't block loading
-  - Graceful degradation: partial metadata still creates valid LesionData objects (T030)
+  - Graceful degradation: partial metadata still creates valid MaskData objects (T030)
 
 - **How does the system handle very large lesions that exceed anatomical boundaries?**
   - No automatic clipping; analysis proceeds with full lesion extent
@@ -118,23 +118,23 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 
 - **How does the system handle multi-session data where the same subject has lesion masks at different timepoints?**
   - BIDS loader (T027-T028) parses session information from filenames
-  - Each session creates separate LesionData object with session metadata
+  - Each session creates separate MaskData object with session metadata
   - Batch processing utilities handle session grouping for longitudinal analysis (v2.0 feature)
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST provide a standardized LesionData class that encapsulates lesion image data, affine matrix, metadata, and analysis results
-- **FR-002**: System MUST load NIfTI format lesion masks and create LesionData objects with all header information preserved
+- **FR-001**: System MUST provide a standardized MaskData class that encapsulates lesion image data, affine matrix, metadata, and analysis results
+- **FR-002**: System MUST load NIfTI format lesion masks and create MaskData objects with all header information preserved
 - **FR-003**: System MUST support BIDS-compliant dataset organization and automatically parse subject/session metadata
 - **FR-004**: System MUST validate spatial consistency of image data and affine matrices
-- **FR-005**: System MUST provide spatial transformation functions that return new LesionData objects (preserving immutability)
-- **FR-006**: System MUST track provenance by recording the sequence of transformations applied to each LesionData object
+- **FR-005**: System MUST provide spatial transformation functions that return new MaskData objects (preserving immutability)
+- **FR-006**: System MUST track provenance by recording the sequence of transformations applied to each MaskData object
 - **FR-007**: System MUST support spatial normalization to standard template spaces (MNI152)
 - **FR-008**: System MUST provide coordinate space validation utilities to check if two images are in the same space
 - **FR-009**: System MUST implement lesion network mapping functionality that computes network disruption metrics
-- **FR-010**: System MUST store all analysis results in the LesionData object's results attribute without modifying other attributes
+- **FR-010**: System MUST store all analysis results in the MaskData object's results attribute without modifying other attributes
 - **FR-011**: System MUST support batch processing of multiple subjects
 - **FR-012**: System MUST save results in BIDS-derivative format when requested
 - **FR-013**: System MUST provide visualization functions as an optional feature (requiring extra dependencies)
@@ -143,12 +143,12 @@ A researcher wants to create publication-quality visualizations of lesion masks 
 - **FR-016**: System MUST use established libraries (nibabel, nilearn, pybids) for critical operations
 - **FR-017**: System MUST provide clear error messages for invalid input data or incompatible operations
 - **FR-018**: System MUST enforce module boundaries (core, io, preprocess, analysis, modeling, reporting) with no circular dependencies
-- **FR-019**: System MUST ensure that new analysis modules can be added by depending only on the LesionData abstraction
+- **FR-019**: System MUST ensure that new analysis modules can be added by depending only on the MaskData abstraction
 - **FR-020**: System MUST provide comprehensive test coverage using pytest
 
 ### Key Entities
 
-- **LesionData**: The central data container representing a single subject's lesion analysis. Contains lesion image (NIfTI), optional anatomical image, affine matrix, metadata dictionary (subject ID, session, BIDS info), provenance history, and results dictionary.
+- **MaskData**: The central data container representing a single subject's lesion analysis. Contains lesion image (NIfTI), optional anatomical image, affine matrix, metadata dictionary (subject ID, session, BIDS info), provenance history, and results dictionary.
 
 - **Subject Metadata**: Information identifying and describing a research participant, including subject ID, session ID, clinical/demographic variables, and BIDS-compliant attributes.
 
@@ -293,7 +293,7 @@ connectome.h5
 
 ### Measurable Outcomes
 
-- **SC-001**: Researchers can load a single-subject lesion mask from a NIfTI file and create a valid LesionData object in under 5 seconds
+- **SC-001**: Researchers can load a single-subject lesion mask from a NIfTI file and create a valid MaskData object in under 5 seconds
 - **SC-002**: Researchers can load a BIDS dataset containing 50 subjects with lesion masks in under 2 minutes
 - **SC-003**: Spatial normalization operations complete in under 30 seconds per subject on standard hardware (4-core CPU, 16GB RAM, SSD storage)
 - **SC-004**: The package correctly handles 95% of BIDS-compliant NIfTI files without errors

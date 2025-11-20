@@ -11,7 +11,7 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis import AtlasAggregation
 
 
@@ -56,11 +56,11 @@ class TestAtlasLabelAssignment:
             affine[:3, :3] *= 2.0  # 2mm resolution
 
             # Create lesion in RIGHT hemisphere (x > 45)
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[45:75, 40:60, 40:50] = 1  # Right hemisphere lesion starting at midline
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[45:75, 40:60, 40:50] = 1  # Right hemisphere lesion starting at midline
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # Create 4D atlas with 3 regions (volumes)
             atlas_4d = np.zeros((*shape, 3), dtype=np.uint8)
@@ -83,20 +83,23 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("0 Region_Right\n1 Region_Left\n2 Region_Middle\n")
 
             # Load lesion data
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
 
             # Register atlas
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Run analysis - use only this test's atlas
             analysis = AtlasAggregation(
-                source="lesion_img",
+                source="mask_img",
                 aggregation="percent",
                 threshold=0.5,
                 atlas_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
             results = atlas_results["test_4d_atlas"].get_data()
 
@@ -131,9 +134,9 @@ class TestAtlasLabelAssignment:
             )
 
             # Middle region should have some damage (partial overlap)
-            assert 5.0 <= middle_damage <= 30.0, (
-                f"Region_Middle should have MEDIUM damage (5-30%), but got {middle_damage:.2f}%"
-            )
+            assert (
+                5.0 <= middle_damage <= 30.0
+            ), f"Region_Middle should have MEDIUM damage (5-30%), but got {middle_damage:.2f}%"
 
     def test_4d_atlas_with_nonzero_starting_id(self):
         """
@@ -151,11 +154,11 @@ class TestAtlasLabelAssignment:
             affine = np.eye(4)
 
             # Lesion in bottom half (z < 25)
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[:, :, 0:25] = 1
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[:, :, 0:25] = 1
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # 4D atlas with 2 regions
             atlas_4d = np.zeros((*shape, 2), dtype=np.uint8)
@@ -171,20 +174,23 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 Bottom_Region\n2 Top_Region\n")
 
             # Load and analyze
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-            
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
+
             # Register atlas
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
-            
+
             # Run analysis - use only this test's atlas
             analysis = AtlasAggregation(
-                source="lesion_img",
+                source="mask_img",
                 aggregation="percent",
                 threshold=0.5,
                 atlas_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
             results = atlas_results["atlas_1indexed"].get_data()
 
@@ -204,9 +210,9 @@ class TestAtlasLabelAssignment:
             )
 
             # Top region (volume 1, ID 2) should have ZERO damage
-            assert top_damage < 5.0, (
-                f"Top_Region (volume 1 → ID 2) should have ZERO damage, but got {top_damage:.2f}%"
-            )
+            assert (
+                top_damage < 5.0
+            ), f"Top_Region (volume 1 → ID 2) should have ZERO damage, but got {top_damage:.2f}%"
 
     def test_3d_atlas_label_assignment_unchanged(self):
         """
@@ -224,11 +230,11 @@ class TestAtlasLabelAssignment:
             affine = np.eye(4)
 
             # Lesion in region 2
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[20:30, 20:30, 20:30] = 1
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[20:30, 20:30, 20:30] = 1
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # 3D atlas with labeled regions
             atlas_3d = np.zeros(shape, dtype=np.uint8)
@@ -245,20 +251,23 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 First_Region\n2 Second_Region\n3 Third_Region\n")
 
             # Load and analyze
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-            
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
+
             # Register atlas
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
-            
+
             # Use only this test's atlas
             analysis = AtlasAggregation(
-                source="lesion_img",
+                source="mask_img",
                 aggregation="percent",
                 threshold=0.5,
                 atlas_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
             results = atlas_results["atlas_3d"].get_data()
 

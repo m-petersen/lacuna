@@ -13,7 +13,7 @@ sys.path.insert(0, "/home/marvin/projects/lacuna/src")
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch import batch_process
-from lacuna.core.lesion_data import LesionData
+from lacuna.core.mask_data import MaskData
 
 
 class MockAnalysis(BaseAnalysis):
@@ -26,11 +26,11 @@ class MockAnalysis(BaseAnalysis):
         self.should_fail = should_fail
         self.call_count = 0
 
-    def _validate_inputs(self, lesion_data: LesionData) -> None:
+    def _validate_inputs(self, mask_data: MaskData) -> None:
         """No validation needed for tests."""
         pass
 
-    def _run_analysis(self, lesion_data: LesionData) -> dict:
+    def _run_analysis(self, mask_data: MaskData) -> dict:
         """Mock analysis that increments call count."""
         self.call_count += 1
         if self.should_fail:
@@ -45,59 +45,59 @@ class TestBatchProcessAPI:
         """batch_process should be a callable function."""
         assert callable(batch_process)
 
-    def test_batch_process_accepts_required_parameters(self, synthetic_lesion_data):
-        """batch_process should accept lesion_data_list and analysis parameters."""
+    def test_batch_process_accepts_required_parameters(self, synthetic_mask_data):
+        """batch_process should accept mask_data_list and analysis parameters."""
         analysis = MockAnalysis()
 
         # Should not raise
         result = batch_process(
-            lesion_data_list=[synthetic_lesion_data],
+            mask_data_list=[synthetic_mask_data],
             analysis=analysis,
             n_jobs=1,
             show_progress=False,
         )
         assert isinstance(result, list)
         assert len(result) == 1
-        assert isinstance(result[0], LesionData)
+        assert isinstance(result[0], MaskData)
 
-    def test_batch_process_returns_list_of_lesion_data(self, batch_lesion_data_list):
-        """batch_process should return a list of LesionData objects."""
+    def test_batch_process_returns_list_of_mask_data(self, batch_mask_data_list):
+        """batch_process should return a list of MaskData objects."""
         analysis = MockAnalysis()
 
         result = batch_process(
-            lesion_data_list=batch_lesion_data_list,
+            mask_data_list=batch_mask_data_list,
             analysis=analysis,
             n_jobs=1,
             show_progress=False,
         )
 
         assert isinstance(result, list)
-        assert len(result) == len(batch_lesion_data_list)
-        for lesion_data in result:
-            assert isinstance(lesion_data, LesionData)
+        assert len(result) == len(batch_mask_data_list)
+        for mask_data in result:
+            assert isinstance(mask_data, MaskData)
             # Verify results were added
-            assert "MockAnalysis" in lesion_data.results
+            assert "MockAnalysis" in mask_data.results
 
     def test_batch_process_raises_on_empty_list(self):
-        """batch_process should raise ValueError if lesion_data_list is empty."""
+        """batch_process should raise ValueError if mask_data_list is empty."""
         analysis = MockAnalysis()
 
         with pytest.raises(ValueError, match="cannot be empty"):
-            batch_process(lesion_data_list=[], analysis=analysis)
+            batch_process(mask_data_list=[], analysis=analysis)
 
-    def test_batch_process_raises_on_invalid_analysis(self, synthetic_lesion_data):
+    def test_batch_process_raises_on_invalid_analysis(self, synthetic_mask_data):
         """batch_process should raise ValueError if analysis is not BaseAnalysis."""
         with pytest.raises(ValueError, match="must be a BaseAnalysis instance"):
-            batch_process(lesion_data_list=[synthetic_lesion_data], analysis="not_an_analysis")
+            batch_process(mask_data_list=[synthetic_mask_data], analysis="not_an_analysis")
 
-    def test_batch_process_accepts_n_jobs_parameter(self, synthetic_lesion_data):
+    def test_batch_process_accepts_n_jobs_parameter(self, synthetic_mask_data):
         """batch_process should accept n_jobs parameter for parallelization control."""
         analysis = MockAnalysis()
 
         # Test different n_jobs values
         for n_jobs in [-1, 1, 2, 4]:
             result = batch_process(
-                lesion_data_list=[synthetic_lesion_data],
+                mask_data_list=[synthetic_mask_data],
                 analysis=analysis,
                 n_jobs=n_jobs,
                 show_progress=False,
@@ -105,29 +105,29 @@ class TestBatchProcessAPI:
             assert isinstance(result, list)
             assert len(result) == 1
 
-    def test_batch_process_accepts_show_progress_parameter(self, synthetic_lesion_data):
+    def test_batch_process_accepts_show_progress_parameter(self, synthetic_mask_data):
         """batch_process should accept show_progress parameter."""
         analysis = MockAnalysis()
 
         # Test with progress bar disabled
         result = batch_process(
-            lesion_data_list=[synthetic_lesion_data], analysis=analysis, show_progress=False
+            mask_data_list=[synthetic_mask_data], analysis=analysis, show_progress=False
         )
         assert isinstance(result, list)
 
         # Test with progress bar enabled (should not raise)
         result = batch_process(
-            lesion_data_list=[synthetic_lesion_data], analysis=analysis, show_progress=True
+            mask_data_list=[synthetic_mask_data], analysis=analysis, show_progress=True
         )
         assert isinstance(result, list)
 
-    def test_batch_process_accepts_strategy_parameter(self, synthetic_lesion_data):
+    def test_batch_process_accepts_strategy_parameter(self, synthetic_mask_data):
         """batch_process should accept optional strategy parameter."""
         analysis = MockAnalysis()
 
         # Test with explicit strategy
         result = batch_process(
-            lesion_data_list=[synthetic_lesion_data],
+            mask_data_list=[synthetic_mask_data],
             analysis=analysis,
             strategy="parallel",
             show_progress=False,
@@ -136,7 +136,7 @@ class TestBatchProcessAPI:
 
         # Test with None (auto-selection)
         result = batch_process(
-            lesion_data_list=[synthetic_lesion_data],
+            mask_data_list=[synthetic_mask_data],
             analysis=analysis,
             strategy=None,
             show_progress=False,

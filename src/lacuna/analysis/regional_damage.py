@@ -7,11 +7,11 @@ damage analysis.
 
 Examples
 --------
->>> from lacuna import LesionData
+>>> from lacuna import MaskData
 >>> from lacuna.analysis import RegionalDamage
 >>>
 >>> # Load lesion data
->>> lesion = LesionData.from_nifti("lesion.nii.gz")
+>>> lesion = MaskData.from_nifti("lesion.nii.gz")
 >>>
 >>> # Compute regional damage
 >>> analysis = RegionalDamage(atlas_dir="/data/atlases")
@@ -21,8 +21,6 @@ Examples
 >>> print(result.results["AtlasAggregation"])
 """
 
-from pathlib import Path
-
 from lacuna.analysis.atlas_aggregation import AtlasAggregation
 
 
@@ -31,7 +29,7 @@ class RegionalDamage(AtlasAggregation):
     Compute lesion overlap with atlas regions.
 
     This is a convenience wrapper around AtlasAggregation that:
-    - Sets source="lesion_img" (analyze the lesion mask)
+    - Sets source="mask_img" (analyze the lesion mask)
     - Sets aggregation="percent" (compute overlap percentages)
 
     This provides a simpler interface for the common use case of computing
@@ -68,10 +66,10 @@ class RegionalDamage(AtlasAggregation):
     Examples
     --------
     >>> # Use all registered atlases
-    >>> from lacuna import LesionData
+    >>> from lacuna import MaskData
     >>> from lacuna.analysis import RegionalDamage
     >>>
-    >>> lesion = LesionData.from_nifti("lesion.nii.gz")
+    >>> lesion = MaskData.from_nifti("lesion.nii.gz")
     >>> analysis = RegionalDamage()  # Uses all registered atlases
     >>> result = analysis.run(lesion)
     >>>
@@ -104,18 +102,18 @@ class RegionalDamage(AtlasAggregation):
         Initialize RegionalDamage analysis.
 
         This is equivalent to:
-        AtlasAggregation(source="lesion_img",
+        AtlasAggregation(source="mask_img",
                         aggregation="percent", threshold=threshold,
                         atlas_names=atlas_names)
         """
         super().__init__(
-            source="lesion_img",
+            source="mask_img",
             aggregation="percent",
             threshold=threshold,
             atlas_names=atlas_names,
         )
 
-    def _validate_inputs(self, lesion_data) -> None:
+    def _validate_inputs(self, mask_data) -> None:
         """
         Validate inputs for regional damage analysis.
 
@@ -123,7 +121,7 @@ class RegionalDamage(AtlasAggregation):
 
         Parameters
         ----------
-        lesion_data : LesionData
+        mask_data : MaskData
             Lesion data to validate
 
         Raises
@@ -132,13 +130,13 @@ class RegionalDamage(AtlasAggregation):
             If lesion mask is not binary (contains values other than 0 and 1)
         """
         # Run parent validation first
-        super()._validate_inputs(lesion_data)
+        super()._validate_inputs(mask_data)
 
         # Check that lesion mask is binary
         import numpy as np
 
-        lesion_data_arr = lesion_data.lesion_img.get_fdata()
-        unique_vals = np.unique(lesion_data_arr)
+        mask_data_arr = mask_data.mask_img.get_fdata()
+        unique_vals = np.unique(mask_data_arr)
 
         # Binary mask should only have 0 and 1 (or just 0, or just 1)
         if not np.all(np.isin(unique_vals, [0, 1])):
@@ -159,8 +157,10 @@ class RegionalDamage(AtlasAggregation):
         params = super()._get_parameters()
         # RegionalDamage is a specific configuration of AtlasAggregation
         # Override the source and aggregation to reflect the simplified API
-        params.update({
-            "analysis_type": "RegionalDamage",
-            "threshold": params.get("threshold", 0.5),
-        })
+        params.update(
+            {
+                "analysis_type": "RegionalDamage",
+                "threshold": params.get("threshold", 0.5),
+            }
+        )
         return params

@@ -168,12 +168,12 @@ class TestAtlasAggregationRepr:
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
-        analysis = AtlasAggregation(source="lesion_img", aggregation="mean", threshold=0.3)
+        analysis = AtlasAggregation(source="mask_img", aggregation="mean", threshold=0.3)
 
         repr_str = repr(analysis)
 
         assert "AtlasAggregation(" in repr_str
-        assert "source='lesion_img'" in repr_str
+        assert "source='mask_img'" in repr_str
         assert "aggregation='mean'" in repr_str
         assert "threshold=0.3" in repr_str
 
@@ -181,25 +181,25 @@ class TestAtlasAggregationRepr:
         """Test __repr__ includes atlas names."""
         analysis = AtlasAggregation(
             atlas_names=["AAL3", "Schaefer2018"],
-            source="lesion_img",
+            source="mask_img",
             aggregation="percent",
         )
 
         repr_str = repr(analysis)
 
         assert "atlas_names=" in repr_str
-        assert "source='lesion_img'" in repr_str
+        assert "source='mask_img'" in repr_str
         assert "aggregation='percent'" in repr_str
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
-        analysis = AtlasAggregation(source="lesion_img", aggregation="mean")
+        analysis = AtlasAggregation(source="mask_img", aggregation="mean")
 
         str_output = str(analysis)
 
         assert "AtlasAggregation Analysis" in str_output
         assert "Configuration:" in str_output
-        assert "source: lesion_img" in str_output
+        assert "source: mask_img" in str_output
         assert "aggregation: mean" in str_output
 
 
@@ -210,11 +210,9 @@ class TestReprConsistency:
         """Test that all analysis classes implement __repr__."""
         analyses = [
             FunctionalNetworkMapping("/path/data.h5", "boes"),
-            StructuralNetworkMapping(
-                "/path/tracts.tck", check_dependencies=False
-            ),
+            StructuralNetworkMapping("/path/tracts.tck", check_dependencies=False),
             RegionalDamage(threshold=0.5),
-            AtlasAggregation(source="lesion_img", aggregation="mean"),
+            AtlasAggregation(source="mask_img", aggregation="mean"),
         ]
 
         for analysis in analyses:
@@ -232,7 +230,7 @@ class TestReprConsistency:
                 "/path/tracts.tck", "/path/tdi.nii.gz", check_dependencies=False
             ),
             RegionalDamage(threshold=0.5),
-            AtlasAggregation(source="lesion_img", aggregation="mean"),
+            AtlasAggregation(source="mask_img", aggregation="mean"),
         ]
 
         for analysis in analyses:

@@ -10,22 +10,22 @@ from pathlib import Path
 
 def get_cache_dir() -> Path:
     """Get the Lacuna cache directory.
-    
+
     The cache directory can be configured via the LACUNA_CACHE_DIR environment
     variable. If not set, defaults to:
     - $XDG_CACHE_HOME/lacuna on Linux/macOS (typically ~/.cache/lacuna)
     - %LOCALAPPDATA%/lacuna/cache on Windows
     - /tmp/lacuna_cache as fallback
-    
+
     Returns
     -------
     Path
         Path to cache directory (created if doesn't exist)
-    
+
     Examples
     --------
     Configure custom cache location:
-    
+
     >>> import os
     >>> os.environ['LACUNA_CACHE_DIR'] = '/path/to/my/cache'
     >>> from lacuna.utils.cache import get_cache_dir
@@ -50,16 +50,16 @@ def get_cache_dir() -> Path:
                 cache_dir = Path(xdg_cache) / "lacuna"
             else:
                 cache_dir = Path.home() / ".cache" / "lacuna"
-    
+
     # Create directory if it doesn't exist
     cache_dir.mkdir(parents=True, exist_ok=True)
-    
+
     return cache_dir
 
 
 def get_tdi_cache_dir() -> Path:
     """Get the TDI cache subdirectory.
-    
+
     Returns
     -------
     Path
@@ -72,7 +72,7 @@ def get_tdi_cache_dir() -> Path:
 
 def get_transform_cache_dir() -> Path:
     """Get the transform cache subdirectory.
-    
+
     Returns
     -------
     Path

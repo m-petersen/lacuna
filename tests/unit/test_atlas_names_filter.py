@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import LesionData
+from lacuna import MaskData
 from lacuna.analysis import AtlasAggregation, RegionalDamage
 
 
@@ -26,11 +26,11 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[20:30, 20:30, 20:30] = 1
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[20:30, 20:30, 20:30] = 1
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # Create 3 different atlases
             for atlas_name in ["atlas_A", "atlas_B", "atlas_C"]:
@@ -46,15 +46,18 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n2 {atlas_name}_Region2\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
 
             # Register all atlases
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Test 1: Process only atlas_B
             analysis = RegionalDamage(atlas_names=["atlas_B"])
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["RegionalDamage"]
 
             # Should only have atlas_B results
@@ -64,7 +67,7 @@ class TestAtlasNamesFilter:
 
             # Test 2: Process atlas_A and atlas_C
             analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_C"])
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["RegionalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
@@ -74,7 +77,7 @@ class TestAtlasNamesFilter:
 
             # Test 3: None = process all atlases
             analysis = RegionalDamage(atlas_names=None)
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["RegionalDamage"]
 
             # Should have all three atlases
@@ -90,11 +93,11 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[20:30, 20:30, 20:30] = 1
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[20:30, 20:30, 20:30] = 1
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # Create only atlas_A
             atlas_3d = np.zeros(shape, dtype=np.uint8)
@@ -108,17 +111,20 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
 
             # Register atlas
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request atlas_A and atlas_B (atlas_B doesn't exist)
             analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_B"])
 
             with pytest.warns(UserWarning, match="Some requested atlases were not found.*atlas_B"):
-                result = analysis.run(lesion_data_obj)
+                result = analysis.run(mask_data_obj)
 
             # Should still process atlas_A successfully
             atlas_results = result.results["RegionalDamage"]
@@ -132,11 +138,11 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[20:30, 20:30, 20:30] = 1
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[20:30, 20:30, 20:30] = 1
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # Create atlas_A (but we'll request atlas_B)
             atlas_3d = np.zeros(shape, dtype=np.uint8)
@@ -150,17 +156,20 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
 
             # Register atlas
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request only atlas_B (doesn't exist)
             analysis = RegionalDamage(atlas_names=["atlas_B"])
 
             with pytest.raises(ValueError, match="No matching atlases found for specified names"):
-                analysis.run(lesion_data_obj)
+                analysis.run(mask_data_obj)
 
     def test_atlas_names_validates_input_type(self):
         """Test that atlas_names validation catches invalid types."""
@@ -184,11 +193,11 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
-            lesion_data = np.zeros(shape, dtype=np.uint8)
-            lesion_data[20:30, 20:30, 20:30] = 1
-            lesion_img = nib.Nifti1Image(lesion_data, affine)
+            mask_data = np.zeros(shape, dtype=np.uint8)
+            mask_data[20:30, 20:30, 20:30] = 1
+            mask_img = nib.Nifti1Image(mask_data, affine)
             lesion_path = tmpdir / "lesion.nii.gz"
-            nib.save(lesion_img, lesion_path)
+            nib.save(mask_img, lesion_path)
 
             # Create 2 atlases
             for atlas_name in ["atlas_X", "atlas_Y"]:
@@ -203,19 +212,22 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            mask_data_obj = MaskData.from_nifti(
+                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+            )
 
             # Register atlases
             from lacuna.assets.atlases.registry import register_atlases_from_directory
+
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Use AtlasAggregation with atlas_names filter
             analysis = AtlasAggregation(
-                source="lesion_img",
+                source="mask_img",
                 aggregation="mean",
                 atlas_names=["atlas_X"],
             )
-            result = analysis.run(lesion_data_obj)
+            result = analysis.run(mask_data_obj)
             atlas_results = result.results["AtlasAggregation"]
 
             # Should only have atlas_X results
