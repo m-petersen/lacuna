@@ -1260,7 +1260,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Add results to lesion data (returns new instance with results)
-        lesion_data_with_results = lesion_data.add_result(self.__class__.__name__, results)
+        # Wrap in nested dict structure: {result_name: result_object}
+        lesion_data_with_results = lesion_data.add_result(
+            self.__class__.__name__, 
+            {"default": results}
+        )
 
         return lesion_data_with_results
 
@@ -1369,7 +1373,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Add results to lesion data (returns new instance with results)
-        lesion_data_with_results = lesion_data.add_result(self.__class__.__name__, results)
+        # Wrap in nested dict structure: {result_name: result_object}
+        lesion_data_with_results = lesion_data.add_result(
+            self.__class__.__name__, 
+            {"default": results}
+        )
 
         return lesion_data_with_results
 
