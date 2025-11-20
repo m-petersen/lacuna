@@ -181,10 +181,10 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
 
     # Results are returned as dict with atlas name as key
     atlas_results = result.results["RegionalDamage"]
-    assert "test_atlas" in atlas_results
+    assert "atlas_test_atlas" in atlas_results
 
     # Get the AtlasAggregationResult for this atlas
-    roi_result = atlas_results["test_atlas"]
+    roi_result = atlas_results["atlas_test_atlas"]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level damage percentages
@@ -233,12 +233,12 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
 
     # Results are returned as dict with one entry per atlas
     atlas_results = result.results["RegionalDamage"]
-    assert "atlas_3d" in atlas_results
-    assert "atlas_4d" in atlas_results
+    assert "atlas_atlas_3d" in atlas_results
+    assert "atlas_atlas_4d" in atlas_results
 
     # Each atlas should have its own AtlasAggregationResult
-    results_3d = atlas_results["atlas_3d"].get_data()
-    results_4d = atlas_results["atlas_4d"].get_data()
+    results_3d = atlas_results["atlas_atlas_3d"].get_data()
+    results_4d = atlas_results["atlas_atlas_4d"].get_data()
     assert len(results_3d) > 0
     assert len(results_4d) > 0
 
