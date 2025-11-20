@@ -432,29 +432,42 @@ class TractogramResult(AnalysisResult):
         if self.n_streamlines is None and self.streamlines is not None:
             self.n_streamlines = len(self.streamlines)
 
-    def get_data(self, load_if_needed: bool = True) -> list[np.ndarray] | np.ndarray:
-        """Get tractogram streamlines.
+    def get_data(self, load_if_needed: bool = False) -> list[np.ndarray] | np.ndarray | Path:
+        """Get tractogram streamlines or path.
 
         Parameters
         ----------
-        load_if_needed : bool, default=True
-            If streamlines are not in memory but path is available, load them
+        load_if_needed : bool, default=False
+            If True and streamlines are not in memory, attempt to load from disk.
+            If False (default), return path when streamlines not in memory.
 
         Returns
         -------
-        streamlines
-            List or array of streamlines
+        streamlines or path
+            Returns in-memory streamlines if available.
+            If not in memory and load_if_needed=True, raises NotImplementedError.
+            If not in memory and load_if_needed=False, returns tractogram_path.
+
+        Raises
+        ------
+        NotImplementedError
+            If load_if_needed=True (on-demand loading not yet implemented)
+        ValueError
+            If no streamlines or path available
         """
         if self.streamlines is not None:
             return self.streamlines
 
-        if self.tractogram_path is not None and load_if_needed:
-            raise NotImplementedError(
-                "Loading streamlines from file not yet implemented. "
-                "Use external library (e.g., nibabel, dipy) to load tractogram."
-            )
+        if self.tractogram_path is not None:
+            if load_if_needed:
+                raise NotImplementedError(
+                    "Loading streamlines from file not yet implemented. "
+                    "Use external library (e.g., nibabel, dipy) to load tractogram."
+                )
+            # Return path for external loading
+            return self.tractogram_path
 
-        raise ValueError("No streamlines available and load_if_needed=False")
+        raise ValueError("No streamlines or tractogram_path available")
 
     def summary(self) -> str:
         """Get a summary description of this result."""

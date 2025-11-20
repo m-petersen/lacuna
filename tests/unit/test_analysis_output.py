@@ -616,12 +616,14 @@ def test_tractogram_result_get_data_from_file_not_implemented():
 
 
 def test_tractogram_result_get_data_no_load():
-    """Test error when data not available and load_if_needed=False."""
+    """Test that get_data returns path when streamlines not loaded and load_if_needed=False."""
     path = Path("/data/tractogram.tck")
     result = TractogramResult(name="test", tractogram_path=path, n_streamlines=100)
 
-    with pytest.raises(ValueError, match="No streamlines available"):
-        result.get_data(load_if_needed=False)
+    # Should return path when load_if_needed=False (default)
+    data = result.get_data(load_if_needed=False)
+    assert data == path
+    assert isinstance(data, Path)
 
 
 def test_tractogram_result_summary():
