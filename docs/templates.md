@@ -140,7 +140,7 @@ from lacuna.analysis import StructuralNetworkMapping
 # Load lesion (must specify space)
 lesion = LesionData.from_nifti(
     "lesion.nii.gz",
-    metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
+    metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
 )
 
 # Create analysis - template auto-loaded

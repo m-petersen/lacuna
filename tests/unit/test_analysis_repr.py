@@ -88,7 +88,6 @@ class TestStructuralNetworkMappingRepr:
         """Test __repr__ with basic parameters."""
         analysis = StructuralNetworkMapping(
             tractogram_path="/path/to/tracts.tck",
-            whole_brain_tdi="/path/to/tdi.nii.gz",
             check_dependencies=False,
         )
 
@@ -96,29 +95,26 @@ class TestStructuralNetworkMappingRepr:
 
         assert "StructuralNetworkMapping(" in repr_str
         assert "tractogram_path='/path/to/tracts.tck'" in repr_str
-        assert "whole_brain_tdi='/path/to/tdi.nii.gz'" in repr_str
 
     def test_repr_with_atlas(self):
         """Test __repr__ includes atlas parameters."""
         analysis = StructuralNetworkMapping(
             tractogram_path="/path/to/tracts.tck",
-            whole_brain_tdi="/path/to/tdi.nii.gz",
-            atlas_path="schaefer100",
+            atlas_name="schaefer100",
             compute_lesioned=True,
             check_dependencies=False,
         )
 
         repr_str = repr(analysis)
 
-        assert "atlas_path='schaefer100'" in repr_str
+        assert "atlas_name='schaefer100'" in repr_str
         assert "compute_lesioned=True" in repr_str
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
         analysis = StructuralNetworkMapping(
             tractogram_path="/path/to/tracts.tck",
-            whole_brain_tdi="/path/to/tdi.nii.gz",
-            atlas_path="schaefer100",
+            atlas_name="schaefer100",
             n_jobs=4,
             verbose=False,
             check_dependencies=False,
@@ -129,7 +125,7 @@ class TestStructuralNetworkMappingRepr:
         assert "StructuralNetworkMapping Analysis" in str_output
         assert "Configuration:" in str_output
         assert "tractogram_path: /path/to/tracts.tck" in str_output
-        assert "atlas_path: schaefer100" in str_output
+        assert "atlas_name: schaefer100" in str_output
         assert "n_jobs: 4" in str_output
 
 
@@ -181,17 +177,17 @@ class TestAtlasAggregationRepr:
         assert "aggregation='mean'" in repr_str
         assert "threshold=0.3" in repr_str
 
-    def test_repr_with_atlas_dir(self):
-        """Test __repr__ includes atlas directory."""
+    def test_repr_with_atlas_names(self):
+        """Test __repr__ includes atlas names."""
         analysis = AtlasAggregation(
-            atlas_dir="/custom/atlas/dir",
+            atlas_names=["AAL3", "Schaefer2018"],
             source="lesion_img",
             aggregation="percent",
         )
 
         repr_str = repr(analysis)
 
-        assert "atlas_dir=" in repr_str
+        assert "atlas_names=" in repr_str
         assert "source='lesion_img'" in repr_str
         assert "aggregation='percent'" in repr_str
 
@@ -215,7 +211,7 @@ class TestReprConsistency:
         analyses = [
             FunctionalNetworkMapping("/path/data.h5", "boes"),
             StructuralNetworkMapping(
-                "/path/tracts.tck", "/path/tdi.nii.gz", check_dependencies=False
+                "/path/tracts.tck", check_dependencies=False
             ),
             RegionalDamage(threshold=0.5),
             AtlasAggregation(source="lesion_img", aggregation="mean"),

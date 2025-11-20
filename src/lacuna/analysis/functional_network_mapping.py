@@ -15,6 +15,7 @@ Memory-efficient processing:
 """
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import h5py
 import nibabel as nib
@@ -24,16 +25,31 @@ from sklearn.decomposition import PCA
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.core.exceptions import ValidationError
 from lacuna.core.lesion_data import LesionData
+from lacuna.core.output import VoxelMapResult, MiscResult
 from lacuna.utils.logging import ConsoleLogger
+
+if TYPE_CHECKING:
+    from lacuna.core.output import AnalysisResult
 
 
 class FunctionalNetworkMapping(BaseAnalysis):
+    """Functional network mapping analysis.
+    
+    Computations performed in MNI152NLin6Asym @ 2mm (GSP1000 connectome space).
+    """
+    TARGET_SPACE = "MNI152NLin6Asym"
+    TARGET_RESOLUTION = 2
     """Functional connectivity-based lesion network mapping.
 
     This analysis maps functional connectivity disruption patterns by
     correlating a lesion's timeseries with whole-brain connectome data.
     Requires MNI152-registered lesions and a pre-computed functional
     connectome in HDF5 format.
+
+    **Computation Space:**
+    All computations are performed in MNI152NLin6Asym @ 2mm resolution,
+    which matches the GSP1000 connectome space. Lesions in other spaces
+    are automatically transformed to this target space.
 
     Memory-efficient batch processing: If connectome_path is a directory,
     all HDF5 files in that directory will be processed sequentially to
@@ -113,6 +129,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
     def __init__(
         self,
         connectome_path: str | Path,
+        output_space: str = "MNI152NLin2009cAsym",
+        output_resolution: float = 2.0,
         method: str = "boes",
         pini_percentile: int = 20,
         n_jobs: int = 1,
@@ -126,6 +144,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
         ----------
         connectome_path : str | Path
             Path to HDF5 connectome file or directory with batch files.
+        output_space : str, default="MNI152NLin2009cAsym"
+            Coordinate space identifier for output maps (must match connectome space).
+        output_resolution : float, default=2.0
+            Resolution in mm for output maps (must match connectome resolution).
         method : {"boes", "pini"}, default="boes"
             Timeseries extraction method.
         pini_percentile : int, default=20
@@ -150,6 +172,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             raise ValueError(msg)
 
         self.connectome_path = Path(connectome_path)
+        self.output_space = output_space
+        self.output_resolution = output_resolution
         self.method = method
         self.pini_percentile = pini_percentile
         self.n_jobs = n_jobs
@@ -239,7 +263,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             msg = "Lesion mask must be binary (only 0 and 1 values)"
             raise ValidationError(msg)
 
-    def _run_analysis(self, lesion_data: LesionData) -> dict:
+    def _run_analysis(self, lesion_data: LesionData) -> list["AnalysisResult"]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -253,12 +277,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict
-            Dictionary containing:
-            - 'correlation_map': NIfTI image of correlation values (r)
-            - 'z_map': NIfTI image of Fisher z-transformed correlations
-            - 'mean_correlation': float, mean correlation value
-            - 'summary_statistics': dict with additional stats
+        list[AnalysisResult]
+            List containing:
+            - VoxelMapResult for correlation_map (r values)
+            - VoxelMapResult for z_map (Fisher z-transformed)
+            - VoxelMapResult for t_map (if computed)
+            - VoxelMapResult for t_threshold_map (if computed)
+            - MiscResult for summary statistics
 
         Notes
         -----
@@ -439,32 +464,93 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         self.logger.success("Analysis complete", details=summary_details)
 
-        results = {
-            "correlation_map": correlation_map_nifti,
-            "network_map": correlation_map_nifti,  # Alias for backward compat
-            "z_map": z_map_nifti,
-            "mean_correlation": mean_correlation,
-            "summary_statistics": {
-                "mean": mean_correlation,
-                "std": std_correlation,
-                "max": max_correlation,
-                "min": min_correlation,
+        # Create result objects
+        results = []
+        
+        # Correlation map (r values)
+        correlation_result = VoxelMapResult(
+            name="correlation_map",
+            data=correlation_map_nifti,
+            space=self.output_space,
+            resolution=self.output_resolution,
+            metadata={
+                "method": self.method,
                 "n_subjects": total_subjects,
                 "n_batches": len(connectome_files),
+                "statistic": "correlation_coefficient",
             },
+        )
+        results.append(correlation_result)
+        
+        # Z-map (Fisher z-transformed correlations)
+        z_result = VoxelMapResult(
+            name="z_map",
+            data=z_map_nifti,
+            space=self.output_space,
+            resolution=self.output_resolution,
+            metadata={
+                "method": self.method,
+                "n_subjects": total_subjects,
+                "n_batches": len(connectome_files),
+                "statistic": "fisher_z",
+            },
+        )
+        results.append(z_result)
+        
+        # Summary statistics
+        summary_dict = {
+            "mean": mean_correlation,
+            "std": std_correlation,
+            "max": max_correlation,
+            "min": min_correlation,
+            "n_subjects": total_subjects,
+            "n_batches": len(connectome_files),
         }
-
+        
         # Add t-map results if computed
         if t_map_nifti is not None:
-            results["t_map"] = t_map_nifti
-            results["summary_statistics"]["t_min"] = float(np.min(t_map_flat))
-            results["summary_statistics"]["t_max"] = float(np.max(t_map_flat))
-
+            t_result = VoxelMapResult(
+                name="t_map",
+                data=t_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "t_statistic",
+                },
+            )
+            results.append(t_result)
+            summary_dict["t_min"] = float(np.min(t_map_flat))
+            summary_dict["t_max"] = float(np.max(t_map_flat))
+        
         if t_threshold_map_nifti is not None:
-            results["t_threshold_map"] = t_threshold_map_nifti
-            results["summary_statistics"]["n_significant_voxels"] = int(n_significant)
-            results["summary_statistics"]["pct_significant_voxels"] = float(pct_significant)
-
+            threshold_result = VoxelMapResult(
+                name="t_threshold_map",
+                data=t_threshold_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "threshold": self.t_threshold,
+                    "statistic": "thresholded_t",
+                },
+            )
+            results.append(threshold_result)
+            summary_dict["n_significant_voxels"] = int(n_significant)
+            summary_dict["pct_significant_voxels"] = float(pct_significant)
+        
+        # Add summary statistics as MiscResult
+        summary_result = MiscResult(
+            name="summary_statistics",
+            data=summary_dict,
+            metadata={
+                "method": self.method,
+                "n_subjects": total_subjects,
+            },
+        )
+        results.append(summary_result)
+        
         return results
 
     def _load_mask_info(self) -> tuple:
@@ -1174,7 +1260,22 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Add results to lesion data (returns new instance with results)
-        lesion_data_with_results = lesion_data.add_result(self.__class__.__name__, results)
+        # Note: Using individual keys to match _run_analysis() structure
+        batch_results = {
+            "correlation_map": results["correlation_map"],
+            "z_map": results["z_map"],
+            "summary_statistics": results["summary_statistics"],
+        }
+        # Add optional results if present
+        if "t_map" in results:
+            batch_results["t_map"] = results["t_map"]
+        if "t_threshold_map" in results:
+            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        
+        lesion_data_with_results = lesion_data.add_result(
+            self.__class__.__name__, 
+            batch_results
+        )
 
         return lesion_data_with_results
 
@@ -1283,7 +1384,22 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Add results to lesion data (returns new instance with results)
-        lesion_data_with_results = lesion_data.add_result(self.__class__.__name__, results)
+        # Note: Using individual keys to match _run_analysis() structure
+        batch_results = {
+            "correlation_map": results["correlation_map"],
+            "z_map": results["z_map"],
+            "summary_statistics": results["summary_statistics"],
+        }
+        # Add optional results if present
+        if "t_map" in results:
+            batch_results["t_map"] = results["t_map"]
+        if "t_threshold_map" in results:
+            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        
+        lesion_data_with_results = lesion_data.add_result(
+            self.__class__.__name__, 
+            batch_results
+        )
 
         return lesion_data_with_results
 

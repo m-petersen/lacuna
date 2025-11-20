@@ -201,24 +201,32 @@ The system implements a tiered data management strategy to handle large referenc
 
 #### Atlas Management
 
-**Pre-registered Atlases:**
-The system maintains a registry of commonly-used atlases with download URLs and checksums. On first use, atlases are automatically downloaded to the cache directory.
+**Atlas Registry System:**
+The system maintains a centralized registry (`ATLAS_REGISTRY`) that provides access to bundled atlases and supports user registration of custom atlases. All atlases are accessed through this registry, providing consistent metadata and space information.
 
-**Supported workflow:**
-1. **Automatic download**: `RegionalDamage(atlas="harvard-oxford")` downloads on first use
-2. **Custom atlas**: `RegionalDamage(atlas="/path/to/custom.nii.gz")` uses user-provided files
-3. **Atlas directory**: `LACUNA_ATLAS_DIR=/lab/atlases` enables directory scanning for named atlases
+**Bundled Atlases:**
+- Schaefer2018 (100, 200, 400, 1000 parcels) - MNI152NLin6Asym, 1mm
+- TianSubcortex (S1, S2, S3 scales) - MNI152NLin6Asym, 1mm  
+- HCP1065 white matter tracts - MNI152NLin2009aAsym, 1mm
 
-**Atlas resolution order:**
-1. If provided as Path → use directly (custom atlas)
-2. If in pre-registered catalog → fetch via Pooch (download if missing)
-3. If `LACUNA_ATLAS_DIR` set → scan directory for matching files
-4. Else → raise `AtlasNotFoundError` with available options
+**Atlas Access Workflow:**
+1. **Use bundled atlas**: `AtlasAggregation(atlas_names=["Schaefer2018_100Parcels7Networks"])`
+2. **Register custom atlas**: `register_atlas_from_files(name, image_path, labels_path, space, resolution)`
+3. **Bulk register directory**: `register_atlases_from_directory("/path/to/atlases")`
+4. **List available**: `list_atlases(space="MNI152NLin6Asym", resolution=1)`
+
+**Atlas Registration Requirements:**
+Users must explicitly register custom atlases before use. The registry enforces:
+- Unique atlas names (prevents accidental overwrite)
+- Space and resolution metadata (enables automatic space handling)
+- Label file pairing (ensures ROI names are available)
+- BIDS filename parsing or header-based space detection
 
 **Atlas file format:**
 - Image file: `.nii.gz` with integer labels (3D) or probabilities (4D)
 - Label file: `_labels.txt` with format `"1 RegionName"` or `"RegionName"` per line
 - Paired files must share base name (e.g., `atlas.nii.gz` + `atlas_labels.txt`)
+- BIDS naming preferred: `tpl-{SPACE}_res-{RES}_atlas-{NAME}_dseg.nii.gz`
 
 #### Connectome Management
 
@@ -264,14 +272,16 @@ connectome.h5
 - `XDG_CACHE_HOME`: System-wide XDG cache location (respected by default)
 
 **Functional requirements:**
-- **FR-021**: System MUST download pre-registered atlases automatically on first use
-- **FR-022**: System MUST verify downloaded data integrity using SHA256 checksums
-- **FR-023**: System MUST respect XDG Base Directory specification for cache location
-- **FR-024**: System MUST support user-specified data directories via environment variables
-- **FR-025**: System MUST provide conversion utilities for preparing connectome data
-- **FR-026**: System MUST raise clear errors when required data is missing, with setup instructions
-- **FR-027**: System MUST allow custom atlases without requiring pre-registration
-- **FR-028**: System MUST cache downloaded data to avoid repeated downloads
+- **FR-021**: System MUST maintain a centralized ATLAS_REGISTRY with bundled atlases including space metadata
+- **FR-022**: System MUST provide functions to list, register, and unregister atlases from the registry
+- **FR-023**: System MUST support bulk registration of atlases from a directory with automatic space detection
+- **FR-024**: System MUST enforce unique atlas names and prevent accidental overwrites
+- **FR-025**: System MUST respect XDG Base Directory specification for cache location
+- **FR-026**: System MUST support user-specified data directories via environment variables
+- **FR-027**: System MUST provide conversion utilities for preparing connectome data
+- **FR-028**: System MUST raise clear errors when required data is missing, with setup instructions
+- **FR-029**: System MUST load atlas data with both image and label information from registry
+- **FR-030**: System MUST detect atlas space from BIDS filenames or header inspection
 
 **Success criteria:**
 - **SC-011**: Pre-registered atlas downloads complete in under 30 seconds on standard broadband

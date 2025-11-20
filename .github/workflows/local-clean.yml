@@ -1,0 +1,16 @@
+name: Clean (Local)
+
+# This workflow is designed for local use with act
+# Run with: act -j clean
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean artifacts
+        run: make clean

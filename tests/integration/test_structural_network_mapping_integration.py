@@ -25,10 +25,15 @@ def _check_mrtrix():
 
 
 # Skip all tests if MRtrix3 is not available
-pytestmark = pytest.mark.skipif(
-    not _check_mrtrix(),
-    reason="MRtrix3 not available",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not _check_mrtrix(),
+        reason="MRtrix3 not available",
+    ),
+    pytest.mark.requires_mrtrix,
+    pytest.mark.slow,
+    pytest.mark.integration,
+]
 
 
 @pytest.fixture
@@ -92,7 +97,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=False,
             n_jobs=2,
             verbose=False,
@@ -137,7 +142,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=True,
             n_jobs=2,
             verbose=False,
@@ -168,7 +173,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=True,
             n_jobs=2,
             verbose=False,
@@ -191,7 +196,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=True,
             n_jobs=2,
             verbose=False,
@@ -214,7 +219,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -246,7 +251,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -305,7 +310,7 @@ class TestEdgeCases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -325,7 +330,7 @@ class TestEdgeCases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path="schaefer100",
+            atlas_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -350,9 +355,8 @@ class TestDifferentAtlases:
     @pytest.mark.parametrize(
         "atlas_name,expected_n_parcels",
         [
-            ("schaefer100", 100),
-            ("schaefer200", 200),
-            ("aal", 116),
+            ("Schaefer2018_100Parcels7Networks", 100),
+            ("Schaefer2018_200Parcels7Networks", 200),
         ],
     )
     def test_bundled_atlases(self, test_data_paths, atlas_name, expected_n_parcels):
@@ -360,7 +364,7 @@ class TestDifferentAtlases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_path=atlas_name,
+            atlas_name=atlas_name,
             n_jobs=2,
             verbose=False,
         )

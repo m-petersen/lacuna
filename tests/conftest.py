@@ -198,7 +198,7 @@ def synthetic_lesion_data(synthetic_lesion_img):
 
     return LesionData(
         lesion_img=synthetic_lesion_img,
-        metadata={"subject_id": "sub-test", "source": "synthetic", "space": "MNI152_2mm"},
+        metadata={"subject_id": "sub-test", "source": "synthetic", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
 
@@ -220,8 +220,35 @@ def batch_lesion_data_list(synthetic_lesion_img):
         lesion_img = nib.Nifti1Image(data.astype(np.uint8), synthetic_lesion_img.affine)
         lesion_data = LesionData(
             lesion_img=lesion_img,
-            metadata={"subject_id": f"sub-{i:03d}", "source": "synthetic_batch", "space": "MNI152_2mm"},
+            metadata={"subject_id": f"sub-{i:03d}", "source": "synthetic_batch", "space": "MNI152NLin6Asym", "resolution": 2},
         )
         lesion_list.append(lesion_data)
 
     return lesion_list
+
+
+@pytest.fixture(autouse=True)
+def clean_atlas_registry():
+    """Clean up atlas registry after each test to prevent cross-contamination.
+    
+    This fixture automatically runs after every test to remove any atlases
+    registered during the test. This prevents tests from interfering with
+    each other when they register temporary atlases.
+    """
+    # Store bundled atlas names before test
+    # (these are the atlases pre-registered in the module)
+    from lacuna.assets.atlases.registry import ATLAS_REGISTRY
+    
+    # On first call, save the bundled atlas names
+    if not hasattr(clean_atlas_registry, '_bundled_names'):
+        clean_atlas_registry._bundled_names = set(ATLAS_REGISTRY.keys())
+    
+    # Run the test
+    yield
+    
+    # After test: remove any atlases that weren't bundled
+    # (i.e., remove test-registered atlases)
+    bundled_names = clean_atlas_registry._bundled_names
+    to_remove = [name for name in ATLAS_REGISTRY.keys() if name not in bundled_names]
+    for name in to_remove:
+        del ATLAS_REGISTRY[name]

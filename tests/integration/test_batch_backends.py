@@ -32,7 +32,14 @@ def synthetic_lesions():
         affine = np.eye(4)
         img = nib.Nifti1Image(data, affine)
 
-        lesion = LesionData(img, metadata={"subject_id": f"sub-{i:03d}"})
+        lesion = LesionData(
+            img,
+            metadata={
+                "subject_id": f"sub-{i:03d}",
+                "space": "MNI152NLin6Asym",
+                "resolution": 2
+            }
+        )
         lesions.append(lesion)
 
     return lesions
@@ -64,8 +71,13 @@ def test_atlas_dir(tmp_path):
 @pytest.fixture
 def regional_damage_analysis(test_atlas_dir):
     """Create RegionalDamage analysis instance with minimal test atlas."""
-    # Use only the test atlas instead of all 8 bundled atlases
-    return RegionalDamage(atlas_dir=test_atlas_dir)
+    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    
+    # Register the test atlas
+    register_atlases_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    
+    # Create analysis without atlas_dir parameter
+    return RegionalDamage()
 
 
 class TestThreadingBackend:

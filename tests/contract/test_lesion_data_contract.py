@@ -42,6 +42,8 @@ def test_lesion_data_init_with_metadata(synthetic_lesion_img, lesion_metadata):
         "subject_id": "sub-001",
         "session_id": "ses-01",
         "age": 45,
+        "space": "MNI152NLin6Asym",
+        "resolution": 2,
     }
 
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
@@ -104,7 +106,7 @@ def test_lesion_data_from_nifti(tmp_path, synthetic_lesion_img):
     nib.save(synthetic_lesion_img, filepath)
 
     # Load via from_nifti (must provide space)
-    lesion = LesionData.from_nifti(filepath, metadata={"space": "MNI152_2mm"})
+    lesion = LesionData.from_nifti(filepath, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     assert lesion is not None
     assert lesion.lesion_img is not None
@@ -118,7 +120,7 @@ def test_lesion_data_from_nifti_with_metadata(tmp_path, synthetic_lesion_img):
     filepath = tmp_path / "test_lesion.nii.gz"
     nib.save(synthetic_lesion_img, filepath)
 
-    metadata = {"subject_id": "sub-test", "condition": "stroke", "space": "MNI152_2mm"}
+    metadata = {"subject_id": "sub-test", "condition": "stroke", "space": "MNI152NLin6Asym", "resolution": 2}
     lesion = LesionData.from_nifti(filepath, metadata=metadata)
 
     assert lesion.metadata["subject_id"] == "sub-test"
@@ -131,7 +133,7 @@ def test_lesion_data_from_nifti_nonexistent_file():
     from lacuna.core.lesion_data import LesionData
 
     with pytest.raises((NiftiLoadError, FileNotFoundError)):
-        LesionData.from_nifti("/nonexistent/file.nii.gz", metadata={"space": "MNI152_2mm"})
+        LesionData.from_nifti("/nonexistent/file.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_lesion_data_validate(synthetic_lesion_img, lesion_metadata):
@@ -163,7 +165,7 @@ def test_lesion_data_get_coordinate_space(synthetic_lesion_img, lesion_metadata)
     space = lesion.get_coordinate_space()
 
     assert isinstance(space, str)
-    assert space == "native"  # Default for new lesions
+    assert space == "MNI152NLin6Asym"  # From lesion_metadata fixture
 
 
 def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
@@ -171,7 +173,7 @@ def test_lesion_data_copy(synthetic_lesion_img, lesion_metadata):
     from lacuna.core.lesion_data import LesionData
 
     lesion = LesionData(
-        synthetic_lesion_img, metadata={"subject_id": "sub-001", "space": "MNI152_2mm"}
+        synthetic_lesion_img, metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     )
     lesion_copy = lesion.copy()
 
@@ -187,7 +189,7 @@ def test_lesion_data_to_dict(synthetic_lesion_img, lesion_metadata):
     """Test to_dict serialization."""
     from lacuna.core.lesion_data import LesionData
 
-    metadata = {"subject_id": "sub-001", "age": 45}
+    metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
 
     data_dict = lesion.to_dict()
@@ -204,7 +206,7 @@ def test_lesion_data_from_dict(synthetic_lesion_img, lesion_metadata):
     from lacuna.core.lesion_data import LesionData
 
     # Create original
-    metadata = {"subject_id": "sub-001", "space": "MNI152_2mm"}
+    metadata = {"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     lesion = LesionData(synthetic_lesion_img, metadata=metadata)
 
     # Serialize and deserialize
@@ -258,7 +260,7 @@ def synthetic_lesion_img():
 @pytest.fixture
 def lesion_metadata():
     """Standard metadata with required space field."""
-    return {"subject_id": "sub-001", "space": "MNI152_2mm"}
+    return {"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
 
 
 @pytest.fixture

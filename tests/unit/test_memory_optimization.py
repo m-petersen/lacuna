@@ -67,7 +67,7 @@ def mock_lesions(tmp_path, mock_connectome_batched):
         lesion_path = tmp_path / f"lesion_{i}.nii.gz"
         nib.save(lesion_img, lesion_path)
         lesion = LesionData.from_nifti(
-            str(lesion_path), metadata={"space": "MNI152_2mm", "subject_id": f"test_{i:03d}"}
+            str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"test_{i:03d}"}
         )
         lesions.append(lesion)
 
@@ -107,16 +107,19 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
         assert "t_map" in flnm
         assert "summary_statistics" in flnm
 
-        # Check shapes
+        # Check shapes - in nested dict, these are VoxelMapResult objects
+        # VoxelMapResult.data holds the NIfTI image which has .shape
         assert flnm["correlation_map"].shape == (91, 109, 91)
         assert flnm["t_map"].shape == (91, 109, 91)
 
         # Check aggregated across all subjects
-        assert flnm["summary_statistics"]["n_subjects"] == 100
-        assert flnm["summary_statistics"]["n_batches"] == 5
+        # In batch results, summary_statistics is already the dict data
+        summary_data = flnm["summary_statistics"]
+        assert summary_data["n_subjects"] == 100
+        assert summary_data["n_batches"] == 5
 
         # Check values in reasonable range
-        assert -1 <= flnm["mean_correlation"] <= 1
+        assert -1 <= summary_data["mean"] <= 1
 
 
 def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock_lesions):
