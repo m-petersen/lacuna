@@ -60,6 +60,10 @@ class AtlasMetadata(SpatialAssetMetadata):
         Whether the atlas is 4D (multiple volumes) or 3D (single volume).
         Default is False. 4D atlases are transformed volume-by-volume 
         and aggregated independently.
+    region_labels : list[str] | None, optional
+        Human-readable labels for each region (1-indexed, matching ROI values).
+        If None, labels will be auto-generated as "region_001", "region_002", etc.
+        Loaded automatically from labels_filename during atlas registration.
     """
     
     atlas_filename: str = ""
@@ -68,6 +72,7 @@ class AtlasMetadata(SpatialAssetMetadata):
     networks: list[str] = field(default_factory=list)
     n_regions: int | None = None
     is_4d: bool = False
+    region_labels: list[str] | None = None
 
 
 # Global registry instance
@@ -327,6 +332,13 @@ def register_atlas_from_files(
     if not labels_path.exists():
         raise FileNotFoundError(f"Labels file not found: {labels_path}")
     
+    # Load region labels from file
+    from lacuna.assets.atlases.loader import _load_labels_file
+    labels_dict = _load_labels_file(labels_path)
+    # Convert to list ordered by region ID (1-indexed)
+    max_region = max(labels_dict.keys()) if labels_dict else 0
+    region_labels = [labels_dict.get(i, f"region_{i:03d}") for i in range(1, max_region + 1)]
+    
     metadata = AtlasMetadata(
         name=name,
         space=space,
@@ -337,6 +349,7 @@ def register_atlas_from_files(
         citation=citation,
         networks=networks or [],
         n_regions=n_regions,
+        region_labels=region_labels,
     )
     
     register_atlas(metadata)
@@ -506,3 +519,86 @@ def register_atlases_from_directory(
             continue
     
     return registered_names
+
+
+def _load_bundled_atlas_labels(labels_filename: str) -> list[str] | None:
+    """Load labels for a bundled atlas from the data directory.
+    
+    Parameters
+    ----------
+    labels_filename : str
+        Relative path to labels file in bundled atlases directory
+    
+    Returns
+    -------
+    list[str] | None
+        Ordered list of region labels (1-indexed), or None if file doesn't exist
+    """
+    from pathlib import Path
+    
+    bundled_dir = Path(__file__).parent.parent.parent / "data" / "atlases"
+    labels_path = bundled_dir / labels_filename
+    
+    if not labels_path.exists():
+        return None
+    
+    # Inline label loading to avoid circular import
+    labels_dict = {}
+    with open(labels_path, "r") as f:
+        for line_num, line in enumerate(f, start=1):
+            line = line.strip()
+            
+            # Skip empty lines and comments
+            if not line or line.startswith("#"):
+                continue
+            
+            # Try to parse "region_id region_name" format first
+            parts = line.split(maxsplit=1)
+            if len(parts) == 2:
+                try:
+                    region_id = int(parts[0])
+                    region_name = parts[1]
+                    labels_dict[region_id] = region_name
+                    continue
+                except ValueError:
+                    pass
+            
+            # Use line number as region ID
+            if line:
+                actual_region_id = len(labels_dict) + 1
+                labels_dict[actual_region_id] = line
+    
+    if not labels_dict:
+        return None
+    
+    # Convert to list ordered by region ID (1-indexed)
+    max_region = max(labels_dict.keys())
+    return [labels_dict.get(i, f"region_{i:03d}") for i in range(1, max_region + 1)]
+
+
+# Auto-load labels for all bundled atlases after registry initialization
+def _populate_bundled_atlas_labels() -> None:
+    """Populate region_labels for all bundled atlases in ATLAS_REGISTRY."""
+    for atlas_name, metadata in ATLAS_REGISTRY.items():
+        if metadata.region_labels is None and metadata.labels_filename:
+            labels = _load_bundled_atlas_labels(metadata.labels_filename)
+            if labels is not None:
+                # Create new metadata with labels (dataclass is frozen)
+                updated_metadata = AtlasMetadata(
+                    name=metadata.name,
+                    space=metadata.space,
+                    resolution=metadata.resolution,
+                    description=metadata.description,
+                    atlas_filename=metadata.atlas_filename,
+                    labels_filename=metadata.labels_filename,
+                    citation=metadata.citation,
+                    networks=metadata.networks,
+                    n_regions=metadata.n_regions,
+                    is_4d=metadata.is_4d,
+                    region_labels=labels,
+                )
+                ATLAS_REGISTRY[atlas_name] = updated_metadata
+
+
+# Populate labels when module is imported
+_populate_bundled_atlas_labels()

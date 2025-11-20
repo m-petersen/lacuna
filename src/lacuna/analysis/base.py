@@ -211,15 +211,32 @@ class BaseAnalysis(ABC):
         analysis_results = self._run_analysis(lesion_data)
 
         # Step 3: Namespace results under class name
+        # Convert list[AnalysisResult] to dict[str, AnalysisResult]
+        # For backward compatibility during transition, support both formats
+        if isinstance(analysis_results, list):
+            # Legacy format: list of results
+            # Wrap in dict with index-based keys for single result, or meaningful names
+            if len(analysis_results) == 1:
+                results_dict = {"default": analysis_results[0]}
+            else:
+                # Multiple results: use indices or result names if available
+                results_dict = {}
+                for i, result in enumerate(analysis_results):
+                    # Try to use result name if available, otherwise use index
+                    key = getattr(result, 'name', None) or f"result_{i}"
+                    results_dict[key] = result
+        else:
+            # New format: already a dict
+            results_dict = analysis_results
+        
         namespace_key = self.__class__.__name__
         updated_results = lesion_data.results.copy()
-        updated_results[namespace_key] = analysis_results
+        updated_results[namespace_key] = results_dict
 
         # Step 4: Create new LesionData with updated results
         # Create a new instance with updated results (manual approach for namespace overwriting)
         result_lesion_data = LesionData(
             lesion_img=lesion_data.lesion_img,
-            anatomical_img=lesion_data.anatomical_img,
             metadata=lesion_data.metadata,
             provenance=lesion_data.provenance,
             results=updated_results,

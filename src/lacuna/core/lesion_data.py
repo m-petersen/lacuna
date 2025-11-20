@@ -173,8 +173,14 @@ class LesionData:
         # Setup provenance (empty list for new objects)
         self._provenance = list(provenance) if provenance is not None else []
 
-        # Setup results (empty dict for new objects)
-        self._results = dict(results) if results is not None else {}
+        # Setup results (nested dict: analysis -> result_name -> result_object)
+        # Old format: dict[str, Any] for backward compat during deserialization
+        # New format: dict[str, dict[str, Any]]
+        if results is not None:
+            # Support both old and new formats during transition
+            self._results = dict(results)
+        else:
+            self._results = {}
 
         # Track coordinate space (extracted from metadata or provenance)
         self._coordinate_space = self._infer_coordinate_space()
@@ -437,10 +443,12 @@ class LesionData:
         Parameters
         ----------
         namespace : str
-            Result namespace (e.g., 'LesionNetworkMapping', 'VolumeAnalysis').
+            Result namespace (e.g., 'LesionNetworkMapping', 'AtlasAggregation').
             Should match the analysis module name for clarity.
-        results : dict
-            Analysis results to store (must be JSON-serializable).
+        results : dict[str, Any]
+            Analysis results as a dict mapping result names to result objects.
+            For single result: {"result_name": result_object}
+            For multiple results (e.g., multi-atlas): {"Schaefer100": roi_result1, "Tian": roi_result2}
 
         Returns
         -------
@@ -454,12 +462,17 @@ class LesionData:
 
         Examples
         --------
-        >>> results = {"volume_mm3": 1234.5, "n_voxels": 150}
+        >>> # Single result
+        >>> results = {"default": VoxelMapResult(...)}
         >>> lesion_with_results = lesion.add_result("VolumeAnalysis", results)
         >>> "VolumeAnalysis" in lesion_with_results.results
         True
-        >>> "VolumeAnalysis" in lesion.results  # Original unchanged
-        False
+        >>> 
+        >>> # Multi-atlas results
+        >>> results = {"Schaefer100": roi_result1, "Tian": roi_result2}
+        >>> lesion_with_results = lesion.add_result("AtlasAggregation", results)
+        >>> lesion_with_results.results["AtlasAggregation"]["Schaefer100"]
+        ROIResult(...)
         """
         if namespace in self._results:
             raise ValueError(
@@ -605,6 +618,12 @@ class LesionData:
         return copy.deepcopy(self._provenance)  # Deep copy for nested dicts
 
     @property
-    def results(self) -> dict[str, Any]:
-        """Analysis results (immutable view)."""
+    def results(self) -> dict[str, dict[str, Any]]:
+        """Analysis results (immutable view).
+        
+        Returns dict mapping analysis namespace to result dict.
+        Result dict maps result names to result objects.
+        
+        Access pattern: results['AnalysisName']['result_name']
+        """
         return copy.deepcopy(self._results)  # Deep copy for nested structures
