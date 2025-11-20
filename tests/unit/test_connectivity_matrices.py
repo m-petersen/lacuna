@@ -22,8 +22,9 @@ class TestConnectivityMatrixComputation:
         with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
             analysis = StructuralNetworkMapping(
                 tractogram_path="/fake/path/tractogram.tck",
-                whole_brain_tdi="/fake/path/tdi.nii.gz",
-                atlas_path="schaefer100",
+                tractogram_space="MNI152NLin2009cAsym",
+                output_resolution=2,
+                atlas_name="Schaefer2018_100Parcels7Networks",
                 n_jobs=1,
             )
             analysis._atlas_resolved = Path("/fake/atlas.nii.gz")
@@ -298,8 +299,9 @@ class TestMatrixDimensions:
             with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
                 analysis = StructuralNetworkMapping(
                     tractogram_path="/fake/path/tractogram.tck",
-                    whole_brain_tdi="/fake/path/tdi.nii.gz",
-                    atlas_path="schaefer100",
+                    tractogram_space="MNI152NLin2009cAsym",
+                    output_resolution=2,
+                    atlas_name="Schaefer2018_100Parcels7Networks",
                     n_jobs=1,
                 )
                 analysis._atlas_resolved = Path("/fake/atlas.nii.gz")

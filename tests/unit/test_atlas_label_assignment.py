@@ -83,22 +83,27 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("0 Region_Right\n1 Region_Left\n2 Region_Middle\n")
 
             # Load lesion data
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-            # Run analysis
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+
+            # Run analysis - use only this test's atlas
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
+                atlas_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            atlas_results = result.results["AtlasAggregation"]
+            results = atlas_results["test_4d_atlas"].get_data()
 
-            # Extract results
-            right_damage = results.get("test_4d_atlas_Region_Right", None)
-            left_damage = results.get("test_4d_atlas_Region_Left", None)
-            middle_damage = results.get("test_4d_atlas_Region_Middle", None)
+            # With new structure, region names don't have atlas prefix
+            right_damage = results.get("Region_Right", None)
+            left_damage = results.get("Region_Left", None)
+            middle_damage = results.get("Region_Middle", None)
 
             # Debug output
             print("\n=== Label Assignment Test Results ===")
@@ -166,18 +171,26 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 Bottom_Region\n2 Top_Region\n")
 
             # Load and analyze
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            
+            # Run analysis - use only this test's atlas
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
+                atlas_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            atlas_results = result.results["AtlasAggregation"]
+            results = atlas_results["atlas_1indexed"].get_data()
 
-            bottom_damage = results.get("atlas_1indexed_Bottom_Region", None)
-            top_damage = results.get("atlas_1indexed_Top_Region", None)
+            # With new structure, region names don't have atlas prefix
+            bottom_damage = results.get("Bottom_Region", None)
+            top_damage = results.get("Top_Region", None)
 
             print("\n=== 1-Indexed Label Test Results ===")
             print(f"Bottom_Region damage: {bottom_damage:.2f}%")
@@ -232,19 +245,27 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 First_Region\n2 Second_Region\n3 Third_Region\n")
 
             # Load and analyze
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            
+            # Use only this test's atlas
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="percent",
                 threshold=0.5,
+                atlas_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            atlas_results = result.results["AtlasAggregation"]
+            results = atlas_results["atlas_3d"].get_data()
 
-            first_damage = results.get("atlas_3d_First_Region", None)
-            second_damage = results.get("atlas_3d_Second_Region", None)
-            third_damage = results.get("atlas_3d_Third_Region", None)
+            # With new structure, region names don't have atlas prefix
+            first_damage = results.get("First_Region", None)
+            second_damage = results.get("Second_Region", None)
+            third_damage = results.get("Third_Region", None)
 
             # Region 2 should have high damage, others should have zero
             assert first_damage < 5.0, "First_Region should have no damage"

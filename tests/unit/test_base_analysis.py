@@ -20,7 +20,7 @@ class TestResultNamespacing:
             def _run_analysis(self, lesion_data):
                 return {"volume_mm3": 123.45}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         result = VolumeAnalysis().run(lesion_data)
 
         # Results should be under "VolumeAnalysis" key
@@ -46,7 +46,7 @@ class TestResultNamespacing:
             def _run_analysis(self, lesion_data):
                 return {"result": "second"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         result = Analysis1().run(lesion_data)
         result = Analysis2().run(result)
 
@@ -72,7 +72,7 @@ class TestResultNamespacing:
             def _run_analysis(self, lesion_data):
                 return {"value": self.value}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
         # Run first time
         result1 = TestAnalysis(value=1).run(lesion_data)
@@ -110,7 +110,7 @@ class TestResultNamespacing:
             def _run_analysis(self, lesion_data):
                 return {"c": 3}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
         # Run three analyses in sequence
         result = AnalysisA().run(lesion_data)
@@ -140,7 +140,7 @@ class TestResultNamespacing:
                     "metadata": {"method": "correlation", "threshold": 0.05},
                 }
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         result = ComplexAnalysis().run(lesion_data)
 
         # Complex structure should be preserved under namespace
@@ -165,7 +165,7 @@ class TestImmutability:
             def _run_analysis(self, lesion_data):
                 return {"result": "test"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         original_results_keys = set(lesion_data.results.keys())
 
         # Run analysis
@@ -197,7 +197,7 @@ class TestImmutability:
             def _run_analysis(self, lesion_data):
                 return {"value": 2}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
         # Run first analysis
         result1 = Analysis1().run(lesion_data)
@@ -227,7 +227,7 @@ class TestImmutability:
                 # The analysis can access data but shouldn't modify original
                 return {"modified": True}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         original_img_id = id(lesion_data.lesion_img)
 
         # Run analysis
@@ -248,16 +248,17 @@ class TestImmutability:
             def _run_analysis(self, lesion_data):
                 return {"result": "test"}
 
-        metadata = {"subject_id": "sub-001", "age": 45}
+        metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
         lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata=metadata)
 
         # Run analysis
         result = TestAnalysis().run(lesion_data)
 
-        # Original metadata should be unchanged
+        # Original metadata should be unchanged (except space and resolution are required)
         assert lesion_data.metadata["subject_id"] == "sub-001"
         assert lesion_data.metadata["age"] == 45
-        assert len(lesion_data.metadata) == 2
+        assert lesion_data.metadata["space"] == "MNI152NLin6Asym"
+        assert lesion_data.metadata["resolution"] == 2
 
     def test_chained_analyses_preserve_immutability(self, synthetic_lesion_img):
         """Test that chaining multiple analyses maintains immutability."""
@@ -286,7 +287,7 @@ class TestImmutability:
                 return {"n": 3}
 
         # Start with clean data
-        ld0 = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        ld0 = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
         # Chain analyses
         ld1 = A1().run(ld0)
@@ -318,7 +319,7 @@ class TestProvenanceTracking:
             def _run_analysis(self, lesion_data):
                 return {"result": "test"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         original_prov_len = len(lesion_data.provenance)
 
         result = TestAnalysis().run(lesion_data)
@@ -338,7 +339,7 @@ class TestProvenanceTracking:
             def _run_analysis(self, lesion_data):
                 return {"result": "test"}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         result = MyCustomAnalysis().run(lesion_data)
 
         # Latest provenance should reference the analysis
@@ -365,7 +366,7 @@ class TestProvenanceTracking:
             def _get_parameters(self):
                 return {"threshold": self.threshold, "method": self.method}
 
-        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152_2mm"})
+        lesion_data = LesionData(lesion_img=synthetic_lesion_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         result = ParameterizedAnalysis(threshold=0.8, method="advanced").run(lesion_data)
 
         # Provenance should contain parameters

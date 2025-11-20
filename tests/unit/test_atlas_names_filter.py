@@ -46,37 +46,41 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n2 {atlas_name}_Region2\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+
+            # Register all atlases
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Test 1: Process only atlas_B
-            analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_B"])
+            analysis = RegionalDamage(atlas_names=["atlas_B"])
             result = analysis.run(lesion_data_obj)
-            results = result.results["RegionalDamage"]
+            atlas_results = result.results["RegionalDamage"]
 
             # Should only have atlas_B results
-            assert any("atlas_B" in key for key in results.keys())
-            assert not any("atlas_A" in key for key in results.keys())
-            assert not any("atlas_C" in key for key in results.keys())
+            assert "atlas_B" in atlas_results
+            assert "atlas_A" not in atlas_results
+            assert "atlas_C" not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
-            analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_A", "atlas_C"])
+            analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_C"])
             result = analysis.run(lesion_data_obj)
-            results = result.results["RegionalDamage"]
+            atlas_results = result.results["RegionalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
-            assert any("atlas_A" in key for key in results.keys())
-            assert not any("atlas_B" in key for key in results.keys())
-            assert any("atlas_C" in key for key in results.keys())
+            assert "atlas_A" in atlas_results
+            assert "atlas_B" not in atlas_results
+            assert "atlas_C" in atlas_results
 
             # Test 3: None = process all atlases
-            analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=None)
+            analysis = RegionalDamage(atlas_names=None)
             result = analysis.run(lesion_data_obj)
-            results = result.results["RegionalDamage"]
+            atlas_results = result.results["RegionalDamage"]
 
             # Should have all three atlases
-            assert any("atlas_A" in key for key in results.keys())
-            assert any("atlas_B" in key for key in results.keys())
-            assert any("atlas_C" in key for key in results.keys())
+            assert "atlas_A" in atlas_results
+            assert "atlas_B" in atlas_results
+            assert "atlas_C" in atlas_results
 
     def test_atlas_names_warns_if_not_found(self):
         """Test that warning is issued if requested atlas not found."""
@@ -104,17 +108,21 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request atlas_A and atlas_B (atlas_B doesn't exist)
-            analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_A", "atlas_B"])
+            analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_B"])
 
             with pytest.warns(UserWarning, match="Some requested atlases were not found.*atlas_B"):
                 result = analysis.run(lesion_data_obj)
 
             # Should still process atlas_A successfully
-            results = result.results["RegionalDamage"]
-            assert any("atlas_A" in key for key in results.keys())
+            atlas_results = result.results["RegionalDamage"]
+            assert "atlas_A" in atlas_results
 
     def test_atlas_names_raises_if_none_found(self):
         """Test that error is raised if no matching atlases found."""
@@ -142,10 +150,14 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+
+            # Register atlas
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request only atlas_B (doesn't exist)
-            analysis = RegionalDamage(atlas_dir=str(tmpdir), atlas_names=["atlas_B"])
+            analysis = RegionalDamage(atlas_names=["atlas_B"])
 
             with pytest.raises(ValueError, match="No matching atlases found for specified names"):
                 analysis.run(lesion_data_obj)
@@ -154,15 +166,15 @@ class TestAtlasNamesFilter:
         """Test that atlas_names validation catches invalid types."""
         # Should raise TypeError for non-list
         with pytest.raises(TypeError, match="atlas_names must be a list"):
-            AtlasAggregation(atlas_dir="/tmp", atlas_names="atlas_A")
+            AtlasAggregation(atlas_names="atlas_A")
 
         # Should raise TypeError for list with non-strings
         with pytest.raises(TypeError, match="All items in atlas_names must be strings"):
-            AtlasAggregation(atlas_dir="/tmp", atlas_names=["atlas_A", 123])
+            AtlasAggregation(atlas_names=["atlas_A", 123])
 
         # Should raise ValueError for empty list
         with pytest.raises(ValueError, match="atlas_names cannot be an empty list"):
-            AtlasAggregation(atlas_dir="/tmp", atlas_names=[])
+            AtlasAggregation(atlas_names=[])
 
     def test_atlas_names_works_with_atlas_aggregation(self):
         """Test that atlas_names works with AtlasAggregation (not just RegionalDamage)."""
@@ -191,18 +203,21 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n")
 
             # Load lesion
-            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152_2mm"})
+            lesion_data_obj = LesionData.from_nifti(lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+
+            # Register atlases
+            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Use AtlasAggregation with atlas_names filter
             analysis = AtlasAggregation(
-                atlas_dir=str(tmpdir),
                 source="lesion_img",
                 aggregation="mean",
                 atlas_names=["atlas_X"],
             )
             result = analysis.run(lesion_data_obj)
-            results = result.results["AtlasAggregation"]
+            atlas_results = result.results["AtlasAggregation"]
 
-            # Should only have atlas_X
-            assert any("atlas_X" in key for key in results.keys())
-            assert not any("atlas_Y" in key for key in results.keys())
+            # Should only have atlas_X results
+            assert "atlas_X" in atlas_results
+            assert "atlas_Y" not in atlas_results

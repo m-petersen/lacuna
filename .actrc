@@ -1,0 +1,20 @@
+# act configuration - run GitHub Actions locally
+# Format: One argument per line
+# Comments are supported with #
+
+# Use medium-sized Docker image with common tools
+-P
+ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Container architecture
+--container-architecture
+linux/amd64
+
+# Reuse containers for faster subsequent runs
+--reuse
+
+# Use cached actions and images when available
+--action-offline-mode
+
+# Bind mount workspace
+--bind

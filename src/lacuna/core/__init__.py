@@ -6,13 +6,22 @@ from .exceptions import (
     AnalysisError,
     BIDSValidationError,
     CoordinateSpaceError,
-    LdkError,
+    LacunaError,
     NiftiLoadError,
     ProvenanceError,
     SpatialMismatchError,
     ValidationError,
 )
 from .lesion_data import LesionData
+from .output import (
+    AnalysisResult,
+    VoxelMapResult,
+    ROIResult,
+    ConnectivityMatrixResult,
+    SurfaceResult,
+    TractogramResult,
+    MiscResult,
+)
 from .provenance import (
     create_provenance_record,
     merge_provenance,
@@ -27,7 +36,7 @@ from .validation import (
 
 __all__ = [
     # Exceptions
-    "LdkError",
+    "LacunaError",
     "ValidationError",
     "SpatialMismatchError",
     "CoordinateSpaceError",
@@ -37,6 +46,14 @@ __all__ = [
     "AnalysisError",
     # Core data
     "LesionData",
+    # Output classes
+    "AnalysisResult",
+    "VoxelMapResult",
+    "ROIResult",
+    "ConnectivityMatrixResult",
+    "SurfaceResult",
+    "TractogramResult",
+    "MiscResult",
     # Validation
     "validate_nifti_image",
     "ensure_ras_plus",

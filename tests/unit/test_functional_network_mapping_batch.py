@@ -83,7 +83,7 @@ def mock_lesion_mni152(tmp_path):
     # Save to file and load with LesionData.from_nifti
     lesion_path = tmp_path / "lesion.nii.gz"
     nib.save(lesion_img, lesion_path)
-    lesion = LesionData.from_nifti(str(lesion_path), metadata={"space": "MNI152_2mm"})
+    lesion = LesionData.from_nifti(str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     return lesion
 
@@ -194,7 +194,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
     for i in range(3):
         lesion_copy = LesionData(
             lesion_img=mock_lesion_mni152.lesion_img,
-            metadata={"space": "MNI152_2mm", "subject_id": f"subject_{i}"},
+            metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"subject_{i}"},
         )
         lesions.append(lesion_copy)
 
@@ -221,7 +221,7 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
     )
 
     # Add custom metadata
-    test_metadata = {"space": "MNI152_2mm", "subject_id": "test_123", "custom_field": "test_value"}
+    test_metadata = {"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": "test_123", "custom_field": "test_value"}
     lesion = LesionData(lesion_img=mock_lesion_mni152.lesion_img, metadata=test_metadata)
 
     # Process
