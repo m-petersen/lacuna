@@ -3,7 +3,7 @@
 from lacuna.analysis import ParcelAggregation, RegionalDamage
 
 
-class TestAtlasAggregationAtlasParameter:
+class TestParcelAggregationAtlasParameter:
     """Test ParcelAggregation with parcel_names parameter."""
 
     def test_single_atlas_name(self):

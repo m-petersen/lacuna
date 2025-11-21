@@ -108,7 +108,7 @@ def test_atlas_aggregation_accepts_nibabel_image_list(sample_nifti_images):
     # Should accept list of nibabel images
     results = analysis.run(sample_nifti_images)
 
-    # Should return list of AtlasAggregationResults
+    # Should return list of ParcelData
     assert isinstance(results, list)
     assert len(results) == len(sample_nifti_images)
 

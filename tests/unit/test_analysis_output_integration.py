@@ -70,7 +70,7 @@ def mock_atlas_file(tmp_path):
 # ============================================================================
 
 
-class TestAtlasAggregationOutputs:
+class TestParcelAggregationOutputs:
     """Test ParcelAggregation returns correct output types."""
 
     def test_run_analysis_returns_list_of_results(self, sample_mask_data, mock_atlas_file):
