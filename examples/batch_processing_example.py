@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 from lacuna import MaskData, batch_process
-from lacuna.analysis import AtlasAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, RegionalDamage
 from lacuna.io import batch_export_to_csv, batch_export_to_tsv
 
 
@@ -131,7 +131,7 @@ def main():
     if args.analysis == "regional":
         analysis = RegionalDamage()
     else:
-        analysis = AtlasAggregation(method="percent_overlap")
+        analysis = ParcelAggregation(method="percent_overlap")
 
     print(f"Analysis: {analysis.__class__.__name__}")
     print(f"Batch strategy: {analysis.batch_strategy}")

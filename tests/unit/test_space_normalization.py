@@ -204,7 +204,7 @@ class TestValidateSpaceAndResolution:
 
 
 class TestAtlasAggregationSpaceHandling:
-    """Test that AtlasAggregation correctly handles space aliases."""
+    """Test that ParcelAggregation correctly handles space aliases."""
 
     @pytest.fixture
     def mask_data_aAsym(self):
@@ -245,7 +245,7 @@ class TestAtlasAggregationSpaceHandling:
     def test_no_transformation_for_equivalent_spaces(
         self, mask_data_aAsym, atlas_img_cAsym, monkeypatch
     ):
-        """AtlasAggregation should NOT transform atlas when spaces are equivalent.
+        """ParcelAggregation should NOT transform atlas when spaces are equivalent.
 
         This is the key bug: Previously atlas_aggregation.py line 398 did:
             if atlas_space == input_space:
@@ -256,7 +256,7 @@ class TestAtlasAggregationSpaceHandling:
 
         After fix, should normalize both spaces and recognize equivalence.
         """
-        from lacuna.analysis.atlas_aggregation import AtlasAggregation
+        from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
         # Create mock that would fail if transformation attempted
         transform_called = {"value": False}
@@ -270,7 +270,7 @@ class TestAtlasAggregationSpaceHandling:
         monkeypatch.setattr("lacuna.spatial.transform.transform_image", mock_transform_image)
 
         # Create analysis instance
-        analysis = AtlasAggregation()
+        analysis = ParcelAggregation()
 
         # Call _ensure_atlas_matches_input_space (private method)
         result = analysis._ensure_atlas_matches_input_space(
@@ -298,51 +298,10 @@ class TestResolutionValidationInBaseAnalysis:
 
     @pytest.fixture
     def mask_data_missing_resolution(self):
-        """Create MaskData with space but no resolution."""
-        from lacuna.core.mask_data import MaskData
-
-        affine = np.array(
-            [
-                [-2.0, 0.0, 0.0, 90.0],
-                [0.0, 2.0, 0.0, -126.0],
-                [0.0, 0.0, 2.0, -72.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        )
-        img = nib.Nifti1Image(np.ones((91, 109, 91)), affine)
-
-        # Use provenance to bypass validation (simulating loaded data)
-        return MaskData(
-            mask_img=img,
-            metadata={
-                "space": "MNI152NLin6Asym"
-                # Note: no resolution key
-            },
-            provenance=[{"test": "bypass validation"}],  # Allows missing resolution
-        )
+        """Test removed: Cannot create MaskData without resolution anymore."""
+        pytest.skip("MaskData now requires resolution at initialization (T006)")
+        return None
 
     def test_detects_missing_resolution(self, mask_data_missing_resolution):
-        """BaseAnalysis should detect and raise error for missing resolution.
-
-        Currently base.py line 394 gets resolution with .get() returning None,
-        and line 398 checks if both are not None - so missing resolution
-        is silently ignored instead of raising an error.
-        """
-        from lacuna.analysis.base import BaseAnalysis
-
-        class TestAnalysis(BaseAnalysis):
-            TARGET_SPACE = "MNI152NLin2009cAsym"
-            TARGET_RESOLUTION = 2.0
-
-            def _validate_inputs(self, mask_data):
-                """Implement required abstract method."""
-                pass
-
-            def _run_analysis(self, mask_data):
-                return []
-
-        analysis = TestAnalysis()
-
-        # Should raise clear error about missing resolution
-        with pytest.raises(ValueError, match="[Rr]esolution.*required"):
-            analysis.run(mask_data_missing_resolution)
+        """Test removed: MaskData now validates resolution at initialization."""
+        pytest.skip("Resolution validation moved to MaskData.__init__ in T006")

@@ -2,7 +2,7 @@
 Regional damage analysis module.
 
 Provides a convenient interface for computing lesion-atlas overlap.
-This is a thin wrapper around AtlasAggregation configured for regional
+This is a thin wrapper around ParcelAggregation configured for regional
 damage analysis.
 
 Examples
@@ -18,17 +18,17 @@ Examples
 >>> result = analysis.run(lesion)
 >>>
 >>> # Access results (percent overlap per region)
->>> print(result.results["AtlasAggregation"])
+>>> print(result.results["ParcelAggregation"])
 """
 
-from lacuna.analysis.atlas_aggregation import AtlasAggregation
+from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
 
-class RegionalDamage(AtlasAggregation):
+class RegionalDamage(ParcelAggregation):
     """
     Compute lesion overlap with atlas regions.
 
-    This is a convenience wrapper around AtlasAggregation that:
+    This is a convenience wrapper around ParcelAggregation that:
     - Sets source="mask_img" (analyze the lesion mask)
     - Sets aggregation="percent" (compute overlap percentages)
 
@@ -46,7 +46,7 @@ class RegionalDamage(AtlasAggregation):
     threshold : float, default=0.5
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
-    atlas_names : list of str or None, default=None
+    parcel_names : list of str or None, default=None
         Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
         If None, all registered atlases are processed.
         Use list_atlases() to see available atlases.
@@ -54,14 +54,14 @@ class RegionalDamage(AtlasAggregation):
     Raises
     ------
     ValueError
-        If atlas_names contains non-existent atlas names.
+        If parcel_names contains non-existent atlas names.
 
     Notes
     -----
     - Lesion mask must be in same space as atlases (typically MNI152)
     - Results show percentage of each region overlapping with lesion
     - For more control (e.g., computing volume instead of percent),
-      use AtlasAggregation directly
+      use ParcelAggregation directly
 
     Examples
     --------
@@ -73,21 +73,21 @@ class RegionalDamage(AtlasAggregation):
     >>> analysis = RegionalDamage()  # Uses all registered atlases
     >>> result = analysis.run(lesion)
     >>>
-    >>> # Results are in AtlasAggregation namespace
-    >>> overlap_pcts = result.results["AtlasAggregation"]
+    >>> # Results are in ParcelAggregation namespace
+    >>> overlap_pcts = result.results["ParcelAggregation"]
     >>> for region, pct in overlap_pcts.items():
     ...     if pct > 10:  # Show regions with >10% damage
     ...         print(f"{region}: {pct:.1f}%")
     >>>
     >>> # Process only specific atlases
     >>> analysis = RegionalDamage(
-    ...     atlas_names=["Schaefer2018_100Parcels7Networks"]
+    ...     parcel_names=["Schaefer2018_100Parcels7Networks"]
     ... )
     >>> result = analysis.run(lesion)
 
     See Also
     --------
-    AtlasAggregation : More flexible aggregation with custom sources/methods
+    ParcelAggregation : More flexible aggregation with custom sources/methods
     """
 
     #: Preferred batch processing strategy
@@ -96,21 +96,21 @@ class RegionalDamage(AtlasAggregation):
     def __init__(
         self,
         threshold: float = 0.5,
-        atlas_names: list[str] | None = None,
+        parcel_names: list[str] | None = None,
     ):
         """
         Initialize RegionalDamage analysis.
 
         This is equivalent to:
-        AtlasAggregation(source="mask_img",
+        ParcelAggregation(source="mask_img",
                         aggregation="percent", threshold=threshold,
-                        atlas_names=atlas_names)
+                        parcel_names=parcel_names)
         """
         super().__init__(
             source="mask_img",
             aggregation="percent",
             threshold=threshold,
-            atlas_names=atlas_names,
+            parcel_names=parcel_names,
         )
 
     def _validate_inputs(self, mask_data) -> None:
@@ -155,7 +155,7 @@ class RegionalDamage(AtlasAggregation):
             Dictionary of parameter names and values.
         """
         params = super()._get_parameters()
-        # RegionalDamage is a specific configuration of AtlasAggregation
+        # RegionalDamage is a specific configuration of ParcelAggregation
         # Override the source and aggregation to reflect the simplified API
         params.update(
             {

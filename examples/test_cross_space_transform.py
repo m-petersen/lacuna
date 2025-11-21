@@ -24,13 +24,13 @@ class TestAnalysis(BaseAnalysis):
         """Validate that transformation occurred."""
         space = mask_data.get_coordinate_space()
         resolution = mask_data.metadata.get("resolution")
-        print(f"\n✓ Validation check:")
+        print("\n✓ Validation check:")
         print(f"  Received: {space} @ {resolution}mm")
         print(f"  Expected: {self.TARGET_SPACE} @ {self.TARGET_RESOLUTION}mm")
         assert space == self.TARGET_SPACE, f"Space mismatch: {space} != {self.TARGET_SPACE}"
-        assert resolution == self.TARGET_RESOLUTION, (
-            f"Resolution mismatch: {resolution} != {self.TARGET_RESOLUTION}"
-        )
+        assert (
+            resolution == self.TARGET_RESOLUTION
+        ), f"Resolution mismatch: {resolution} != {self.TARGET_RESOLUTION}"
 
     def _run_analysis(self, mask_data: MaskData) -> dict:
         """Minimal analysis that just returns basic info."""
@@ -73,50 +73,52 @@ def main():
         },
     )
 
-    print(f"\n✓ Created lesion:")
-    print(f"  Space: MNI152NLin2009cAsym @ 2mm")
+    print("\n✓ Created lesion:")
+    print("  Space: MNI152NLin2009cAsym @ 2mm")
     print(f"  Shape: {mask_img.shape}")
     print(f"  Non-zero voxels: {np.sum(lesion_array > 0)}")
 
     # 2. Initialize analysis with different target space
     analysis = TestAnalysis()
-    print(f"\n✓ Analysis configuration:")
+    print("\n✓ Analysis configuration:")
     print(f"  Class: {analysis.__class__.__name__}")
     print(f"  TARGET_SPACE: {analysis.TARGET_SPACE}")
     print(f"  TARGET_RESOLUTION: {analysis.TARGET_RESOLUTION}mm")
 
     # 3. Run analysis (should transform automatically)
-    print(f"\n✓ Running analysis...")
-    print(f"  Expected transformation: MNI152NLin2009cAsym @ 2mm → {analysis.TARGET_SPACE} @ {analysis.TARGET_RESOLUTION}mm")
-    print(f"  This will use lacuna/spatial infrastructure:")
-    print(f"    1. _ensure_target_space() detects space mismatch")
-    print(f"    2. Calls transform_mask_data()")
-    print(f"    3. load_transform() retrieves transform from assets")
-    print(f"    4. Downloads from templateflow if needed")
-    print(f"    5. Applies transformation using nitransforms")
+    print("\n✓ Running analysis...")
+    print(
+        f"  Expected transformation: MNI152NLin2009cAsym @ 2mm → {analysis.TARGET_SPACE} @ {analysis.TARGET_RESOLUTION}mm"
+    )
+    print("  This will use lacuna/spatial infrastructure:")
+    print("    1. _ensure_target_space() detects space mismatch")
+    print("    2. Calls transform_mask_data()")
+    print("    3. load_transform() retrieves transform from assets")
+    print("    4. Downloads from templateflow if needed")
+    print("    5. Applies transformation using nitransforms")
 
     try:
         result = analysis.run(mask_data)
-        print(f"\n✓ Analysis completed successfully!")
+        print("\n✓ Analysis completed successfully!")
 
         # Verify transformation happened
         result_space = result.metadata.get("space")
         result_resolution = result.metadata.get("resolution")
-        print(f"\n✓ Result verification:")
+        print("\n✓ Result verification:")
         print(f"  Final space: {result_space} @ {result_resolution}mm")
         print(f"  Result shape: {result.mask_img.shape}")
         print(f"  Non-zero voxels: {np.sum(result.mask_img.get_fdata() > 0)}")
 
         # Verify correct target space
-        assert result_space == analysis.TARGET_SPACE, (
-            f"Expected {analysis.TARGET_SPACE}, got {result_space}"
-        )
-        assert result_resolution == analysis.TARGET_RESOLUTION, (
-            f"Expected {analysis.TARGET_RESOLUTION}mm, got {result_resolution}mm"
-        )
+        assert (
+            result_space == analysis.TARGET_SPACE
+        ), f"Expected {analysis.TARGET_SPACE}, got {result_space}"
+        assert (
+            result_resolution == analysis.TARGET_RESOLUTION
+        ), f"Expected {analysis.TARGET_RESOLUTION}mm, got {result_resolution}mm"
 
         # Check provenance for transformation record
-        print(f"\n✓ Provenance tracking:")
+        print("\n✓ Provenance tracking:")
         print(f"  Total records: {len(result.provenance)}")
 
         found_transform = False
@@ -124,10 +126,14 @@ def main():
             record_type = record.get("type", "")
             print(f"\n  Record {i}: {record_type}")
             print(f"    Keys: {list(record.keys())}")
-            
+
             if "transformation" in record_type.lower() or "transform" in record_type.lower():
-                print(f"    Source: {record.get('source_space')} @ {record.get('source_resolution')}mm")
-                print(f"    Target: {record.get('target_space')} @ {record.get('target_resolution')}mm")
+                print(
+                    f"    Source: {record.get('source_space')} @ {record.get('source_resolution')}mm"
+                )
+                print(
+                    f"    Target: {record.get('target_space')} @ {record.get('target_resolution')}mm"
+                )
                 print(f"    Method: {record.get('method')}")
                 print(f"    Interpolation: {record.get('interpolation')}")
                 found_transform = True

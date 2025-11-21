@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 
 from lacuna import MaskData
-from lacuna.analysis import AtlasAggregation
+from lacuna.analysis import ParcelAggregation
 
 
 class TestAtlasLabelAssignment:
@@ -93,15 +93,15 @@ class TestAtlasLabelAssignment:
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Run analysis - use only this test's atlas
-            analysis = AtlasAggregation(
+            analysis = ParcelAggregation(
                 source="mask_img",
                 aggregation="percent",
                 threshold=0.5,
-                atlas_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
+                parcel_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["AtlasAggregation"]
-            results = atlas_results["atlas_test_4d_atlas"].get_data()
+            atlas_results = result.results["ParcelAggregation"]
+            results = atlas_results["test_4d_atlas_from_mask_img"].get_data()
 
             # With new structure, region names don't have atlas prefix
             right_damage = results.get("Region_Right", None)
@@ -184,15 +184,15 @@ class TestAtlasLabelAssignment:
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Run analysis - use only this test's atlas
-            analysis = AtlasAggregation(
+            analysis = ParcelAggregation(
                 source="mask_img",
                 aggregation="percent",
                 threshold=0.5,
-                atlas_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
+                parcel_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["AtlasAggregation"]
-            results = atlas_results["atlas_atlas_1indexed"].get_data()
+            atlas_results = result.results["ParcelAggregation"]
+            results = atlas_results["atlas_1indexed_from_mask_img"].get_data()
 
             # With new structure, region names don't have atlas prefix
             bottom_damage = results.get("Bottom_Region", None)
@@ -261,15 +261,15 @@ class TestAtlasLabelAssignment:
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Use only this test's atlas
-            analysis = AtlasAggregation(
+            analysis = ParcelAggregation(
                 source="mask_img",
                 aggregation="percent",
                 threshold=0.5,
-                atlas_names=["atlas_3d"],  # Explicitly use only this test's atlas
+                parcel_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["AtlasAggregation"]
-            results = atlas_results["atlas_atlas_3d"].get_data()
+            atlas_results = result.results["ParcelAggregation"]
+            results = atlas_results["atlas_3d_from_mask_img"].get_data()
 
             # With new structure, region names don't have atlas prefix
             first_damage = results.get("First_Region", None)

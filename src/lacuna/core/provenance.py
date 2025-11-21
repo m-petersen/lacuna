@@ -90,7 +90,7 @@ def create_provenance_record(
     --------
     >>> record = create_provenance_record(
     ...     function="lacuna.analysis.RegionalDamage",
-    ...     parameters={"atlas_names": ["Schaefer2018_100Parcels7Networks"]},
+    ...     parameters={"parcel_names": ["Schaefer2018_100Parcels7Networks"]},
     ...     version="0.1.0",
     ... )
     >>> record['function']

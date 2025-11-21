@@ -193,8 +193,8 @@ def test_no_transformation_when_target_not_specified_1mm(lesion_mni152_1mm):
 def test_target_space_class_attributes_exist():
     """Test that TARGET_SPACE attributes are properly defined on analysis classes."""
     from lacuna.analysis import (
-        AtlasAggregation,
         FunctionalNetworkMapping,
+        ParcelAggregation,
         RegionalDamage,
         StructuralNetworkMapping,
     )
@@ -209,12 +209,12 @@ def test_target_space_class_attributes_exist():
     assert StructuralNetworkMapping.TARGET_SPACE == "MNI152NLin2009cAsym"
     assert StructuralNetworkMapping.TARGET_RESOLUTION == 1
 
-    # AtlasAggregation should be adaptive (no transformation)
-    assert hasattr(AtlasAggregation, "TARGET_SPACE")
-    assert AtlasAggregation.TARGET_SPACE is None
-    assert AtlasAggregation.TARGET_RESOLUTION is None
+    # ParcelAggregation should be adaptive (no transformation)
+    assert hasattr(ParcelAggregation, "TARGET_SPACE")
+    assert ParcelAggregation.TARGET_SPACE is None
+    assert ParcelAggregation.TARGET_RESOLUTION is None
 
-    # RegionalDamage inherits from AtlasAggregation
+    # RegionalDamage inherits from ParcelAggregation
     assert RegionalDamage.TARGET_SPACE is None
     assert RegionalDamage.TARGET_RESOLUTION is None
 

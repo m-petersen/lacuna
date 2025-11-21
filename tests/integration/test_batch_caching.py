@@ -71,7 +71,7 @@ class TestBatchTransformReuse:
     def test_batch_processing_uses_cache(self, synthetic_lesion_batch, temp_cache):
         """Test that batch processing benefits from transform caching."""
         # Define target space
-        target = CoordinateSpace(
+        CoordinateSpace(
             identifier="MNI152NLin2009cAsym",
             resolution=2,
             reference_affine=REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)],
@@ -119,7 +119,7 @@ class TestBatchTransformReuse:
         temp_cache.put_transform(*transform_key, "/path/to/transform.h5")
 
         # Subsequent accesses - all hits (one per subject)
-        for i, lesion in enumerate(synthetic_lesion_batch):
+        for i, _lesion in enumerate(synthetic_lesion_batch):
             result = temp_cache.get_transform(*transform_key)
             assert result is not None, f"Access {i + 1} should be a cache hit"
 
@@ -168,7 +168,7 @@ class TestBatchTransformReuse:
         # Create two identical images with different data_ids
         data = np.random.rand(20, 20, 20).astype(np.float32)
         img1 = nib.Nifti1Image(data, source_affine)
-        img2 = nib.Nifti1Image(data, source_affine)
+        nib.Nifti1Image(data, source_affine)
 
         result_data = np.random.rand(20, 20, 20).astype(np.float32)
         result_img = nib.Nifti1Image(result_data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
@@ -228,7 +228,7 @@ class TestCacheConfiguration:
         cache_dir = tmp_path / "nonexistent" / "cache"
         assert not cache_dir.exists()
 
-        cache = TransformCache(cache_dir=cache_dir)
+        TransformCache(cache_dir=cache_dir)
 
         assert cache_dir.exists(), "Cache should create directory"
         assert cache_dir.is_dir(), "Should be a directory"

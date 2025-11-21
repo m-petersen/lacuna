@@ -12,7 +12,7 @@ from lacuna.core.mask_data import MaskData
 from lacuna.core.provenance import create_provenance_record
 
 if TYPE_CHECKING:
-    from lacuna.core.output import AnalysisResult
+    from lacuna.core.data_types import AnalysisResult
 
 
 class BaseAnalysis(ABC):
@@ -334,13 +334,13 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> from lacuna.core.output import VoxelMapResult, MiscResult
+        >>> from lacuna.core.data_types import VoxelMap, ScalarMetric
         >>> def _run_analysis(self, mask_data: MaskData) -> list[AnalysisResult]:
         ...     lesion_array = mask_data.mask_img.get_fdata()
         ...
         ...     # Create voxel map result
         ...     correlation_img = self._compute_correlation_map(lesion_array)
-        ...     voxel_result = VoxelMapResult(
+        ...     voxel_result = VoxelMap(
         ...         name="correlation_map",
         ...         data=correlation_img,
         ...         output_space=self.computation_space,
@@ -348,7 +348,7 @@ class BaseAnalysis(ABC):
         ...     )
         ...
         ...     # Create summary statistics result
-        ...     summary_result = MiscResult(
+        ...     summary_result = ScalarMetric(
         ...         name="summary_statistics",
         ...         data={"mean": float(np.mean(lesion_array))}
         ...     )
@@ -468,10 +468,7 @@ class BaseAnalysis(ABC):
 
         # Transform (logging handled by transform_mask_data)
         return transform_mask_data(
-            mask_data,
-            target_space_obj,
-            image_name="mask",
-            log_level=self.log_level
+            mask_data, target_space_obj, image_name="mask", log_level=self.log_level
         )
 
     def _get_version(self) -> str:
@@ -575,8 +572,5 @@ class BaseAnalysis(ABC):
 
         # Transform data (logging handled by transform_mask_data)
         return transform_mask_data(
-            mask_data,
-            target_space,
-            image_name="mask",
-            log_level=self.log_level
+            mask_data, target_space, image_name="mask", log_level=self.log_level
         )

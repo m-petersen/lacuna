@@ -157,7 +157,7 @@ def demo_query_capabilities() -> None:
 
     # Query supported resolutions
     print("\nSupported space/resolution combinations:")
-    for (space, res), affine in REFERENCE_AFFINES.items():
+    for (space, res), _affine in REFERENCE_AFFINES.items():
         print(f"  • {space:25s} @ {res}mm")
 
 
@@ -282,7 +282,7 @@ def demo_transformation(mask_data: "MaskData") -> "MaskData":
         print(f"\n⚠️  Transform file not available: {e}")
         print("\nTransform files are downloaded from TemplateFlow on first use.")
         print("Make sure you have an internet connection for the initial download.")
-        print(f"\nTransform files (~200MB) are cached at ~/.cache/templateflow/")
+        print("\nTransform files (~200MB) are cached at ~/.cache/templateflow/")
         print("\nAPI call demonstrated:")
         print("  transformed = transform_mask_data(mask_data, target_space)")
         return mask_data
@@ -353,7 +353,8 @@ def demo_analysis_integration(mask_data: "MaskData") -> None:
 
     # Show the helper method
     print("Example usage in analysis module:")
-    print("""
+    print(
+        """
     class MyAnalysis(BaseAnalysis):
         def _validate_inputs(self, mask_data: MaskData) -> MaskData:
             # Automatically transform to required space if needed
@@ -363,7 +364,8 @@ def demo_analysis_integration(mask_data: "MaskData") -> None:
                 required_resolution=2
             )
             return mask_data
-    """)
+    """
+    )
 
     print("\nThis helper method:")
     print("  ✓ Checks current space from metadata")
@@ -377,7 +379,7 @@ def demo_asset_management() -> None:
     """Demonstrate data asset management."""
     print_section("8. Data Asset Management")
 
-    from lacuna.assets import load_transform, load_template
+    from lacuna.assets import load_template, load_transform
 
     print("lacuna.assets handles:")
     print("  • Transform files (~200MB each)")

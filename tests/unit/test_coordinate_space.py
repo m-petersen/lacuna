@@ -10,12 +10,15 @@ import pytest
 @pytest.mark.unit
 def test_coordinate_space_creation():
     """T037: Test that CoordinateSpace can be created with required fields."""
+    import numpy as np
+
     from lacuna.core.spaces import CoordinateSpace
 
-    space = CoordinateSpace(
-        identifier="MNI152NLin6Asym",
-        resolution=2.0
-    )
+    # Create a simple affine matrix
+    affine = np.eye(4)
+    affine[:3, :3] *= 2.0  # 2mm resolution
+
+    space = CoordinateSpace(identifier="MNI152NLin6Asym", resolution=2.0, reference_affine=affine)
 
     assert space.identifier == "MNI152NLin6Asym"
     assert space.resolution == 2.0
@@ -24,16 +27,15 @@ def test_coordinate_space_creation():
 @pytest.mark.unit
 def test_coordinate_space_equality():
     """Test that CoordinateSpace objects with same values are considered equal."""
+    import numpy as np
+
     from lacuna.core.spaces import CoordinateSpace
 
-    space1 = CoordinateSpace(
-        identifier="MNI152NLin6Asym",
-        resolution=2.0
-    )
-    space2 = CoordinateSpace(
-        identifier="MNI152NLin6Asym",
-        resolution=2.0
-    )
+    affine = np.eye(4)
+    affine[:3, :3] *= 2.0
+
+    space1 = CoordinateSpace(identifier="MNI152NLin6Asym", resolution=2.0, reference_affine=affine)
+    space2 = CoordinateSpace(identifier="MNI152NLin6Asym", resolution=2.0, reference_affine=affine)
 
     # Should be equal (if __eq__ is implemented)
     # Otherwise, at least verify attributes match
@@ -44,20 +46,16 @@ def test_coordinate_space_equality():
 @pytest.mark.unit
 def test_coordinate_space_in_result_objects():
     """Test that result objects use consistent space representation."""
-    from lacuna.core.output import VoxelMapResult
     import nibabel as nib
     import numpy as np
+
+    from lacuna.core.data_types import VoxelMap
 
     data = np.random.rand(64, 64, 64).astype(np.float32)
     affine = np.eye(4)
     test_img = nib.Nifti1Image(data, affine)
 
-    result = VoxelMapResult(
-        name="test",
-        data=test_img,
-        space="MNI152NLin2009cAsym",
-        resolution=2.0
-    )
+    result = VoxelMap(name="test", data=test_img, space="MNI152NLin2009cAsym", resolution=2.0)
 
     # Space should be stored as string (matching CoordinateSpace.identifier)
     assert isinstance(result.space, str)

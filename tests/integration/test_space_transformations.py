@@ -4,9 +4,9 @@ Integration tests for transformation logging and provenance.
 T036: Test transformation logging with informative messages.
 """
 
-import pytest
 import nibabel as nib
 import numpy as np
+import pytest
 
 
 @pytest.mark.integration
@@ -14,24 +14,17 @@ import numpy as np
 def test_transformation_logging_messages(synthetic_mask_img, capsys):
     """T036: Test that transformations log informative messages."""
     from lacuna.core.mask_data import MaskData
-    from lacuna.spatial.transform import transform_image
     from lacuna.core.spaces import CoordinateSpace
+    from lacuna.spatial.transform import transform_image
 
     # Create mask data in one space
     mask_data = MaskData(
         synthetic_mask_img,
-        metadata={
-            "subject_id": "sub-001",
-            "space": "MNI152NLin6Asym",
-            "resolution": 2
-        }
+        metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Transform to another space
-    target_space = CoordinateSpace(
-        identifier="MNI152NLin2009cAsym",
-        resolution=2.0
-    )
+    target_space = CoordinateSpace(identifier="MNI152NLin2009cAsym", resolution=2.0)
 
     # This should log transformation messages
     # Note: Actual transformation requires templates, so this may fail
@@ -41,7 +34,7 @@ def test_transformation_logging_messages(synthetic_mask_img, capsys):
             img=mask_data.mask_img,
             source_space="MNI152NLin6Asym",
             target_space=target_space,
-            source_resolution=2
+            source_resolution=2,
         )
         # If successful, check that output has expected space
         assert transformed_img is not None

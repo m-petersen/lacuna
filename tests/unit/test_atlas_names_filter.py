@@ -1,7 +1,7 @@
 """
-Test atlas_names filter functionality.
+Test parcel_names filter functionality.
 
-Tests that the atlas_names parameter correctly filters which atlases are processed.
+Tests that the parcel_names parameter correctly filters which atlases are processed.
 """
 
 import tempfile
@@ -12,11 +12,11 @@ import numpy as np
 import pytest
 
 from lacuna import MaskData
-from lacuna.analysis import AtlasAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, RegionalDamage
 
 
 class TestAtlasNamesFilter:
-    """Test atlas_names filtering functionality."""
+    """Test parcel_names filtering functionality."""
 
     def test_atlas_names_filters_correctly(self):
         """Test that only specified atlases are processed."""
@@ -56,7 +56,7 @@ class TestAtlasNamesFilter:
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Test 1: Process only atlas_B
-            analysis = RegionalDamage(atlas_names=["atlas_B"])
+            analysis = RegionalDamage(parcel_names=["atlas_B"])
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["RegionalDamage"]
 
@@ -66,7 +66,7 @@ class TestAtlasNamesFilter:
             assert "atlas_atlas_C" not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
-            analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_C"])
+            analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_C"])
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["RegionalDamage"]
 
@@ -76,7 +76,7 @@ class TestAtlasNamesFilter:
             assert "atlas_atlas_C" in atlas_results
 
             # Test 3: None = process all atlases
-            analysis = RegionalDamage(atlas_names=None)
+            analysis = RegionalDamage(parcel_names=None)
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["RegionalDamage"]
 
@@ -121,7 +121,7 @@ class TestAtlasNamesFilter:
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request atlas_A and atlas_B (atlas_B doesn't exist)
-            analysis = RegionalDamage(atlas_names=["atlas_A", "atlas_B"])
+            analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_B"])
 
             with pytest.warns(UserWarning, match="Some requested atlases were not found.*atlas_B"):
                 result = analysis.run(mask_data_obj)
@@ -166,27 +166,27 @@ class TestAtlasNamesFilter:
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request only atlas_B (doesn't exist)
-            analysis = RegionalDamage(atlas_names=["atlas_B"])
+            analysis = RegionalDamage(parcel_names=["atlas_B"])
 
             with pytest.raises(ValueError, match="No matching atlases found for specified names"):
                 analysis.run(mask_data_obj)
 
     def test_atlas_names_validates_input_type(self):
-        """Test that atlas_names validation catches invalid types."""
+        """Test that parcel_names validation catches invalid types."""
         # Should raise TypeError for non-list
-        with pytest.raises(TypeError, match="atlas_names must be a list"):
-            AtlasAggregation(atlas_names="atlas_A")
+        with pytest.raises(TypeError, match="parcel_names must be a list"):
+            ParcelAggregation(parcel_names="atlas_A")
 
         # Should raise TypeError for list with non-strings
-        with pytest.raises(TypeError, match="All items in atlas_names must be strings"):
-            AtlasAggregation(atlas_names=["atlas_A", 123])
+        with pytest.raises(TypeError, match="All items in parcel_names must be strings"):
+            ParcelAggregation(parcel_names=["atlas_A", 123])
 
         # Should raise ValueError for empty list
-        with pytest.raises(ValueError, match="atlas_names cannot be an empty list"):
-            AtlasAggregation(atlas_names=[])
+        with pytest.raises(ValueError, match="parcel_names cannot be an empty list"):
+            ParcelAggregation(parcel_names=[])
 
     def test_atlas_names_works_with_atlas_aggregation(self):
-        """Test that atlas_names works with AtlasAggregation (not just RegionalDamage)."""
+        """Test that parcel_names works with ParcelAggregation (not just RegionalDamage)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
@@ -221,14 +221,14 @@ class TestAtlasNamesFilter:
 
             register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
-            # Use AtlasAggregation with atlas_names filter
-            analysis = AtlasAggregation(
+            # Use ParcelAggregation with parcel_names filter
+            analysis = ParcelAggregation(
                 source="mask_img",
                 aggregation="mean",
-                atlas_names=["atlas_X"],
+                parcel_names=["atlas_X"],
             )
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["AtlasAggregation"]
+            atlas_results = result.results["ParcelAggregation"]
 
             # Should only have atlas_X results
             assert "atlas_atlas_X" in atlas_results

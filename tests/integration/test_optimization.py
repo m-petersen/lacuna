@@ -174,9 +174,7 @@ class TestTransformationDirectionChoices:
         strategy = TransformationStrategy()
 
         with caplog.at_level(logging.DEBUG):
-            direction = strategy.determine_direction(
-                source, target, source_img=img, check_cache=False
-            )
+            strategy.determine_direction(source, target, source_img=img, check_cache=False)
 
         # Check that rationale is logged
         assert any(

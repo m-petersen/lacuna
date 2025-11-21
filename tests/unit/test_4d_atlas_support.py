@@ -14,7 +14,7 @@ import numpy as np
 from lacuna import MaskData
 from lacuna.analysis import RegionalDamage
 from lacuna.assets.atlases.registry import AtlasMetadata, register_atlas, unregister_atlas
-from lacuna.core.output import AtlasAggregationResult
+from lacuna.core.data_types import ParcelData
 from lacuna.core.spaces import CoordinateSpace
 from lacuna.spatial.transform import transform_image
 
@@ -386,22 +386,22 @@ class Test4DAtlasAggregation:
             register_atlas(metadata)
 
             # Run RegionalDamage with 4D atlas
-            analysis = RegionalDamage(atlas_names=["Test4DAtlas_Aggregation"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["Test4DAtlas_Aggregation"], threshold=0.0)
 
             result = analysis.run(lesion)
 
             # Check results
             damage_results = result.results["RegionalDamage"]
-            assert "atlas_Test4DAtlas_Aggregation" in damage_results
+            assert "Test4DAtlas_Aggregation_from_mask_img" in damage_results
 
             # Get region data
-            region_data = damage_results["atlas_Test4DAtlas_Aggregation"].get_data()
+            region_data = damage_results["Test4DAtlas_Aggregation_from_mask_img"].get_data()
             assert len(region_data) > 0
 
             # Tract1 should have highest damage (full overlap)
             # Tract2 should have some damage
             # Tract3 should have no damage
-            # Note: Results structure depends on AtlasAggregationResult implementation
+            # Note: Results structure depends on ParcelData implementation
 
         finally:
             try:
@@ -448,14 +448,14 @@ class Test4DAtlasAggregation:
             )
             register_atlas(metadata)
 
-            analysis = RegionalDamage(atlas_names=["Test4D_VaryingOverlap"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["Test4D_VaryingOverlap"], threshold=0.0)
 
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
 
             # Verify we got results for the atlas
-            assert "atlas_Test4D_VaryingOverlap" in damage_results
-            region_data = damage_results["atlas_Test4D_VaryingOverlap"].get_data()
+            assert "Test4D_VaryingOverlap_from_mask_img" in damage_results
+            region_data = damage_results["Test4D_VaryingOverlap_from_mask_img"].get_data()
             assert len(region_data) > 0
 
             # LargeOverlap should have more damage than SmallOverlap
@@ -533,18 +533,18 @@ class TestMixed3DAnd4DAtlases:
             register_atlas(metadata_4d)
 
             # Run with both atlases
-            analysis = RegionalDamage(atlas_names=["Mixed3D", "Mixed4D"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["Mixed3D", "Mixed4D"], threshold=0.0)
 
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
 
             # Should have results from both atlases
-            assert "atlas_Mixed3D" in damage_results
-            assert "atlas_Mixed4D" in damage_results
+            assert "Mixed3D_from_mask_img" in damage_results
+            assert "Mixed4D_from_mask_img" in damage_results
 
             # Each should have region data
-            mixed3d_data = damage_results["atlas_Mixed3D"].get_data()
-            mixed4d_data = damage_results["atlas_Mixed4D"].get_data()
+            mixed3d_data = damage_results["Mixed3D_from_mask_img"].get_data()
+            mixed4d_data = damage_results["Mixed4D_from_mask_img"].get_data()
             assert len(mixed3d_data) > 0
             assert len(mixed4d_data) > 0
 
@@ -560,7 +560,7 @@ class TestRegionalDamageOutputAPI:
     """Test correct usage of RegionalDamage output API."""
 
     def test_regional_damage_returns_roi_result_list(self, tmp_path):
-        """RegionalDamage should return list of AtlasAggregationResult objects, not dict."""
+        """RegionalDamage should return list of ParcelData objects, not dict."""
         # Create lesion
         mask_data = np.zeros((20, 20, 20))
         mask_data[8:12, 8:12, 8:12] = 1
@@ -596,7 +596,7 @@ class TestRegionalDamageOutputAPI:
             )
             register_atlas(metadata)
 
-            analysis = RegionalDamage(atlas_names=["TestOutputAPI"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["TestOutputAPI"], threshold=0.0)
 
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
@@ -610,14 +610,12 @@ class TestRegionalDamageOutputAPI:
             assert "atlas_TestOutputAPI" in damage_results
 
             # Get the ROI result
-            roi_result = damage_results["atlas_TestOutputAPI"]
-            assert isinstance(roi_result, AtlasAggregationResult)
+            roi_result = damage_results["TestOutputAPI_from_mask_img"]
+            assert isinstance(roi_result, ParcelData)
 
             # Access the damage data via get_data()
             damage_data = roi_result.get_data()
-            assert isinstance(
-                damage_data, dict
-            ), "AtlasAggregationResult.get_data() should return a dict"
+            assert isinstance(damage_data, dict), "ParcelData.get_data() should return a dict"
 
             # Damage data should be dict of region_name -> percentage
             assert all(
@@ -628,7 +626,7 @@ class TestRegionalDamageOutputAPI:
             ), "Damage percentages should be numeric"
 
             # Test correct usage pattern (as shown in notebook)
-            # CORRECT: Get data from AtlasAggregationResult first
+            # CORRECT: Get data from ParcelData first
             sorted_regions = sorted(damage_data.items(), key=lambda x: x[1], reverse=True)
             assert isinstance(sorted_regions, list)
 

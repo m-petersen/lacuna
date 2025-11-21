@@ -213,7 +213,7 @@ class TestAtlasTransformation:
         )
 
         result_data = result.get_fdata()
-        unique_labels = np.unique(result_data)
+        np.unique(result_data)
 
         # All values should be integers (or very close due to float conversion)
         assert np.allclose(result_data, np.round(result_data))
@@ -354,7 +354,7 @@ class TestLoggingTransparency:
         img = nib.Nifti1Image(data, affine)
 
         # Transform
-        result = transform_image(
+        transform_image(
             img=img,
             source_space="MNI152NLin6Asym",
             target_space="MNI152NLin2009cAsym",

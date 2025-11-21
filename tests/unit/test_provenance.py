@@ -98,5 +98,3 @@ class TestTransformationRecord:
 
         assert "rationale" not in result
         assert "transform_file" not in result
-
-

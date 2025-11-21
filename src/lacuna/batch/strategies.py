@@ -81,7 +81,7 @@ class ParallelStrategy(BatchStrategy):
     """
     Parallel batch processing using joblib multiprocessing.
 
-    Best for: Independent per-subject analyses (RegionalDamage, AtlasAggregation)
+    Best for: Independent per-subject analyses (RegionalDamage, ParcelAggregation)
     Speedup: 4-8x on multi-core systems (proportional to available cores)
     Memory: Low overhead (~1.2x per-subject memory usage)
 

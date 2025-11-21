@@ -201,11 +201,11 @@ class TestBaseAnalysisBatchIntegration:
         assert RegionalDamage.batch_strategy == "parallel"
 
     def test_atlas_aggregation_has_batch_strategy(self):
-        """AtlasAggregation should declare batch_strategy."""
-        from lacuna.analysis import AtlasAggregation
+        """ParcelAggregation should declare batch_strategy."""
+        from lacuna.analysis import ParcelAggregation
 
-        assert hasattr(AtlasAggregation, "batch_strategy")
-        assert AtlasAggregation.batch_strategy == "parallel"
+        assert hasattr(ParcelAggregation, "batch_strategy")
+        assert ParcelAggregation.batch_strategy == "parallel"
 
 
 class TestBatchProcessBackend:

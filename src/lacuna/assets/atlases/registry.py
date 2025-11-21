@@ -572,7 +572,7 @@ def _load_bundled_atlas_labels(labels_filename: str) -> list[str] | None:
     # Inline label loading to avoid circular import
     labels_dict = {}
     with open(labels_path) as f:
-        for line_num, line in enumerate(f, start=1):
+        for _line_num, line in enumerate(f, start=1):
             line = line.strip()
 
             # Skip empty lines and comments

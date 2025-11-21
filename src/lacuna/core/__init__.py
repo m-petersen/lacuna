@@ -2,6 +2,15 @@
 Core data structures and utilities for the lesion decoding toolkit.
 """
 
+from .data_types import (
+    AnalysisResult,
+    ConnectivityMatrix,
+    ParcelData,
+    ScalarMetric,
+    SurfaceMesh,
+    Tractogram,
+    VoxelMap,
+)
 from .exceptions import (
     AnalysisError,
     BIDSValidationError,
@@ -13,15 +22,6 @@ from .exceptions import (
     ValidationError,
 )
 from .mask_data import MaskData
-from .output import (
-    AnalysisResult,
-    ConnectivityMatrixResult,
-    MiscResult,
-    AtlasAggregationResult,
-    SurfaceResult,
-    TractogramResult,
-    VoxelMapResult,
-)
 from .provenance import (
     create_provenance_record,
     merge_provenance,
@@ -48,12 +48,12 @@ __all__ = [
     "MaskData",
     # Output classes
     "AnalysisResult",
-    "VoxelMapResult",
-    "AtlasAggregationResult",
-    "ConnectivityMatrixResult",
-    "SurfaceResult",
-    "TractogramResult",
-    "MiscResult",
+    "VoxelMap",
+    "ParcelData",
+    "ConnectivityMatrix",
+    "SurfaceMesh",
+    "Tractogram",
+    "ScalarMetric",
     # Validation
     "validate_nifti_image",
     "ensure_ras_plus",

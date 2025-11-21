@@ -57,7 +57,7 @@ def test_load_bids_dataset_multisession(multisession_bids_dataset):
     assert "sub-001_ses-02" in mask_data_dict
 
     # Both should have data
-    for key, ld in mask_data_dict.items():
+    for _key, ld in mask_data_dict.items():
         assert ld.mask_img is not None
         assert ld.anatomical_img is not None
 
