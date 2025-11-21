@@ -203,7 +203,7 @@ class TestValidateSpaceAndResolution:
             validate_space_and_resolution(space="InvalidSpaceName", resolution=2.0)
 
 
-class TestAtlasAggregationSpaceHandling:
+class TestParcelAggregationSpaceHandling:
     """Test that ParcelAggregation correctly handles space aliases."""
 
     @pytest.fixture

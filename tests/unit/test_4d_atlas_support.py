@@ -341,7 +341,7 @@ class Test4DAtlasTransformation:
         assert result_data.shape[3] == 2
 
 
-class Test4DAtlasAggregation:
+class Test4DParcelAggregation:
     """Test atlas aggregation with 4D atlases."""
 
     def test_regional_damage_with_4d_atlas(self, tmp_path):

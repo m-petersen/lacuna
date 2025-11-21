@@ -163,7 +163,7 @@ class TestRegionalDamageRepr:
         assert "analysis_type: RegionalDamage" in str_output
 
 
-class TestAtlasAggregationRepr:
+class TestParcelAggregationRepr:
     """Tests for ParcelAggregation __repr__ and __str__."""
 
     def test_repr_basic(self):
