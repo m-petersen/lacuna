@@ -283,11 +283,11 @@ def test_connectivity_matrix_validation_not_square():
 
 
 def test_connectivity_matrix_validation_lesioned_shape_mismatch():
-    """Test validation rejects lesioned matrix with wrong shape."""
+    """Test that ConnectivityMatrixResult no longer supports lesioned_matrix parameter."""
     matrix = np.random.rand(10, 10)
     lesioned = np.random.rand(8, 8)
 
-    with pytest.raises(ValueError, match="must match intact matrix shape"):
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
         ConnectivityMatrixResult(name="test", matrix=matrix, lesioned_matrix=lesioned)
 
 
@@ -301,122 +301,29 @@ def test_connectivity_matrix_validation_labels_length_mismatch():
 
 
 def test_connectivity_matrix_get_data_intact():
-    """Test getting intact connectivity matrix."""
+    """Test getting connectivity matrix."""
     matrix = np.random.rand(10, 10)
     result = ConnectivityMatrixResult(name="test", matrix=matrix)
 
     assert np.array_equal(result.get_data(), matrix)
-    assert np.array_equal(result.get_data(lesioned=False), matrix)
 
 
-def test_connectivity_matrix_get_data_lesioned():
-    """Test getting lesioned connectivity matrix."""
-    matrix = np.random.rand(10, 10)
-    lesioned = np.random.rand(10, 10)
-
-    result = ConnectivityMatrixResult(name="test", matrix=matrix, lesioned_matrix=lesioned)
-
-    assert np.array_equal(result.get_data(lesioned=True), lesioned)
-
-
-def test_connectivity_matrix_get_data_lesioned_not_available():
-    """Test error when requesting lesioned matrix that doesn't exist."""
-    matrix = np.random.rand(10, 10)
-    result = ConnectivityMatrixResult(name="test", matrix=matrix)
-
-    with pytest.raises(ValueError, match="No lesioned matrix available"):
-        result.get_data(lesioned=True)
-
-
-def test_connectivity_matrix_compute_disconnection_absolute():
-    """Test absolute disconnection computation."""
-    intact = np.array([[1.0, 0.8], [0.8, 1.0]])
-    lesioned = np.array([[1.0, 0.3], [0.3, 1.0]])
-
-    result = ConnectivityMatrixResult(name="test", matrix=intact, lesioned_matrix=lesioned)
-
-    disconnection = result.compute_disconnection(method="absolute")
-    expected = np.array([[0.0, 0.5], [0.5, 0.0]])
-
-    np.testing.assert_array_almost_equal(disconnection, expected)
-
-
-def test_connectivity_matrix_compute_disconnection_relative():
-    """Test relative disconnection computation."""
-    intact = np.array([[1.0, 0.8], [0.8, 1.0]])
-    lesioned = np.array([[1.0, 0.4], [0.4, 1.0]])
-
-    result = ConnectivityMatrixResult(name="test", matrix=intact, lesioned_matrix=lesioned)
-
-    disconnection = result.compute_disconnection(method="relative")
-    expected = np.array([[0.0, 0.5], [0.5, 0.0]])  # (0.8-0.4)/0.8 = 0.5
-
-    np.testing.assert_array_almost_equal(disconnection, expected)
-
-
-def test_connectivity_matrix_compute_disconnection_percent():
-    """Test percent disconnection computation."""
-    intact = np.array([[1.0, 0.8], [0.8, 1.0]])
-    lesioned = np.array([[1.0, 0.4], [0.4, 1.0]])
-
-    result = ConnectivityMatrixResult(name="test", matrix=intact, lesioned_matrix=lesioned)
-
-    disconnection = result.compute_disconnection(method="percent")
-    expected = np.array([[0.0, 50.0], [50.0, 0.0]])
-
-    np.testing.assert_array_almost_equal(disconnection, expected)
-
-
-def test_connectivity_matrix_compute_disconnection_normalized():
-    """Test normalized disconnection computation."""
-    intact = np.array([[1.0, 0.8, 0.6], [0.8, 1.0, 0.4], [0.6, 0.4, 1.0]])
-    lesioned = np.array([[1.0, 0.2, 0.6], [0.2, 1.0, 0.4], [0.6, 0.4, 1.0]])
-
-    result = ConnectivityMatrixResult(name="test", matrix=intact, lesioned_matrix=lesioned)
-
-    disconnection = result.compute_disconnection(method="absolute", normalize=True)
-
-    # Should be normalized to [0, 1]
-    assert disconnection.min() == 0.0
-    assert disconnection.max() == 1.0
-
-
-def test_connectivity_matrix_compute_disconnection_no_lesioned():
-    """Test error when computing disconnection without lesioned matrix."""
-    matrix = np.random.rand(10, 10)
-    result = ConnectivityMatrixResult(name="test", matrix=matrix)
-
-    with pytest.raises(ValueError, match="Cannot compute disconnection"):
-        result.compute_disconnection()
-
-
-def test_connectivity_matrix_compute_disconnection_invalid_method():
-    """Test error with invalid disconnection method."""
-    intact = np.random.rand(10, 10)
-    lesioned = np.random.rand(10, 10)
-
-    result = ConnectivityMatrixResult(name="test", matrix=intact, lesioned_matrix=lesioned)
-
-    with pytest.raises(ValueError, match="Invalid method"):
-        result.compute_disconnection(method="invalid")
+# Connectivity matrix tests - updated for simplified API (no lesioned_matrix, no compute_disconnection)
 
 
 def test_connectivity_matrix_summary():
     """Test summary string generation."""
     matrix = np.random.rand(10, 10)
-    lesioned = np.random.rand(10, 10)
 
     result = ConnectivityMatrixResult(
         name="structural_connectivity",
         matrix=matrix,
-        lesioned_matrix=lesioned,
         matrix_type="structural",
     )
 
     summary = result.summary()
     assert "structural_connectivity" in summary
     assert "10x10" in summary
-    assert "with lesioned version" in summary
     assert "type=structural" in summary
 
 
@@ -567,15 +474,11 @@ def test_surface_result_repr():
 
 
 def test_tractogram_result_initialization_with_streamlines():
-    """Test TractogramResult initialization with in-memory streamlines."""
+    """Test TractogramResult no longer accepts streamlines parameter - requires path."""
     streamlines = [np.random.rand(100, 3), np.random.rand(150, 3), np.random.rand(80, 3)]
 
-    result = TractogramResult(name="tract_streamlines", streamlines=streamlines)
-
-    assert result.name == "tract_streamlines"
-    assert result.streamlines == streamlines
-    assert result.n_streamlines == 3
-    assert result.result_type == "TractogramResult"
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        TractogramResult(name="tract_streamlines", streamlines=streamlines)
 
 
 def test_tractogram_result_initialization_with_path():

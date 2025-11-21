@@ -414,6 +414,8 @@ def transform_image(
     target_space: CoordinateSpace | str,
     source_resolution: int | None = None,
     interpolation: InterpolationMethod | str | None = None,
+    image_name: str | None = None,
+    log_level: int = 1,
 ) -> nib.Nifti1Image:
     """Transform a NIfTI image between coordinate spaces.
 
@@ -428,6 +430,8 @@ def transform_image(
         source_resolution: Source resolution in mm (default: infer from affine)
         interpolation: Interpolation method (auto-detected if None).
             Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
+        image_name: Name of image/atlas for user-facing log messages (e.g., "SchaeferYeo7Networks")
+        log_level: Logging verbosity (0=silent, 1=info, 2=debug)
 
     Returns:
         Transformed NIfTI image in target space
@@ -444,7 +448,8 @@ def transform_image(
         >>> # Define target space
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, reference_affine=...)
         >>> # Transform atlas using nearest neighbor (preserve labels)
-        >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target, interpolation='nearest')
+        >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target,
+        ...                              interpolation='nearest', image_name="MyAtlas")
     """
     from lacuna.core.spaces import REFERENCE_AFFINES
 
@@ -491,16 +496,21 @@ def transform_image(
     strategy = TransformationStrategy()
     direction = strategy.determine_direction(source_space_obj, target_space_obj)
 
+    # Prepare image descriptor for logging
+    image_desc = f"image '{image_name}'" if image_name else "image"
+
     if direction == "none":
-        logger.info("Source and target spaces match - no transformation needed")
+        if log_level >= 1:
+            logger.info(f"Source and target spaces match for {image_desc} - no transformation needed")
         return img
 
     # Handle resolution-only change (same space, different resolution)
     if direction == "resample":
-        logger.info(
-            f"Resampling from {source_space_obj.resolution}mm to {target_space_obj.resolution}mm "
-            f"in {source_space_obj.identifier}"
-        )
+        if log_level >= 1:
+            logger.info(
+                f"Resampling {image_desc} from {source_space_obj.resolution}mm to "
+                f"{target_space_obj.resolution}mm in {source_space_obj.identifier}"
+            )
         return strategy.apply_resampling(img, target_space_obj, interpolation)
 
     # Load transform from asset registry
@@ -517,6 +527,13 @@ def transform_image(
             target_space_obj.identifier,
             supported_transforms=query_available_transforms(),
         ) from e
+
+    # Log transformation with image name and space transition
+    if log_level >= 1:
+        logger.info(
+            f"Transforming {image_desc} from {source_space_obj.identifier} "
+            f"to {target_space_obj.identifier}"
+        )
 
     # Load transform with nitransforms
     try:
@@ -543,6 +560,8 @@ def transform_mask_data(
     mask_data: "MaskData",
     target_space: CoordinateSpace,
     interpolation: InterpolationMethod | str | None = None,
+    image_name: str | None = None,
+    log_level: int = 1,
 ) -> "MaskData":
     """Transform lesion data to target coordinate space.
 
@@ -558,6 +577,8 @@ def transform_mask_data(
         target_space: Target coordinate space
         interpolation: Interpolation method (auto-detected if None).
             Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
+        image_name: Name of mask for user-facing log messages (e.g., "lesion_001")
+        log_level: Logging verbosity (0=silent, 1=info, 2=debug)
 
     Returns:
         New MaskData object in target space
@@ -573,7 +594,7 @@ def transform_mask_data(
         >>> lesion = MaskData.from_nifti("lesion.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         >>> # Transform to NLin2009c
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
-        >>> transformed = transform_mask_data(lesion, target)
+        >>> transformed = transform_mask_data(lesion, target, image_name="lesion_001")
     """
     # Import here to avoid circular imports
     from lacuna.core.mask_data import MaskData
@@ -600,6 +621,8 @@ def transform_mask_data(
         target_space=target_space,
         source_resolution=source_resolution,
         interpolation=interpolation,
+        image_name=image_name,
+        log_level=log_level,
     )
 
     # If image unchanged, no transformation was needed

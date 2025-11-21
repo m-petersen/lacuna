@@ -162,15 +162,15 @@ class TestFunctionalNetworkMappingOutputs:
 
         return connectome_path
 
-    def test_run_analysis_returns_list_of_results(self, sample_mask_data, mock_connectome):
-        """FunctionalNetworkMapping._run_analysis returns list[AnalysisResult]."""
+    def test_run_analysis_returns_dict_of_results(self, sample_mask_data, mock_connectome):
+        """FunctionalNetworkMapping._run_analysis returns dict[str, AnalysisResult]."""
         analysis = FunctionalNetworkMapping(connectome_path=mock_connectome)
 
         results = analysis._run_analysis(sample_mask_data)
 
-        assert isinstance(results, list)
+        assert isinstance(results, dict)
         assert len(results) > 0
-        assert all(isinstance(r, AnalysisResult) for r in results)
+        assert all(isinstance(r, AnalysisResult) for r in results.values())
 
     def test_functional_mapping_returns_voxel_map_results(self, sample_mask_data, mock_connectome):
         """FunctionalNetworkMapping returns VoxelMapResult objects for brain maps."""

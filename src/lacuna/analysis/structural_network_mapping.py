@@ -447,12 +447,15 @@ class StructuralNetworkMapping(BaseAnalysis):
                     )
 
                     # Transform atlas (nearest neighbor interpolation for label preservation)
+                    # Logging is handled by transform_image
                     transformed_atlas_img = transform_image(
                         img=self._atlas_image,
                         source_space=atlas_space,
                         target_space=target_space,
                         source_resolution=atlas_resolution,
                         interpolation="nearest",  # Preserve integer labels
+                        image_name=f"atlas '{self.atlas_name}'",
+                        log_level=self.log_level,
                     )
 
                     # Save transformed atlas to cache

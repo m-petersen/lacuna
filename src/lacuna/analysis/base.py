@@ -451,9 +451,6 @@ class BaseAnalysis(ABC):
         # Import here to avoid circular imports
         from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
         from lacuna.spatial.transform import transform_mask_data
-        from lacuna.utils.logging import ConsoleLogger
-
-        logger = ConsoleLogger(log_level=self.log_level)
 
         # Determine target resolution (use current if not specified)
         final_resolution = (
@@ -469,15 +466,13 @@ class BaseAnalysis(ABC):
             ),
         )
 
-        # Log transformation
-        logger.info(
-            f"{self.__class__.__name__}: Transforming lesion from "
-            f"{current_space}@{current_resolution}mm to "
-            f"{target_space}@{final_resolution}mm"
+        # Transform (logging handled by transform_mask_data)
+        return transform_mask_data(
+            mask_data,
+            target_space_obj,
+            image_name="mask",
+            log_level=self.log_level
         )
-
-        # Transform
-        return transform_mask_data(mask_data, target_space_obj)
 
     def _get_version(self) -> str:
         """
@@ -578,5 +573,10 @@ class BaseAnalysis(ABC):
             ),
         )
 
-        # Transform data
-        return transform_mask_data(mask_data, target_space)
+        # Transform data (logging handled by transform_mask_data)
+        return transform_mask_data(
+            mask_data,
+            target_space,
+            image_name="mask",
+            log_level=self.log_level
+        )

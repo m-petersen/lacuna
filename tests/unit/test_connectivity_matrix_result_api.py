@@ -40,25 +40,18 @@ class TestConnectivityMatrixResultAPI:
         assert np.array_equal(retrieved_matrix, matrix)
 
     def test_connectivity_matrix_result_with_lesioned_matrix(self):
-        """ConnectivityMatrixResult should handle lesioned_matrix correctly."""
+        """ConnectivityMatrixResult no longer supports lesioned_matrix parameter."""
         intact_matrix = np.array([[0, 10, 5], [10, 0, 8], [5, 8, 0]], dtype=np.float32)
 
         lesioned_matrix = np.array([[0, 5, 2], [5, 0, 4], [2, 4, 0]], dtype=np.float32)
 
-        result = ConnectivityMatrixResult(
-            name="test_connectivity_lesioned",
-            matrix=intact_matrix,
-            lesioned_matrix=lesioned_matrix,
-            region_labels=["A", "B", "C"],
-        )
-
-        # Get intact matrix
-        intact = result.get_data(lesioned=False)
-        assert np.array_equal(intact, intact_matrix)
-
-        # Get lesioned matrix
-        lesioned = result.get_data(lesioned=True)
-        assert np.array_equal(lesioned, lesioned_matrix)
+        with pytest.raises(TypeError, match="unexpected keyword argument"):
+            ConnectivityMatrixResult(
+                name="test_connectivity_lesioned",
+                matrix=intact_matrix,
+                lesioned_matrix=lesioned_matrix,
+                region_labels=["A", "B", "C"],
+            )
 
     def test_connectivity_matrix_result_incorrect_parameter_name(self):
         """ConnectivityMatrixResult should fail with 'data' parameter."""

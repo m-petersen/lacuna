@@ -59,24 +59,24 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T017 [P] [US1] Write contract test for MaskData result attribute access in `tests/contract/test_mask_data_contract.py`
-- [ ] T018 [P] [US1] Write contract test for dictionary-based result access in `tests/contract/test_mask_data_contract.py`
-- [ ] T019 [P] [US1] Write contract test for AttributeError when result doesn't exist in `tests/contract/test_mask_data_contract.py`
-- [ ] T020 [P] [US1] Write unit test for result key generation with source context in `tests/unit/test_base_analysis.py`
-- [ ] T021 [P] [US1] Write integration test for end-to-end result workflow in `tests/integration/test_result_workflows.py`
-- [ ] T022 [P] [US1] Write contract test for AtlasAggregationResult with actual region labels in `tests/contract/test_result_objects.py`
-- [ ] T023 [P] [US1] Write unit test for TractogramResult.get_data() in `tests/unit/test_tractogram_result.py`
+- [x] T017 [P] [US1] Write contract test for MaskData result attribute access in `tests/contract/test_mask_data_contract.py`
+- [x] T018 [P] [US1] Write contract test for dictionary-based result access in `tests/contract/test_mask_data_contract.py`
+- [x] T019 [P] [US1] Write contract test for AttributeError when result doesn't exist in `tests/contract/test_mask_data_contract.py`
+- [x] T020 [P] [US1] Write unit test for result key generation with source context in `tests/unit/test_base_analysis.py`
+- [x] T021 [P] [US1] Write integration test for end-to-end result workflow in `tests/integration/test_result_workflows.py`
+- [x] T022 [P] [US1] Write contract test for AtlasAggregationResult with actual region labels in `tests/contract/test_result_objects.py`
+- [x] T023 [P] [US1] Write unit test for TractogramResult.get_data() in `tests/unit/test_tractogram_result.py`
 
 ### Implementation for User Story 1
 
-- [ ] T024 [P] [US1] Update `BaseAnalysis.run()` to generate descriptive result keys in `src/lacuna/analysis/base.py`
-- [ ] T025 [P] [US1] Update `BaseAnalysis.add_result()` to use dict-based storage in `src/lacuna/analysis/base.py`
-- [ ] T026 [US1] Update `AtlasAggregation` to generate per-atlas AtlasAggregationResult with source context in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T027 [US1] Update atlas label extraction from atlas asset metadata in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T028 [US1] Update `StructuralNetworkMapping` to create separate results for disconnection_map and connectivity matrices in `src/lacuna/analysis/structural_network_mapping.py`
-- [ ] T029 [US1] Update `RegionalDamage` to generate per-atlas AtlasAggregationResult in `src/lacuna/analysis/regional_damage.py`
-- [ ] T030 [US1] Implement TractogramResult.get_data() method for on-demand loading in `src/lacuna/core/output.py`
-- [ ] T031 [US1] Update all analysis modules to use descriptive result keys in their run() methods across `src/lacuna/analysis/`
+- [x] T024 [P] [US1] Update `BaseAnalysis.run()` to generate descriptive result keys in `src/lacuna/analysis/base.py` - Already handles dict conversion
+- [x] T025 [P] [US1] Update `BaseAnalysis.add_result()` to use dict-based storage in `src/lacuna/analysis/base.py` - Uses dict-based storage
+- [x] T026 [US1] Update `AtlasAggregation` to generate per-atlas AtlasAggregationResult with source context in `src/lacuna/analysis/atlas_aggregation.py`
+- [x] T027 [US1] Update atlas label extraction from atlas asset metadata in `src/lacuna/analysis/atlas_aggregation.py`
+- [x] T028 [US1] Update `StructuralNetworkMapping` to create separate results for disconnection_map and connectivity matrices in `src/lacuna/analysis/structural_network_mapping.py`
+- [x] T029 [US1] Update `RegionalDamage` to generate per-atlas AtlasAggregationResult in `src/lacuna/analysis/regional_damage.py`
+- [x] T030 [US1] Implement TractogramResult.get_data() method for on-demand loading in `src/lacuna/core/output.py`
+- [x] T031 [US1] Update all analysis modules to use descriptive result keys in their run() methods across `src/lacuna/analysis/`
 
 **Checkpoint**: User Story 1 complete - results are accessible via intuitive dict keys and attributes
 
@@ -90,24 +90,25 @@
 
 ### Tests for User Story 2
 
-- [ ] T032 [P] [US2] Write contract test for space requirement error in `tests/contract/test_space_handling.py`
-- [ ] T033 [P] [US2] Write contract test for resolution requirement error in `tests/contract/test_space_handling.py`
-- [ ] T034 [P] [US2] Write contract test for separated space/resolution attributes in `tests/contract/test_space_handling.py`
-- [ ] T035 [P] [US2] Write contract test for supported spaces error message in `tests/contract/test_space_handling.py`
-- [ ] T036 [P] [US2] Write integration test for transformation logging in `tests/integration/test_space_transformations.py`
-- [ ] T037 [P] [US2] Write unit test for CoordinateSpace consistent usage in `tests/unit/test_coordinate_space.py`
+- [x] T032 [P] [US2] Write contract test for space requirement error in `tests/contract/test_space_handling.py`
+- [x] T033 [P] [US2] Write contract test for resolution requirement error in `tests/contract/test_space_handling.py`
+- [x] T034 [P] [US2] Write contract test for separated space/resolution attributes in `tests/contract/test_space_handling.py`
+- [x] T035 [P] [US2] Write contract test for supported spaces error message in `tests/contract/test_space_handling.py`
+- [x] T036 [P] [US2] Write integration test for transformation logging in `tests/integration/test_space_transformations.py`
+- [x] T037 [P] [US2] Write unit test for CoordinateSpace consistent usage in `tests/unit/test_coordinate_space.py`
 
 ### Implementation for User Story 2
 
-- [ ] T038 [P] [US2] Update space inference priority (metadata over provenance) in `src/lacuna/core/mask_data.py`
-- [ ] T039 [P] [US2] Ensure CoordinateSpace objects used in all transformation functions in `src/lacuna/spatial/transform.py`
-- [ ] T040 [US2] Add user-facing transformation logging with atlas/image names and space transitions in `src/lacuna/spatial/transform.py`
-- [ ] T041 [US2] Add TransformationRecord creation for all transformations in `src/lacuna/spatial/transform.py`
-- [ ] T042 [US2] Update transformation messages to use log_level parameter in `src/lacuna/spatial/transform.py`
-- [ ] T043 [P] [US2] Validate TransformationRecord fields before adding to provenance in `src/lacuna/spatial/provenance.py`
-- [ ] T044 [P] [US2] Update all analysis modules to pass log_level to transformation functions in `src/lacuna/analysis/`
+- [x] T038 [P] [US2] Update space inference priority (metadata over provenance) in `src/lacuna/core/mask_data.py` - Already implemented
+- [x] T038.5 [P] [US2] Check if space handling via provenance is necessary at all as we enforce it via metadata anyways (metadata over provenance) in `src/lacuna/core/mask_data.py` -> remove it (without deprecating) if not necessary - REMOVED: provenance fallback is dead code, always use metadata
+- [x] T039 [P] [US2] Ensure CoordinateSpace objects used in all transformation functions in `src/lacuna/spatial/transform.py` - Already implemented
+- [x] T040 [US2] Add user-facing transformation logging with atlas/image names and space transitions in `src/lacuna/spatial/transform.py`
+- [x] T041 [US2] Add TransformationRecord creation for all transformations in `src/lacuna/spatial/transform.py` - Already implemented in transform_mask_data
+- [x] T042 [US2] Update transformation messages to use log_level parameter in `src/lacuna/spatial/transform.py`
+- [x] T043 [P] [US2] Validate TransformationRecord fields before adding to provenance in `src/lacuna/spatial/provenance.py` - Already validated in add_provenance
+- [x] T044 [P] [US2] Update all analysis modules to pass log_level to transformation functions in `src/lacuna/analysis/`
 
-**Checkpoint**: User Stories 1 AND 2 complete - results accessible, space handling explicit and informative
+**Checkpoint**: User Stories 1 AND 2 complete - results accessible, space handling explicit and informative with user-facing transformation logging
 
 ---
 
@@ -119,16 +120,16 @@
 
 ### Tests for User Story 3
 
-- [ ] T045 [P] [US3] Write contract test for binary mask validation in `tests/contract/test_mask_data_contract.py`
-- [ ] T046 [P] [US3] Write contract test for anatomical_img rejection in `tests/contract/test_mask_data_contract.py`
-- [ ] T047 [P] [US3] Write contract test for space inference priority in `tests/contract/test_mask_data_contract.py`
-- [ ] T048 [P] [US3] Write unit test for provenance TransformationRecord validation in `tests/unit/test_provenance.py`
+- [x] T045 [P] [US3] Write contract test for binary mask validation in `tests/contract/test_mask_data_contract.py`
+- [x] T046 [P] [US3] Write contract test for anatomical_img rejection in `tests/contract/test_mask_data_contract.py`
+- [x] T047 [P] [US3] Write contract test for space inference priority in `tests/contract/test_mask_data_contract.py`
+- [x] T048 [P] [US3] Write unit test for provenance TransformationRecord validation in `tests/unit/test_provenance.py`
 
 ### Implementation for User Story 3
 
-- [ ] T049 [P] [US3] Add helpful error message for non-binary masks suggesting binarization in `src/lacuna/core/mask_data.py`
-- [ ] T050 [P] [US3] Remove registration-related code paths from analysis modules in `src/lacuna/analysis/`
-- [ ] T051 [P] [US3] Update validation.py with binary mask validation helper in `src/lacuna/core/validation.py`
+- [x] T049 [P] [US3] Add helpful error message for non-binary masks suggesting binarization in `src/lacuna/core/mask_data.py` (ALREADY IMPLEMENTED)
+- [x] T050 [P] [US3] Remove registration-related code paths from analysis modules in `src/lacuna/analysis/` (ALREADY REMOVED - no matches found)
+- [x] T051 [P] [US3] Update validation.py with binary mask validation helper in `src/lacuna/core/validation.py` (NOT NEEDED - validation in MaskData.__init__ is sufficient)
 - [ ] T052 [US3] Review and update all MaskData instantiation points to ensure space/resolution provided across `src/lacuna/`
 
 **Checkpoint**: User Stories 1, 2, AND 3 complete - data models validated, deprecated features removed

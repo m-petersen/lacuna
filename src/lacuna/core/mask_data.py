@@ -154,7 +154,7 @@ class MaskData:
         ]
 
         # Require explicit coordinate space and resolution specification
-        if "space" not in metadata and provenance is None:
+        if "space" not in metadata:
             raise ValueError(
                 "metadata must contain 'space' key to specify coordinate space.\n"
                 "This is required for spatial validation in analysis modules.\n"
@@ -162,7 +162,16 @@ class MaskData:
                 "Example: MaskData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
             )
 
-        if "resolution" not in metadata and provenance is None:
+        # Validate space is in supported list
+        if metadata["space"] not in SUPPORTED_TEMPLATE_SPACES:
+            raise ValueError(
+                f"Invalid space '{metadata['space']}'. "
+                f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
+                "Note: 'native' space is not supported. Use the actual template space instead.\n"
+                "Example: MaskData(img, metadata={{'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+            )
+
+        if "resolution" not in metadata:
             raise ValueError(
                 "metadata must contain 'resolution' key (in mm).\n"
                 "This is required for spatial validation and template matching.\n"
@@ -580,28 +589,13 @@ class MaskData:
 
     def _infer_coordinate_space(self) -> str:
         """
-        Infer coordinate space from metadata or provenance.
+        Get coordinate space from metadata.
 
-        Priority order:
-        1. metadata["space"] (explicit user specification)
-        2. provenance (most recent transformation's output_space)
-
-        Note: At least one of these must be present (validated in __init__).
+        Returns the coordinate space identifier (e.g., 'MNI152NLin6Asym').
+        This is always present in metadata (validated in __init__).
 
         """
-        # First check metadata (highest priority)
-        if "space" in self._metadata:
-            return self._metadata["space"]
-
-        # Then check provenance (must exist if metadata["space"] is missing)
-        if self._provenance:
-            # Check most recent transformation
-            last_transform = self._provenance[-1]
-            if "output_space" in last_transform:
-                return last_transform["output_space"]
-
-        # Should never reach here due to validation in __init__
-        raise ValueError("No coordinate space found in metadata or provenance")
+        return self._metadata["space"]
 
     # Read-only properties
 
