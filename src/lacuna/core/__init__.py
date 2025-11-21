@@ -3,8 +3,8 @@ Core data structures and utilities for the lesion decoding toolkit.
 """
 
 from .data_types import (
-    AnalysisResult,
     ConnectivityMatrix,
+    DataContainer,
     ParcelData,
     ScalarMetric,
     SurfaceMesh,
@@ -47,7 +47,7 @@ __all__ = [
     # Core data
     "MaskData",
     # Output classes
-    "AnalysisResult",
+    "DataContainer",
     "VoxelMap",
     "ParcelData",
     "ConnectivityMatrix",
@@ -64,3 +64,4 @@ __all__ = [
     "validate_provenance_record",
     "merge_provenance",
 ]
+

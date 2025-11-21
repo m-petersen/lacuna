@@ -37,7 +37,7 @@ from lacuna.utils.mrtrix import (
 )
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import AnalysisResult
+    from lacuna.core.data_types import DataContainer
 
 logger = logging.getLogger(__name__)
 
@@ -506,7 +506,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 f"Use thresholding or binarization to convert continuous maps."
             )
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
         """
         Execute structural network mapping analysis.
 
@@ -517,7 +517,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict[str, AnalysisResult]
+        dict[str, DataContainer]
             Dictionary mapping result names to results:
             - 'disconnection_map': VoxelMap for disconnection map
             - 'summary_statistics': ScalarMetric for summary statistics
@@ -709,7 +709,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         lesion_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
-    ) -> dict[str, "AnalysisResult"]:
+    ) -> dict[str, "DataContainer"]:
         """Compute parcellated connectivity matrices.
 
         Parameters
@@ -725,7 +725,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict[str, AnalysisResult]
+        dict[str, DataContainer]
             Dictionary containing:
             - 'lesion_connectivity_matrix': ConnectivityMatrix
             - 'disconnectivity_percent': ConnectivityMatrix

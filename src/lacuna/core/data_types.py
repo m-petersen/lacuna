@@ -21,14 +21,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AnalysisResult(ABC):
-    """Abstract base class for all analysis outputs.
+class DataContainer(ABC):
+    """Abstract base class for unified data type containers.
 
-    This is the base class for all analysis result types. It provides
+    This is the base class for all data container types. It provides
     common functionality for metadata management and a consistent interface
-    for accessing results.
+    for accessing data.
 
-    Subclasses implement specific result types:
+    Subclasses implement specific data types:
     - VoxelMap: For 3D/4D brain maps (functional connectivity, disconnection)
     - ParcelData: For region-level aggregated data (atlas-based analysis)
     - ConnectivityMatrix: For connectivity matrices
@@ -39,26 +39,26 @@ class AnalysisResult(ABC):
     Attributes
     ----------
     name : str
-        Name/identifier for this result (e.g., "correlation_map", "z_map")
+        Name/identifier for this data container (e.g., "correlation_map", "z_map")
     metadata : dict
-        Additional metadata about the analysis result
-    result_type : str
-        Type identifier for the result (set by subclasses)
+        Additional metadata about the data
+    data_type : str
+        Type identifier for the container (set by subclasses)
     """
 
     def __init__(self, name: str, metadata: dict[str, Any] | None = None):
-        """Initialize base analysis result.
+        """Initialize base data container.
 
         Parameters
         ----------
         name : str
-            Name/identifier for this result
+            Name/identifier for this container
         metadata : dict, optional
-            Additional metadata about the result
+            Additional metadata about the data
         """
         self.name = name
         self.metadata = metadata or {}
-        self.result_type = self.__class__.__name__
+        self.data_type = self.__class__.__name__
 
     @abstractmethod
     def get_data(self, **kwargs) -> Any:
@@ -89,11 +89,11 @@ class AnalysisResult(ABC):
 
     def __repr__(self) -> str:
         """Return string representation."""
-        return f"{self.result_type}(name='{self.name}', metadata={len(self.metadata)} items)"
+        return f"{self.data_type}(name='{self.name}', metadata={len(self.metadata)} items)"
 
 
 @dataclass
-class VoxelMap(AnalysisResult):
+class VoxelMap(DataContainer):
     """Result container for voxel-level brain maps.
 
     This class stores voxel-level analysis outputs (e.g., functional connectivity maps,
@@ -143,7 +143,7 @@ class VoxelMap(AnalysisResult):
 
 
 @dataclass
-class ParcelData(AnalysisResult):
+class ParcelData(DataContainer):
     """Result container for atlas-based region aggregation.
 
     Attributes
@@ -201,7 +201,7 @@ class ParcelData(AnalysisResult):
 
 
 @dataclass
-class ConnectivityMatrix(AnalysisResult):
+class ConnectivityMatrix(DataContainer):
     """Result container for connectivity matrices.
 
     Stores a single connectivity matrix with optional region labels.
@@ -263,7 +263,7 @@ class ConnectivityMatrix(AnalysisResult):
 
 
 @dataclass
-class SurfaceMesh(AnalysisResult):
+class SurfaceMesh(DataContainer):
     """Result container for surface-based data.
 
     Attributes
@@ -342,7 +342,7 @@ class SurfaceMesh(AnalysisResult):
 
 
 @dataclass
-class Tractogram(AnalysisResult):
+class Tractogram(DataContainer):
     """Result container for tractography streamlines.
 
     Primary storage is path-based. Optionally stores streamlines in memory
@@ -411,7 +411,7 @@ class Tractogram(AnalysisResult):
 
 
 @dataclass
-class ScalarMetric(AnalysisResult):
+class ScalarMetric(DataContainer):
     """Result container for miscellaneous data.
 
     This class handles summary statistics, scalar values, metadata,
@@ -435,19 +435,22 @@ class ScalarMetric(AnalysisResult):
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Initialize base class."""
+        """Initialize base class and infer data_type if needed."""
+        # Store the data_type before calling super().__init__
+        user_data_type = self.data_type
         super().__init__(name=self.name, metadata=self.metadata)
 
-        # Infer data_type if not provided
-        if self.data_type is None:
-            if isinstance(self.data, (int, float, bool)):
-                self.data_type = "scalar"
-            elif isinstance(self.data, dict):
-                self.data_type = "dictionary"
-            elif isinstance(self.data, (list, tuple)):
-                self.data_type = "sequence"
-            else:
-                self.data_type = "unknown"
+        # Restore or infer data_type
+        if user_data_type is not None:
+            self.data_type = user_data_type
+        elif isinstance(self.data, (int, float, bool)):
+            self.data_type = "scalar"
+        elif isinstance(self.data, dict):
+            self.data_type = "dictionary"
+        elif isinstance(self.data, (list, tuple)):
+            self.data_type = "sequence"
+        else:
+            self.data_type = "unknown"
 
     def get_data(self) -> Any:
         """Get the data."""

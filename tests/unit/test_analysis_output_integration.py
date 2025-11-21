@@ -1,7 +1,7 @@
 """Tests for analysis modules using polymorphic output architecture.
 
 Following TDD: these tests define the expected behavior of analyses
-returning AnalysisResult objects instead of plain dicts.
+returning DataContainer objects instead of plain dicts.
 """
 
 import nibabel as nib
@@ -14,7 +14,7 @@ from lacuna.analysis import (
 )
 from lacuna.core import MaskData
 from lacuna.core.data_types import (
-    AnalysisResult,
+    DataContainer,
     ParcelData,
     ScalarMetric,
     VoxelMap,
@@ -74,7 +74,7 @@ class TestAtlasAggregationOutputs:
     """Test ParcelAggregation returns correct output types."""
 
     def test_run_analysis_returns_list_of_results(self, sample_mask_data, mock_atlas_file):
-        """ParcelAggregation._run_analysis returns list[AnalysisResult]."""
+        """ParcelAggregation._run_analysis returns list[DataContainer]."""
         # Use a real bundled atlas instead of trying to mock everything
         # Note: This may return empty results if lesion doesn't overlap with atlas
         # The test is primarily checking the return type structure
@@ -83,8 +83,8 @@ class TestAtlasAggregationOutputs:
         results = analysis._run_analysis(sample_mask_data)
 
         assert isinstance(results, dict)
-        # May be empty if no overlap, but should still be a dict of AnalysisResult types
-        assert all(isinstance(r, AnalysisResult) for r in results.values())
+        # May be empty if no overlap, but should still be a dict of DataContainer types
+        assert all(isinstance(r, DataContainer) for r in results.values())
 
     def test_atlas_aggregation_returns_roi_result(self, sample_mask_data, mock_atlas_file):
         """ParcelAggregation returns ParcelData with region data."""
@@ -163,14 +163,14 @@ class TestFunctionalNetworkMappingOutputs:
         return connectome_path
 
     def test_run_analysis_returns_dict_of_results(self, sample_mask_data, mock_connectome):
-        """FunctionalNetworkMapping._run_analysis returns dict[str, AnalysisResult]."""
+        """FunctionalNetworkMapping._run_analysis returns dict[str, DataContainer]."""
         analysis = FunctionalNetworkMapping(connectome_path=mock_connectome)
 
         results = analysis._run_analysis(sample_mask_data)
 
         assert isinstance(results, dict)
         assert len(results) > 0
-        assert all(isinstance(r, AnalysisResult) for r in results.values())
+        assert all(isinstance(r, DataContainer) for r in results.values())
 
     def test_functional_mapping_returns_voxel_map_results(self, sample_mask_data, mock_connectome):
         """FunctionalNetworkMapping returns dictionary of VoxelMap objects for brain maps."""

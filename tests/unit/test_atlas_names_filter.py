@@ -61,9 +61,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should only have atlas_B results
-            assert "atlas_atlas_B" in atlas_results
-            assert "atlas_atlas_A" not in atlas_results
-            assert "atlas_atlas_C" not in atlas_results
+            assert "atlas_B_from_mask_img" in atlas_results
+            assert "atlas_A_from_mask_img" not in atlas_results
+            assert "atlas_C_from_mask_img" not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
             analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_C"])
@@ -71,9 +71,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
-            assert "atlas_atlas_A" in atlas_results
-            assert "atlas_atlas_B" not in atlas_results
-            assert "atlas_atlas_C" in atlas_results
+            assert "atlas_A_from_mask_img" in atlas_results
+            assert "atlas_B_from_mask_img" not in atlas_results
+            assert "atlas_C_from_mask_img" in atlas_results
 
             # Test 3: None = process all atlases
             analysis = RegionalDamage(parcel_names=None)
@@ -81,9 +81,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should have all three atlases
-            assert "atlas_atlas_A" in atlas_results
-            assert "atlas_atlas_B" in atlas_results
-            assert "atlas_atlas_C" in atlas_results
+            assert "atlas_A_from_mask_img" in atlas_results
+            assert "atlas_B_from_mask_img" in atlas_results
+            assert "atlas_C_from_mask_img" in atlas_results
 
     def test_atlas_names_warns_if_not_found(self):
         """Test that warning is issued if requested atlas not found."""
@@ -128,7 +128,7 @@ class TestAtlasNamesFilter:
 
             # Should still process atlas_A successfully
             atlas_results = result.results["RegionalDamage"]
-            assert "atlas_atlas_A" in atlas_results
+            assert "atlas_A_from_mask_img" in atlas_results
 
     def test_atlas_names_raises_if_none_found(self):
         """Test that error is raised if no matching atlases found."""
@@ -231,5 +231,5 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["ParcelAggregation"]
 
             # Should only have atlas_X results
-            assert "atlas_atlas_X" in atlas_results
-            assert "atlas_atlas_Y" not in atlas_results
+            assert "atlas_X_from_mask_img" in atlas_results
+            assert "atlas_Y_from_mask_img" not in atlas_results
