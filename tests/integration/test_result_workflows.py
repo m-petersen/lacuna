@@ -12,7 +12,7 @@ import pytest
 def test_end_to_end_result_access_workflow(synthetic_mask_img):
     """Test complete workflow: run analysis → access via dict → access via attribute."""
     from lacuna import MaskData
-    from lacuna.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
     # Create mask data
     mask_data = MaskData(
@@ -20,24 +20,24 @@ def test_end_to_end_result_access_workflow(synthetic_mask_img):
     )
 
     # Run atlas aggregation (which should generate per-atlas results)
-    analysis = AtlasAggregation(atlases=["DKT", "Schaefer2018_100Parcels_7Networks"])
+    analysis = ParcelAggregation(atlases=["DKT", "Schaefer2018_100Parcels_7Networks"])
     result = analysis.run(mask_data)
 
-    # Dictionary access: results['AtlasAggregation']['atlas_DKT']
-    assert "AtlasAggregation" in result.results
-    atlas_results = result.results["AtlasAggregation"]
+    # Dictionary access: results['ParcelAggregation']['atlas_DKT']
+    assert "ParcelAggregation" in result.results
+    atlas_results = result.results["ParcelAggregation"]
     assert isinstance(atlas_results, dict)
     assert "atlas_DKT" in atlas_results
 
-    # Attribute access: result.AtlasAggregation (should return dict)
-    attr_results = result.AtlasAggregation
+    # Attribute access: result.ParcelAggregation (should return dict)
+    attr_results = result.ParcelAggregation
     assert attr_results is atlas_results
 
     # Access individual atlas result
     dkt_result = atlas_results["atlas_DKT"]
-    from lacuna.core.output import AtlasAggregationResult
+    from lacuna.core.data_types import ParcelData
 
-    assert isinstance(dkt_result, AtlasAggregationResult)
+    assert isinstance(dkt_result, ParcelData)
     assert dkt_result.name == "DKT"
     assert isinstance(dkt_result.data, dict)
 
@@ -46,7 +46,7 @@ def test_end_to_end_result_access_workflow(synthetic_mask_img):
 def test_multiple_analyses_result_access(synthetic_mask_img):
     """Test accessing results from multiple sequential analyses."""
     from lacuna import MaskData
-    from lacuna.analysis.atlas_aggregation import AtlasAggregation
+    from lacuna.analysis.parcel_aggregation import ParcelAggregation
     from lacuna.analysis.regional_damage import RegionalDamage
 
     mask_data = MaskData(
@@ -54,15 +54,15 @@ def test_multiple_analyses_result_access(synthetic_mask_img):
     )
 
     # Run two different analyses
-    result = AtlasAggregation(atlases=["DKT"]).run(mask_data)
+    result = ParcelAggregation(atlases=["DKT"]).run(mask_data)
     result = RegionalDamage(atlases=["DKT"]).run(result)
 
     # Both analyses should have results
-    assert "AtlasAggregation" in result.results
+    assert "ParcelAggregation" in result.results
     assert "RegionalDamage" in result.results
 
     # Attribute access for both
-    atlas_agg_results = result.AtlasAggregation
+    atlas_agg_results = result.ParcelAggregation
     regional_damage_results = result.RegionalDamage
 
     assert isinstance(atlas_agg_results, dict)

@@ -158,4 +158,3 @@ class TestSpaceInference:
                 mask_img=mask_img,
                 metadata={},  # Missing space and resolution
             )
-

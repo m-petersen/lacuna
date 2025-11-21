@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from lacuna import MaskData
-from lacuna.analysis import AtlasAggregation
+from lacuna.analysis import ParcelAggregation
 from lacuna.assets.atlases.loader import load_atlas
 from lacuna.assets.atlases.registry import (
     ATLAS_REGISTRY,
@@ -31,10 +31,10 @@ class TestAtlasRegistryBasics:
         assert len(atlases) >= 8
 
         # Check for specific bundled atlases
-        atlas_names = [a.name for a in atlases]
-        assert "Schaefer2018_100Parcels7Networks" in atlas_names
-        assert "Schaefer2018_200Parcels7Networks" in atlas_names
-        assert "TianSubcortex_3TS1" in atlas_names
+        parcel_names = [a.name for a in atlases]
+        assert "Schaefer2018_100Parcels7Networks" in parcel_names
+        assert "Schaefer2018_200Parcels7Networks" in parcel_names
+        assert "TianSubcortex_3TS1" in parcel_names
 
     def test_filter_atlases_by_space(self):
         """Test filtering atlases by coordinate space."""
@@ -103,17 +103,17 @@ class TestAtlasRegistryWithAnalysis:
     def test_atlas_aggregation_with_bundled_atlas(self, synthetic_lesion):
         """Test atlas aggregation using bundled atlas from registry."""
         # Use Schaefer100 atlas (1mm resolution, same space as lesion)
-        analysis = AtlasAggregation(
-            source="mask_img", aggregation="mean", atlas_names=["Schaefer2018_100Parcels7Networks"]
+        analysis = ParcelAggregation(
+            source="mask_img", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
 
         result = analysis.run(synthetic_lesion)
 
         # Check results
-        assert "AtlasAggregation" in result.results
-        aggregation_results = result.results["AtlasAggregation"]
+        assert "ParcelAggregation" in result.results
+        aggregation_results = result.results["ParcelAggregation"]
 
-        # Should have AtlasAggregationResult for Schaefer100
+        # Should have ParcelData for Schaefer100
         assert "Schaefer2018_100Parcels7Networks" in aggregation_results
         roi_result = aggregation_results["Schaefer2018_100Parcels7Networks"]
         region_data = roi_result.get_data()
@@ -122,21 +122,21 @@ class TestAtlasRegistryWithAnalysis:
         assert len(region_data) > 0
 
         # Values should be floats between 0 and 1 (mean of binary lesion)
-        for key, value in region_data.items():
+        for _key, value in region_data.items():
             assert isinstance(value, (int, float))
             assert 0 <= value <= 1
 
     def test_atlas_aggregation_with_multiple_atlases(self, synthetic_lesion):
         """Test atlas aggregation with multiple atlases simultaneously."""
-        analysis = AtlasAggregation(
+        analysis = ParcelAggregation(
             source="mask_img",
             aggregation="percent",
-            atlas_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
+            parcel_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
         )
 
         result = analysis.run(synthetic_lesion)
 
-        aggregation_results = result.results["AtlasAggregation"]
+        aggregation_results = result.results["ParcelAggregation"]
 
         # Should have results from both atlases
         assert "Schaefer2018_100Parcels7Networks" in aggregation_results
@@ -152,10 +152,10 @@ class TestAtlasRegistryWithAnalysis:
     def test_atlas_aggregation_auto_uses_all_atlases(self, synthetic_lesion):
         """Test that atlas aggregation uses all compatible atlases when none specified."""
         # Use only MNI152NLin6Asym atlases (filter out HCP which is in different space)
-        analysis = AtlasAggregation(
+        analysis = ParcelAggregation(
             source="mask_img",
             aggregation="mean",
-            atlas_names=[
+            parcel_names=[
                 "Schaefer2018_100Parcels7Networks",
                 "Schaefer2018_200Parcels7Networks",
                 "TianSubcortex_3TS1",
@@ -164,7 +164,7 @@ class TestAtlasRegistryWithAnalysis:
 
         result = analysis.run(synthetic_lesion)
 
-        aggregation_results = result.results["AtlasAggregation"]
+        aggregation_results = result.results["ParcelAggregation"]
 
         # Should have results from all three atlases
         assert "Schaefer2018_100Parcels7Networks" in aggregation_results
@@ -252,14 +252,14 @@ class TestCustomAtlasRegistration:
 
         try:
             # Use in analysis
-            analysis = AtlasAggregation(
-                source="mask_img", aggregation="mean", atlas_names=["CustomAnalysisAtlas"]
+            analysis = ParcelAggregation(
+                source="mask_img", aggregation="mean", parcel_names=["CustomAnalysisAtlas"]
             )
 
             result = analysis.run(synthetic_lesion)
 
             # Check results
-            aggregation_results = result.results["AtlasAggregation"]
+            aggregation_results = result.results["ParcelAggregation"]
             assert "CustomAnalysisAtlas" in aggregation_results
 
             custom_data = aggregation_results["CustomAnalysisAtlas"].get_data()

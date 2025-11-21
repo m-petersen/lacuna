@@ -130,7 +130,7 @@
 - [x] T049 [P] [US3] Add helpful error message for non-binary masks suggesting binarization in `src/lacuna/core/mask_data.py` (ALREADY IMPLEMENTED)
 - [x] T050 [P] [US3] Remove registration-related code paths from analysis modules in `src/lacuna/analysis/` (ALREADY REMOVED - no matches found)
 - [x] T051 [P] [US3] Update validation.py with binary mask validation helper in `src/lacuna/core/validation.py` (NOT NEEDED - validation in MaskData.__init__ is sufficient)
-- [ ] T052 [US3] Review and update all MaskData instantiation points to ensure space/resolution provided across `src/lacuna/`
+- [x] T052 [US3] Review and update all MaskData instantiation points to ensure space/resolution provided across `src/lacuna/`
 
 **Checkpoint**: User Stories 1, 2, AND 3 complete - data models validated, deprecated features removed
 
@@ -144,25 +144,25 @@
 
 ### Tests for User Story 4
 
-- [ ] T053 [P] [US4] Write contract test for cross-analysis source syntax in `tests/contract/test_atlas_aggregation.py`
-- [ ] T054 [P] [US4] Write contract test for threshold flexibility in `tests/contract/test_atlas_aggregation.py`
-- [ ] T055 [P] [US4] Write contract test for result key source context in `tests/contract/test_atlas_aggregation.py`
-- [ ] T056 [P] [US4] Write integration test for nibabel image input in `tests/integration/test_nibabel_input.py`
-- [ ] T057 [P] [US4] Write integration test for nibabel list input in `tests/integration/test_nibabel_input.py`
-- [ ] T058 [P] [US4] Write unit test for AtlasAggregation return type matching in `tests/unit/test_atlas_aggregation.py`
+- [x] T053 [P] [US4] Write contract test for cross-analysis source syntax in `tests/contract/test_parcel_aggregation_contract.py`
+- [x] T054 [P] [US4] Write contract test for threshold flexibility in `tests/contract/test_parcel_aggregation_contract.py`
+- [x] T055 [P] [US4] Write contract test for result key source context in `tests/contract/test_parcel_aggregation_contract.py`
+- [x] T056 [P] [US4] Write integration test for nibabel image input in `tests/integration/test_nibabel_input.py`
+- [x] T057 [P] [US4] Write integration test for nibabel list input in `tests/integration/test_nibabel_input.py`
+- [x] T058 [P] [US4] Write unit test for ParcelAggregation return type matching in `tests/unit/test_parcel_aggregation_return_types.py`
 
 ### Implementation for User Story 4
 
-- [ ] T059 [US4] Update `AtlasAggregation._get_source_image()` to parse "Analysis.key" syntax in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T060 [US4] Add error message listing available sources when resolution fails in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T061 [US4] Remove threshold range validation (0.0-1.0 restriction) in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T062 [US4] Add input type detection (MaskData/nibabel/list) in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T063 [US4] Implement nibabel.Nifti1Image input handling with AtlasAggregationResult return in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T064 [US4] Implement list[nibabel.Nifti1Image] batch processing in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T065 [US4] Add log_level parameter to AtlasAggregation in `src/lacuna/analysis/atlas_aggregation.py`
-- [ ] T066 [US4] Remove whole_brain_tdi parameter from StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
-- [ ] T067 [US4] Add log_level parameter to StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
-- [ ] T068 [P] [US4] Update unit tests removing whole_brain_tdi references in `tests/unit/test_structural_network_mapping.py`
+- [x] T059 [US4] Update `ParcelAggregation._get_source_image()` to parse "Analysis.key" syntax in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T060 [US4] Add error message listing available sources when resolution fails in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T061 [US4] Remove threshold range validation (0.0-1.0 restriction) in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T062 [US4] Add input type detection (MaskData/nibabel/list) in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T063 [US4] Implement nibabel.Nifti1Image input handling with ParcelData return in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T064 [US4] Implement list[nibabel.Nifti1Image] batch processing in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T065 [US4] Add log_level parameter to ParcelAggregation in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T066 [US4] Remove whole_brain_tdi parameter from StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
+- [x] T067 [US4] Add log_level parameter to StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
+- [x] T068 [P] [US4] Update unit tests removing whole_brain_tdi references in `tests/unit/test_structural_network_mapping.py` (N/A - whole_brain_tdi was always internal)
 
 **Checkpoint**: User Stories 1-4 complete - all P1/P2 functionality implemented
 
@@ -193,24 +193,87 @@
 - [ ] T080 [P] [US5] Remove deprecated code and unused functionality in `src/lacuna/`
 - [ ] T081 [P] [US5] Update all module docstrings for consistency in `src/lacuna/`
 
-**Checkpoint**: All user stories complete - codebase optimized, tests efficient
+**Checkpoint**: Core user stories complete - codebase optimized, tests efficient
 
 ---
 
-## Phase 8: Polish & Cross-Cutting Concerns
+## Phase 8a: Unified Data Types Architecture (User Story 6)
+
+**Purpose**: Rename classes/files for unified container pattern and improved naming
+
+### File & Module Renaming
+
+- [x] T092 [US6] Rename `src/lacuna/core/output.py` to `src/lacuna/core/data_types.py`
+- [x] T093 [US6] Rename `src/lacuna/analysis/atlas_aggregation.py` to `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T094 [US6] Update all imports of `output.py` → `data_types.py` across codebase
+- [x] T095 [US6] Update all imports of `atlas_aggregation` → `parcel_aggregation` across codebase
+
+### Class Renaming (Unified Containers)
+
+- [x] T096 [US6] Rename `VoxelMapResult` → `VoxelMap` in `src/lacuna/core/data_types.py`
+- [x] T097 [US6] Rename `AtlasAggregationResult` → `ParcelData` in `src/lacuna/core/data_types.py`
+- [x] T098 [US6] Rename `ConnectivityMatrixResult` → `ConnectivityMatrix` in `src/lacuna/core/data_types.py`
+- [x] T099 [US6] Rename `TractogramResult` → `Tractogram` in `src/lacuna/core/data_types.py`
+- [x] T100 [US6] Rename `SurfaceResult` → `SurfaceMesh` in `src/lacuna/core/data_types.py`
+- [x] T101 [US6] Rename `MiscResult` → `ScalarMetric` in `src/lacuna/core/data_types.py`
+
+### Analysis Class Renaming
+
+- [x] T102 [US6] Rename `AtlasAggregation` class → `ParcelAggregation` in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T103 [US6] Update all usages of `AtlasAggregation` → `ParcelAggregation` across codebase
+
+### Parameter & Attribute Renaming
+
+- [x] T104 [US6] Rename `atlas_names` → `parcel_names` in `ParcelAggregation.__init__()` signature
+- [x] T105 [US6] Rename `atlas_names` → `parcel_names` in `ParcelData` attributes
+- [x] T106 [US6] Update docstrings: "atlas" → "parcel" (when referring to brain parcellations)
+
+### Backward Compatibility
+
+- [x] T107 [US6] Add deprecated alias: `VoxelMapResult = VoxelMap` in `data_types.py`
+- [x] T108 [US6] Add deprecated alias: `AtlasAggregationResult = ParcelData` in `data_types.py`
+- [x] T109 [US6] Add deprecated alias: `ConnectivityMatrixResult = ConnectivityMatrix` in `data_types.py`
+- [x] T110 [US6] Add deprecated alias: `TractogramResult = Tractogram` in `data_types.py`
+- [x] T111 [US6] Add deprecated alias: `SurfaceResult = SurfaceMesh` in `data_types.py`
+- [x] T112 [US6] Add deprecated alias: `MiscResult = ScalarMetric` in `data_types.py`
+- [x] T113 [US6] Add deprecated alias: `AtlasAggregation = ParcelAggregation` in `parcel_aggregation.py`
+- [x] T114 [US6] Add deprecation warnings with `warnings.warn()` to all aliases
+
+### Test Updates
+
+- [x] T115 [US6] Update test file imports: `output` → `data_types`, `atlas_aggregation` → `parcel_aggregation`
+- [x] T116 [US6] Update test assertions: old class names → new names
+- [x] T117 [US6] Rename `tests/contract/test_atlas_aggregation_contract.py` → `test_parcel_aggregation_contract.py`
+- [x] T118 [US6] Rename `tests/unit/test_atlas_aggregation*.py` files → `test_parcel_aggregation*.py`
+- [x] T119 [US6] Rename `tests/integration/test_atlas_aggregation*.py` files → `test_parcel_aggregation*.py`
+- [x] T120 [US6] Add contract tests for unified container pattern in `tests/contract/test_unified_containers_contract.py`
+
+### Documentation Updates
+
+- [x] T121 [US6] Update `specs/003-package-optimization/data-model.md` with new class names and unified container pattern
+- [x] T122 [US6] Update `specs/003-package-optimization/plan.md` with US6 description
+- [x] T123 [US6] Update `docs/quickstart.md` examples: old names → new names (no quickstart.md exists yet)
+- [x] T124 [US6] Update `examples/` with new class/module names
+- [x] T125 [US6] Create `docs/unified_containers.md` guide explaining dual-purpose pattern
+
+**Checkpoint**: Unified container architecture in place, backward compatibility maintained
+
+---
+
+## Phase 8b: Polish & Cross-Cutting Concerns
 
 **Purpose**: Documentation, examples, and final validation
 
-- [ ] T082 [P] Create migration guide in `docs/migration_guide.md` (MaskData→MaskData, result access patterns)
-- [ ] T083 [P] Update quickstart examples to use MaskData in `examples/result_access_demo.py`
-- [ ] T084 [P] Add logging level examples in `examples/result_access_demo.py`
-- [ ] T085 [P] Add nibabel input examples in `examples/result_access_demo.py`
-- [ ] T086 [P] Update all docstrings referencing MaskData to MaskData in `src/lacuna/`
-- [ ] T087 [P] Update README with new features and naming in `README.md`
-- [ ] T088 Run full test suite to verify all changes in `tests/`
-- [ ] T089 Run code quality checks (ruff, black, mypy) across `src/lacuna/`
-- [ ] T090 Validate quickstart.md examples still work
-- [ ] T091 Update CHANGELOG with all changes
+- [ ] T126 [P] Create migration guide in `docs/migration_guide.md` (MaskData→MaskData, result access patterns, unified containers)
+- [ ] T127 [P] Update quickstart examples to use MaskData in `examples/result_access_demo.py`
+- [ ] T128 [P] Add logging level examples in `examples/result_access_demo.py`
+- [ ] T129 [P] Add nibabel input examples in `examples/result_access_demo.py`
+- [ ] T130 [P] Update all docstrings referencing MaskData to MaskData in `src/lacuna/`
+- [ ] T131 [P] Update README with new features and naming in `README.md`
+- [ ] T132 Run full test suite to verify all changes in `tests/`
+- [ ] T133 Run code quality checks (ruff, black, mypy) across `src/lacuna/`
+- [ ] T134 Validate quickstart.md examples still work
+- [ ] T135 Update CHANGELOG with all changes
 
 ---
 
@@ -225,14 +288,16 @@
 - **User Story 3 (Phase 5 - P2)**: Depends on Foundational - No dependencies on other stories
 - **User Story 4 (Phase 6 - P2)**: Depends on Foundational - No dependencies on other stories (though naturally integrates with US1 patterns)
 - **User Story 5 (Phase 7 - P3)**: Depends on all other stories being complete
-- **Polish (Phase 8)**: Depends on all user stories being complete
+- **User Story 6 (Phase 8a - P2)**: Depends on US4 completion (refines architecture from enhanced flexibility)
+- **Polish (Phase 8b)**: Depends on all user stories including US6 being complete
 
 ### User Story Independence
 
 All user stories (US1-US4) can theoretically start in parallel after Phase 2, but:
-- **Recommended sequence**: US1 → US2 → US3 → US4 → US5 (by priority)
+- **Recommended sequence**: US1 → US2 → US3 → US4 → US6 → US5 (by priority)
 - **MVP scope**: US1 + US2 (P1 stories provide core functionality)
 - US4 builds on US1's result patterns but is independently testable
+- US6 refines naming/architecture from US4's enhanced flexibility
 - US5 requires all other stories complete for comprehensive review
 
 ### Within Each User Story
@@ -254,6 +319,13 @@ All user stories (US1-US4) can theoretically start in parallel after Phase 2, bu
 - All test tasks (T017-T023) can run in parallel
 - T024-T025 (BaseAnalysis) can run in parallel with T030 (TractogramResult.get_data)
 - T026-T029 (analysis updates) can run in parallel after T024-T025
+
+**Within User Story 6**:
+- T092-T095 (file/module renames) can run in parallel
+- T096-T101 (class renames) can run in parallel after file renames
+- T107-T114 (deprecation aliases) can run in parallel
+- T115-T119 (test updates) can run in parallel after class renames
+- T121-T125 (documentation) can run in parallel
 
 **Within User Story 2**:
 - All test tasks (T032-T037) can run in parallel

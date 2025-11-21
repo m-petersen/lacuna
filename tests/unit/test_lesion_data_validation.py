@@ -83,7 +83,7 @@ class TestMaskDataValidation:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             with pytest.raises(HeaderDataError):
-                mask_img = nib.Nifti1Image(data, affine)
+                nib.Nifti1Image(data, affine)
 
     def test_validate_affine_inf_error(self):
         """Test that Inf in affine is caught by nibabel during image creation."""
@@ -104,7 +104,7 @@ class TestMaskDataValidation:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             with pytest.raises(HeaderDataError, match="Could not decompose affine"):
-                mask_img = nib.Nifti1Image(data, affine)
+                nib.Nifti1Image(data, affine)
 
     def test_validate_4d_image_error(self):
         """Test that 4D images raise ValidationError."""
@@ -139,7 +139,7 @@ class TestMaskDataValidation:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             with pytest.raises(HeaderDataError, match="Could not decompose affine"):
-                mask_img = nib.Nifti1Image(data, affine)
+                nib.Nifti1Image(data, affine)
 
     @pytest.mark.skip(reason="anatomical_img feature removed")
     def test_validate_spatial_mismatch_error(self):
@@ -157,7 +157,7 @@ class TestMaskDataValidation:
         anat_data = np.random.rand(64, 64, 64).astype(np.float32)
         affine2 = np.eye(4)
         affine2[0, 0] = affine2[1, 1] = affine2[2, 2] = 3.0  # Different voxel size
-        anat_img = nib.Nifti1Image(anat_data, affine2)
+        nib.Nifti1Image(anat_data, affine2)
 
         from lacuna import MaskData
 
@@ -175,7 +175,7 @@ class TestMaskDataValidation:
 
         # Create anatomical with different shape (but same affine)
         anat_data = np.random.rand(80, 80, 80).astype(np.float32)
-        anat_img = nib.Nifti1Image(anat_data, affine)
+        nib.Nifti1Image(anat_data, affine)
 
         from lacuna import MaskData
 
@@ -303,7 +303,7 @@ class TestMaskDataValidation:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             with pytest.raises(HeaderDataError):
-                mask_img = nib.Nifti1Image(data, affine)
+                nib.Nifti1Image(data, affine)
 
     def test_validate_mask_data_with_both_images(self):
         """Test validation when both lesion and anatomical provided."""
@@ -320,7 +320,7 @@ class TestMaskDataValidation:
 
         # Create anatomical
         anat_data = np.random.rand(*shape).astype(np.float32) * 1000
-        anat_img = nib.Nifti1Image(anat_data, affine)
+        nib.Nifti1Image(anat_data, affine)
 
         mask_data_obj = MaskData(
             mask_img=mask_img,

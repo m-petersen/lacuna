@@ -501,7 +501,9 @@ def transform_image(
 
     if direction == "none":
         if log_level >= 1:
-            logger.info(f"Source and target spaces match for {image_desc} - no transformation needed")
+            logger.info(
+                f"Source and target spaces match for {image_desc} - no transformation needed"
+            )
         return img
 
     # Handle resolution-only change (same space, different resolution)

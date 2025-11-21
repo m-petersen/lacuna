@@ -121,14 +121,14 @@ def batch_process(
 
     Chain multiple analyses:
 
-    >>> from lacuna.analysis import RegionalDamage, AtlasAggregation
+    >>> from lacuna.analysis import RegionalDamage, ParcelAggregation
     >>>
     >>> # First analysis
     >>> regional = RegionalDamage()
     >>> after_regional = batch_process(lesions, regional)
     >>>
     >>> # Second analysis on results
-    >>> aggregation = AtlasAggregation(source="mask_img")
+    >>> aggregation = ParcelAggregation(source="mask_img")
     >>> final = batch_process(after_regional, aggregation)
 
     Notes

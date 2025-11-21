@@ -220,7 +220,7 @@ class TestImmutability:
         result1_keys = set(result1.results.keys())
 
         # Run second analysis on result1
-        result2 = Analysis2().run(result1)
+        Analysis2().run(result1)
 
         # result1 should not be modified (same keys, no new Analysis2)
         assert set(result1.results.keys()) == result1_keys
@@ -268,7 +268,7 @@ class TestImmutability:
         mask_data = MaskData(mask_img=synthetic_mask_img, metadata=metadata)
 
         # Run analysis
-        result = TestAnalysis().run(mask_data)
+        TestAnalysis().run(mask_data)
 
         # Original metadata should be unchanged (except space and resolution are required)
         assert mask_data.metadata["subject_id"] == "sub-001"
@@ -408,7 +408,7 @@ class TestResultKeyGeneration:
         """Test that result keys include source information (e.g., atlas name)."""
         from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
-        from lacuna.core.output import AtlasAggregationResult
+        from lacuna.core.data_types import ParcelData
 
         class MockAtlasAnalysis(BaseAnalysis):
             def __init__(self, atlas_name):
@@ -420,7 +420,7 @@ class TestResultKeyGeneration:
 
             def _run_analysis(self, mask_data):
                 # Should generate key like "atlas_DKT"
-                result = AtlasAggregationResult(
+                result = ParcelData(
                     name=self.atlas_name,
                     data={"region1": 0.5},
                 )
@@ -438,13 +438,13 @@ class TestResultKeyGeneration:
         analysis_results = result.results["MockAtlasAnalysis"]
         assert isinstance(analysis_results, dict)
         assert "atlas_DKT" in analysis_results
-        assert isinstance(analysis_results["atlas_DKT"], AtlasAggregationResult)
+        assert isinstance(analysis_results["atlas_DKT"], ParcelData)
 
     def test_result_key_multiple_sources(self, synthetic_mask_img):
         """Test that multiple source-specific results are stored separately."""
         from lacuna import MaskData
         from lacuna.analysis.base import BaseAnalysis
-        from lacuna.core.output import AtlasAggregationResult
+        from lacuna.core.data_types import ParcelData
 
         class MultiAtlasAnalysis(BaseAnalysis):
             def _validate_inputs(self, mask_data):
@@ -453,11 +453,9 @@ class TestResultKeyGeneration:
             def _run_analysis(self, mask_data):
                 # Generate results for multiple atlases
                 return {
-                    "atlas_DKT": AtlasAggregationResult(name="DKT", data={"r1": 0.1}),
-                    "atlas_Schaefer": AtlasAggregationResult(name="Schaefer", data={"r1": 0.2}),
-                    "atlas_HarvardOxford": AtlasAggregationResult(
-                        name="HarvardOxford", data={"r1": 0.3}
-                    ),
+                    "atlas_DKT": ParcelData(name="DKT", data={"r1": 0.1}),
+                    "atlas_Schaefer": ParcelData(name="Schaefer", data={"r1": 0.2}),
+                    "atlas_HarvardOxford": ParcelData(name="HarvardOxford", data={"r1": 0.3}),
                 }
 
         mask_data = MaskData(

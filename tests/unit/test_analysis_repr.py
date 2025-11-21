@@ -1,8 +1,8 @@
 """Unit tests for analysis object repr and str methods."""
 
 from lacuna.analysis import (
-    AtlasAggregation,
     FunctionalNetworkMapping,
+    ParcelAggregation,
     RegionalDamage,
     StructuralNetworkMapping,
 )
@@ -144,12 +144,12 @@ class TestRegionalDamageRepr:
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
-        analysis = RegionalDamage(threshold=0.3, atlas_names=["AAL3", "Schaefer2018"])
+        analysis = RegionalDamage(threshold=0.3, parcel_names=["AAL3", "Schaefer2018"])
 
         repr_str = repr(analysis)
 
         assert "threshold=" in repr_str
-        assert "atlas_names=" in repr_str
+        assert "parcel_names=" in repr_str
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
@@ -164,40 +164,40 @@ class TestRegionalDamageRepr:
 
 
 class TestAtlasAggregationRepr:
-    """Tests for AtlasAggregation __repr__ and __str__."""
+    """Tests for ParcelAggregation __repr__ and __str__."""
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
-        analysis = AtlasAggregation(source="mask_img", aggregation="mean", threshold=0.3)
+        analysis = ParcelAggregation(source="mask_img", aggregation="mean", threshold=0.3)
 
         repr_str = repr(analysis)
 
-        assert "AtlasAggregation(" in repr_str
+        assert "ParcelAggregation(" in repr_str
         assert "source='mask_img'" in repr_str
         assert "aggregation='mean'" in repr_str
         assert "threshold=0.3" in repr_str
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
-        analysis = AtlasAggregation(
-            atlas_names=["AAL3", "Schaefer2018"],
+        analysis = ParcelAggregation(
+            parcel_names=["AAL3", "Schaefer2018"],
             source="mask_img",
             aggregation="percent",
         )
 
         repr_str = repr(analysis)
 
-        assert "atlas_names=" in repr_str
+        assert "parcel_names=" in repr_str
         assert "source='mask_img'" in repr_str
         assert "aggregation='percent'" in repr_str
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
-        analysis = AtlasAggregation(source="mask_img", aggregation="mean")
+        analysis = ParcelAggregation(source="mask_img", aggregation="mean")
 
         str_output = str(analysis)
 
-        assert "AtlasAggregation Analysis" in str_output
+        assert "ParcelAggregation Analysis" in str_output
         assert "Configuration:" in str_output
         assert "source: mask_img" in str_output
         assert "aggregation: mean" in str_output
@@ -212,7 +212,7 @@ class TestReprConsistency:
             FunctionalNetworkMapping("/path/data.h5", "boes"),
             StructuralNetworkMapping("/path/tracts.tck", check_dependencies=False),
             RegionalDamage(threshold=0.5),
-            AtlasAggregation(source="mask_img", aggregation="mean"),
+            ParcelAggregation(source="mask_img", aggregation="mean"),
         ]
 
         for analysis in analyses:
@@ -230,7 +230,7 @@ class TestReprConsistency:
                 "/path/tracts.tck", "/path/tdi.nii.gz", check_dependencies=False
             ),
             RegionalDamage(threshold=0.5),
-            AtlasAggregation(source="mask_img", aggregation="mean"),
+            ParcelAggregation(source="mask_img", aggregation="mean"),
         ]
 
         for analysis in analyses:

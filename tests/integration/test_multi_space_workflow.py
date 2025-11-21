@@ -227,10 +227,10 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
     result = analyzer.run(lesion_nlin6_2mm)
 
     # Verify results are present
-    assert "RegionalDamage" in result.results or "AtlasAggregation" in result.results
+    assert "RegionalDamage" in result.results or "ParcelAggregation" in result.results
 
     # Check that we got regional damage values
-    results_list = result.results.get("RegionalDamage") or result.results.get("AtlasAggregation")
+    results_list = result.results.get("RegionalDamage") or result.results.get("ParcelAggregation")
     assert len(results_list) > 0
     results_dict = results_list[0].get_data()
 
@@ -337,7 +337,7 @@ def test_matched_spaces_no_transformation_overhead(
     elapsed_time = time.time() - start_time
 
     # Verify analysis completed
-    assert "RegionalDamage" in result.results or "AtlasAggregation" in result.results
+    assert "RegionalDamage" in result.results or "ParcelAggregation" in result.results
 
     # Check that analysis was fast (should be < 5 seconds for synthetic data)
     # This is a generous threshold - real overhead would be much larger (30+ seconds)

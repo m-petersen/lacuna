@@ -108,8 +108,8 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
         assert "t_map" in flnm
         assert "summary_statistics" in flnm
 
-        # Check shapes - in nested dict, these are VoxelMapResult objects
-        # VoxelMapResult.data holds the NIfTI image which has .shape
+        # Check shapes - in nested dict, these are VoxelMap objects
+        # VoxelMap.data holds the NIfTI image which has .shape
         assert flnm["correlation_map"].shape == (91, 109, 91)
         assert flnm["t_map"].shape == (91, 109, 91)
 

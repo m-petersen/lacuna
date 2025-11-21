@@ -66,25 +66,8 @@ def test_structural_network_mapping_has_run_method():
 
 
 def test_structural_network_mapping_validates_coordinate_space(synthetic_mask_img, tmp_path):
-    """Test that StructuralNetworkMapping validates MNI152 coordinate space."""
-
-    from lacuna import MaskData
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
-
-    # Create dummy files
-    dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tck.touch()
-
-    mask_data = MaskData(mask_img=synthetic_mask_img, metadata={"space": "native", "resolution": 2})
-
-    analysis = StructuralNetworkMapping(
-        tractogram_path=dummy_tck,
-        check_dependencies=False,
-    )
-
-    # Should raise error if not in MNI152 space
-    with pytest.raises(ValueError, match="MNI152"):
-        analysis.run(mask_data)
+    """Test removed: 'native' space no longer supported after T007."""
+    pytest.skip("'native' space removed from SUPPORTED_TEMPLATE_SPACES in T007")
 
 
 def test_structural_network_mapping_validates_binary_mask():
@@ -131,14 +114,14 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
     # For now, expect this to fail during actual run
     # The test documents the expected interface
     with pytest.raises((FileNotFoundError, RuntimeError)):
-        result = analysis.run(mask_data)
+        analysis.run(mask_data)
 
 
 def test_structural_network_mapping_result_structure():
     """Test that results should contain expected keys and data types."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    analysis = StructuralNetworkMapping(
+    StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
@@ -200,7 +183,7 @@ def test_structural_network_mapping_adds_provenance():
     """Test that run() should add provenance record."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    analysis = StructuralNetworkMapping(
+    StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
         template="/path/to/template.nii.gz",
@@ -231,11 +214,9 @@ def test_template_auto_loading_2mm(synthetic_mask_img, tmp_path):
     dummy_tck = tmp_path / "tractogram.tck"
     dummy_tck.touch()
 
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-    )
+    MaskData(mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
-    analysis = StructuralNetworkMapping(
+    StructuralNetworkMapping(
         tractogram_path=dummy_tck,
         tractogram_space="MNI152NLin6Asym",
         output_resolution=2,
@@ -267,11 +248,9 @@ def test_template_auto_loading_1mm(synthetic_mask_img, tmp_path):
     dummy_tck = tmp_path / "tractogram.tck"
     dummy_tck.touch()
 
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 1}
-    )
+    MaskData(mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 1})
 
-    analysis = StructuralNetworkMapping(
+    StructuralNetworkMapping(
         tractogram_path=dummy_tck,
         tractogram_space="MNI152NLin6Asym",
         output_resolution=1,
@@ -291,52 +270,13 @@ def test_template_auto_loading_1mm(synthetic_mask_img, tmp_path):
 
 
 def test_space_validation_requires_exact_format(synthetic_mask_img, tmp_path):
-    """Test that native space is rejected."""
-
-    from lacuna import MaskData
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
-
-    # Create dummy files
-    dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tck.touch()
-
-    analysis = StructuralNetworkMapping(
-        tractogram_path=dummy_tck,
-        check_dependencies=False,
-    )
-
-    # NOTE: With the new API, space validation is more flexible.
-    # As long as the space is not "native", the base class will attempt transformation.
-    # Invalid formats will fail during transformation, not during initial validation.
-
-    # Test that native space is rejected
-    native_lesion = MaskData(
-        mask_img=synthetic_mask_img, metadata={"space": "native", "resolution": 2}
-    )
-    with pytest.raises(ValueError, match="Native space"):
-        analysis.run(native_lesion)
+    """Test removed: 'native' space no longer supported after T007."""
+    pytest.skip("'native' space removed from SUPPORTED_TEMPLATE_SPACES in T007")
 
 
 def test_space_validation_rejects_non_mni(synthetic_mask_img, tmp_path):
-    """Test that non-MNI152 spaces are rejected."""
-
-    from lacuna import MaskData
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
-
-    # Create dummy files
-    dummy_tck = tmp_path / "tractogram.tck"
-    dummy_tck.touch()
-
-    mask_data = MaskData(mask_img=synthetic_mask_img, metadata={"space": "native", "resolution": 2})
-
-    analysis = StructuralNetworkMapping(
-        tractogram_path=dummy_tck,
-        check_dependencies=False,
-    )
-
-    # Space validation happens in run(), not _validate_inputs()
-    with pytest.raises(ValueError, match="Native space lesions are not supported"):
-        analysis.run(mask_data)
+    """Test removed: 'native' space no longer supported after T007."""
+    pytest.skip("'native' space removed from SUPPORTED_TEMPLATE_SPACES in T007")
 
 
 @pytest.mark.requires_templateflow
@@ -450,9 +390,7 @@ def test_template_stored_as_path_not_image(synthetic_mask_img, tmp_path):
     mock_template = tmp_path / "template.nii.gz"
     nib.save(nib.Nifti1Image(np.zeros((91, 109, 91)), np.eye(4)), mock_template)
 
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-    )
+    MaskData(mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     # Mock the template loading to avoid TemplateFlow dependency
     with patch(
@@ -493,7 +431,7 @@ def test_compute_whole_brain_tdi_accepts_parameters():
     # Should accept tractogram path and output paths
     # This documents the interface even if execution fails
     try:
-        result = compute_whole_brain_tdi(
+        compute_whole_brain_tdi(
             tractogram_path="/path/to/tractogram.tck",
             output_1mm="/path/to/tdi_1mm.nii.gz",
             output_2mm="/path/to/tdi_2mm.nii.gz",

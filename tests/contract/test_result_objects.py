@@ -1,7 +1,7 @@
 """
 Contract tests for result object types.
 
-T022: Tests that AtlasAggregationResult properly handles region labels from atlas metadata.
+T022: Tests that ParcelData properly handles region labels from atlas metadata.
 """
 
 import pytest
@@ -9,8 +9,8 @@ import pytest
 
 @pytest.mark.contract
 def test_atlas_aggregation_result_with_region_labels():
-    """Test that AtlasAggregationResult stores and exposes region labels."""
-    from lacuna.core.output import AtlasAggregationResult
+    """Test that ParcelData stores and exposes region labels."""
+    from lacuna.core.data_types import ParcelData
 
     # Create result with region labels (from atlas metadata)
     region_data = {
@@ -20,7 +20,7 @@ def test_atlas_aggregation_result_with_region_labels():
         "Right-Caudate": 0.09,
     }
 
-    result = AtlasAggregationResult(
+    result = ParcelData(
         name="DKT",
         data=region_data,
         region_labels=["Left-Thalamus", "Right-Thalamus", "Left-Caudate", "Right-Caudate"],
@@ -39,11 +39,11 @@ def test_atlas_aggregation_result_with_region_labels():
 
 @pytest.mark.contract
 def test_atlas_aggregation_result_without_region_labels():
-    """Test that AtlasAggregationResult works without region labels (backward compat)."""
-    from lacuna.core.output import AtlasAggregationResult
+    """Test that ParcelData works without region labels (backward compat)."""
+    from lacuna.core.data_types import ParcelData
 
     # Create result with numeric keys (old style)
-    result = AtlasAggregationResult(
+    result = ParcelData(
         name="TestAtlas",
         data={0: 0.5, 1: 0.3, 2: 0.7},
     )
@@ -57,12 +57,12 @@ def test_atlas_aggregation_result_without_region_labels():
 @pytest.mark.contract
 def test_atlas_aggregation_result_labels_match_data():
     """Test that region_labels count matches data entries."""
-    from lacuna.core.output import AtlasAggregationResult
+    from lacuna.core.data_types import ParcelData
 
     region_data = {"region1": 0.1, "region2": 0.2, "region3": 0.3}
     labels = ["region1", "region2", "region3"]
 
-    result = AtlasAggregationResult(
+    result = ParcelData(
         name="Atlas",
         data=region_data,
         region_labels=labels,

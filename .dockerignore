@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+ENV/
+env/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.tox/
+.nox/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+docs/
+*.md
+README*
+LICENSE
+CHANGELOG*
+
+# Testing
+tests/
+.pytest/
+coverage.xml
+.hypothesis/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Specifications
+specs/
+.specify/
+
+# Examples
+examples/
+notebooks/

@@ -47,7 +47,7 @@ def test_regional_damage_validates_atlas_available(synthetic_mask_img):
     from lacuna.analysis.regional_damage import RegionalDamage
 
     # Request a nonexistent atlas
-    analysis = RegionalDamage(atlas_names=["NonExistentAtlas123"])
+    analysis = RegionalDamage(parcel_names=["NonExistentAtlas123"])
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
@@ -79,7 +79,7 @@ def test_regional_damage_uses_atlas_registry(tmp_path):
     register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     # Should be able to instantiate and find atlases
-    analysis = RegionalDamage()
+    RegionalDamage()
     assert len(list_atlases()) > 0
 
 
@@ -109,9 +109,7 @@ def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
     # MaskData now validates binary mask in __init__
     # Should raise error for non-binary mask
     with pytest.raises(ValueError, match="binary"):
-        mask_data = MaskData(
-            mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-        )
+        MaskData(mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
@@ -183,7 +181,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     atlas_results = result.results["RegionalDamage"]
     assert "atlas_test_atlas" in atlas_results
 
-    # Get the AtlasAggregationResult for this atlas
+    # Get the ParcelData for this atlas
     roi_result = atlas_results["atlas_test_atlas"]
     results_dict = roi_result.get_data()
 
@@ -236,7 +234,7 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     assert "atlas_atlas_3d" in atlas_results
     assert "atlas_atlas_4d" in atlas_results
 
-    # Each atlas should have its own AtlasAggregationResult
+    # Each atlas should have its own ParcelData
     results_3d = atlas_results["atlas_atlas_3d"].get_data()
     results_4d = atlas_results["atlas_atlas_4d"].get_data()
     assert len(results_3d) > 0

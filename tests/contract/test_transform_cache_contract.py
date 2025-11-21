@@ -37,7 +37,7 @@ class TestTransformCacheConstruction:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_path = Path(tmpdir) / "transforms" / "cache"
-            cache = TransformCache(cache_dir=cache_path)
+            TransformCache(cache_dir=cache_path)
             assert cache_path.exists()
 
 
@@ -162,7 +162,7 @@ class TestCacheEviction:
             cache = TransformCache(cache_dir=Path(tmpdir), max_size_mb=1)
 
             # Store multiple large results to exceed limit
-            for i in range(5):
+            for _i in range(5):
                 data = np.random.rand(100, 100, 100).astype(np.float32)  # ~4MB each
                 source_img = nib.Nifti1Image(data, affine=np.eye(4))
                 result_img = nib.Nifti1Image(data, affine=np.eye(4))

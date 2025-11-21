@@ -83,12 +83,12 @@ def list_bundled_atlases() -> list[str]:
     nifti_files = list(atlas_dir.glob("*.nii.gz"))
 
     # Extract base names (remove .nii.gz)
-    atlas_names = []
+    parcel_names = []
     for f in nifti_files:
         base_name = f.name.replace(".nii.gz", "")
-        atlas_names.append(base_name)
+        parcel_names.append(base_name)
 
-    return sorted(atlas_names)
+    return sorted(parcel_names)
 
 
 def get_bundled_atlas(name: str) -> tuple[Path, Path]:
@@ -176,7 +176,7 @@ def get_atlas_citation(name: str) -> str:
     """
     # Citation database
     citations = {
-        "HCP1065_thr0p1": """HCP1065 White Matter Tracts: Yeh, F.-C., (2022). 
+        "HCP1065_thr0p1": """HCP1065 White Matter Tracts: Yeh, F.-C., (2022).
 Population-based tract-to-region connectome of the human brain and its hierarchical topology.
 *Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4.
 Data were provided by the Human Connectome Project, WU-Minn Consortium

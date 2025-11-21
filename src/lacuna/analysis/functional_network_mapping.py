@@ -23,13 +23,13 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from lacuna.analysis.base import BaseAnalysis
+from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.core.exceptions import ValidationError
 from lacuna.core.mask_data import MaskData
-from lacuna.core.output import MiscResult, VoxelMapResult
 from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
-    from lacuna.core.output import AnalysisResult
+    from lacuna.core.data_types import AnalysisResult
 
 
 class FunctionalNetworkMapping(BaseAnalysis):
@@ -280,11 +280,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary containing:
-            - 'correlation_map': VoxelMapResult for correlation (r values)
-            - 'z_map': VoxelMapResult for Fisher z-transformed
-            - 't_map': VoxelMapResult (if compute_t_map=True)
-            - 't_threshold_map': VoxelMapResult (if t_threshold provided)
-            - 'summary_statistics': MiscResult for summary statistics
+            - 'correlation_map': VoxelMap for correlation (r values)
+            - 'z_map': VoxelMap for Fisher z-transformed
+            - 't_map': VoxelMap (if compute_t_map=True)
+            - 't_threshold_map': VoxelMap (if t_threshold provided)
+            - 'summary_statistics': ScalarMetric for summary statistics
 
         Notes
         -----
@@ -469,7 +469,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         results = {}
 
         # Correlation map (r values)
-        correlation_result = VoxelMapResult(
+        correlation_result = VoxelMap(
             name="correlation_map",
             data=correlation_map_nifti,
             space=self.output_space,
@@ -484,7 +484,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         results["correlation_map"] = correlation_result
 
         # Z-map (Fisher z-transformed correlations)
-        z_result = VoxelMapResult(
+        z_result = VoxelMap(
             name="z_map",
             data=z_map_nifti,
             space=self.output_space,
@@ -510,7 +510,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Add t-map results if computed
         if t_map_nifti is not None:
-            t_result = VoxelMapResult(
+            t_result = VoxelMap(
                 name="t_map",
                 data=t_map_nifti,
                 space=self.output_space,
@@ -526,7 +526,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             summary_dict["t_max"] = float(np.max(t_map_flat))
 
         if t_threshold_map_nifti is not None:
-            threshold_result = VoxelMapResult(
+            threshold_result = VoxelMap(
                 name="t_threshold_map",
                 data=t_threshold_map_nifti,
                 space=self.output_space,
@@ -541,8 +541,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
 
-        # Add summary statistics as MiscResult
-        summary_result = MiscResult(
+        # Add summary statistics as ScalarMetric
+        summary_result = ScalarMetric(
             name="summary_statistics",
             data=summary_dict,
             metadata={

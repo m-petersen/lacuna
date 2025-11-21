@@ -482,7 +482,7 @@ class MaskData:
         Parameters
         ----------
         namespace : str
-            Result namespace (e.g., 'LesionNetworkMapping', 'AtlasAggregation').
+            Result namespace (e.g., 'LesionNetworkMapping', 'ParcelAggregation').
             Should match the analysis module name for clarity.
         results : dict[str, Any]
             Analysis results as a dict mapping result names to result objects.
@@ -502,16 +502,16 @@ class MaskData:
         Examples
         --------
         >>> # Single result
-        >>> results = {"default": VoxelMapResult(...)}
+        >>> results = {"default": VoxelMap(...)}
         >>> lesion_with_results = lesion.add_result("VolumeAnalysis", results)
         >>> "VolumeAnalysis" in lesion_with_results.results
         True
         >>>
         >>> # Multi-atlas results
         >>> results = {"Schaefer100": roi_result1, "Tian": roi_result2}
-        >>> lesion_with_results = lesion.add_result("AtlasAggregation", results)
-        >>> lesion_with_results.results["AtlasAggregation"]["Schaefer100"]
-        AtlasAggregationResult(...)
+        >>> lesion_with_results = lesion.add_result("ParcelAggregation", results)
+        >>> lesion_with_results.results["ParcelAggregation"]["Schaefer100"]
+        ParcelData(...)
         """
         if namespace in self._results:
             raise ValueError(
@@ -559,7 +559,7 @@ class MaskData:
         >>> from lacuna.core.provenance import create_provenance_record
         >>> prov = create_provenance_record(
         ...     function="lacuna.analysis.RegionalDamage",
-        ...     atlas_names=["Schaefer2018_100Parcels7Networks"],
+        ...     parcel_names=["Schaefer2018_100Parcels7Networks"],
         ...     version="0.1.0"
         ... )
         >>> lesion_regional_damage = lesion.add_provenance(prov)
@@ -661,7 +661,7 @@ class MaskData:
         Parameters
         ----------
         name : str
-            Analysis namespace (e.g., "AtlasAggregation", "RegionalDamage")
+            Analysis namespace (e.g., "ParcelAggregation", "RegionalDamage")
 
         Returns
         -------
@@ -675,12 +675,12 @@ class MaskData:
 
         Examples
         --------
-        >>> # After running AtlasAggregation:
-        >>> mask_data.AtlasAggregation["Schaefer100"]
-        AtlasAggregationResult(...)
+        >>> # After running ParcelAggregation:
+        >>> mask_data.ParcelAggregation["Schaefer100"]
+        ParcelData(...)
         >>> # Equivalent to:
-        >>> mask_data.results["AtlasAggregation"]["Schaefer100"]
-        AtlasAggregationResult(...)
+        >>> mask_data.results["ParcelAggregation"]["Schaefer100"]
+        ParcelData(...)
         """
         # Only intercept result namespace lookups, not internal attributes
         if name.startswith("_"):

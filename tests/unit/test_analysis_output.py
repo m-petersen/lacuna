@@ -6,13 +6,13 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.core.output import (
-    ConnectivityMatrixResult,
-    MiscResult,
-    AtlasAggregationResult,
-    SurfaceResult,
-    TractogramResult,
-    VoxelMapResult,
+from lacuna.core.data_types import (
+    ConnectivityMatrix,
+    ParcelData,
+    ScalarMetric,
+    SurfaceMesh,
+    Tractogram,
+    VoxelMap,
 )
 
 # ============================================================================
@@ -30,13 +30,13 @@ def sample_nifti():
 
 
 # ============================================================================
-# VoxelMapResult Tests (Simplified API)
+# VoxelMap Tests (Simplified API)
 # ============================================================================
 
 
 def test_voxel_map_result_initialization(sample_nifti):
-    """Test basic VoxelMapResult initialization with simplified API."""
-    result = VoxelMapResult(
+    """Test basic VoxelMap initialization with simplified API."""
+    result = VoxelMap(
         name="correlation_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
@@ -45,12 +45,12 @@ def test_voxel_map_result_initialization(sample_nifti):
     assert result.space == "MNI152NLin6Asym"
     assert result.resolution == 2.0
     assert result.metadata == {}
-    assert result.result_type == "VoxelMapResult"
+    assert result.result_type == "VoxelMap"
 
 
 def test_voxel_map_string_space_storage(sample_nifti):
     """Test that space is stored as string."""
-    result = VoxelMapResult(
+    result = VoxelMap(
         name="test_map", data=sample_nifti, space="MNI152NLin2009cAsym", resolution=1.0
     )
 
@@ -62,9 +62,7 @@ def test_voxel_map_string_space_storage(sample_nifti):
 
 def test_voxel_map_get_data_returns_original(sample_nifti):
     """Test get_data returns the original data without transformation."""
-    result = VoxelMapResult(
-        name="test_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
-    )
+    result = VoxelMap(name="test_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0)
 
     # get_data should simply return the data
     assert result.get_data() is sample_nifti
@@ -74,7 +72,7 @@ def test_voxel_map_metadata_storage(sample_nifti):
     """Test metadata storage and retrieval."""
     metadata = {"analysis_date": "2024-01-01", "parameter": 42, "nested": {"key": "value"}}
 
-    result = VoxelMapResult(
+    result = VoxelMap(
         name="test_map",
         data=sample_nifti,
         space="MNI152NLin6Asym",
@@ -88,7 +86,7 @@ def test_voxel_map_metadata_storage(sample_nifti):
 
 def test_voxel_map_summary(sample_nifti):
     """Test summary string generation."""
-    result = VoxelMapResult(
+    result = VoxelMap(
         name="correlation_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
@@ -101,23 +99,21 @@ def test_voxel_map_summary(sample_nifti):
 
 def test_voxel_map_repr(sample_nifti):
     """Test string representation."""
-    result = VoxelMapResult(
-        name="test_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
-    )
+    result = VoxelMap(name="test_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0)
 
     repr_str = repr(result)
-    assert "VoxelMapResult" in repr_str
+    assert "VoxelMap" in repr_str
     assert "test_map" in repr_str
     assert "91, 109, 91" in repr_str
 
 
 def test_voxel_map_with_different_resolutions(sample_nifti):
-    """Test VoxelMapResult with different resolution values."""
-    result_1mm = VoxelMapResult(
+    """Test VoxelMap with different resolution values."""
+    result_1mm = VoxelMap(
         name="test_1mm", data=sample_nifti, space="MNI152NLin6Asym", resolution=1.0
     )
 
-    result_2mm = VoxelMapResult(
+    result_2mm = VoxelMap(
         name="test_2mm", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
@@ -126,12 +122,12 @@ def test_voxel_map_with_different_resolutions(sample_nifti):
 
 
 def test_voxel_map_with_different_spaces(sample_nifti):
-    """Test VoxelMapResult with different space identifiers."""
-    result_nlin6 = VoxelMapResult(
+    """Test VoxelMap with different space identifiers."""
+    result_nlin6 = VoxelMap(
         name="test_nlin6", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
-    result_nlin2009 = VoxelMapResult(
+    result_nlin2009 = VoxelMap(
         name="test_nlin2009", data=sample_nifti, space="MNI152NLin2009cAsym", resolution=2.0
     )
 
@@ -141,41 +137,39 @@ def test_voxel_map_with_different_spaces(sample_nifti):
 
 def test_voxel_map_optional_metadata(sample_nifti):
     """Test that metadata is optional."""
-    result = VoxelMapResult(
-        name="test_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
-    )
+    result = VoxelMap(name="test_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0)
 
     assert result.metadata == {}
     assert isinstance(result.metadata, dict)
 
 
 # ============================================================================
-# AtlasAggregationResult Tests
+# ParcelData Tests
 # ============================================================================
 
 
 def test_roi_result_initialization():
-    """Test basic AtlasAggregationResult initialization."""
+    """Test basic ParcelData initialization."""
     data = {"Schaefer400_1": 0.5, "Schaefer400_2": 0.3, "AAL_Frontal_L": 0.8}
 
-    result = AtlasAggregationResult(
+    result = ParcelData(
         name="atlas_aggregation",
         data=data,
-        atlas_names=["Schaefer400", "AAL"],
+        parcel_names=["Schaefer400", "AAL"],
         aggregation_method="mean",
     )
 
     assert result.name == "atlas_aggregation"
     assert result.data == data
-    assert result.atlas_names == ["Schaefer400", "AAL"]
+    assert result.parcel_names == ["Schaefer400", "AAL"]
     assert result.aggregation_method == "mean"
-    assert result.result_type == "AtlasAggregationResult"
+    assert result.result_type == "ParcelData"
 
 
 def test_roi_result_get_data_no_filter():
     """Test getting all ROI data without filter."""
     data = {"roi1": 0.5, "roi2": 0.3, "roi3": 0.8}
-    result = AtlasAggregationResult(name="test", data=data)
+    result = ParcelData(name="test", data=data)
 
     assert result.get_data() == data
 
@@ -184,7 +178,7 @@ def test_roi_result_get_data_with_atlas_filter():
     """Test filtering ROI data by atlas name."""
     data = {"Schaefer400_1": 0.5, "Schaefer400_2": 0.3, "AAL_Frontal_L": 0.8, "AAL_Temporal_R": 0.6}
 
-    result = AtlasAggregationResult(name="test", data=data)
+    result = ParcelData(name="test", data=data)
 
     schaefer_data = result.get_data(atlas_filter="Schaefer400")
     assert len(schaefer_data) == 2
@@ -200,7 +194,7 @@ def test_roi_result_get_top_regions():
     """Test getting top N regions by value."""
     data = {"roi1": 0.5, "roi2": 0.9, "roi3": 0.2, "roi4": 0.7, "roi5": 0.3}
 
-    result = AtlasAggregationResult(name="test", data=data)
+    result = ParcelData(name="test", data=data)
 
     # Top 3 descending
     top3 = result.get_top_regions(n=3)
@@ -217,10 +211,10 @@ def test_roi_result_get_top_regions():
 def test_roi_result_summary():
     """Test summary string generation."""
     data = {"roi1": 0.5, "roi2": 0.3, "roi3": 0.8}
-    result = AtlasAggregationResult(
+    result = ParcelData(
         name="atlas_aggregation",
         data=data,
-        atlas_names=["Atlas1", "Atlas2"],
+        parcel_names=["Atlas1", "Atlas2"],
         aggregation_method="mean",
     )
 
@@ -234,25 +228,25 @@ def test_roi_result_summary():
 def test_roi_result_repr():
     """Test string representation."""
     data = {"roi1": 0.5, "roi2": 0.3}
-    result = AtlasAggregationResult(name="test", data=data)
+    result = ParcelData(name="test", data=data)
 
     repr_str = repr(result)
-    assert "AtlasAggregationResult" in repr_str
+    assert "ParcelData" in repr_str
     assert "test" in repr_str
     assert "n_regions=2" in repr_str
 
 
 # ============================================================================
-# ConnectivityMatrixResult Tests
+# ConnectivityMatrix Tests
 # ============================================================================
 
 
 def test_connectivity_matrix_result_initialization():
-    """Test basic ConnectivityMatrixResult initialization."""
+    """Test basic ConnectivityMatrix initialization."""
     matrix = np.random.rand(10, 10)
     labels = [f"region_{i}" for i in range(10)]
 
-    result = ConnectivityMatrixResult(
+    result = ConnectivityMatrix(
         name="structural_connectivity",
         matrix=matrix,
         region_labels=labels,
@@ -263,7 +257,7 @@ def test_connectivity_matrix_result_initialization():
     assert np.array_equal(result.matrix, matrix)
     assert result.region_labels == labels
     assert result.matrix_type == "structural"
-    assert result.result_type == "ConnectivityMatrixResult"
+    assert result.result_type == "ConnectivityMatrix"
 
 
 def test_connectivity_matrix_validation_not_2d():
@@ -271,7 +265,7 @@ def test_connectivity_matrix_validation_not_2d():
     matrix = np.random.rand(10, 10, 10)
 
     with pytest.raises(ValueError, match="Matrix must be 2D"):
-        ConnectivityMatrixResult(name="test", matrix=matrix)
+        ConnectivityMatrix(name="test", matrix=matrix)
 
 
 def test_connectivity_matrix_validation_not_square():
@@ -279,16 +273,16 @@ def test_connectivity_matrix_validation_not_square():
     matrix = np.random.rand(10, 15)
 
     with pytest.raises(ValueError, match="Matrix must be square"):
-        ConnectivityMatrixResult(name="test", matrix=matrix)
+        ConnectivityMatrix(name="test", matrix=matrix)
 
 
 def test_connectivity_matrix_validation_lesioned_shape_mismatch():
-    """Test that ConnectivityMatrixResult no longer supports lesioned_matrix parameter."""
+    """Test that ConnectivityMatrix no longer supports lesioned_matrix parameter."""
     matrix = np.random.rand(10, 10)
     lesioned = np.random.rand(8, 8)
 
     with pytest.raises(TypeError, match="unexpected keyword argument"):
-        ConnectivityMatrixResult(name="test", matrix=matrix, lesioned_matrix=lesioned)
+        ConnectivityMatrix(name="test", matrix=matrix, lesioned_matrix=lesioned)
 
 
 def test_connectivity_matrix_validation_labels_length_mismatch():
@@ -297,13 +291,13 @@ def test_connectivity_matrix_validation_labels_length_mismatch():
     labels = [f"region_{i}" for i in range(8)]
 
     with pytest.raises(ValueError, match="must match matrix size"):
-        ConnectivityMatrixResult(name="test", matrix=matrix, region_labels=labels)
+        ConnectivityMatrix(name="test", matrix=matrix, region_labels=labels)
 
 
 def test_connectivity_matrix_get_data_intact():
     """Test getting connectivity matrix."""
     matrix = np.random.rand(10, 10)
-    result = ConnectivityMatrixResult(name="test", matrix=matrix)
+    result = ConnectivityMatrix(name="test", matrix=matrix)
 
     assert np.array_equal(result.get_data(), matrix)
 
@@ -315,7 +309,7 @@ def test_connectivity_matrix_summary():
     """Test summary string generation."""
     matrix = np.random.rand(10, 10)
 
-    result = ConnectivityMatrixResult(
+    result = ConnectivityMatrix(
         name="structural_connectivity",
         matrix=matrix,
         matrix_type="structural",
@@ -330,27 +324,26 @@ def test_connectivity_matrix_summary():
 def test_connectivity_matrix_repr():
     """Test string representation."""
     matrix = np.random.rand(10, 10)
-    result = ConnectivityMatrixResult(name="test", matrix=matrix)
+    result = ConnectivityMatrix(name="test", matrix=matrix)
 
     repr_str = repr(result)
-    assert "ConnectivityMatrixResult" in repr_str
+    assert "ConnectivityMatrix" in repr_str
     assert "test" in repr_str
     assert "(10, 10)" in repr_str
-    assert "has_lesioned=False" in repr_str
 
 
 # ============================================================================
-# SurfaceResult Tests
+# SurfaceMesh Tests
 # ============================================================================
 
 
 def test_surface_result_initialization():
-    """Test basic SurfaceResult initialization."""
+    """Test basic SurfaceMesh initialization."""
     vertices = np.random.rand(1000, 3)
     faces = np.random.randint(0, 1000, (2000, 3))
     vertex_data = np.random.rand(1000)
 
-    result = SurfaceResult(
+    result = SurfaceMesh(
         name="pial_surface",
         vertices=vertices,
         faces=faces,
@@ -365,7 +358,7 @@ def test_surface_result_initialization():
     assert np.array_equal(result.vertex_data, vertex_data)
     assert result.hemisphere == "L"
     assert result.surface_type == "pial"
-    assert result.result_type == "SurfaceResult"
+    assert result.result_type == "SurfaceMesh"
 
 
 def test_surface_result_validation_vertices_not_nx3():
@@ -374,7 +367,7 @@ def test_surface_result_validation_vertices_not_nx3():
     faces = np.random.randint(0, 1000, (2000, 3))
 
     with pytest.raises(ValueError, match="Vertices must be N x 3"):
-        SurfaceResult(name="test", vertices=vertices, faces=faces)
+        SurfaceMesh(name="test", vertices=vertices, faces=faces)
 
 
 def test_surface_result_validation_faces_not_mx3():
@@ -383,7 +376,7 @@ def test_surface_result_validation_faces_not_mx3():
     faces = np.random.randint(0, 1000, (2000, 4))  # Wrong shape
 
     with pytest.raises(ValueError, match="Faces must be M x 3"):
-        SurfaceResult(name="test", vertices=vertices, faces=faces)
+        SurfaceMesh(name="test", vertices=vertices, faces=faces)
 
 
 def test_surface_result_validation_vertex_data_length_mismatch():
@@ -393,7 +386,7 @@ def test_surface_result_validation_vertex_data_length_mismatch():
     vertex_data = np.random.rand(900)  # Wrong length
 
     with pytest.raises(ValueError, match="must match number of vertices"):
-        SurfaceResult(name="test", vertices=vertices, faces=faces, vertex_data=vertex_data)
+        SurfaceMesh(name="test", vertices=vertices, faces=faces, vertex_data=vertex_data)
 
 
 def test_surface_result_get_data():
@@ -402,7 +395,7 @@ def test_surface_result_get_data():
     faces = np.random.randint(0, 1000, (2000, 3))
     vertex_data = np.random.rand(1000)
 
-    result = SurfaceResult(name="test", vertices=vertices, faces=faces, vertex_data=vertex_data)
+    result = SurfaceMesh(name="test", vertices=vertices, faces=faces, vertex_data=vertex_data)
 
     assert np.array_equal(result.get_data(), vertex_data)
 
@@ -412,7 +405,7 @@ def test_surface_result_get_data_no_vertex_data():
     vertices = np.random.rand(1000, 3)
     faces = np.random.randint(0, 1000, (2000, 3))
 
-    result = SurfaceResult(name="test", vertices=vertices, faces=faces)
+    result = SurfaceMesh(name="test", vertices=vertices, faces=faces)
 
     with pytest.raises(ValueError, match="No vertex data available"):
         result.get_data()
@@ -423,7 +416,7 @@ def test_surface_result_get_mesh():
     vertices = np.random.rand(1000, 3)
     faces = np.random.randint(0, 1000, (2000, 3))
 
-    result = SurfaceResult(name="test", vertices=vertices, faces=faces)
+    result = SurfaceMesh(name="test", vertices=vertices, faces=faces)
 
     verts, faces_out = result.get_mesh()
     assert np.array_equal(verts, vertices)
@@ -436,7 +429,7 @@ def test_surface_result_summary():
     faces = np.random.randint(0, 1000, (2000, 3))
     vertex_data = np.random.rand(1000)
 
-    result = SurfaceResult(
+    result = SurfaceMesh(
         name="pial_surface",
         vertices=vertices,
         faces=faces,
@@ -459,150 +452,144 @@ def test_surface_result_repr():
     vertices = np.random.rand(1000, 3)
     faces = np.random.randint(0, 1000, (2000, 3))
 
-    result = SurfaceResult(name="test", vertices=vertices, faces=faces)
+    result = SurfaceMesh(name="test", vertices=vertices, faces=faces)
 
     repr_str = repr(result)
-    assert "SurfaceResult" in repr_str
+    assert "SurfaceMesh" in repr_str
     assert "test" in repr_str
     assert "n_vertices=1000" in repr_str
     assert "n_faces=2000" in repr_str
 
 
 # ============================================================================
-# TractogramResult Tests
+# Tractogram Tests
 # ============================================================================
 
 
 def test_tractogram_result_initialization_with_streamlines():
-    """Test TractogramResult no longer accepts streamlines parameter - requires path."""
+    """Test Tractogram no longer accepts streamlines parameter - requires path."""
     streamlines = [np.random.rand(100, 3), np.random.rand(150, 3), np.random.rand(80, 3)]
 
     with pytest.raises(TypeError, match="missing 1 required positional argument"):
-        TractogramResult(name="tract_streamlines", streamlines=streamlines)
+        Tractogram(name="tract_streamlines", streamlines=streamlines)
 
 
 def test_tractogram_result_initialization_with_path():
-    """Test TractogramResult initialization with file path."""
+    """Test Tractogram initialization with file path."""
     path = Path("/data/tractogram.tck")
 
-    result = TractogramResult(name="tract_streamlines", tractogram_path=path, n_streamlines=5000)
+    result = Tractogram(name="tract_streamlines", tractogram_path=path)
 
     assert result.tractogram_path == path
-    assert result.n_streamlines == 5000
-    assert result.streamlines is None
+    assert result.streamlines is None  # No in-memory data
 
 
 def test_tractogram_result_validation_no_data():
-    """Test validation requires either streamlines or path."""
-    with pytest.raises(ValueError, match="Must provide either streamlines or tractogram_path"):
-        TractogramResult(name="test")
+    """Test validation requires tractogram_path."""
+    with pytest.raises(
+        TypeError, match="missing 1 required positional argument: 'tractogram_path'"
+    ):
+        Tractogram(name="test")
 
 
-def test_tractogram_result_get_data_from_memory():
-    """Test getting streamlines from memory."""
-    streamlines = [np.random.rand(100, 3) for _ in range(10)]
-    result = TractogramResult(name="test", streamlines=streamlines)
-
-    data = result.get_data()
-    assert data == streamlines
+def test_tractogram_result_get_data_from_memory(tmp_path):
+    """Test removed: Tractogram no longer stores streamlines in memory."""
+    pytest.skip("Tractogram simplified to path-only storage in T015")
 
 
 def test_tractogram_result_get_data_from_file_not_implemented():
-    """Test that loading from file raises NotImplementedError."""
-    path = Path("/data/tractogram.tck")
-    result = TractogramResult(name="test", tractogram_path=path, n_streamlines=100)
-
-    with pytest.raises(
-        NotImplementedError, match="Loading streamlines from file not yet implemented"
-    ):
-        result.get_data(load_if_needed=True)
+    """Test removed: get_data() now expected to load from file."""
+    pytest.skip("Tractogram.get_data() implementation moved to T030")
 
 
 def test_tractogram_result_get_data_no_load():
-    """Test that get_data returns path when streamlines not loaded and load_if_needed=False."""
+    """Test that get_data returns path when streamlines not loaded."""
     path = Path("/data/tractogram.tck")
-    result = TractogramResult(name="test", tractogram_path=path, n_streamlines=100)
+    result = Tractogram(name="test", tractogram_path=path)
 
-    # Should return path when load_if_needed=False (default)
-    data = result.get_data(load_if_needed=False)
+    # Should return path when streamlines not in memory
+    data = result.get_data()
     assert data == path
     assert isinstance(data, Path)
 
 
-def test_tractogram_result_summary():
+def test_tractogram_result_summary(tmp_path):
     """Test summary string generation."""
+    # Create dummy path
+    tck_path = tmp_path / "tracts.tck"
+    tck_path.touch()
+
     streamlines = [np.random.rand(100, 3) for _ in range(50)]
-    result = TractogramResult(name="tract", streamlines=streamlines)
+    result = Tractogram(name="tract", tractogram_path=tck_path, streamlines=streamlines)
 
     summary = result.summary()
     assert "tract" in summary
-    assert "50 streamlines" in summary
-    assert "in memory" in summary
+    assert "in-memory" in summary  # Has streamlines in memory
+    assert "tracts.tck" in summary  # Path included
 
 
 def test_tractogram_result_repr():
     """Test string representation."""
     path = Path("/data/tractogram.tck")
-    result = TractogramResult(name="test", tractogram_path=path, n_streamlines=1000)
+    result = Tractogram(name="test", tractogram_path=path)
 
     repr_str = repr(result)
-    assert "TractogramResult" in repr_str
+    assert "Tractogram" in repr_str
     assert "test" in repr_str
-    assert "n_streamlines=1000" in repr_str
     assert "in_memory=False" in repr_str
 
 
 # ============================================================================
-# MiscResult Tests
+# ScalarMetric Tests
 # ============================================================================
 
 
 def test_misc_result_initialization_scalar():
-    """Test MiscResult with scalar value."""
-    result = MiscResult(name="mean_correlation", data=0.42)
+    """Test ScalarMetric with scalar value."""
+    result = ScalarMetric(name="mean_correlation", data=0.42)
 
     assert result.name == "mean_correlation"
     assert result.data == 0.42
     assert result.data_type == "scalar"
-    assert result.result_type == "MiscResult"
+    assert result.result_type == "ScalarMetric"
 
 
 def test_misc_result_initialization_dict():
-    """Test MiscResult with dictionary."""
+    """Test ScalarMetric with dictionary."""
     data = {"mean": 0.5, "std": 0.1, "count": 100}
-    result = MiscResult(name="summary_stats", data=data)
+    result = ScalarMetric(name="summary_stats", data=data)
 
     assert result.data == data
     assert result.data_type == "dictionary"
 
 
 def test_misc_result_initialization_list():
-    """Test MiscResult with list."""
+    """Test ScalarMetric with list."""
     data = [1, 2, 3, 4, 5]
-    result = MiscResult(name="values", data=data)
+    result = ScalarMetric(name="values", data=data)
 
     assert result.data == data
     assert result.data_type == "sequence"
 
 
 def test_misc_result_explicit_data_type():
-    """Test MiscResult with explicit data_type."""
-    result = MiscResult(name="custom", data={"key": "value"}, data_type="metadata")
+    """Test ScalarMetric with explicit data_type."""
+    result = ScalarMetric(name="custom", data={"key": "value"}, data_type="metadata")
 
     assert result.data_type == "metadata"
 
 
 def test_misc_result_get_data():
-    """Test getting data from MiscResult."""
+    """Test getting data from ScalarMetric."""
     data = {"key": "value"}
-    result = MiscResult(name="test", data=data)
+    result = ScalarMetric(name="test", data=data)
 
     assert result.get_data() == data
 
 
 def test_misc_result_summary_scalar():
     """Test summary for scalar data."""
-    result = MiscResult(name="mean_value", data=3.14)
+    result = ScalarMetric(name="mean_value", data=3.14)
 
     summary = result.summary()
     assert "mean_value" in summary
@@ -613,7 +600,7 @@ def test_misc_result_summary_scalar():
 def test_misc_result_summary_dict():
     """Test summary for dictionary data."""
     data = {"a": 1, "b": 2, "c": 3}
-    result = MiscResult(name="stats", data=data)
+    result = ScalarMetric(name="stats", data=data)
 
     summary = result.summary()
     assert "stats" in summary
@@ -623,7 +610,7 @@ def test_misc_result_summary_dict():
 def test_misc_result_summary_sequence():
     """Test summary for sequence data."""
     data = [1, 2, 3, 4, 5]
-    result = MiscResult(name="values", data=data)
+    result = ScalarMetric(name="values", data=data)
 
     summary = result.summary()
     assert "values" in summary
@@ -632,9 +619,9 @@ def test_misc_result_summary_sequence():
 
 def test_misc_result_repr():
     """Test string representation."""
-    result = MiscResult(name="test", data=42)
+    result = ScalarMetric(name="test", data=42)
 
     repr_str = repr(result)
-    assert "MiscResult" in repr_str
+    assert "ScalarMetric" in repr_str
     assert "test" in repr_str
     assert "scalar" in repr_str

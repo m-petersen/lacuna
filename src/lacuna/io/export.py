@@ -34,7 +34,7 @@ def export_results_to_csv(
         Output CSV file path
     analysis_name : str, optional
         Specific analysis to export. If None, exports all results.
-        Example: "RegionalDamage", "AtlasAggregation"
+        Example: "RegionalDamage", "ParcelAggregation"
     include_metadata : bool, default=True
         Include subject metadata (subject_id, session_id, etc.) as columns
 
@@ -67,8 +67,8 @@ def export_results_to_csv(
     Notes
     -----
     - Results are flattened: nested dicts become columns with dot notation
-    - Example: {"AtlasAggregation": {"region1": 0.5}} becomes columns
-      "AtlasAggregation.region1" with value 0.5
+    - Example: {"ParcelAggregation": {"region1": 0.5}} becomes columns
+      "ParcelAggregation.region1" with value 0.5
     - Multiple analyses create multiple columns
     - Metadata columns (if included): subject_id, session_id, coordinate_space
     """
@@ -163,7 +163,7 @@ def export_results_to_tsv(
     >>> export_results_to_tsv(
     ...     result,
     ...     "atlas_only.tsv",
-    ...     analysis_name="AtlasAggregation",
+    ...     analysis_name="ParcelAggregation",
     ...     include_metadata=False
     ... )
 

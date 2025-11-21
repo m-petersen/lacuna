@@ -285,13 +285,13 @@ def synthetic_4d_img():
 # T017-T019: Contract tests for result attribute access
 def test_mask_data_attribute_result_access(synthetic_mask_img, lesion_metadata):
     """Test that MaskData.AnalysisName returns results['AnalysisName']."""
+    from lacuna.core.data_types import VoxelMap
     from lacuna.core.mask_data import MaskData
-    from lacuna.core.output import VoxelMapResult
 
     mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
 
     # Manually add a result to simulate analysis output
-    test_result = VoxelMapResult(
+    test_result = VoxelMap(
         name="TestAnalysis",
         space="MNI152NLin6Asym",
         resolution=2,
@@ -313,17 +313,17 @@ def test_mask_data_attribute_result_access(synthetic_mask_img, lesion_metadata):
 
 def test_mask_data_dictionary_result_access(synthetic_mask_img, lesion_metadata):
     """Test dictionary-based result access works as expected."""
+    from lacuna.core.data_types import ParcelData
     from lacuna.core.mask_data import MaskData
-    from lacuna.core.output import AtlasAggregationResult
 
     mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
 
     # Add multiple results with different keys
-    result1 = AtlasAggregationResult(
+    result1 = ParcelData(
         name="AtlasA",
         data={"region1": 0.5, "region2": 0.7},
     )
-    result2 = AtlasAggregationResult(
+    result2 = ParcelData(
         name="AtlasB",
         data={"region1": 0.3, "region2": 0.9},
     )

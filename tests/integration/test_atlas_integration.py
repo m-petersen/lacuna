@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from lacuna import MaskData
-from lacuna.analysis import AtlasAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, RegionalDamage
 from lacuna.assets.atlases.loader import load_atlas
 from lacuna.assets.atlases.registry import list_atlases
 
@@ -26,7 +26,7 @@ class TestMultiAtlasAnalysisWorkflow:
         mask_data = np.zeros((91, 109, 91))
         mask_data[45:50, 54:59, 45:50] = 1
         mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        lesion = MaskData(
+        MaskData(
             mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
         )
 
@@ -43,7 +43,7 @@ class TestMultiAtlasAnalysisWorkflow:
         mask_data = np.zeros((91, 109, 91))
         mask_data[45:50, 54:59, 45:50] = 1
         mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        lesion = MaskData(
+        MaskData(
             mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
         )
 
@@ -55,17 +55,17 @@ class TestMultiAtlasAnalysisWorkflow:
         assert len(analysis.atlas) == 2
 
     def test_atlas_aggregation_with_named_atlas(self):
-        """AtlasAggregation can use named atlas from registry."""
+        """ParcelAggregation can use named atlas from registry."""
         # Create a simple binary lesion
         mask_data = np.zeros((91, 109, 91))
         mask_data[45:50, 54:59, 45:50] = 1
         mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        lesion = MaskData(
+        MaskData(
             mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
         )
 
         # Use atlas by name with different aggregation
-        analysis = AtlasAggregation(atlas="TianS2", source="mask_img", aggregation="mean")
+        analysis = ParcelAggregation(atlas="TianS2", source="mask_img", aggregation="mean")
 
         # Validate configuration
         assert analysis.atlas == ["TianS2"]
@@ -77,7 +77,7 @@ class TestMultiAtlasAnalysisWorkflow:
         mask_data = np.zeros((91, 109, 91))
         mask_data[45:50, 54:59, 45:50] = 1
         mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        lesion = MaskData(
+        MaskData(
             mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
         )
 
@@ -152,15 +152,15 @@ class TestAtlasDiscovery:
     def test_discover_specific_atlases(self):
         """list_atlases() includes expected bundled atlases."""
         all_atlases = list_atlases()
-        atlas_names = [a.name for a in all_atlases]
+        parcel_names = [a.name for a in all_atlases]
 
         # Should include Schaefer parcellations
-        assert "Schaefer100" in atlas_names
-        assert "Schaefer200" in atlas_names
-        assert "Schaefer400" in atlas_names
+        assert "Schaefer100" in parcel_names
+        assert "Schaefer200" in parcel_names
+        assert "Schaefer400" in parcel_names
 
         # Should include Tian subcortical atlases
-        assert "TianS2" in atlas_names
+        assert "TianS2" in parcel_names
 
 
 class TestAtlasLoadingInDifferentSpaces:
@@ -195,7 +195,7 @@ class TestAtlasLoadingInDifferentSpaces:
         atlases = ["Schaefer100", "Schaefer200", "Schaefer400", "Schaefer1000"]
         expected_regions = [100, 200, 400, 1000]
 
-        for atlas_name, expected_n in zip(atlases, expected_regions):
+        for atlas_name, expected_n in zip(atlases, expected_regions, strict=False):
             atlas = load_atlas(atlas_name)
             assert atlas.metadata.n_regions == expected_n
             assert atlas.metadata.space == "MNI152NLin6Asym"
@@ -205,7 +205,7 @@ class TestAtlasLoadingInDifferentSpaces:
         atlases = ["TianS1", "TianS2", "TianS3"]
         expected_regions = [16, 32, 50]
 
-        for atlas_name, expected_n in zip(atlases, expected_regions):
+        for atlas_name, expected_n in zip(atlases, expected_regions, strict=False):
             atlas = load_atlas(atlas_name)
             assert atlas.metadata.n_regions == expected_n
             assert atlas.metadata.space == "MNI152NLin6Asym"
