@@ -367,6 +367,7 @@ class AtlasAggregation(BaseAnalysis):
         input_space: str,
         input_resolution: int,
         input_affine: np.ndarray,
+        atlas_name: str | None = None,
     ) -> nib.Nifti1Image:
         """
         Transform atlas to match input data space if spaces don't match.
@@ -409,9 +410,6 @@ class AtlasAggregation(BaseAnalysis):
         # Need to transform atlas to input space
         from lacuna.core.spaces import CoordinateSpace
         from lacuna.spatial.transform import transform_image
-        from lacuna.utils.logging import ConsoleLogger
-
-        logger = ConsoleLogger()
 
         # Create target space matching input data
         target_space = CoordinateSpace(
@@ -420,18 +418,16 @@ class AtlasAggregation(BaseAnalysis):
             reference_affine=input_affine,
         )
 
-        logger.info(
-            f"Transforming atlas from {atlas_space}@{atlas_resolution}mm "
-            f"to {input_space}@{input_resolution}mm to match input data"
-        )
-
         # Transform atlas using nearest neighbor to preserve labels
+        # Logging is handled by transform_image
         return transform_image(
             img=atlas_img,
             source_space=atlas_space,
             target_space=target_space,
             source_resolution=atlas_resolution,
             interpolation="nearest",  # Preserve integer labels
+            image_name=f"atlas '{atlas_name}'" if atlas_name else "atlas",
+            log_level=self.log_level,
         )
 
     def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
@@ -478,6 +474,7 @@ class AtlasAggregation(BaseAnalysis):
                 input_space=input_space,
                 input_resolution=input_resolution,
                 input_affine=source_img.affine,
+                atlas_name=atlas_name,
             )
 
             labels = atlas_info["labels"]

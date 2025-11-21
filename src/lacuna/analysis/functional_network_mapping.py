@@ -264,7 +264,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             msg = "Lesion mask must be binary (only 0 and 1 values)"
             raise ValidationError(msg)
 
-    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -278,13 +278,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        list[AnalysisResult]
-            List containing:
-            - VoxelMapResult for correlation_map (r values)
-            - VoxelMapResult for z_map (Fisher z-transformed)
-            - VoxelMapResult for t_map (if computed)
-            - VoxelMapResult for t_threshold_map (if computed)
-            - MiscResult for summary statistics
+        dict[str, AnalysisResult]
+            Dictionary containing:
+            - 'correlation_map': VoxelMapResult for correlation (r values)
+            - 'z_map': VoxelMapResult for Fisher z-transformed
+            - 't_map': VoxelMapResult (if compute_t_map=True)
+            - 't_threshold_map': VoxelMapResult (if t_threshold provided)
+            - 'summary_statistics': MiscResult for summary statistics
 
         Notes
         -----
@@ -465,8 +465,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         self.logger.success("Analysis complete", details=summary_details)
 
-        # Create result objects
-        results = []
+        # Create result objects as dict with descriptive keys
+        results = {}
 
         # Correlation map (r values)
         correlation_result = VoxelMapResult(
@@ -481,7 +481,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "correlation_coefficient",
             },
         )
-        results.append(correlation_result)
+        results["correlation_map"] = correlation_result
 
         # Z-map (Fisher z-transformed correlations)
         z_result = VoxelMapResult(
@@ -496,7 +496,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "fisher_z",
             },
         )
-        results.append(z_result)
+        results["z_map"] = z_result
 
         # Summary statistics
         summary_dict = {
@@ -521,7 +521,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "t_statistic",
                 },
             )
-            results.append(t_result)
+            results["t_map"] = t_result
             summary_dict["t_min"] = float(np.min(t_map_flat))
             summary_dict["t_max"] = float(np.max(t_map_flat))
 
@@ -537,7 +537,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "thresholded_t",
                 },
             )
-            results.append(threshold_result)
+            results["t_threshold_map"] = threshold_result
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
 
@@ -550,7 +550,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "n_subjects": total_subjects,
             },
         )
-        results.append(summary_result)
+        results["summary_statistics"] = summary_result
 
         return results
 
