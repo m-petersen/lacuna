@@ -45,7 +45,7 @@ def test_voxel_map_result_initialization(sample_nifti):
     assert result.space == "MNI152NLin6Asym"
     assert result.resolution == 2.0
     assert result.metadata == {}
-    assert result.result_type == "VoxelMap"
+    assert result.data_type == "VoxelMap"
 
 
 def test_voxel_map_string_space_storage(sample_nifti):
@@ -163,7 +163,7 @@ def test_roi_result_initialization():
     assert result.data == data
     assert result.parcel_names == ["Schaefer400", "AAL"]
     assert result.aggregation_method == "mean"
-    assert result.result_type == "ParcelData"
+    assert result.data_type == "ParcelData"
 
 
 def test_roi_result_get_data_no_filter():
@@ -257,7 +257,7 @@ def test_connectivity_matrix_result_initialization():
     assert np.array_equal(result.matrix, matrix)
     assert result.region_labels == labels
     assert result.matrix_type == "structural"
-    assert result.result_type == "ConnectivityMatrix"
+    assert result.data_type == "ConnectivityMatrix"
 
 
 def test_connectivity_matrix_validation_not_2d():
@@ -358,7 +358,7 @@ def test_surface_result_initialization():
     assert np.array_equal(result.vertex_data, vertex_data)
     assert result.hemisphere == "L"
     assert result.surface_type == "pial"
-    assert result.result_type == "SurfaceMesh"
+    assert result.data_type == "SurfaceMesh"
 
 
 def test_surface_result_validation_vertices_not_nx3():
@@ -551,7 +551,6 @@ def test_misc_result_initialization_scalar():
     assert result.name == "mean_correlation"
     assert result.data == 0.42
     assert result.data_type == "scalar"
-    assert result.result_type == "ScalarMetric"
 
 
 def test_misc_result_initialization_dict():

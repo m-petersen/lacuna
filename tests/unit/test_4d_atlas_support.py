@@ -607,7 +607,7 @@ class TestRegionalDamageOutputAPI:
             ), "RegionalDamage results should be a dict, not list"
 
             # Should have the atlas
-            assert "atlas_TestOutputAPI" in damage_results
+            assert "TestOutputAPI_from_mask_img" in damage_results
 
             # Get the ROI result
             roi_result = damage_results["TestOutputAPI_from_mask_img"]

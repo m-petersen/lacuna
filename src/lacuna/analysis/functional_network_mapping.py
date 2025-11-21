@@ -29,7 +29,7 @@ from lacuna.core.mask_data import MaskData
 from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import AnalysisResult
+    from lacuna.core.data_types import DataContainer
 
 
 class FunctionalNetworkMapping(BaseAnalysis):
@@ -264,7 +264,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             msg = "Lesion mask must be binary (only 0 and 1 values)"
             raise ValidationError(msg)
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -278,7 +278,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict[str, AnalysisResult]
+        dict[str, DataContainer]
             Dictionary containing:
             - 'correlation_map': VoxelMap for correlation (r values)
             - 'z_map': VoxelMap for Fisher z-transformed

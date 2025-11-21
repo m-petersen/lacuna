@@ -54,7 +54,7 @@ from lacuna.core.data_types import ParcelData
 from lacuna.core.mask_data import MaskData
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import AnalysisResult
+    from lacuna.core.data_types import DataContainer
 
 
 class ParcelAggregation(BaseAnalysis):
@@ -590,7 +590,7 @@ class ParcelAggregation(BaseAnalysis):
             log_level=self.log_level,
         )
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
         """
         Compute ROI-level aggregation for all atlases.
 
@@ -601,7 +601,7 @@ class ParcelAggregation(BaseAnalysis):
 
         Returns
         -------
-        dict[str, AnalysisResult]
+        dict[str, DataContainer]
             Dictionary mapping "atlas_{name}" to ParcelData objects
         """
         # Get input data space/resolution once

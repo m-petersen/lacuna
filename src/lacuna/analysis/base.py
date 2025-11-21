@@ -12,7 +12,7 @@ from lacuna.core.mask_data import MaskData
 from lacuna.core.provenance import create_provenance_record
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import AnalysisResult
+    from lacuna.core.data_types import DataContainer
 
 
 class BaseAnalysis(ABC):
@@ -222,7 +222,7 @@ class BaseAnalysis(ABC):
         analysis_results = self._run_analysis(mask_data)
 
         # Step 3: Namespace results under class name
-        # Convert list[AnalysisResult] to dict[str, AnalysisResult]
+        # Convert list[DataContainer] to dict[str, DataContainer]
         # For backward compatibility during transition, support both formats
         if isinstance(analysis_results, list):
             # Legacy format: list of results
@@ -301,7 +301,7 @@ class BaseAnalysis(ABC):
         pass
 
     @abstractmethod
-    def _run_analysis(self, mask_data: MaskData) -> list["AnalysisResult"]:
+    def _run_analysis(self, mask_data: MaskData) -> list["DataContainer"]:
         """
         Perform the core analysis computation.
 
@@ -312,8 +312,8 @@ class BaseAnalysis(ABC):
 
         Returns
         -------
-        list[AnalysisResult]
-            Analysis results as a list of AnalysisResult objects. Each result
+        list[DataContainer]
+            Analysis results as a list of DataContainer objects. Each result
             represents a distinct output (voxel map, ROI data, matrix, etc.).
 
         Raises
@@ -330,12 +330,12 @@ class BaseAnalysis(ABC):
         self.__class__.__name__ in the output MaskData.results attribute.
 
         Do NOT modify the input mask_data object. Extract what you need,
-        perform computations, and return results as a list of AnalysisResult objects.
+        perform computations, and return results as a list of DataContainer objects.
 
         Examples
         --------
         >>> from lacuna.core.data_types import VoxelMap, ScalarMetric
-        >>> def _run_analysis(self, mask_data: MaskData) -> list[AnalysisResult]:
+        >>> def _run_analysis(self, mask_data: MaskData) -> list[DataContainer]:
         ...     lesion_array = mask_data.mask_img.get_fdata()
         ...
         ...     # Create voxel map result
