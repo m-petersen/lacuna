@@ -1004,8 +1004,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         return stats
 
     def _get_version(self) -> str:
-        """Get analysis version."""
-        return "0.1.0"
+        """Get analysis version for provenance tracking."""
+        from .. import __version__
+        return __version__
 
     def _get_parameters(self) -> dict:
         """Get analysis parameters for provenance and display.
