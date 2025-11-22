@@ -286,31 +286,45 @@ class ParcelAggregation(BaseAnalysis):
         >>> len(results) == 5
         True
         """
+        from lacuna.core.data_types import VoxelMap
+
         # Detect input type and delegate to appropriate handler
         if isinstance(data, MaskData):
             # Standard MaskData workflow - use base class run()
             return super().run(data)
+
+        elif isinstance(data, VoxelMap):
+            # VoxelMap - run directly without MaskData wrapper
+            return self._run_voxelmap(data)
 
         elif isinstance(data, nib.Nifti1Image):
             # Single nibabel image - return ParcelData
             return self._run_single_image(data)
 
         elif isinstance(data, list):
-            # List of nibabel images - return list of results
+            # List of images or VoxelMaps - return list of results
             if not data:
                 raise ValueError("Empty list provided - at least one image required")
 
-            if not all(isinstance(img, nib.Nifti1Image) for img in data):
-                raise TypeError(
-                    "When providing a list, all items must be nibabel.Nifti1Image objects"
-                )
+            # Check if all are VoxelMaps or all are Images
+            if all(isinstance(item, VoxelMap) for item in data):
+                # Process VoxelMaps directly
+                return [self._run_voxelmap(vm) for vm in data]
 
-            return self._run_batch_images(data)
+            elif all(isinstance(img, nib.Nifti1Image) for img in data):
+                return self._run_batch_images(data)
+
+            else:
+                raise TypeError(
+                    "When providing a list, all items must be of the same type: "
+                    "either all VoxelMap or all nibabel.Nifti1Image objects"
+                )
 
         else:
             raise TypeError(
                 f"Unsupported input type: {type(data).__name__}\n"
-                "Supported types: MaskData, nibabel.Nifti1Image, list[nibabel.Nifti1Image]"
+                "Supported types: MaskData, VoxelMap, nibabel.Nifti1Image, "
+                "list[VoxelMap], list[nibabel.Nifti1Image]"
             )
 
     def _run_single_image(self, img: nib.Nifti1Image) -> "ParcelData":
@@ -377,6 +391,95 @@ class ParcelAggregation(BaseAnalysis):
             results.append(result)
 
         return results
+
+    def _run_voxelmap(self, voxel_map: "VoxelMap") -> "ParcelData":
+        """
+        Run aggregation on a VoxelMap directly.
+
+        This bypasses MaskData validation since VoxelMaps can contain
+        continuous values (e.g., correlation maps, z-scores).
+
+        Parameters
+        ----------
+        voxel_map : VoxelMap
+            VoxelMap containing the data to aggregate
+
+        Returns
+        -------
+        ParcelData
+            Aggregation result combining all atlas aggregations
+        """
+        # Load atlases using same logic as _load_atlases_from_registry
+        if not hasattr(self, "atlases") or not self.atlases:
+            self.atlases = self._load_atlases_from_registry()
+
+        # Get space and resolution from VoxelMap
+        input_space = voxel_map.space
+        input_resolution = voxel_map.resolution
+        source_img = voxel_map.data
+
+        # Calculate voxel volume from source data
+        voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
+
+        # Collect all ROI results across atlases
+        all_roi_data = {}
+
+        # Process each atlas
+        for atlas_info in self.atlases:
+            atlas_name = atlas_info["name"]
+            atlas_space = atlas_info.get("space")
+            atlas_resolution = atlas_info.get("resolution")
+
+            # Load atlas image
+            atlas_img = nib.load(atlas_info["atlas_path"])
+
+            # Transform atlas to match input data space if needed
+            atlas_img = self._ensure_atlas_matches_input_space(
+                atlas_img=atlas_img,
+                atlas_space=atlas_space,
+                atlas_resolution=atlas_resolution,
+                input_space=input_space,
+                input_resolution=input_resolution,
+                input_affine=source_img.affine,
+                atlas_name=atlas_name,
+            )
+
+            labels = atlas_info["labels"]
+            atlas_data = atlas_img.get_fdata()
+
+            if atlas_data.ndim == 3:
+                # 3D integer-labeled atlas
+                atlas_results = self._aggregate_3d_atlas(
+                    source_img, atlas_img, labels, voxel_volume_mm3
+                )
+            elif atlas_data.ndim == 4:
+                # 4D probabilistic atlas
+                atlas_results = self._aggregate_4d_atlas(
+                    source_img, atlas_img, labels, voxel_volume_mm3
+                )
+            else:
+                continue
+
+            # Merge results from this atlas
+            all_roi_data.update(atlas_results)
+
+        # Return single ParcelData with all ROI results
+        from lacuna.core.data_types import ParcelData
+
+        return ParcelData(
+            name=f"{self.aggregation}_aggregation",
+            data=all_roi_data,
+            parcel_names=self.parcel_names if self.parcel_names else [a["name"] for a in self.atlases],
+            aggregation_method=self.aggregation,
+            metadata={
+                "source": "VoxelMap",
+                "source_name": voxel_map.name,
+                "threshold": self.threshold,
+                "n_regions": len(all_roi_data),
+                "space": input_space,
+                "resolution": input_resolution,
+            },
+        )
 
     def _validate_inputs(self, mask_data: MaskData) -> None:
         """
