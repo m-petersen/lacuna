@@ -42,7 +42,7 @@ def test_atlas_transformed_when_space_mismatch():
             resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
-            n_streamlines=1000,
+            n_subjects=1000,
             description="Test structural connectome"
         )
 
@@ -155,6 +155,7 @@ def test_atlas_not_transformed_when_space_matches():
         tdi_img = nib.Nifti1Image(tdi_data, np.eye(4))
         nib.save(tdi_img, tdi_path)
 
+    registered = False
     try:
         # Register structural connectome
         register_structural_connectome(
@@ -163,9 +164,10 @@ def test_atlas_not_transformed_when_space_matches():
             resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
-            n_streamlines=1000,
+            n_subjects=1000,
             description="Test structural connectome"
         )
+        registered = True
 
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
@@ -241,9 +243,10 @@ def test_atlas_not_transformed_when_space_matches():
                             assert analysis._atlas_resolved == atlas_file
 
     finally:
-        unregister_structural_connectome("test_struct_no_transform")
-        tractogram_path.unlink()
-        tdi_path.unlink()
+        if registered:
+            unregister_structural_connectome("test_struct_no_transform")
+        tractogram_path.unlink(missing_ok=True)
+        tdi_path.unlink(missing_ok=True)
 
 
 def test_atlas_transformation_uses_correct_resolution():
@@ -269,7 +272,7 @@ def test_atlas_transformation_uses_correct_resolution():
             resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
-            n_streamlines=1000,
+            n_subjects=1000,
             description="Test structural connectome"
         )
 

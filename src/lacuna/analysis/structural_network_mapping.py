@@ -688,7 +688,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 if lesion_tdi_path.exists():
                     lesion_tdi_img = nib.load(lesion_tdi_path)
                     lesion_tdi_result = VoxelMap(
-                        name="LesionTdi",
+                        name="LesionTDI",
                         data=lesion_tdi_img,
                         space=self.tractogram_space,
                         resolution=self.output_resolution,
@@ -697,7 +697,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                             "temp_directory": str(temp_dir_path),
                         },
                     )
-                    results["LesionTdi"] = lesion_tdi_result
+                    results["LesionTDI"] = lesion_tdi_result
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._atlas_resolved is not None:
@@ -1016,11 +1016,10 @@ class StructuralNetworkMapping(BaseAnalysis):
             Dictionary of parameter names and values.
         """
         return {
-            "tractogram_path": str(self.tractogram_path),
-            "whole_brain_tdi": str(self.whole_brain_tdi),
-            "template": str(self.template) if self.template else None,
+            "connectome_name": self.connectome_name,
             "atlas_name": str(self.atlas_name) if self.atlas_name else None,
             "compute_lesioned": self.compute_lesioned,
+            "output_resolution": self.output_resolution,
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,

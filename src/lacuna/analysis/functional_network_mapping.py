@@ -1433,7 +1433,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             Dictionary of parameter names and values.
         """
         return {
-            "connectome_path": str(self.connectome_path),
+            "connectome_name": self.connectome_name,
             "method": self.method,
             "pini_percentile": self.pini_percentile,
             "n_jobs": self.n_jobs,

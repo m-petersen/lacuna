@@ -22,9 +22,20 @@ class TestFunctionalNetworkMappingRepr:
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
+        import h5py
+        import numpy as np
+        
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
+        
+        # Create minimal valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
 
+        registered = False
         try:
             register_functional_connectome(
                 name="test_repr_connectome",
@@ -34,6 +45,7 @@ class TestFunctionalNetworkMappingRepr:
                 n_subjects=10,
                 description="Test"
             )
+            registered = True
 
             analysis = FunctionalNetworkMapping(connectome_name="test_repr_connectome", method="boes")
 
@@ -44,14 +56,26 @@ class TestFunctionalNetworkMappingRepr:
             assert "method='boes'" in repr_str
             assert repr_str.endswith(")")
         finally:
-            unregister_functional_connectome("test_repr_connectome")
+            if registered:
+                unregister_functional_connectome("test_repr_connectome")
             temp_h5.unlink(missing_ok=True)
 
     def test_repr_all_parameters(self):
         """Test __repr__ includes all parameters."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
 
+        # Create minimal valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
+        registered = False
         try:
             register_functional_connectome(
                 name="test_repr_all_connectome",
@@ -61,6 +85,7 @@ class TestFunctionalNetworkMappingRepr:
                 n_subjects=10,
                 description="Test"
             )
+            registered = True
 
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_repr_all_connectome",
@@ -68,7 +93,6 @@ class TestFunctionalNetworkMappingRepr:
                 pini_percentile=30,
                 compute_t_map=True,
                 t_threshold=2.5,
-                verbose=True,
             )
 
             repr_str = repr(analysis)
@@ -77,18 +101,29 @@ class TestFunctionalNetworkMappingRepr:
             assert "pini_percentile=30" in repr_str
             assert "compute_t_map=True" in repr_str
             assert "t_threshold=2.5" in repr_str
-            assert "verbose=True" in repr_str
         finally:
-            unregister_functional_connectome("test_repr_all_connectome")
+            if registered:
+                unregister_functional_connectome("test_repr_all_connectome")
             temp_h5.unlink(missing_ok=True)
 
     def test_repr_long_path_truncated(self):
         """Test that very long paths are truncated in repr."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
 
+        # Create minimal valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
+        long_name = "test_" + "x" * 100 + "_connectome"
+        registered = False
         try:
-            long_name = "test_" + "x" * 100 + "_connectome"
             register_functional_connectome(
                 name=long_name,
                 space="MNI152NLin6Asym",
@@ -97,6 +132,7 @@ class TestFunctionalNetworkMappingRepr:
                 n_subjects=10,
                 description="Test"
             )
+            registered = True
 
             analysis = FunctionalNetworkMapping(connectome_name=long_name, method="boes")
 
@@ -106,14 +142,26 @@ class TestFunctionalNetworkMappingRepr:
             assert len(repr_str) < len(long_name) + 100
             assert "..." in repr_str
         finally:
-            unregister_functional_connectome(long_name)
+            if registered:
+                unregister_functional_connectome(long_name)
             temp_h5.unlink(missing_ok=True)
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
 
+        # Create minimal valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
+        registered = False
         try:
             register_functional_connectome(
                 name="test_str_connectome",
@@ -123,6 +171,7 @@ class TestFunctionalNetworkMappingRepr:
                 n_subjects=10,
                 description="Test"
             )
+            registered = True
 
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_str_connectome",
@@ -140,14 +189,26 @@ class TestFunctionalNetworkMappingRepr:
             assert "compute_t_map: True" in str_output
             assert "t_threshold: 2.0" in str_output
         finally:
-            unregister_functional_connectome("test_str_connectome")
+            if registered:
+                unregister_functional_connectome("test_str_connectome")
             temp_h5.unlink(missing_ok=True)
 
     def test_str_multiline(self):
         """Test that __str__ produces multiple lines."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
 
+        # Create minimal valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
+        registered = False
         try:
             register_functional_connectome(
                 name="test_multiline_connectome",
@@ -157,6 +218,7 @@ class TestFunctionalNetworkMappingRepr:
                 n_subjects=10,
                 description="Test"
             )
+            registered = True
 
             analysis = FunctionalNetworkMapping(connectome_name="test_multiline_connectome", method="boes")
 
@@ -166,7 +228,8 @@ class TestFunctionalNetworkMappingRepr:
             assert len(lines) > 5  # Should have multiple lines
             assert all(line.strip() for line in lines if line)  # No empty content
         finally:
-            unregister_functional_connectome("test_multiline_connectome")
+            if registered:
+                unregister_functional_connectome("test_multiline_connectome")
             temp_h5.unlink(missing_ok=True)
 
 
@@ -187,7 +250,7 @@ class TestStructuralNetworkMappingRepr:
                 resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
-                n_streamlines=1000,
+                n_subjects=1000,
                 description="Test"
             )
 
@@ -219,7 +282,7 @@ class TestStructuralNetworkMappingRepr:
                 resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
-                n_streamlines=1000,
+                n_subjects=1000,
                 description="Test"
             )
 
@@ -253,7 +316,7 @@ class TestStructuralNetworkMappingRepr:
                 resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
-                n_streamlines=1000,
+                n_subjects=1000,
                 description="Test"
             )
 
@@ -357,13 +420,26 @@ class TestReprConsistency:
 
     def test_all_analyses_have_repr(self):
         """Test that all analysis classes implement __repr__."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
+        
+        # Create valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
         with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
             tractogram_path = Path(f.name)
         with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
             tdi_path = Path(f.name)
 
+        registered_func = False
+        registered_struct = False
         try:
             register_functional_connectome(
                 name="test_all_repr_func",
@@ -373,15 +449,18 @@ class TestReprConsistency:
                 n_subjects=10,
                 description="Test"
             )
+            registered_func = True
+
             register_structural_connectome(
                 name="test_all_repr_struct",
                 space="MNI152NLin2009cAsym",
                 resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
-                n_streamlines=1000,
+                n_subjects=1000,
                 description="Test"
             )
+            registered_struct = True
 
             analyses = [
                 FunctionalNetworkMapping("test_all_repr_func", "boes"),
@@ -397,21 +476,36 @@ class TestReprConsistency:
                 assert ")" in repr_str
                 assert "=" in repr_str or repr_str.endswith("()")
         finally:
-            unregister_functional_connectome("test_all_repr_func")
-            unregister_structural_connectome("test_all_repr_struct")
+            if registered_func:
+                unregister_functional_connectome("test_all_repr_func")
+            if registered_struct:
+                unregister_structural_connectome("test_all_repr_struct")
             temp_h5.unlink(missing_ok=True)
             tractogram_path.unlink(missing_ok=True)
             tdi_path.unlink(missing_ok=True)
 
     def test_all_analyses_have_str(self):
         """Test that all analysis classes implement __str__."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
+        
+        # Create valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
         with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
             tractogram_path = Path(f.name)
         with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
             tdi_path = Path(f.name)
 
+        registered_func = False
+        registered_struct = False
         try:
             register_functional_connectome(
                 name="test_all_str_func",
@@ -421,15 +515,18 @@ class TestReprConsistency:
                 n_subjects=10,
                 description="Test"
             )
+            registered_func = True
+
             register_structural_connectome(
                 name="test_all_str_struct",
                 space="MNI152NLin2009cAsym",
                 resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
-                n_streamlines=1000,
+                n_subjects=1000,
                 description="Test"
             )
+            registered_struct = True
 
             analyses = [
                 FunctionalNetworkMapping("test_all_str_func", "boes"),
@@ -447,17 +544,30 @@ class TestReprConsistency:
                 assert "Configuration:" in str_output
                 assert "\n" in str_output  # Should be multiline
         finally:
-            unregister_functional_connectome("test_all_str_func")
-            unregister_structural_connectome("test_all_str_struct")
+            if registered_func:
+                unregister_functional_connectome("test_all_str_func")
+            if registered_struct:
+                unregister_structural_connectome("test_all_str_struct")
             temp_h5.unlink(missing_ok=True)
             tractogram_path.unlink(missing_ok=True)
             tdi_path.unlink(missing_ok=True)
 
     def test_repr_str_different(self):
         """Test that __repr__ and __str__ produce different output."""
+        import h5py
+        import numpy as np
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
 
+        # Create minimal valid H5 file
+        with h5py.File(temp_h5, "w") as hf:
+            hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
+            hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+            hf.create_dataset("mask_affine", data=np.eye(4))
+            hf.attrs["mask_shape"] = (91, 109, 91)
+
+        registered = False
         try:
             register_functional_connectome(
                 name="test_repr_str_diff",
@@ -467,6 +577,7 @@ class TestReprConsistency:
                 n_subjects=10,
                 description="Test"
             )
+            registered = True
 
             analysis = FunctionalNetworkMapping("test_repr_str_diff", "boes")
 
@@ -477,5 +588,6 @@ class TestReprConsistency:
             # repr should be more compact
             assert len(repr_str) < len(str_output)
         finally:
-            unregister_functional_connectome("test_repr_str_diff")
+            if registered:
+                unregister_functional_connectome("test_repr_str_diff")
             temp_h5.unlink(missing_ok=True)
