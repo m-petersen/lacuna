@@ -25,44 +25,115 @@ def test_structural_network_mapping_inherits_base_analysis():
 
 def test_structural_network_mapping_can_instantiate():
     """Test that StructuralNetworkMapping can be instantiated with required parameters."""
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    # Should accept tractogram path
-    analysis = StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
     )
-    assert analysis is not None
-    assert analysis.tractogram_space == "MNI152NLin2009cAsym"
-    assert analysis.output_resolution == 2  # default
+
+    # Create temporary files
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
+
+    try:
+        # Register test connectome
+        register_structural_connectome(
+            name="test_structural",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test structural connectome"
+        )
+
+        # Should accept connectome name
+        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+        assert analysis is not None
+        assert analysis.tractogram_space == "MNI152NLin2009cAsym"
+        assert analysis.output_resolution == 2  # default
+    finally:
+        unregister_structural_connectome("test_structural")
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_validates_mrtrix_available():
     """Test that StructuralNetworkMapping checks for MRtrix3 availability."""
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    # Should check if MRtrix3 commands are available during initialization
-    analysis = StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
     )
-    # Should have check_dependencies parameter or _check_dependencies attribute
-    assert hasattr(analysis, "_check_dependencies") or hasattr(analysis, "check_dependencies")
+
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
+
+    try:
+        register_structural_connectome(
+            name="test_structural",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test"
+        )
+
+        # Should check if MRtrix3 commands are available during initialization
+        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+        # Should have check_dependencies parameter or _check_dependencies attribute
+        assert hasattr(analysis, "_check_dependencies") or hasattr(analysis, "check_dependencies")
+    finally:
+        unregister_structural_connectome("test_structural")
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_has_run_method():
     """Test that StructuralNetworkMapping has the run() method from BaseAnalysis."""
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    analysis = StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
     )
-    assert hasattr(analysis, "run")
-    assert callable(analysis.run)
+
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
+
+    try:
+        register_structural_connectome(
+            name="test_structural",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test"
+        )
+
+        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+        assert hasattr(analysis, "run")
+        assert callable(analysis.run)
+    finally:
+        unregister_structural_connectome("test_structural")
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_validates_coordinate_space(synthetic_mask_img, tmp_path):
@@ -95,59 +166,131 @@ def test_structural_network_mapping_validates_binary_mask():
 
 def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
     """Test that run() returns a MaskData object with namespaced results."""
+    import tempfile
+    from pathlib import Path
+
     from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
+    )
 
     # Mark lesion as MNI152 space
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Note: This test will fail until implementation exists
-    # It defines the expected behavior
-    analysis = StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
-    )
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
 
-    # For now, expect this to fail during actual run
-    # The test documents the expected interface
-    with pytest.raises((FileNotFoundError, RuntimeError)):
-        analysis.run(mask_data)
+    try:
+        register_structural_connectome(
+            name="test_structural",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test"
+        )
+
+        # Note: This test will fail until implementation exists
+        # It defines the expected behavior
+        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+
+        # For now, expect this to fail during actual run
+        # The test documents the expected interface
+        with pytest.raises((FileNotFoundError, RuntimeError)):
+            analysis.run(mask_data)
+    finally:
+        unregister_structural_connectome("test_structural")
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_result_structure():
     """Test that results should contain expected keys and data types."""
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
     )
 
-    # Document expected result structure
-    expected_keys = {
-        "disconnection_map",  # NIfTI image showing voxel-level disconnection
-        "mean_disconnection",  # Summary statistic
-        "lesion_tck_count",  # Number of streamlines passing through lesion
-    }
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
 
-    # This documents the contract
-    assert expected_keys is not None
+    try:
+        register_structural_connectome(
+            name="test_structural",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test"
+        )
+
+        StructuralNetworkMapping(connectome_name="test_structural")
+
+        # Document expected result structure
+        expected_keys = {
+            "disconnection_map",  # NIfTI image showing voxel-level disconnection
+            "mean_disconnection",  # Summary statistic
+            "lesion_tck_count",  # Number of streamlines passing through lesion
+        }
+
+        # This documents the contract
+        assert expected_keys is not None
+    finally:
+        unregister_structural_connectome("test_structural")
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_accepts_n_jobs():
     """Test that StructuralNetworkMapping accepts n_jobs parameter for MRtrix."""
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    analysis = StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
-        n_jobs=8,
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
     )
+
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
+
+    try:
+        register_structural_connectome(
+            name="test_structural",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test"
+        )
+
+        analysis = StructuralNetworkMapping(
+            connectome_name="test_structural",
+            n_jobs=8,
+        )
+        assert analysis.n_jobs == 8
+    finally:
+        unregister_structural_connectome("test_structural")
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
     assert analysis.n_jobs == 8
 

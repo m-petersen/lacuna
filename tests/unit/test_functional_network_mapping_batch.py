@@ -93,7 +93,7 @@ def mock_lesion_mni152(tmp_path):
 def test_load_mask_info_returns_tuple(mock_connectome_batch):
     """Test that _load_mask_info() returns a tuple of (mask_indices, mask_affine, mask_shape)."""
     analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch), method="boes", verbose=False
+        connectome_path=str(mock_connectome_batch), method="boes", log_level=0
     )
 
     # Call _load_mask_info()
@@ -120,7 +120,7 @@ def test_load_mask_info_returns_tuple(mock_connectome_batch):
 def test_load_mask_info_sets_internal_state(mock_connectome_batch):
     """Test that _load_mask_info() also sets self._mask_info for backward compatibility."""
     analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch), method="boes", verbose=False
+        connectome_path=str(mock_connectome_batch), method="boes", log_level=0
     )
 
     # Should start as None
@@ -145,7 +145,7 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
 def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_mni152):
     """Test that _get_lesion_voxel_indices() accepts only MaskData argument."""
     analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch), method="boes", verbose=False
+        connectome_path=str(mock_connectome_batch), method="boes", log_level=0
     )
 
     # Load mask info first (required for _get_lesion_voxel_indices)
@@ -165,7 +165,7 @@ def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152)
     analysis = FunctionalNetworkMapping(
         connectome_path=str(mock_connectome_batch),
         method="boes",
-        verbose=False,
+        log_level=0,
         compute_t_map=False,  # Skip t-map for faster test
     )
 
@@ -187,7 +187,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
     analysis = FunctionalNetworkMapping(
         connectome_path=str(mock_connectome_batch),
         method="boes",
-        verbose=False,
+        log_level=0,
         compute_t_map=False,
     )
 
@@ -218,7 +218,7 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
     analysis = FunctionalNetworkMapping(
         connectome_path=str(mock_connectome_batch),
         method="boes",
-        verbose=False,
+        log_level=0,
         compute_t_map=False,
     )
 
@@ -249,7 +249,7 @@ def test_load_mask_info_error_handling(tmp_path):
         # Missing mask_indices, mask_affine, mask_shape
 
     analysis = FunctionalNetworkMapping(
-        connectome_path=str(bad_connectome), method="boes", verbose=False
+        connectome_path=str(bad_connectome), method="boes", log_level=0
     )
 
     # Should raise KeyError when trying to load mask info

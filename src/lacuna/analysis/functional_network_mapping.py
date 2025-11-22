@@ -1,4 +1,6 @@
 """Functional lesion network mapping (fLNM) analysis.
+from __future__ import annotations
+
 
 This module implements functional connectivity-based lesion network mapping
 using normative connectome data. It supports two timeseries extraction methods:
@@ -23,9 +25,13 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from lacuna.analysis.base import BaseAnalysis
+from lacuna.assets.connectomes import (
+    list_functional_connectomes,
+    load_functional_connectome,
+)
+from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.core.exceptions import ValidationError
 from lacuna.core.mask_data import MaskData
-from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
@@ -52,16 +58,17 @@ class FunctionalNetworkMapping(BaseAnalysis):
     which matches the GSP1000 connectome space. Lesions in other spaces
     are automatically transformed to this target space.
 
-    Memory-efficient batch processing: If connectome_path is a directory,
-    all HDF5 files in that directory will be processed sequentially to
-    minimize memory usage. This is useful for large connectomes split
-    into multiple batches.
+    Memory-efficient batch processing: Connectomes can be stored as single
+    HDF5 files or directories with multiple batched files. All batches are
+    processed sequentially to minimize memory usage.
 
     Parameters
     ----------
-    connectome_path : str | Path
-        Path to HDF5 connectome file OR directory containing multiple
-        HDF5 batches. Each HDF5 file must contain:
+    connectome_name : str
+        Name of registered functional connectome (e.g., "GSP1000").
+        Use list_functional_connectomes() to see available connectomes.
+        The connectome must be pre-registered via register_functional_connectome().
+        Each HDF5 file must contain:
         - 'timeseries': (n_subjects, n_timepoints, n_voxels) array
         - 'mask_indices': (3, n_voxels) or (n_voxels, 3) brain mask coordinates
         - 'mask_affine': (4, 4) affine transformation matrix
@@ -90,23 +97,33 @@ class FunctionalNetworkMapping(BaseAnalysis):
     --------
     >>> from lacuna import MaskData
     >>> from lacuna.analysis import FunctionalNetworkMapping
+    >>> from lacuna.assets.connectomes import (
+    ...     list_functional_connectomes,
+    ...     register_functional_connectome,
+    ... )
+    >>>
+    >>> # Register a connectome (do this once)
+    >>> register_functional_connectome(
+    ...     name="GSP1000",
+    ...     space="MNI152NLin6Asym",
+    ...     resolution=2.0,
+    ...     data_path="/data/gsp1000_connectome.h5",
+    ...     n_subjects=1000,
+    ...     description="GSP1000 voxel-wise connectome"
+    ... )
+    >>>
+    >>> # List available connectomes
+    >>> list_functional_connectomes()
+    >>>
+    >>> # Use registered connectome
     >>> lesion = MaskData.from_nifti("lesion_mni.nii.gz")
-    >>>
-    >>> # Single file
     >>> analysis = FunctionalNetworkMapping(
-    ...     connectome_path="gsp1000_connectome.h5",
+    ...     connectome_name="GSP1000",
     ...     method="boes"
     ... )
     >>> result = analysis.run(lesion)
-    >>>
-    >>> # Multiple batches (memory efficient)
-    >>> analysis = FunctionalNetworkMapping(
-    ...     connectome_path="connectome_batches/",
-    ...     method="boes"
-    ... )
-    >>> result = analysis.run(lesion)
-    >>> correlation_map = result.results["FunctionalNetworkMapping"]["correlation_map"]
-    >>> z_map = result.results["FunctionalNetworkMapping"]["z_map"]
+    >>> correlation_map = result.results["FunctionalNetworkMapping"]["CorrelationMap"]
+    >>> z_map = result.results["FunctionalNetworkMapping"]["ZMap"]
 
     Notes
     -----
@@ -129,13 +146,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
     def __init__(
         self,
-        connectome_path: str | Path,
-        output_space: str = "MNI152NLin2009cAsym",
-        output_resolution: float = 2.0,
+        connectome_name: str,
         method: str = "boes",
         pini_percentile: int = 20,
         n_jobs: int = 1,
-        verbose: bool = False,
+        log_level: int = 1,
         compute_t_map: bool = True,
         t_threshold: float | None = None,
     ):
@@ -143,20 +158,17 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        connectome_path : str | Path
-            Path to HDF5 connectome file or directory with batch files.
-        output_space : str, default="MNI152NLin2009cAsym"
-            Coordinate space identifier for output maps (must match connectome space).
-        output_resolution : float, default=2.0
-            Resolution in mm for output maps (must match connectome resolution).
+        connectome_name : str
+            Name of registered functional connectome (e.g., "GSP1000").
+            Use list_functional_connectomes() to see available options.
         method : {"boes", "pini"}, default="boes"
             Timeseries extraction method.
         pini_percentile : int, default=20
             Percentile threshold for PINI method (0-100).
         n_jobs : int, default=1
             Number of parallel jobs (not yet implemented).
-        verbose : bool, default=False
-            If True, display progress information during analysis.
+        log_level : int, default=1
+            Logging verbosity (0=silent, 1=standard, 2=verbose).
         compute_t_map : bool, default=True
             If True, compute t-statistic map and standard error.
         t_threshold : float, optional
@@ -166,30 +178,46 @@ class FunctionalNetworkMapping(BaseAnalysis):
         ------
         ValueError
             If method is not 'boes' or 'pini'.
+        KeyError
+            If connectome_name not found in registry.
         """
+        super().__init__(log_level=log_level)
+
         # Validate method parameter
         if method not in ("boes", "pini"):
             msg = f"method must be 'boes' or 'pini', got '{method}'"
             raise ValueError(msg)
 
-        self.connectome_path = Path(connectome_path)
-        self.output_space = output_space
-        self.output_resolution = output_resolution
+        # Load connectome from registry
+        try:
+            connectome = load_functional_connectome(connectome_name)
+        except KeyError as e:
+            available = [c.name for c in list_functional_connectomes()]
+            raise KeyError(
+                f"Connectome '{connectome_name}' not found in registry. "
+                f"Available connectomes: {', '.join(available)}. "
+                f"Use register_functional_connectome() to add new connectomes."
+            ) from e
+
+        # Store connectome information
+        self.connectome_name = connectome_name
+        self.connectome_path = connectome.data_path
+        self.output_space = connectome.metadata.space
+        self.output_resolution = connectome.metadata.resolution
+        self._is_batch_dir = connectome.is_batched
+
+        # Analysis parameters
         self.method = method
         self.pini_percentile = pini_percentile
         self.n_jobs = n_jobs
-        self.verbose = verbose
         self.compute_t_map = compute_t_map
         self.t_threshold = t_threshold
 
         # Initialize logger
-        self.logger = ConsoleLogger(verbose=verbose, width=70)
+        self.logger = ConsoleLogger(verbose=(log_level >= 2), width=70)
 
-        # Determine if path is a directory or single file
-        self._is_batch_dir = self.connectome_path.is_dir()
+        # Internal state
         self._batch_files = None
-
-        # Cache for mask information (shared across all batches)
         self._mask_info = None
 
     def _get_connectome_files(self) -> list[Path]:
@@ -280,9 +308,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary containing:
-            - 'correlation_map': VoxelMapResult for correlation (r values)
-            - 'z_map': VoxelMapResult for Fisher z-transformed
-            - 't_map': VoxelMapResult (if compute_t_map=True)
+            - 'CorrelationMap': VoxelMapResult for correlation (r values)
+            - 'ZMap': VoxelMapResult for Fisher z-transformed
+            - 'TMap': VoxelMapResult (if compute_t_map=True)
             - 't_threshold_map': VoxelMapResult (if t_threshold provided)
             - 'summary_statistics': MiscResult for summary statistics
 
@@ -470,7 +498,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Correlation map (r values)
         correlation_result = VoxelMap(
-            name="correlation_map",
+            name="CorrelationMap",
             data=correlation_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -481,11 +509,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "correlation_coefficient",
             },
         )
-        results["correlation_map"] = correlation_result
+        results["CorrelationMap"] = correlation_result
 
         # Z-map (Fisher z-transformed correlations)
         z_result = VoxelMap(
-            name="z_map",
+            name="ZMap",
             data=z_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -496,7 +524,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "fisher_z",
             },
         )
-        results["z_map"] = z_result
+        results["ZMap"] = z_result
 
         # Summary statistics
         summary_dict = {
@@ -511,7 +539,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Add t-map results if computed
         if t_map_nifti is not None:
             t_result = VoxelMap(
-                name="t_map",
+                name="TMap",
                 data=t_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -521,13 +549,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "t_statistic",
                 },
             )
-            results["t_map"] = t_result
+            results["TMap"] = t_result
             summary_dict["t_min"] = float(np.min(t_map_flat))
             summary_dict["t_max"] = float(np.max(t_map_flat))
 
         if t_threshold_map_nifti is not None:
             threshold_result = VoxelMap(
-                name="t_threshold_map",
+                name="TThresholdMap",
                 data=t_threshold_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -537,7 +565,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "thresholded_t",
                 },
             )
-            results["t_threshold_map"] = threshold_result
+            results["TThresholdMap"] = threshold_result
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
 
@@ -1220,12 +1248,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
         z_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = mean_z_map.astype(np.float32)
         z_map_nifti = nib.Nifti1Image(z_map_3d, mask_affine)
 
-        # Build results dictionary
+        # Build results dictionary with PascalCase keys (matching _run_analysis)
         results = {
-            "correlation_map": correlation_map_nifti,
-            "network_map": correlation_map_nifti,  # Alias for backward compat
-            "z_map": z_map_nifti,
-            "mean_correlation": float(np.mean(mean_r_map)),
+            "CorrelationMap": correlation_map_nifti,
+            "ZMap": z_map_nifti,
             "summary_statistics": {
                 "mean": float(np.mean(mean_r_map)),
                 "std": float(np.std(mean_r_map)),
@@ -1242,7 +1268,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
             t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
 
-            results["t_map"] = t_map_nifti
+            results["TMap"] = t_map_nifti
             results["summary_statistics"]["t_min"] = float(np.min(t_map_flat))
             results["summary_statistics"]["t_max"] = float(np.max(t_map_flat))
 
@@ -1254,24 +1280,24 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     t_threshold_mask.astype(np.uint8)
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["t_threshold_map"] = t_threshold_map_nifti
+                results["TThresholdMap"] = t_threshold_map_nifti
                 results["summary_statistics"]["t_threshold"] = self.t_threshold
                 results["summary_statistics"]["n_significant_voxels"] = int(
                     np.sum(t_threshold_mask)
                 )
 
         # Add results to lesion data (returns new instance with results)
-        # Note: Using individual keys to match _run_analysis() structure
+        # Note: Using PascalCase keys to match _run_analysis() structure
         batch_results = {
-            "correlation_map": results["correlation_map"],
-            "z_map": results["z_map"],
+            "CorrelationMap": results["CorrelationMap"],
+            "ZMap": results["ZMap"],
             "summary_statistics": results["summary_statistics"],
         }
         # Add optional results if present
-        if "t_map" in results:
-            batch_results["t_map"] = results["t_map"]
-        if "t_threshold_map" in results:
-            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        if "TMap" in results:
+            batch_results["TMap"] = results["TMap"]
+        if "TThresholdMap" in results:
+            batch_results["TThresholdMap"] = results["TThresholdMap"]
 
         mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
 
@@ -1413,5 +1439,5 @@ class FunctionalNetworkMapping(BaseAnalysis):
             "n_jobs": self.n_jobs,
             "compute_t_map": self.compute_t_map,
             "t_threshold": self.t_threshold,
-            "verbose": self.verbose,
+            "log_level": self.log_level,
         }

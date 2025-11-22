@@ -201,12 +201,12 @@ def test_atlas_aggregation_result_structure(synthetic_mask_img):
     )
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with descriptive keys "{short_name}_from_{source}"
+    # Results are returned as dict with BIDS-style keys "atlas-{name}_desc-{Source}" (PascalCase)
     atlas_results = result.results["ParcelAggregation"]
-    assert "Schaefer100_from_mask_img" in atlas_results
+    assert "atlas-Schaefer100_desc-MaskImg" in atlas_results
 
     # Get the ParcelData for this atlas using descriptive key
-    roi_result = atlas_results["Schaefer100_from_mask_img"]
+    roi_result = atlas_results["atlas-Schaefer100_desc-MaskImg"]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level values
@@ -232,14 +232,14 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img):
     )
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with descriptive keys per atlas
+    # Results are returned as dict with BIDS-style keys per atlas
     atlas_results = result.results["ParcelAggregation"]
-    assert "Schaefer100_from_mask_img" in atlas_results
-    assert "Schaefer200_from_mask_img" in atlas_results
+    assert "atlas-Schaefer100_desc-MaskImg" in atlas_results
+    assert "atlas-Schaefer200_desc-MaskImg" in atlas_results
 
     # Each atlas should have its own ParcelData with region data
-    roi_100 = atlas_results["Schaefer100_from_mask_img"].get_data()
-    roi_200 = atlas_results["Schaefer200_from_mask_img"].get_data()
+    roi_100 = atlas_results["atlas-Schaefer100_desc-MaskImg"].get_data()
+    roi_200 = atlas_results["atlas-Schaefer200_desc-MaskImg"].get_data()
     assert len(roi_100) > 0
     assert len(roi_200) > 0
 
@@ -394,11 +394,11 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     result = analysis.run(mask_data)
     atlas_results = result.results["ParcelAggregation"]
 
-    # Result key should include source context (not just "atlas_Schaefer...")
-    # Should be something like "Schaefer100_from_disconnection_map"
+    # Result key should include source context in BIDS format
+    # Should be "atlas-Schaefer100_desc-DisconnectionMap" (PascalCase per BIDS)
     result_keys = list(atlas_results.keys())
     assert len(result_keys) > 0
 
-    # At least one key should reference the source
-    has_source_context = any("disconnection_map" in key for key in result_keys)
+    # At least one key should reference the source (PascalCase format)
+    has_source_context = any("DisconnectionMap" in key or "disconnection" in key.lower() for key in result_keys)
     assert has_source_context, f"Expected source context in keys, got: {result_keys}"

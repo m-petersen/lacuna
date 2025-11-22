@@ -4,9 +4,9 @@ Contract tests for space handling requirements.
 T032-T035: Tests for explicit space/resolution requirements and error messages.
 """
 
-import pytest
 import nibabel as nib
 import numpy as np
+import pytest
 
 
 @pytest.mark.contract

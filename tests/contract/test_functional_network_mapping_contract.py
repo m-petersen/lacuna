@@ -25,62 +25,148 @@ def test_functional_network_mapping_inherits_base_analysis():
 
 def test_functional_network_mapping_can_instantiate():
     """Test that FunctionalNetworkMapping can be instantiated with required parameters."""
-    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    # Should accept connectome path
-    analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
-    assert analysis is not None
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_functional_connectome,
+        unregister_functional_connectome,
+    )
+
+    # Create temporary connectome file
+    with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
+        temp_h5 = Path(f.name)
+
+    try:
+        # Register test connectome
+        register_functional_connectome(
+            name="test_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=temp_h5,
+            n_subjects=10,
+            description="Test connectome"
+        )
+
+        # Should accept connectome name
+        analysis = FunctionalNetworkMapping(connectome_name="test_connectome")
+        assert analysis is not None
+    finally:
+        unregister_functional_connectome("test_connectome")
+        temp_h5.unlink(missing_ok=True)
 
 
 def test_functional_network_mapping_has_method_parameter():
     """Test that FunctionalNetworkMapping accepts method parameter (boes/pini)."""
+    import tempfile
+    from pathlib import Path
+
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-
-    # Test BOES method
-    analysis_boes = FunctionalNetworkMapping(
-        connectome_path="/path/to/connectome.h5", method="boes"
+    from lacuna.assets.connectomes import (
+        register_functional_connectome,
+        unregister_functional_connectome,
     )
-    assert analysis_boes.method == "boes"
 
-    # Test PINI method
-    analysis_pini = FunctionalNetworkMapping(
-        connectome_path="/path/to/connectome.h5", method="pini"
-    )
-    assert analysis_pini.method == "pini"
+    with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
+        temp_h5 = Path(f.name)
+
+    try:
+        register_functional_connectome(
+            name="test_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=temp_h5,
+            n_subjects=10,
+            description="Test"
+        )
+
+        # Test BOES method
+        analysis_boes = FunctionalNetworkMapping(
+            connectome_name="test_connectome", method="boes"
+        )
+        assert analysis_boes.method == "boes"
+
+        # Test PINI method
+        analysis_pini = FunctionalNetworkMapping(
+            connectome_name="test_connectome", method="pini"
+        )
+        assert analysis_pini.method == "pini"
+    finally:
+        unregister_functional_connectome("test_connectome")
+        temp_h5.unlink(missing_ok=True)
 
 
 def test_functional_network_mapping_validates_method():
     """Test that invalid method raises ValueError."""
-    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    with pytest.raises(ValueError, match="method must be 'boes' or 'pini'"):
-        FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5", method="invalid")
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_functional_connectome,
+        unregister_functional_connectome,
+    )
+
+    with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
+        temp_h5 = Path(f.name)
+
+    try:
+        register_functional_connectome(
+            name="test_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=temp_h5,
+            n_subjects=10,
+            description="Test"
+        )
+
+        with pytest.raises(ValueError, match="method must be 'boes' or 'pini'"):
+            FunctionalNetworkMapping(connectome_name="test_connectome", method="invalid")
+    finally:
+        unregister_functional_connectome("test_connectome")
+        temp_h5.unlink(missing_ok=True)
 
 
 def test_functional_network_mapping_has_run_method():
     """Test that FunctionalNetworkMapping has the run() method from BaseAnalysis."""
+    import tempfile
+    from pathlib import Path
+
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-
-    analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
-    assert hasattr(analysis, "run")
-    assert callable(analysis.run)
-
-
-def test_functional_network_mapping_validates_coordinate_space(synthetic_mask_img):
-    """Test that FunctionalNetworkMapping validates MNI152 coordinate space."""
-    from lacuna import MaskData
-    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-
-    # Create lesion data with non-MNI space
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    from lacuna.assets.connectomes import (
+        register_functional_connectome,
+        unregister_functional_connectome,
     )
 
-    analysis = FunctionalNetworkMapping(connectome_path="/path/to/connectome.h5")
+    with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
+        temp_h5 = Path(f.name)
 
-    # Should raise error for invalid connectome path
-    with pytest.raises(ValueError, match="Connectome path not found"):
-        analysis.run(mask_data)
+    try:
+        register_functional_connectome(
+            name="test_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=temp_h5,
+            n_subjects=10,
+            description="Test"
+        )
+
+        analysis = FunctionalNetworkMapping(connectome_name="test_connectome")
+        assert hasattr(analysis, "run")
+        assert callable(analysis.run)
+    finally:
+        unregister_functional_connectome("test_connectome")
+        temp_h5.unlink(missing_ok=True)
+
+
+def test_functional_network_mapping_validates_connectome_exists():
+    """Test that FunctionalNetworkMapping validates connectome exists in registry."""
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+
+    # Should raise error for non-existent connectome
+    with pytest.raises(KeyError, match="not found in registry"):
+        FunctionalNetworkMapping(connectome_name="nonexistent_connectome")
 
 
 def test_functional_network_mapping_requires_binary_mask(synthetic_mask_img):

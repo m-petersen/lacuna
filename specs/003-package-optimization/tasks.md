@@ -394,7 +394,105 @@ This provides:
 - **Increment 1**: Add US3 (data validation) - Tasks T045-T052
 - **Increment 2**: Add US4 (analysis flexibility) - Tasks T053-T068
 - **Increment 3**: Add US5 (code quality) - Tasks T069-T081
+- **Increment 4**: Add US7 (BIDS-style naming) - Tasks T136-T150
 - **Final**: Polish - Tasks T082-T091
+
+---
+
+## Phase 9: User Story 7 - BIDS-Style Naming & Enhanced Flexibility (Priority: P2)
+
+**Goal**: Adopt BIDS-like naming conventions for result keys and enhance analysis flexibility
+
+**Rationale**: 
+- BIDS-style naming (e.g., `atlas-Schaefer2018_desc-maskImg`) provides clearer context
+- camelCase for result values (e.g., `CorrelationMap` vs `correlation_map`) improves readability
+- Direct VoxelMap input enables more flexible workflows
+- Multi-source support allows aggregating multiple maps at once
+- Package version in provenance ensures reproducibility
+
+### Design Decisions
+
+1. **Result Key Naming**: 
+   - Old: `"Schaefer100_from_mask_img"`
+   - New: `"atlas-Schaefer2018_desc-maskImg"` (BIDS key-value style)
+   - Pattern: `{entity}-{label}_desc-{description}` where applicable
+
+2. **Result Value Naming**:
+   - Old: `"correlation_map"`, `"z_map"`, `"disconnection_map"`
+   - New: `"CorrelationMap"`, `"ZMap"`, `"DisconnectionMap"` (camelCase)
+   - Rationale: Consistency with class names (VoxelMap, ParcelData)
+
+3. **Provenance Version**:
+   - Old: Hardcoded `"0.1.0"` per analysis
+   - New: Use `lacuna.__version__` for package version
+   - Ensures reproducibility tied to actual package release
+
+4. **Connectome Registration**:
+   - Old: `tdi_path` required
+   - New: `tdi_path` optional (computed during analysis if needed)
+   - Rationale: TDI computation happens on-demand during StructuralNetworkMapping
+
+5. **ParcelAggregation Inputs**:
+   - Old: Only MaskData with results
+   - New: VoxelMap objects directly, list of source strings
+   - Enables `run(voxel_map)` and `source=["Analysis.map1", "Analysis.map2"]`
+
+6. **Warning Suppression**:
+   - Silence nilearn NiftiLabelsMasker warnings at log_level < 2
+   - Use internal logging to inform users about resampling
+
+### Tests for User Story 7
+
+- [x] T136 [P] [US7] Write contract test for BIDS-style result keys in `tests/contract/test_result_naming.py`
+- [x] T137 [P] [US7] Write contract test for PascalCase result values in `tests/contract/test_result_naming.py`
+- [ ] T138 [P] [US7] Write contract test for VoxelMap direct input to ParcelAggregation in `tests/contract/test_parcel_aggregation_contract.py`
+- [ ] T139 [P] [US7] Write contract test for multi-source ParcelAggregation in `tests/contract/test_parcel_aggregation_contract.py`
+- [ ] T140 [P] [US7] Write unit test for package version in provenance in `tests/unit/test_provenance.py`
+- [x] T141 [P] [US7] Write contract test for optional tdi_path in connectome registry in `tests/contract/test_connectome_registry.py` (covered by manual testing in notebook)
+- [ ] T142 [P] [US7] Write integration test for nilearn warning suppression in `tests/integration/test_logging.py`
+
+### Implementation for User Story 7
+
+**Connectome Registry**:
+- [x] T143 [US7] Make `tdi_path` optional in `register_structural_connectome()` in `src/lacuna/assets/connectomes/structural.py`
+- [x] T144 [US7] Update `StructuralConnectomeMetadata` to handle None tdi_path in `src/lacuna/assets/connectomes/structural.py`
+
+**Result Key Naming (BIDS-style with PascalCase)**:
+- [x] T145 [US7] Update ParcelAggregation to generate BIDS-style keys with PascalCase (e.g., `atlas-{name}_desc-{PascalCaseSource}`) in `src/lacuna/analysis/parcel_aggregation.py`
+- [x] T146 [US7] Update RegionalDamage to use BIDS-style atlas keys in `src/lacuna/analysis/regional_damage.py` (inherits from ParcelAggregation)
+  - Implementation: Converts `mask_img` → `MaskImg`, `disconnection_map` → `DisconnectionMap`
+  - Tests: All contract, unit, and integration tests updated to expect PascalCase format
+  - Validation: 23 tests passing (BIDS structure + PascalCase compliance)
+
+**Result Value Naming (PascalCase)**:
+- [x] T147 [US7] Update all analyses to use PascalCase for result values in `src/lacuna/analysis/`
+  - FunctionalNetworkMapping: `correlation_map` → `CorrelationMap`, `z_map` → `ZMap`, `t_map` → `TMap`, `t_threshold_map` → `TThresholdMap`
+  - StructuralNetworkMapping: `disconnection_map` → `DisconnectionMap`, `lesion_tractogram` → `LesionTractogram`, `lesion_tdi` → `LesionTdi`
+  - Implementation: Changed result dictionary keys in both analysis classes
+  - Tests: Updated 7 test files to use PascalCase keys
+  - Validation: 163 tests passing with new naming convention
+
+**Provenance Version**:
+- [ ] T148 [US7] Update `_get_version()` in all analysis classes to use `lacuna.__version__` in `src/lacuna/analysis/`
+
+**Enhanced ParcelAggregation**:
+- [ ] T149 [US7] Add VoxelMap direct input support to ParcelAggregation.run() in `src/lacuna/analysis/parcel_aggregation.py`
+- [ ] T150 [US7] Add multi-source support (list of source strings) to ParcelAggregation in `src/lacuna/analysis/parcel_aggregation.py`
+
+**Warning Suppression**:
+- [ ] T151 [US7] Add nilearn warning filtering at log_level < 2 in `src/lacuna/analysis/parcel_aggregation.py`
+- [ ] T152 [US7] Add internal logging for atlas resampling in `src/lacuna/analysis/parcel_aggregation.py`
+
+**Notebook Updates**:
+- [ ] T153 [US7] Update notebook cell 6 to use optional tdi_path in `notebooks/api_demo_v0.5.ipynb`
+- [ ] T154 [US7] Update notebook cells to use new PascalCase result names in `notebooks/api_demo_v0.5.ipynb`
+- [ ] T155 [US7] Add example of VoxelMap direct input to ParcelAggregation in `notebooks/api_demo_v0.5.ipynb`
+- [ ] T156 [US7] Add example of multi-source ParcelAggregation in `notebooks/api_demo_v0.5.ipynb`
+- [ ] T157 [US7] Add batch processing examples for ParcelAggregation in `notebooks/api_demo_v0.5.ipynb`
+- [ ] T158 [US7] Add batch processing examples for FunctionalNetworkMapping in `notebooks/api_demo_v0.5.ipynb`
+- [ ] T159 [US7] Add batch processing examples for StructuralNetworkMapping in `notebooks/api_demo_v0.5.ipynb`
+
+**Checkpoint**: BIDS-style naming adopted, enhanced flexibility, improved logging
 
 ---
 
@@ -430,7 +528,7 @@ For each user story:
 
 ## Task Summary
 
-- **Total Tasks**: 91
+- **Total Tasks**: 115 (was 91)
 - **Setup Tasks**: 3
 - **Foundational Tasks**: 13
 - **User Story 1 (P1)**: 15 tasks (7 tests + 8 implementation)
@@ -438,8 +536,11 @@ For each user story:
 - **User Story 3 (P2)**: 8 tasks (4 tests + 4 implementation)
 - **User Story 4 (P2)**: 16 tasks (6 tests + 10 implementation)
 - **User Story 5 (P3)**: 13 tasks (3 tests + 10 implementation)
+- **User Story 6 (P2)**: 34 tasks (unified containers architecture)
+- **User Story 7 (P2)**: 24 tasks (7 tests + 17 implementation) - NEW
 - **Polish Tasks**: 10
 
-**Parallelizable Tasks**: 45 tasks marked with [P]
+**Parallelizable Tasks**: 52 tasks marked with [P]
 **MVP Tasks (US1+US2)**: 44 tasks
-**Test Tasks**: 30 tasks across all stories (TDD approach)
+**Test Tasks**: 37 tasks across all stories (TDD approach)
+

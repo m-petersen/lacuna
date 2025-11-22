@@ -12,6 +12,10 @@ import pytest
 
 from lacuna import MaskData
 from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.assets.connectomes import (
+    register_functional_connectome,
+    unregister_functional_connectome,
+)
 from lacuna.batch import batch_process
 
 
@@ -79,139 +83,194 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
     """Test that streaming aggregation produces identical results to accumulation."""
     connectome_dir = mock_connectome_batched["connectome_dir"]
 
-    # Create analysis
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(connectome_dir),
-        method="boes",
-        verbose=False,
-        compute_t_map=True,
-        t_threshold=2.0,
+    # Register the connectome
+    register_functional_connectome(
+        name="test_streaming_connectome",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=connectome_dir,
+        n_subjects=100,
+        description="Test batched connectome"
     )
 
-    # Process lesions
-    results = batch_process(
-        mock_lesions[:3],  # Just test first 3 for speed
-        analysis,
-        strategy="vectorized",
-        show_progress=False,
-    )
+    try:
+        # Create analysis
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_streaming_connectome",
+            method="boes",
+            log_level=0,
+            compute_t_map=True,
+            t_threshold=2.0,
+        )
 
-    # Validate results structure
-    assert len(results) == 3
+        # Process lesions
+        results = batch_process(
+            mock_lesions[:3],  # Just test first 3 for speed
+            analysis,
+            strategy="vectorized",
+            show_progress=False,
+        )
 
-    for result in results:
-        flnm = result.results["FunctionalNetworkMapping"]
+        # Validate results structure
+        assert len(results) == 3
 
-        # Check all expected outputs exist
-        assert "correlation_map" in flnm
-        assert "z_map" in flnm
-        assert "t_map" in flnm
-        assert "summary_statistics" in flnm
+        for result in results:
+            flnm = result.results["FunctionalNetworkMapping"]
 
-        # Check shapes - in nested dict, these are VoxelMap objects
-        # VoxelMap.data holds the NIfTI image which has .shape
-        assert flnm["correlation_map"].shape == (91, 109, 91)
-        assert flnm["t_map"].shape == (91, 109, 91)
+            # Check all expected outputs exist
+            assert "CorrelationMap" in flnm
+            assert "ZMap" in flnm
+            assert "TMap" in flnm
+            assert "summary_statistics" in flnm
 
-        # Check aggregated across all subjects
-        # In batch results, summary_statistics is already the dict data
-        summary_data = flnm["summary_statistics"]
-        assert summary_data["n_subjects"] == 100
-        assert summary_data["n_batches"] == 5
+            # Check shapes - in nested dict, these are VoxelMap objects
+            # VoxelMap.data holds the NIfTI image which has .shape
+            assert flnm["CorrelationMap"].shape == (91, 109, 91)
+            assert flnm["TMap"].shape == (91, 109, 91)
 
-        # Check values in reasonable range
-        assert -1 <= summary_data["mean"] <= 1
+            # Check aggregated across all subjects
+            # In batch results, summary_statistics is already the dict data
+            summary_data = flnm["summary_statistics"]
+            assert summary_data["n_subjects"] == 100
+            assert summary_data["n_batches"] == 5
+
+            # Check values in reasonable range
+            assert -1 <= summary_data["mean"] <= 1
+    finally:
+        unregister_functional_connectome("test_streaming_connectome")
 
 
 def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock_lesions):
     """Test streaming aggregation with lesion batching."""
     connectome_dir = mock_connectome_batched["connectome_dir"]
 
-    saved_batches = []
-
-    def save_callback(batch_results):
-        saved_batches.append([r.metadata["subject_id"] for r in batch_results])
-
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(connectome_dir), method="boes", verbose=False, compute_t_map=True
+    register_functional_connectome(
+        name="test_lesion_batch_connectome",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=connectome_dir,
+        n_subjects=100,
+        description="Test batched connectome"
     )
 
-    # Process with lesion batches of 3
-    results = batch_process(
-        mock_lesions,
-        analysis,
-        strategy="vectorized",
-        lesion_batch_size=3,
-        batch_result_callback=save_callback,
-        show_progress=False,
-    )
+    try:
+        saved_batches = []
 
-    # Verify all lesions processed
-    assert len(results) == 10
+        def save_callback(batch_results):
+            saved_batches.append([r.metadata["subject_id"] for r in batch_results])
 
-    # Verify batches were saved incrementally
-    assert len(saved_batches) == 4  # 10 lesions / 3 per batch = 4 batches
-    assert saved_batches[0] == ["test_000", "test_001", "test_002"]
-    assert saved_batches[1] == ["test_003", "test_004", "test_005"]
-    assert saved_batches[2] == ["test_006", "test_007", "test_008"]
-    assert saved_batches[3] == ["test_009"]  # Last batch partial
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_lesion_batch_connectome",
+            method="boes",
+            log_level=0,
+            compute_t_map=True
+        )
 
-    # Verify all results have correct subject count
-    for result in results:
-        assert result.results["FunctionalNetworkMapping"]["summary_statistics"]["n_subjects"] == 100
+        # Process with lesion batches of 3
+        results = batch_process(
+            mock_lesions,
+            analysis,
+            strategy="vectorized",
+            lesion_batch_size=3,
+            batch_result_callback=save_callback,
+            show_progress=False,
+        )
+
+        # Verify all lesions processed
+        assert len(results) == 10
+
+        # Verify batches were saved incrementally
+        assert len(saved_batches) == 4  # 10 lesions / 3 per batch = 4 batches
+        assert saved_batches[0] == ["test_000", "test_001", "test_002"]
+        assert saved_batches[1] == ["test_003", "test_004", "test_005"]
+        assert saved_batches[2] == ["test_006", "test_007", "test_008"]
+        assert saved_batches[3] == ["test_009"]  # Last batch partial
+
+        # Verify all results have correct subject count
+        for result in results:
+            assert result.results["FunctionalNetworkMapping"]["summary_statistics"]["n_subjects"] == 100
+    finally:
+        unregister_functional_connectome("test_lesion_batch_connectome")
 
 
 def test_float32_optimization(mock_connectome_batched, mock_lesions):
     """Test that float32 is used throughout for memory efficiency."""
     connectome_dir = mock_connectome_batched["connectome_dir"]
 
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(connectome_dir), method="boes", verbose=False, compute_t_map=False
+    register_functional_connectome(
+        name="test_float32_connectome",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=connectome_dir,
+        n_subjects=100,
+        description="Test batched connectome"
     )
 
-    results = batch_process(mock_lesions[:2], analysis, strategy="vectorized", show_progress=False)
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_float32_connectome",
+            method="boes",
+            log_level=0,
+            compute_t_map=False
+        )
 
-    # Check that output arrays use float32 internally
-    for result in results:
-        flnm = result.results["FunctionalNetworkMapping"]
+        results = batch_process(mock_lesions[:2], analysis, strategy="vectorized", show_progress=False)
 
-        # Check data type of nibabel images (get_fdata() converts to float64)
-        # So we check the internal data type instead
-        assert flnm["correlation_map"].get_data_dtype() == np.float32
-        assert flnm["z_map"].get_data_dtype() == np.float32
+        # Check that output arrays use float32 internally
+        for result in results:
+            flnm = result.results["FunctionalNetworkMapping"]
+
+            # Check data type of nibabel images (get_fdata() converts to float64)
+            # So we check the internal data type instead
+            assert flnm["CorrelationMap"].get_data_dtype() == np.float32
+            assert flnm["ZMap"].get_data_dtype() == np.float32
+    finally:
+        unregister_functional_connectome("test_float32_connectome")
 
 
 def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
     """Test t-statistic computation with streaming aggregation."""
     connectome_dir = mock_connectome_batched["connectome_dir"]
 
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(connectome_dir),
-        method="boes",
-        verbose=False,
-        compute_t_map=True,
-        t_threshold=2.5,
+    register_functional_connectome(
+        name="test_tstat_connectome",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=connectome_dir,
+        n_subjects=100,
+        description="Test batched connectome"
     )
 
-    results = batch_process(mock_lesions[:2], analysis, strategy="vectorized", show_progress=False)
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_tstat_connectome",
+            method="boes",
+            log_level=0,
+            compute_t_map=True,
+            t_threshold=2.5,
+        )
 
-    for result in results:
-        flnm = result.results["FunctionalNetworkMapping"]
+        results = batch_process(mock_lesions[:2], analysis, strategy="vectorized", show_progress=False)
 
-        # T-map should exist
-        assert "t_map" in flnm
-        assert flnm["t_map"].shape == (91, 109, 91)
+        for result in results:
+            flnm = result.results["FunctionalNetworkMapping"]
 
-        # Threshold map should exist
-        assert "t_threshold_map" in flnm
+            # T-map should exist
+            assert "TMap" in flnm
+            assert flnm["TMap"].shape == (91, 109, 91)
 
-        # Statistics should include t-map info
-        stats = flnm["summary_statistics"]
-        assert "t_min" in stats
-        assert "t_max" in stats
-        assert "t_threshold" in stats
-        assert stats["t_threshold"] == 2.5
-        assert "n_significant_voxels" in stats
+            # Threshold map should exist
+            assert "TThresholdMap" in flnm
+
+            # Statistics should include t-map info
+            stats = flnm["summary_statistics"]
+            assert "t_min" in stats
+            assert "t_max" in stats
+            assert "t_threshold" in stats
+            assert stats["t_threshold"] == 2.5
+            assert "n_significant_voxels" in stats
+    finally:
+        unregister_functional_connectome("test_tstat_connectome")
 
 
 def test_memory_efficiency_improvement():

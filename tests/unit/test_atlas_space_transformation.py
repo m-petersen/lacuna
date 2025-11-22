@@ -1,5 +1,4 @@
-"""
-Test atlas space transformation in StructuralNetworkMapping.
+"""Test atlas space transformation in StructuralNetworkMapping.
 
 Ensures that atlases in different spaces are automatically transformed
 to match the tractogram space.
@@ -13,6 +12,10 @@ import nibabel as nib
 import numpy as np
 
 from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+from lacuna.assets.connectomes import (
+    register_structural_connectome,
+    unregister_structural_connectome,
+)
 from lacuna.core.mask_data import MaskData
 
 
@@ -24,7 +27,25 @@ def test_atlas_transformed_when_space_mismatch():
         tractogram_path = Path(tmp.name)
         tmp.write(b"dummy tractogram")
 
+    # Create dummy TDI
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
+        tdi_path = Path(tmp.name)
+        tdi_data = np.zeros((91, 109, 91), dtype=np.float32)
+        tdi_img = nib.Nifti1Image(tdi_data, np.eye(4))
+        nib.save(tdi_img, tdi_path)
+
     try:
+        # Register the structural connectome
+        register_structural_connectome(
+            name="test_struct_connectome",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=tractogram_path,
+            tdi_path=tdi_path,
+            n_streamlines=1000,
+            description="Test structural connectome"
+        )
+
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data_array[4:6, 4:6, 4:6] = 1.0
@@ -83,9 +104,7 @@ def test_atlas_transformed_when_space_mismatch():
 
                             # Initialize analysis with atlas
                             analysis = StructuralNetworkMapping(
-                                tractogram_path=tractogram_path,
-                                tractogram_space="MNI152NLin2009cAsym",  # Different from atlas space
-                                output_resolution=2,
+                                connectome_name="test_struct_connectome",
                                 atlas_name="Schaefer2018_100Parcels7Networks",
                                 cache_tdi=False,
                                 check_dependencies=False,
@@ -116,7 +135,9 @@ def test_atlas_transformed_when_space_mismatch():
                             assert "atlas_" in str(analysis._atlas_resolved)
 
     finally:
+        unregister_structural_connectome("test_struct_connectome")
         tractogram_path.unlink()
+        tdi_path.unlink()
 
 
 def test_atlas_not_transformed_when_space_matches():
@@ -127,7 +148,25 @@ def test_atlas_not_transformed_when_space_matches():
         tractogram_path = Path(tmp.name)
         tmp.write(b"dummy tractogram")
 
+    # Create dummy TDI
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
+        tdi_path = Path(tmp.name)
+        tdi_data = np.zeros((91, 109, 91), dtype=np.float32)
+        tdi_img = nib.Nifti1Image(tdi_data, np.eye(4))
+        nib.save(tdi_img, tdi_path)
+
     try:
+        # Register structural connectome
+        register_structural_connectome(
+            name="test_struct_no_transform",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            tractogram_path=tractogram_path,
+            tdi_path=tdi_path,
+            n_streamlines=1000,
+            description="Test structural connectome"
+        )
+
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data_array[4:6, 4:6, 4:6] = 1.0
@@ -184,9 +223,7 @@ def test_atlas_not_transformed_when_space_matches():
 
                             # Initialize analysis with atlas - same space as atlas
                             analysis = StructuralNetworkMapping(
-                                tractogram_path=tractogram_path,
-                                tractogram_space="MNI152NLin6Asym",  # Same as atlas space
-                                output_resolution=2,
+                                connectome_name="test_struct_no_transform",
                                 atlas_name="Schaefer2018_100Parcels7Networks",
                                 cache_tdi=False,
                                 check_dependencies=False,
@@ -204,7 +241,9 @@ def test_atlas_not_transformed_when_space_matches():
                             assert analysis._atlas_resolved == atlas_file
 
     finally:
+        unregister_structural_connectome("test_struct_no_transform")
         tractogram_path.unlink()
+        tdi_path.unlink()
 
 
 def test_atlas_transformation_uses_correct_resolution():
@@ -215,7 +254,25 @@ def test_atlas_transformation_uses_correct_resolution():
         tractogram_path = Path(tmp.name)
         tmp.write(b"dummy tractogram")
 
+    # Create dummy TDI
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
+        tdi_path = Path(tmp.name)
+        tdi_data = np.zeros((91, 109, 91), dtype=np.float32)
+        tdi_img = nib.Nifti1Image(tdi_data, np.eye(4))
+        nib.save(tdi_img, tdi_path)
+
     try:
+        # Register structural connectome
+        register_structural_connectome(
+            name="test_struct_resolution",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=tractogram_path,
+            tdi_path=tdi_path,
+            n_streamlines=1000,
+            description="Test structural connectome"
+        )
+
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data_array[4:6, 4:6, 4:6] = 1.0
@@ -273,9 +330,7 @@ def test_atlas_transformation_uses_correct_resolution():
                             # Initialize with specific output resolution
                             output_res = 2
                             analysis = StructuralNetworkMapping(
-                                tractogram_path=tractogram_path,
-                                tractogram_space="MNI152NLin2009cAsym",
-                                output_resolution=output_res,
+                                connectome_name="test_struct_resolution",
                                 atlas_name="Schaefer2018_100Parcels7Networks",
                                 cache_tdi=False,
                                 check_dependencies=False,
@@ -292,4 +347,6 @@ def test_atlas_transformation_uses_correct_resolution():
                             ), f"Should use output_resolution ({output_res}mm) for atlas transformation"
 
     finally:
+        unregister_structural_connectome("test_struct_resolution")
         tractogram_path.unlink()
+        tdi_path.unlink()
