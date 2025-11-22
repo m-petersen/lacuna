@@ -14,6 +14,10 @@ import pytest
 
 from lacuna import MaskData
 from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.assets.connectomes import (
+    register_functional_connectome,
+    unregister_functional_connectome,
+)
 
 
 @pytest.fixture
@@ -92,152 +96,225 @@ def mock_lesion_mni152(tmp_path):
 
 def test_load_mask_info_returns_tuple(mock_connectome_batch):
     """Test that _load_mask_info() returns a tuple of (mask_indices, mask_affine, mask_shape)."""
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch), method="boes", log_level=0
+    # Register connectome
+    register_functional_connectome(
+        name="test_batch_connectome",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=mock_connectome_batch,
+        n_subjects=5,
+        description="Test batch connectome"
     )
+    
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_batch_connectome", method="boes", log_level=0
+        )
 
-    # Call _load_mask_info()
-    result = analysis._load_mask_info()
+        # Call _load_mask_info()
+        result = analysis._load_mask_info()
 
-    # Should return a tuple
-    assert isinstance(result, tuple), "Expected tuple return value"
-    assert len(result) == 3, "Expected 3 elements in tuple"
+        # Should return a tuple
+        assert isinstance(result, tuple), "Expected tuple return value"
+        assert len(result) == 3, "Expected 3 elements in tuple"
 
-    mask_indices, mask_affine, mask_shape = result
+        mask_indices, mask_affine, mask_shape = result
 
-    # Verify types
-    assert isinstance(mask_indices, tuple), "mask_indices should be tuple"
-    assert len(mask_indices) == 3, "mask_indices should have 3 coordinate arrays"
-    assert isinstance(mask_affine, np.ndarray), "mask_affine should be ndarray"
-    assert isinstance(mask_shape, tuple), "mask_shape should be tuple"
+        # Verify types
+        assert isinstance(mask_indices, tuple), "mask_indices should be tuple"
+        assert len(mask_indices) == 3, "mask_indices should have 3 coordinate arrays"
+        assert isinstance(mask_affine, np.ndarray), "mask_affine should be ndarray"
+        assert isinstance(mask_shape, tuple), "mask_shape should be tuple"
 
-    # Verify values
-    assert mask_affine.shape == (4, 4), "mask_affine should be 4x4"
-    assert len(mask_shape) == 3, "mask_shape should be 3D"
-    assert mask_shape == (91, 109, 91), "Expected MNI152 2mm shape"
+        # Verify values
+        assert mask_affine.shape == (4, 4), "mask_affine should be 4x4"
+        assert len(mask_shape) == 3, "mask_shape should be 3D"
+        assert mask_shape == (91, 109, 91), "Expected MNI152 2mm shape"
+    finally:
+        unregister_functional_connectome("test_batch_connectome")
 
 
 def test_load_mask_info_sets_internal_state(mock_connectome_batch):
     """Test that _load_mask_info() also sets self._mask_info for backward compatibility."""
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch), method="boes", log_level=0
+    register_functional_connectome(
+        name="test_batch_state",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=mock_connectome_batch,
+        n_subjects=5,
+        description="Test"
     )
+    
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_batch_state", method="boes", log_level=0
+        )
 
-    # Should start as None
-    assert analysis._mask_info is None
+        # Should start as None
+        assert analysis._mask_info is None
 
-    # Call _load_mask_info()
-    result = analysis._load_mask_info()
+        # Call _load_mask_info()
+        result = analysis._load_mask_info()
 
-    # Should now be set
-    assert analysis._mask_info is not None
-    assert isinstance(analysis._mask_info, dict)
-    assert "mask_indices" in analysis._mask_info
-    assert "mask_affine" in analysis._mask_info
-    assert "mask_shape" in analysis._mask_info
+        # Should now be set
+        assert analysis._mask_info is not None
+        assert isinstance(analysis._mask_info, dict)
+        assert "mask_indices" in analysis._mask_info
+        assert "mask_affine" in analysis._mask_info
+        assert "mask_shape" in analysis._mask_info
 
-    # Return value should match internal state
-    mask_indices, mask_affine, mask_shape = result
-    np.testing.assert_array_equal(mask_affine, analysis._mask_info["mask_affine"])
-    assert mask_shape == analysis._mask_info["mask_shape"]
+        # Return value should match internal state
+        mask_indices, mask_affine, mask_shape = result
+        np.testing.assert_array_equal(mask_affine, analysis._mask_info["mask_affine"])
+        assert mask_shape == analysis._mask_info["mask_shape"]
+    finally:
+        unregister_functional_connectome("test_batch_state")
 
 
 def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_mni152):
     """Test that _get_lesion_voxel_indices() accepts only MaskData argument."""
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch), method="boes", log_level=0
+    register_functional_connectome(
+        name="test_batch_sig",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=mock_connectome_batch,
+        n_subjects=5,
+        description="Test"
     )
+    
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_batch_sig", method="boes", log_level=0
+        )
 
-    # Load mask info first (required for _get_lesion_voxel_indices)
-    analysis._load_mask_info()
+        # Load mask info first (required for _get_lesion_voxel_indices)
+        analysis._load_mask_info()
 
-    # Should accept MaskData object
-    voxel_indices = analysis._get_lesion_voxel_indices(mock_lesion_mni152)
+        # Should accept MaskData object
+        voxel_indices = analysis._get_lesion_voxel_indices(mock_lesion_mni152)
 
-    # Should return array of indices
-    assert isinstance(voxel_indices, np.ndarray)
-    assert voxel_indices.ndim == 1
-    assert len(voxel_indices) >= 0  # May be zero if no overlap
+        # Should return array of indices
+        assert isinstance(voxel_indices, np.ndarray)
+        assert voxel_indices.ndim == 1
+        assert len(voxel_indices) >= 0  # May be zero if no overlap
+    finally:
+        unregister_functional_connectome("test_batch_sig")
 
 
 def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152):
     """Test run_batch() method with a single lesion."""
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch),
-        method="boes",
-        log_level=0,
-        compute_t_map=False,  # Skip t-map for faster test
+    register_functional_connectome(
+        name="test_batch_single",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=mock_connectome_batch,
+        n_subjects=5,
+        description="Test"
     )
+    
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_batch_single",
+            method="boes",
+            log_level=0,
+            compute_t_map=False,  # Skip t-map for faster test
+        )
 
-    # Call run_batch with single lesion
-    results = analysis.run_batch([mock_lesion_mni152])
+        # Call run_batch with single lesion
+        results = analysis.run_batch([mock_lesion_mni152])
 
-    # Should return list with one result
-    assert isinstance(results, list)
-    assert len(results) == 1
+        # Should return list with one result
+        assert isinstance(results, list)
+        assert len(results) == 1
 
-    # Result should be MaskData with analysis results
-    result = results[0]
-    assert isinstance(result, MaskData)
-    assert "FunctionalNetworkMapping" in result.results
+        # Result should be MaskData with analysis results
+        result = results[0]
+        assert isinstance(result, MaskData)
+        assert "FunctionalNetworkMapping" in result.results
+    finally:
+        unregister_functional_connectome("test_batch_single")
 
 
 def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni152):
     """Test run_batch() method with multiple lesions."""
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch),
-        method="boes",
-        log_level=0,
-        compute_t_map=False,
+    register_functional_connectome(
+        name="test_batch_multi",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=mock_connectome_batch,
+        n_subjects=5,
+        description="Test"
     )
-
-    # Create multiple lesions (same lesion with different IDs)
-    lesions = []
-    for i in range(3):
-        lesion_copy = MaskData(
-            mask_img=mock_lesion_mni152.mask_img,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"subject_{i}"},
+    
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_batch_multi",
+            method="boes",
+            log_level=0,
+            compute_t_map=False,
         )
-        lesions.append(lesion_copy)
 
-    # Call run_batch
-    results = analysis.run_batch(lesions)
+        # Create multiple lesions (same lesion with different IDs)
+        lesions = []
+        for i in range(3):
+            lesion_copy = MaskData(
+                mask_img=mock_lesion_mni152.mask_img,
+                metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"subject_{i}"},
+            )
+            lesions.append(lesion_copy)
 
-    # Should return list with 3 results
-    assert isinstance(results, list)
-    assert len(results) == 3
+        # Call run_batch
+        results = analysis.run_batch(lesions)
 
-    # All results should have analysis output
-    for result in results:
-        assert isinstance(result, MaskData)
-        assert "FunctionalNetworkMapping" in result.results
+        # Should return list with 3 results
+        assert isinstance(results, list)
+        assert len(results) == 3
+
+        # All results should have analysis output
+        for result in results:
+            assert isinstance(result, MaskData)
+            assert "FunctionalNetworkMapping" in result.results
+    finally:
+        unregister_functional_connectome("test_batch_multi")
 
 
 def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152):
     """Test that run_batch() preserves lesion metadata."""
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(mock_connectome_batch),
-        method="boes",
-        log_level=0,
-        compute_t_map=False,
+    register_functional_connectome(
+        name="test_batch_meta",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=mock_connectome_batch,
+        n_subjects=5,
+        description="Test"
     )
+    
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_batch_meta",
+            method="boes",
+            log_level=0,
+            compute_t_map=False,
+        )
 
-    # Add custom metadata
-    test_metadata = {
-        "space": "MNI152NLin6Asym",
-        "resolution": 2,
-        "subject_id": "test_123",
-        "custom_field": "test_value",
-    }
-    lesion = MaskData(mask_img=mock_lesion_mni152.mask_img, metadata=test_metadata)
+        # Add custom metadata
+        test_metadata = {
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+            "subject_id": "test_123",
+            "custom_field": "test_value",
+        }
+        lesion = MaskData(mask_img=mock_lesion_mni152.mask_img, metadata=test_metadata)
 
-    # Process
-    results = analysis.run_batch([lesion])
+        # Process
+        results = analysis.run_batch([lesion])
 
-    # Check metadata preserved
-    result = results[0]
-    assert result.metadata["subject_id"] == "test_123"
-    assert result.metadata["custom_field"] == "test_value"
+        # Check metadata preserved
+        result = results[0]
+        assert result.metadata["subject_id"] == "test_123"
+        assert result.metadata["custom_field"] == "test_value"
+    finally:
+        unregister_functional_connectome("test_batch_meta")
 
 
 def test_load_mask_info_error_handling(tmp_path):
@@ -248,13 +325,16 @@ def test_load_mask_info_error_handling(tmp_path):
         f.create_dataset("timeseries", data=np.random.randn(5, 100, 1000))
         # Missing mask_indices, mask_affine, mask_shape
 
-    analysis = FunctionalNetworkMapping(
-        connectome_path=str(bad_connectome), method="boes", log_level=0
-    )
-
-    # Should raise KeyError when trying to load mask info
-    with pytest.raises(KeyError):
-        analysis._load_mask_info()
+    # Should raise ValueError when trying to register invalid connectome
+    with pytest.raises(ValueError, match="Invalid HDF5 file structure"):
+        register_functional_connectome(
+            name="test_bad_h5",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=bad_connectome,
+            n_subjects=5,
+            description="Test"
+        )
 
 
 if __name__ == "__main__":

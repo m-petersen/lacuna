@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+from lacuna.assets.connectomes import register_structural_connectome, unregister_structural_connectome
 from lacuna.core.mask_data import MaskData
 
 
@@ -28,57 +29,75 @@ def test_template_resolved_before_tdi_computation(tmp_path):
     tractogram_path = tmp_path / "tractogram.tck"
     tractogram_path.write_text("dummy tractogram")
 
-    # Create dummy lesion
-    mask_data = np.zeros((10, 10, 10), dtype=np.float32)
-    mask_data[4:6, 4:6, 4:6] = 1.0
-    mask_img = nib.Nifti1Image(mask_data, np.eye(4))
-    lesion = MaskData(
-        mask_img=mask_img,
-        metadata={
-            "subject_id": "test",
-            "space": "MNI152NLin2009cAsym",
-            "resolution": 2,
-        },
-    )
+    # Create dummy TDI file
+    tdi_path = tmp_path / "tdi.nii.gz"
+    tdi_data = np.zeros((91, 109, 91), dtype=np.float32)
+    tdi_img = nib.Nifti1Image(tdi_data, np.eye(4))
+    nib.save(tdi_img, tdi_path)
 
-    # Mock dependencies
-    with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
-        with patch(
-            "lacuna.analysis.structural_network_mapping.load_template"
-        ) as mock_load_template:
-            # Mock template loading
-            template_path = tmp_path / "template.nii.gz"
-            template_data = np.zeros((91, 109, 91), dtype=np.float32)
-            template_img = nib.Nifti1Image(template_data, np.eye(4))
-            nib.save(template_img, template_path)
-            mock_load_template.return_value = template_path
+    registered = False
+    try:
+        # Register connectome
+        register_structural_connectome(
+            name="test_template_fix",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=tractogram_path,
+            tdi_path=tdi_path,
+            n_subjects=100
+        )
+        registered = True
 
+        registered = True
+
+        # Create dummy lesion
+        mask_data = np.zeros((10, 10, 10), dtype=np.float32)
+        mask_data[4:6, 4:6, 4:6] = 1.0
+        mask_img = nib.Nifti1Image(mask_data, np.eye(4))
+        lesion = MaskData(
+            mask_img=mask_img,
+            metadata={
+                "subject_id": "test",
+                "space": "MNI152NLin2009cAsym",
+                "resolution": 2,
+            },
+        )
+
+        # Mock dependencies
+        with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
             with patch(
-                "lacuna.analysis.structural_network_mapping.compute_tdi_map"
-            ) as mock_compute_tdi:
-                # Mock TDI computation - this is where the bug would have occurred
-                tdi_path = tmp_path / "tdi.nii.gz"
-                tdi_img = nib.Nifti1Image(template_data, np.eye(4))
-                nib.save(tdi_img, tdi_path)
+                "lacuna.analysis.structural_network_mapping.load_template"
+            ) as mock_load_template:
+                # Mock template loading
+                template_path = tmp_path / "template.nii.gz"
+                template_data = np.zeros((91, 109, 91), dtype=np.float32)
+                template_img = nib.Nifti1Image(template_data, np.eye(4))
+                nib.save(template_img, template_path)
+                mock_load_template.return_value = template_path
 
-                def save_tdi(*args, **kwargs):
-                    output_path = kwargs.get("output_path")
-                    nib.save(tdi_img, output_path)
+                with patch(
+                    "lacuna.analysis.structural_network_mapping.compute_tdi_map"
+                ) as mock_compute_tdi:
+                    # Mock TDI computation - this is where the bug would have occurred
+                    tdi_path = tmp_path / "tdi.nii.gz"
+                    tdi_img = nib.Nifti1Image(template_data, np.eye(4))
+                    nib.save(tdi_img, tdi_path)
 
-                mock_compute_tdi.side_effect = save_tdi
+                    def save_tdi(*args, **kwargs):
+                        output_path = kwargs.get("output_path")
+                        nib.save(tdi_img, output_path)
 
-                # Initialize analysis WITHOUT template parameter
-                analysis = StructuralNetworkMapping(
-                    tractogram_path=tractogram_path,
-                    tractogram_space="MNI152NLin2009cAsym",
-                    output_resolution=2,
-                    cache_tdi=False,  # Don't use cache for this test
-                    check_dependencies=False,
-                )
+                    mock_compute_tdi.side_effect = save_tdi
 
-                # Call _validate_inputs directly to test the fix
-                # This is where template resolution happens before TDI computation
-                try:
+                    # Initialize analysis using registered connectome
+                    analysis = StructuralNetworkMapping(
+                        connectome_name="test_template_fix",
+                        cache_tdi=False,  # Don't use cache for this test
+                        check_dependencies=False,
+                    )
+
+                    # Call _validate_inputs directly to test the fix
+                    # This is where template resolution happens before TDI computation
                     analysis._validate_inputs(lesion)
 
                     # Verify template was loaded BEFORE compute_tdi_map was called
@@ -103,28 +122,44 @@ def test_template_resolved_before_tdi_computation(tmp_path):
                         analysis.template == template_path
                     ), "analysis.template should match loaded template"
 
-                except TypeError as e:
-                    if "template must be" in str(e):
-                        pytest.fail(f"Template resolution bug not fixed: {e}")
-                    else:
-                        raise
+    except TypeError as e:
+        if "template must be" in str(e):
+            pytest.fail(f"Template resolution bug not fixed: {e}")
+        else:
+            raise
+    finally:
+        if registered:
+            unregister_structural_connectome("test_template_fix")
 
 
 def test_cache_directory_uses_unified_location():
     """Test that TDI cache uses the unified cache directory system."""
     from lacuna.utils.cache import get_tdi_cache_dir
 
-    # Create dummy tractogram
+    # Create dummy tractogram and TDI files
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as tmp:
         tractogram_path = Path(tmp.name)
         tmp.write(b"dummy")
+    
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
+        tdi_path = Path(tmp.name)
+        tmp.write(b"dummy")
 
+    registered = False
     try:
+        register_structural_connectome(
+            name="test_cache_location",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=tractogram_path,
+            tdi_path=tdi_path,
+            n_subjects=100
+        )
+        registered = True
+
         with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
             analysis = StructuralNetworkMapping(
-                tractogram_path=tractogram_path,
-                tractogram_space="MNI152NLin2009cAsym",
-                output_resolution=2,
+                connectome_name="test_cache_location",
                 cache_tdi=True,
                 check_dependencies=False,
             )
@@ -137,7 +172,10 @@ def test_cache_directory_uses_unified_location():
                 cache_path.parent == expected_cache_dir
             ), f"Cache should use unified directory {expected_cache_dir}, got {cache_path.parent}"
     finally:
-        tractogram_path.unlink()
+        if registered:
+            unregister_structural_connectome("test_cache_location")
+        tractogram_path.unlink(missing_ok=True)
+        tdi_path.unlink(missing_ok=True)
 
 
 def test_cache_directory_respects_env_variable():

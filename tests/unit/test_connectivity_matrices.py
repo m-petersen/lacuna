@@ -36,7 +36,7 @@ class TestConnectivityMatrixComputation:
             resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
-            n_streamlines=1000,
+            n_subjects=1000,
             description="Test mock connectome"
         )
 
@@ -316,18 +316,48 @@ class TestMatrixDimensions:
     @pytest.fixture
     def mock_analysis_parametrized(self):
         """Create mock analysis that can use different atlases."""
+        from lacuna.assets.connectomes import register_structural_connectome, unregister_structural_connectome
+        import tempfile
+        from pathlib import Path
+        import nibabel as nib
+        import numpy as np
 
         def _create_analysis(n_parcels):
-            with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
-                analysis = StructuralNetworkMapping(
-                    tractogram_path="/fake/path/tractogram.tck",
-                    tractogram_space="MNI152NLin2009cAsym",
-                    output_resolution=2,
-                    atlas_name="Schaefer2018_100Parcels7Networks",
-                    n_jobs=1,
+            # Create dummy tractogram and TDI files
+            with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+                tractogram_path = Path(f.name)
+                f.write(b"dummy")
+            
+            with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+                tdi_path = Path(f.name)
+                tdi_img = nib.Nifti1Image(np.zeros((91, 109, 91), dtype=np.float32), np.eye(4))
+                nib.save(tdi_img, tdi_path)
+            
+            try:
+                register_structural_connectome(
+                    name="test_matrix_dims",
+                    space="MNI152NLin2009cAsym",
+                    resolution=2.0,
+                    tractogram_path=tractogram_path,
+                    tdi_path=tdi_path,
+                    n_subjects=100
                 )
-                analysis._atlas_resolved = Path("/fake/atlas.nii.gz")
-                return analysis
+                
+                with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
+                    analysis = StructuralNetworkMapping(
+                        connectome_name="test_matrix_dims",
+                        atlas_name="Schaefer2018_100Parcels7Networks",
+                        n_jobs=1,
+                    )
+                    analysis._atlas_resolved = Path("/fake/atlas.nii.gz")
+                    return analysis
+            finally:
+                try:
+                    unregister_structural_connectome("test_matrix_dims")
+                except KeyError:
+                    pass
+                tractogram_path.unlink(missing_ok=True)
+                tdi_path.unlink(missing_ok=True)
 
         return _create_analysis
 

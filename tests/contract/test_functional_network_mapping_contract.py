@@ -28,6 +28,9 @@ def test_functional_network_mapping_can_instantiate():
     import tempfile
     from pathlib import Path
 
+    import h5py
+    import numpy as np
+
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
     from lacuna.assets.connectomes import (
         register_functional_connectome,
@@ -38,6 +41,16 @@ def test_functional_network_mapping_can_instantiate():
     with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
         temp_h5 = Path(f.name)
 
+    # Create valid H5 file
+    with h5py.File(temp_h5, "w") as hf:
+        hf.create_dataset(
+            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
+        )
+        hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+        hf.create_dataset("mask_affine", data=np.eye(4))
+        hf.attrs["mask_shape"] = (91, 109, 91)
+
+    registered = False
     try:
         # Register test connectome
         register_functional_connectome(
@@ -48,12 +61,14 @@ def test_functional_network_mapping_can_instantiate():
             n_subjects=10,
             description="Test connectome"
         )
+        registered = True
 
         # Should accept connectome name
         analysis = FunctionalNetworkMapping(connectome_name="test_connectome")
         assert analysis is not None
     finally:
-        unregister_functional_connectome("test_connectome")
+        if registered:
+            unregister_functional_connectome("test_connectome")
         temp_h5.unlink(missing_ok=True)
 
 
@@ -61,6 +76,9 @@ def test_functional_network_mapping_has_method_parameter():
     """Test that FunctionalNetworkMapping accepts method parameter (boes/pini)."""
     import tempfile
     from pathlib import Path
+
+    import h5py
+    import numpy as np
 
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
     from lacuna.assets.connectomes import (
@@ -71,6 +89,16 @@ def test_functional_network_mapping_has_method_parameter():
     with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
         temp_h5 = Path(f.name)
 
+    # Create valid H5 file
+    with h5py.File(temp_h5, "w") as hf:
+        hf.create_dataset(
+            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
+        )
+        hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+        hf.create_dataset("mask_affine", data=np.eye(4))
+        hf.attrs["mask_shape"] = (91, 109, 91)
+
+    registered = False
     try:
         register_functional_connectome(
             name="test_connectome",
@@ -80,6 +108,7 @@ def test_functional_network_mapping_has_method_parameter():
             n_subjects=10,
             description="Test"
         )
+        registered = True
 
         # Test BOES method
         analysis_boes = FunctionalNetworkMapping(
@@ -93,7 +122,8 @@ def test_functional_network_mapping_has_method_parameter():
         )
         assert analysis_pini.method == "pini"
     finally:
-        unregister_functional_connectome("test_connectome")
+        if registered:
+            unregister_functional_connectome("test_connectome")
         temp_h5.unlink(missing_ok=True)
 
 
@@ -102,6 +132,9 @@ def test_functional_network_mapping_validates_method():
     import tempfile
     from pathlib import Path
 
+    import h5py
+    import numpy as np
+
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
     from lacuna.assets.connectomes import (
         register_functional_connectome,
@@ -111,6 +144,16 @@ def test_functional_network_mapping_validates_method():
     with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
         temp_h5 = Path(f.name)
 
+    # Create valid H5 file
+    with h5py.File(temp_h5, "w") as hf:
+        hf.create_dataset(
+            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
+        )
+        hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+        hf.create_dataset("mask_affine", data=np.eye(4))
+        hf.attrs["mask_shape"] = (91, 109, 91)
+
+    registered = False
     try:
         register_functional_connectome(
             name="test_connectome",
@@ -120,11 +163,13 @@ def test_functional_network_mapping_validates_method():
             n_subjects=10,
             description="Test"
         )
+        registered = True
 
         with pytest.raises(ValueError, match="method must be 'boes' or 'pini'"):
             FunctionalNetworkMapping(connectome_name="test_connectome", method="invalid")
     finally:
-        unregister_functional_connectome("test_connectome")
+        if registered:
+            unregister_functional_connectome("test_connectome")
         temp_h5.unlink(missing_ok=True)
 
 
@@ -133,6 +178,9 @@ def test_functional_network_mapping_has_run_method():
     import tempfile
     from pathlib import Path
 
+    import h5py
+    import numpy as np
+
     from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
     from lacuna.assets.connectomes import (
         register_functional_connectome,
@@ -142,6 +190,16 @@ def test_functional_network_mapping_has_run_method():
     with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
         temp_h5 = Path(f.name)
 
+    # Create valid H5 file
+    with h5py.File(temp_h5, "w") as hf:
+        hf.create_dataset(
+            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
+        )
+        hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+        hf.create_dataset("mask_affine", data=np.eye(4))
+        hf.attrs["mask_shape"] = (91, 109, 91)
+
+    registered = False
     try:
         register_functional_connectome(
             name="test_connectome",
@@ -151,12 +209,14 @@ def test_functional_network_mapping_has_run_method():
             n_subjects=10,
             description="Test"
         )
+        registered = True
 
         analysis = FunctionalNetworkMapping(connectome_name="test_connectome")
         assert hasattr(analysis, "run")
         assert callable(analysis.run)
     finally:
-        unregister_functional_connectome("test_connectome")
+        if registered:
+            unregister_functional_connectome("test_connectome")
         temp_h5.unlink(missing_ok=True)
 
 
@@ -197,13 +257,51 @@ def test_functional_network_mapping_result_structure(synthetic_mask_img, tmp_pat
 
 def test_functional_network_mapping_accepts_pini_percentile():
     """Test that PINI method accepts percentile parameter."""
-    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+    import tempfile
+    from pathlib import Path
 
-    analysis = FunctionalNetworkMapping(
-        connectome_path="/path/to/connectome.h5", method="pini", pini_percentile=20
+    import h5py
+    import numpy as np
+
+    from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_functional_connectome,
+        unregister_functional_connectome,
     )
 
-    assert analysis.pini_percentile == 20
+    with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
+        temp_h5 = Path(f.name)
+
+    # Create valid H5 file
+    with h5py.File(temp_h5, "w") as hf:
+        hf.create_dataset(
+            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
+        )
+        hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
+        hf.create_dataset("mask_affine", data=np.eye(4))
+        hf.attrs["mask_shape"] = (91, 109, 91)
+
+    registered = False
+    try:
+        register_functional_connectome(
+            name="test_pini",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=temp_h5,
+            n_subjects=10,
+            description="Test"
+        )
+        registered = True
+
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_pini", method="pini", pini_percentile=20
+        )
+
+        assert analysis.pini_percentile == 20
+    finally:
+        if registered:
+            unregister_functional_connectome("test_pini")
+        temp_h5.unlink(missing_ok=True)
 
 
 def test_functional_network_mapping_preserves_input_immutability(synthetic_mask_img, tmp_path):

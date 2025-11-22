@@ -268,8 +268,8 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         # Since compute_t_map=True, these should also be present
         assert "TMap" in flnm_results, "TMap should be present when compute_t_map=True"
         assert (
-            "t_threshold_map" in flnm_results
-        ), "t_threshold_map should be present when t_threshold is set"
+            "TThresholdMap" in flnm_results
+        ), "TThresholdMap should be present when t_threshold is set"
     finally:
         unregister_functional_connectome("test_bug_aggregate")
 
