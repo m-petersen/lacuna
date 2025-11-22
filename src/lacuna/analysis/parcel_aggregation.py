@@ -686,11 +686,10 @@ class ParcelAggregation(BaseAnalysis):
                 },
             )
 
-            # Generate descriptive key with source context (T055, T059)
-            # Format: "{short_atlas_name}_from_{source_key}"
+            # Format: "atlas-{name}_desc-{source}"
             # Examples:
-            #   - mask_img: "Schaefer100_from_mask_img"
-            #   - Analysis.key: "Schaefer100_from_disconnection_map"
+            #   - mask_img: "atlas-Schaefer2018_desc-maskImg"
+            #   - Analysis.key: "atlas-Schaefer100_desc-disconnectionMap"
 
             # Shorten atlas name if it's very long
             short_atlas_name = atlas_name
@@ -720,8 +719,15 @@ class ParcelAggregation(BaseAnalysis):
                 # Direct source: "mask_img" -> "mask_img"
                 source_key = self.source
 
-            # Build descriptive result key
-            result_key = f"{short_atlas_name}_from_{source_key}"
+            # Convert source_key to PascalCase for BIDS compliance
+            # Examples: "mask_img" -> "MaskImg", "disconnection_map" -> "DisconnectionMap"
+            source_pascal = "".join(
+                word.capitalize()
+                for word in source_key.split("_")
+            )
+
+            # Build BIDS-style result key
+            result_key = f"atlas-{short_atlas_name}_desc-{source_pascal}"
 
             atlas_results_dict[result_key] = roi_result
 
@@ -1018,6 +1024,11 @@ class ParcelAggregation(BaseAnalysis):
                     # If it's a NIfTI image, return it
                     if isinstance(result, nib.Nifti1Image):
                         return result
+
+                    # If it's a VoxelMap, return the underlying image
+                    from lacuna.core.data_types import VoxelMap
+                    if isinstance(result, VoxelMap):
+                        return result.data
 
                     # If it's a path, load it
                     if isinstance(result, (str, Path)):

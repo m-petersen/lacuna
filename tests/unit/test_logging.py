@@ -26,8 +26,8 @@ class TestConsoleLogger:
         assert logger.indent == "    "
 
     def test_logger_verbose_false(self):
-        """Test that verbose=False suppresses output."""
-        logger = ConsoleLogger(verbose=False)
+        """Test that log_level=0 suppresses output."""
+        logger = ConsoleLogger(log_level=0)
 
         output = io.StringIO()
         with redirect_stdout(output):

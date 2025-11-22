@@ -48,12 +48,15 @@ def register_structural_connectome(
     space: str,
     resolution: float,
     tractogram_path: str | Path,
-    tdi_path: str | Path,
     n_subjects: int,
+    tdi_path: str | Path | None = None,
     template_path: str | Path | None = None,
     description: str = "",
 ) -> None:
     """Register a structural connectome for sLNM analysis.
+
+    TDI computation is now done on-demand during analysis, so tdi_path is optional.
+    If not provided, TDI will be computed automatically when needed.
 
     Parameters
     ----------
@@ -62,13 +65,14 @@ def register_structural_connectome(
     space : str
         Coordinate space (e.g., "MNI152NLin2009bAsym")
     resolution : float
-        Resolution in mm (typically 1.0)
+        Resolution in mm (typically 1.0 or 2.0)
     tractogram_path : str or Path
         Path to .tck whole-brain streamlines file
-    tdi_path : str or Path
-        Path to whole-brain TDI NIfTI file
     n_subjects : int
         Sample size
+    tdi_path : str or Path, optional
+        Path to whole-brain TDI NIfTI file.
+        If None, TDI will be computed during analysis (cached for reuse).
     template_path : str or Path, optional
         Path to template image for output grid
     description : str, optional
@@ -77,7 +81,7 @@ def register_structural_connectome(
     Raises
     ------
     FileNotFoundError
-        If tractogram or TDI files don't exist
+        If tractogram file doesn't exist (or TDI if provided)
     ValueError
         If file validation fails
 
@@ -85,33 +89,48 @@ def register_structural_connectome(
     --------
     >>> from lacuna.assets.connectomes import register_structural_connectome
     >>>
+    >>> # With TDI path (pre-computed)
     >>> register_structural_connectome(
-    ...     name="HCP842_dTOR",
+    ...     name="dTOR985",
     ...     space="MNI152NLin2009cAsym",
     ...     resolution=1.0,
-    ...     tractogram_path="/data/dtor/hcp842_tractogram.tck",
-    ...     tdi_path="/data/dtor/hcp842_tdi_1mm.nii.gz",
-    ...     n_subjects=842,
-    ...     description="HCP dTOR tractogram (842 subjects, 1mm)"
+    ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
+    ...     tdi_path="/data/dtor/dTOR985_tdi_1mm.nii.gz",
+    ...     n_subjects=985,
+    ...     description="dTOR 985 tractogram (985 subjects, 1mm)"
+    ... )
+    >>>
+    >>> # Without TDI path (compute on-demand)
+    >>> register_structural_connectome(
+    ...     name="dTOR985",
+    ...     space="MNI152NLin2009cAsym",
+    ...     resolution=2.0,
+    ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
+    ...     n_subjects=985,
+    ...     description="dTOR tractogram (TDI computed on-demand)"
     ... )
     """
     # Convert to paths
     tractogram_path = Path(tractogram_path).resolve()
-    tdi_path = Path(tdi_path).resolve()
+    tdi_path = Path(tdi_path).resolve() if tdi_path else None
     template_path = Path(template_path).resolve() if template_path else None
 
-    # Validate files exist
+    # Validate tractogram exists
     if not tractogram_path.exists():
         raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
-    if not tdi_path.exists():
+
+    # Validate TDI exists if provided
+    if tdi_path and not tdi_path.exists():
         raise FileNotFoundError(f"TDI file not found: {tdi_path}")
+
+    # Validate template exists if provided
     if template_path and not template_path.exists():
         raise FileNotFoundError(f"Template file not found: {template_path}")
 
     # Validate file extensions
     if tractogram_path.suffix != ".tck":
         raise ValueError(f"Expected .tck file, got: {tractogram_path.suffix}")
-    if tdi_path.suffix not in [".nii", ".gz"]:
+    if tdi_path and tdi_path.suffix not in [".nii", ".gz"]:
         raise ValueError(f"Expected .nii/.nii.gz file, got: {tdi_path.suffix}")
 
     # Create metadata
@@ -146,7 +165,7 @@ def unregister_structural_connectome(name: str) -> None:
     Examples
     --------
     >>> from lacuna.assets.connectomes import unregister_structural_connectome
-    >>> unregister_structural_connectome("HCP842_dTOR")
+    >>> unregister_structural_connectome("dTOR985")
     """
     _structural_connectome_registry.unregister(name)
 
@@ -207,7 +226,7 @@ def load_structural_connectome(name: str) -> StructuralConnectome:
     >>> from lacuna.assets.connectomes import load_structural_connectome
     >>> from lacuna.analysis import StructuralNetworkMapping
     >>>
-    >>> connectome = load_structural_connectome("HCP842_dTOR")
+    >>> connectome = load_structural_connectome("dTOR985")
     >>> analysis = StructuralNetworkMapping(
     ...     tractogram_path=connectome.tractogram_path,
     ...     whole_brain_tdi=connectome.tdi_path,

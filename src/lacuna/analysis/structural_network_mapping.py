@@ -18,13 +18,17 @@ import numpy as np
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets import load_template
 from lacuna.assets.atlases import list_atlases, load_atlas
-from lacuna.core.mask_data import MaskData
+from lacuna.assets.connectomes import (
+    list_structural_connectomes,
+    load_structural_connectome,
+)
 from lacuna.core.data_types import (
     ConnectivityMatrix,
     ScalarMetric,
     Tractogram,
     VoxelMap,
 )
+from lacuna.core.mask_data import MaskData
 from lacuna.utils.cache import get_tdi_cache_dir
 from lacuna.utils.logging import ConsoleLogger
 from lacuna.utils.mrtrix import (
@@ -72,23 +76,29 @@ class StructuralNetworkMapping(BaseAnalysis):
 
     Parameters
     ----------
-    tractogram_path : str or Path
-        Path to whole-brain tractogram file (.tck format from MRtrix3)
-    whole_brain_tdi : str or Path
-        Path to pre-computed whole-brain TDI map (reference connectivity)
-    template : str or Path, optional
-        Path to template image defining output grid. If not provided, automatically
-        loads bundled MNI152 template matching the lesion resolution (1mm or 2mm).
+    connectome_name : str
+        Name of registered structural connectome (e.g., "HCP842_dTOR").
+        Use list_structural_connectomes() to see available connectomes.
+        The connectome must be pre-registered via register_structural_connectome().
+    atlas_name : str, optional
+        Name of registered atlas for parcellated connectivity matrices.
+        Use list_atlases() to see available atlases.
+    compute_lesioned : bool, default=False
+        If True and atlas_name provided, compute lesioned connectivity matrix.
+    output_resolution : {1, 2}, default=2
+        Output resolution in mm (must match connectome resolution).
+    cache_tdi : bool, default=True
+        If True, cache computed TDI maps for reuse.
     n_jobs : int, default=1
-        Number of threads for MRtrix3 processing
+        Number of threads for MRtrix3 processing.
     keep_intermediate : bool, default=False
-        If True, keeps intermediate tractogram files (.tck) for debugging/inspection
+        If True, keeps intermediate tractogram files.
     load_to_memory : bool, default=True
-        If True, loads disconnection maps into memory (convenient for visualization).
-        If False, uses memory-mapped files (memory-efficient for batch processing).
-        For large batch jobs, set to False to minimize RAM usage.
+        If True, loads results into memory. Set False for batch processing.
     check_dependencies : bool, default=True
-        If True, checks for MRtrix3 availability during initialization
+        If True, checks for MRtrix3 availability.
+    log_level : int, default=1
+        Logging verbosity (0=silent, 1=standard, 2=verbose).
 
     Raises
     ------
@@ -99,27 +109,40 @@ class StructuralNetworkMapping(BaseAnalysis):
 
     Examples
     --------
-    **Interactive analysis (default - results loaded into memory):**
+    **Register and use structural connectome:**
 
     >>> from lacuna import MaskData
     >>> from lacuna.analysis import StructuralNetworkMapping
+    >>> from lacuna.assets.connectomes import (
+    ...     list_structural_connectomes,
+    ...     register_structural_connectome,
+    ... )
+    >>>
+    >>> # Register connectome (do this once)
+    >>> register_structural_connectome(
+    ...     name="dTOR985",
+    ...     space="MNI152NLin2009cAsym",
+    ...     resolution=1.0,
+    ...     tractogram_path="/data/dtor/dtor985_tractogram.tck",
+    ...     tdi_path="/data/dtor/dtor985_tdi_1mm.nii.gz",
+    ...     n_subjects=985,
+    ...     description="HCP dTOR tractogram"
+    ... )
+    >>>
+    >>> # List available connectomes
+    >>> list_structural_connectomes()
     >>>
     >>> # Load lesion data
     >>> lesion = MaskData.from_nifti("lesion.nii.gz")
     >>>
-    >>> # Create analysis (template auto-detected from lesion resolution)
+    >>> # Interactive analysis (results loaded into memory)
     >>> analysis = StructuralNetworkMapping(
-    ...     tractogram_path="/data/dTOR_full_tractogram.tck",
-    ...     whole_brain_tdi="/data/dTOR_tdi_2mm.nii.gz",
+    ...     connectome_name="dTOR985",
     ...     n_jobs=8,
-    ...     load_to_memory=True  # default - convenient for visualization
+    ...     load_to_memory=True
     ... )
-    >>>
-    >>> # Run analysis
     >>> result = analysis.run(lesion)
-    >>>
-    >>> # Visualize immediately (data in memory)
-    >>> disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
+    >>> disconn_map = result.results["StructuralNetworkMapping"]["DisconnectionMap"]
     >>> disconn_map.orthoview()
 
     **Memory-efficient batch processing:**
@@ -128,16 +151,14 @@ class StructuralNetworkMapping(BaseAnalysis):
     >>>
     >>> # For large batch jobs, use memory-mapped files
     >>> analysis = StructuralNetworkMapping(
-    ...     tractogram_path="/data/dTOR_full_tractogram.tck",
-    ...     whole_brain_tdi="/data/dTOR_tdi_2mm.nii.gz",
+    ...     connectome_name="dTOR985",
     ...     n_jobs=8,
-    ...     keep_intermediate=True,  # required to keep temp files
-    ...     load_to_memory=False     # memory-efficient mode
+    ...     keep_intermediate=True,
+    ...     load_to_memory=False
     ... )
-    >>>
     >>> results = batch_process(lesions, analysis, n_jobs=2)
     >>>
-    >>> # Save results immediately (temp files will be cleaned up eventually)
+    >>> # Save results immediately
     >>> for result in results:
     ...     disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
     ...     nib.save(disconn_map, f"output/{subject_id}_disconn.nii.gz")
@@ -164,9 +185,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
     def __init__(
         self,
-        tractogram_path: str | Path,
-        tractogram_space: str = "MNI152NLin2009cAsym",
-        template: str | Path | None = None,
+        connectome_name: str,
         atlas_name: str | None = None,
         compute_lesioned: bool = False,
         output_resolution: Literal[1, 2] = 2,
@@ -175,57 +194,42 @@ class StructuralNetworkMapping(BaseAnalysis):
         keep_intermediate: bool = False,
         load_to_memory: bool = True,
         check_dependencies: bool = True,
-        verbose: bool = False,
         log_level: int = 1,
     ):
         """Initialize StructuralNetworkMapping analysis.
 
         Parameters
         ----------
-        tractogram_path : str | Path
-            Path to whole-brain tractogram (.tck file)
-        tractogram_space : str, default="MNI152NLin2009cAsym"
-            Coordinate space of the tractogram. This determines how lesions
-            in different spaces are transformed before analysis.
-            Supported: "MNI152NLin6Asym", "MNI152NLin2009cAsym"
-        template : str | Path | None, optional
-            Template image for output grid. Auto-detected if None.
-        atlas_name : str | None, optional
-            Name of atlas from registry for computing connectivity matrices.
-            Options:
-            - None: Skip matrix computation (default, voxel-wise map only)
-            - Atlas name from registry (e.g., "Schaefer2018_100Parcels7Networks")
-            Use list_atlases() to see available atlases.
-            When provided, computes lesion connectivity matrix and
-            disconnectivity percentage per edge.
+        connectome_name : str
+            Name of registered structural connectome (e.g., "HCP842_dTOR").
+            Use list_structural_connectomes() to see available options.
+        atlas_name : str, optional
+            Name of registered atlas for parcellated connectivity matrices.
         compute_lesioned : bool, default=False
-            If True and atlas_name provided, also compute the "lesioned"
-            connectivity matrix (streamlines NOT passing through lesion),
-            representing intact structural connectivity.
+            If True and atlas_name provided, compute lesioned connectivity.
         output_resolution : {1, 2}, default=2
-            Output resolution in millimeters. Determines the template resolution
-            and TDI computation grid.
-            - 1: High resolution (182×218×182 voxels)
-            - 2: Standard resolution (91×109×91 voxels, faster)
+            Output resolution in mm (must match connectome resolution).
         cache_tdi : bool, default=True
-            Cache computed whole-brain TDI for reuse in batch processing.
-            When True, TDI is computed once and reused across subjects.
-            When False, TDI is recomputed for each subject.
+            If True, cache computed TDI maps.
         n_jobs : int, default=1
-            Number of threads for MRtrix3 operations
+            Number of threads for MRtrix3.
         keep_intermediate : bool, default=False
-            Keep intermediate tractogram files for inspection
+            If True, keeps intermediate tractogram files.
         load_to_memory : bool, default=True
-            Load maps into memory (True) or use memory-mapped files (False)
+            If True, loads results into memory.
         check_dependencies : bool, default=True
-            Check MRtrix3 availability at initialization
+            If True, checks for MRtrix3 availability.
         log_level : int, default=1
-            Logging verbosity level (0=silent, 1=standard, 2=verbose)
+            Logging verbosity (0=silent, 1=standard, 2=verbose).
 
         Raises
         ------
+        MRtrixError
+            If MRtrix3 is not available and check_dependencies=True.
+        KeyError
+            If connectome_name not found in registry.
         ValueError
-            If output_resolution is not 1 or 2
+            If output_resolution is not 1 or 2.
         """
         super().__init__(log_level=log_level)
 
@@ -233,33 +237,44 @@ class StructuralNetworkMapping(BaseAnalysis):
         if output_resolution not in (1, 2):
             raise ValueError(f"output_resolution must be 1 or 2, got: {output_resolution}")
 
-        self.tractogram_path = Path(tractogram_path)
-        self.tractogram_space = tractogram_space
+        # Load connectome from registry
+        try:
+            connectome = load_structural_connectome(connectome_name)
+        except KeyError as e:
+            available = [c.name for c in list_structural_connectomes()]
+            raise KeyError(
+                f"Connectome '{connectome_name}' not found in registry. "
+                f"Available connectomes: {', '.join(available)}. "
+                f"Use register_structural_connectome() to add new connectomes."
+            ) from e
+
+        # Store connectome information
+        self.connectome_name = connectome_name
+        self.tractogram_path = connectome.tractogram_path
+        self.tractogram_space = connectome.metadata.space
+        self.template = connectome.template_path  # May be None
+
+        # Store analysis parameters
+        self.atlas_name = atlas_name
+        self.compute_lesioned = compute_lesioned
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
-        self.whole_brain_tdi = None  # Will be set during validation
-
-        self.template = Path(template) if template is not None else None
-        self.atlas_name = atlas_name  # Atlas name from registry
-        self.compute_lesioned = compute_lesioned
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
         self.load_to_memory = load_to_memory
-        self._check_dependencies = check_dependencies
-        self.verbose = verbose
 
         # Target space matches tractogram space
         self.TARGET_SPACE = self.tractogram_space
 
         # Initialize logger
-        self.logger = ConsoleLogger(verbose=verbose, width=70)
+        self.logger = ConsoleLogger(verbose=(log_level >= 2), width=70)
 
-        # Will be resolved to Path during validation
-        self._atlas_resolved = None
+        # Internal state
+        self.whole_brain_tdi = None  # Will be set during validation
+        self._atlas_image = None
         self._atlas_labels = None
-        # Cache for full connectivity matrix (computed once if atlas provided)
+        self._atlas_resolved = None
         self._full_connectivity_matrix = None
-        # Cache for computed whole-brain TDI
         self._cached_tdi_path = None
 
         # Check MRtrix3 availability if requested
@@ -270,6 +285,11 @@ class StructuralNetworkMapping(BaseAnalysis):
                 raise MRtrixError(
                     f"MRtrix3 is required for StructuralNetworkMapping but is not available.\n{e}"
                 ) from e
+
+    @property
+    def verbose(self) -> bool:
+        """Convert log_level to boolean verbose flag."""
+        return self.log_level >= 2
 
     def _get_tdi_cache_path(self) -> Path:
         """Get deterministic cache path for whole-brain TDI.
@@ -522,7 +542,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary mapping result names to results:
-            - 'disconnection_map': VoxelMapResult for disconnection map
+            - 'DisconnectionMap': VoxelMapResult for disconnection map
             - 'summary_statistics': MiscResult for summary statistics
             - 'lesion_tractogram': TractogramResult (if keep_intermediate=True)
             - 'lesion_tdi': VoxelMapResult (if keep_intermediate=True)
@@ -621,7 +641,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # VoxelMapResult for disconnection map
             disconnection_result = VoxelMap(
-                name="disconnection_map",
+                name="DisconnectionMap",
                 data=final_disconn_map,
                 space=self.tractogram_space,
                 resolution=float(self.output_resolution),
@@ -634,7 +654,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "load_to_memory": self.load_to_memory,
                 },
             )
-            results["disconnection_map"] = disconnection_result
+            results["DisconnectionMap"] = disconnection_result
 
             # MiscResult for summary statistics
             summary_result = ScalarMetric(
@@ -653,7 +673,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             if self.keep_intermediate:
                 # Add lesion tractogram as TractogramResult
                 lesion_tractogram_result = Tractogram(
-                    name="lesion_tractogram",
+                    name="LesionTractogram",
                     streamlines=None,  # Not loading into memory
                     tractogram_path=lesion_tck_path,
                     metadata={
@@ -661,14 +681,14 @@ class StructuralNetworkMapping(BaseAnalysis):
                         "temp_directory": str(temp_dir_path),
                     },
                 )
-                results["lesion_tractogram"] = lesion_tractogram_result
+                results["LesionTractogram"] = lesion_tractogram_result
 
                 # Add lesion TDI as VoxelMapResult
                 lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
                 if lesion_tdi_path.exists():
                     lesion_tdi_img = nib.load(lesion_tdi_path)
                     lesion_tdi_result = VoxelMap(
-                        name="lesion_tdi",
+                        name="LesionTdi",
                         data=lesion_tdi_img,
                         space=self.tractogram_space,
                         resolution=self.output_resolution,
@@ -677,7 +697,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                             "temp_directory": str(temp_dir_path),
                         },
                     )
-                    results["lesion_tdi"] = lesion_tdi_result
+                    results["LesionTdi"] = lesion_tdi_result
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._atlas_resolved is not None:
@@ -983,18 +1003,6 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         return stats
 
-    def _get_parameters(self) -> dict:
-        """Get analysis parameters for provenance tracking."""
-        return {
-            "tractogram_path": str(self.tractogram_path),
-            "whole_brain_tdi": str(self.whole_brain_tdi),
-            "template": str(self.template),
-            "n_jobs": self.n_jobs,
-            "keep_intermediate": self.keep_intermediate,
-            "load_to_memory": self.load_to_memory,
-            "verbose": self.verbose,
-        }
-
     def _get_version(self) -> str:
         """Get analysis version."""
         return "0.1.0"
@@ -1016,5 +1024,6 @@ class StructuralNetworkMapping(BaseAnalysis):
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,
-            "verbose": self.verbose,
+            "log_level": self.log_level,
         }
+

@@ -11,24 +11,46 @@ import numpy as np
 import pytest
 
 from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+from lacuna.assets.connectomes import (
+    register_structural_connectome,
+    unregister_structural_connectome,
+)
 
 
 class TestConnectivityMatrixComputation:
     """Test connectivity matrix computation methods."""
 
     @pytest.fixture
-    def mock_analysis(self):
+    def mock_analysis(self, tmp_path):
         """Create a mock StructuralNetworkMapping instance."""
+        # Create fake files
+        tractogram_path = tmp_path / "tractogram.tck"
+        tractogram_path.write_text("fake")
+        tdi_path = tmp_path / "tdi.nii.gz"
+        tdi_path.write_text("fake")
+
+        # Register connectome
+        register_structural_connectome(
+            name="test_mock_connectome",
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=tractogram_path,
+            tdi_path=tdi_path,
+            n_streamlines=1000,
+            description="Test mock connectome"
+        )
+
         with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
             analysis = StructuralNetworkMapping(
-                tractogram_path="/fake/path/tractogram.tck",
-                tractogram_space="MNI152NLin2009cAsym",
-                output_resolution=2,
+                connectome_name="test_mock_connectome",
                 atlas_name="Schaefer2018_100Parcels7Networks",
                 n_jobs=1,
             )
             analysis._atlas_resolved = Path("/fake/atlas.nii.gz")
-            return analysis
+            yield analysis
+
+        # Cleanup
+        unregister_structural_connectome("test_mock_connectome")
 
     def test_compute_matrix_statistics_basic(self, mock_analysis):
         """Test basic matrix statistics computation."""

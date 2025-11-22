@@ -177,12 +177,12 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     analysis = RegionalDamage()
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with atlas name as key
+    # Results are returned as dict with atlas name as key (BIDS format)
     atlas_results = result.results["RegionalDamage"]
-    assert "test_atlas_from_mask_img" in atlas_results
+    assert "atlas-test_atlas_desc-MaskImg" in atlas_results
 
     # Get the ParcelData for this atlas
-    roi_result = atlas_results["test_atlas_from_mask_img"]
+    roi_result = atlas_results["atlas-test_atlas_desc-MaskImg"]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level damage percentages
@@ -229,9 +229,9 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     analysis = RegionalDamage()
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with one entry per atlas
+    # Results are returned as dict with one entry per atlas (BIDS format)
     atlas_results = result.results["RegionalDamage"]
-    assert "atlas_3d_from_mask_img" in atlas_results
+    assert "atlas-atlas_3d_desc-MaskImg" in atlas_results
     assert "atlas_4d_from_mask_img" in atlas_results
 
     # Each atlas should have its own ParcelData

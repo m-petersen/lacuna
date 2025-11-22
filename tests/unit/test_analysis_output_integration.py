@@ -12,6 +12,10 @@ from lacuna.analysis import (
     FunctionalNetworkMapping,
     ParcelAggregation,
 )
+from lacuna.assets.connectomes import (
+    register_functional_connectome,
+    unregister_functional_connectome,
+)
 from lacuna.core import MaskData
 from lacuna.core.data_types import (
     DataContainer,
@@ -164,58 +168,110 @@ class TestFunctionalNetworkMappingOutputs:
 
     def test_run_analysis_returns_dict_of_results(self, sample_mask_data, mock_connectome):
         """FunctionalNetworkMapping._run_analysis returns dict[str, DataContainer]."""
-        analysis = FunctionalNetworkMapping(connectome_path=mock_connectome)
+        from lacuna.assets.connectomes import (
+            register_functional_connectome,
+            unregister_functional_connectome,
+        )
 
-        results = analysis._run_analysis(sample_mask_data)
+        # Register the mock connectome
+        register_functional_connectome(
+            name="test_func_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=mock_connectome,
+            n_subjects=5,
+            description="Test connectome"
+        )
 
-        assert isinstance(results, dict)
-        assert len(results) > 0
-        assert all(isinstance(r, DataContainer) for r in results.values())
+        try:
+            analysis = FunctionalNetworkMapping(connectome_name="test_func_connectome")
+            results = analysis._run_analysis(sample_mask_data)
+
+            assert isinstance(results, dict)
+            assert len(results) > 0
+            assert all(isinstance(r, DataContainer) for r in results.values())
+        finally:
+            unregister_functional_connectome("test_func_connectome")
 
     def test_functional_mapping_returns_voxel_map_results(self, sample_mask_data, mock_connectome):
         """FunctionalNetworkMapping returns dictionary of VoxelMap objects for brain maps."""
-        analysis = FunctionalNetworkMapping(connectome_path=mock_connectome)
+        register_functional_connectome(
+            name="test_func_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=mock_connectome,
+            n_subjects=5,
+            description="Test connectome"
+        )
 
-        results = analysis._run_analysis(sample_mask_data)
+        try:
+            analysis = FunctionalNetworkMapping(connectome_name="test_func_connectome")
+            results = analysis._run_analysis(sample_mask_data)
 
-        # Results should now be a dict, not a list
-        assert isinstance(results, dict)
-        # Should contain VoxelMapResults for correlation_map, z_map
-        voxel_results = [r for r in results.values() if isinstance(r, VoxelMap)]
-        assert len(voxel_results) >= 2  # At least correlation_map and z_map
+            # Results should now be a dict, not a list
+            assert isinstance(results, dict)
+            # Should contain VoxelMapResults for CorrelationMap, ZMap
+            voxel_results = [r for r in results.values() if isinstance(r, VoxelMap)]
+            assert len(voxel_results) >= 2  # At least CorrelationMap and ZMap
 
-        # Check for expected result names
-        result_names = [r.name for r in voxel_results]
-        assert "correlation_map" in result_names
-        assert "z_map" in result_names
+            # Check for expected result names
+            result_names = [r.name for r in voxel_results]
+            assert "CorrelationMap" in result_names
+            assert "ZMap" in result_names
+        finally:
+            unregister_functional_connectome("test_func_connectome")
 
     def test_functional_mapping_voxel_results_have_spaces(self, sample_mask_data, mock_connectome):
         """VoxelMapResults from FunctionalNetworkMapping have space and resolution."""
-        analysis = FunctionalNetworkMapping(connectome_path=mock_connectome)
+        register_functional_connectome(
+            name="test_voxel_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=mock_connectome,
+            n_subjects=5,
+            description="Test connectome"
+        )
 
-        results = analysis._run_analysis(sample_mask_data)
-        voxel_results = [r for r in results if isinstance(r, VoxelMap)]
+        try:
+            analysis = FunctionalNetworkMapping(connectome_name="test_voxel_connectome")
 
-        for voxel_result in voxel_results:
-            assert voxel_result.space is not None
-            assert voxel_result.resolution is not None
-            assert isinstance(voxel_result.space, str)
-            assert isinstance(voxel_result.resolution, float)
+            results = analysis._run_analysis(sample_mask_data)
+            voxel_results = [r for r in results.values() if isinstance(r, VoxelMap)]
+
+            for voxel_result in voxel_results:
+                assert voxel_result.space is not None
+                assert voxel_result.resolution is not None
+                assert isinstance(voxel_result.space, str)
+                assert isinstance(voxel_result.resolution, float)
+        finally:
+            unregister_functional_connectome("test_voxel_connectome")
 
     def test_functional_mapping_returns_misc_result_for_scalars(
         self, sample_mask_data, mock_connectome
     ):
         """FunctionalNetworkMapping returns dictionary with ScalarMetric for summary statistics."""
-        analysis = FunctionalNetworkMapping(connectome_path=mock_connectome)
+        register_functional_connectome(
+            name="test_scalar_connectome",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=mock_connectome,
+            n_subjects=5,
+            description="Test connectome"
+        )
 
-        results = analysis._run_analysis(sample_mask_data)
+        try:
+            analysis = FunctionalNetworkMapping(connectome_name="test_scalar_connectome")
 
-        # Results should now be a dict, not a list
-        assert isinstance(results, dict)
-        # Should contain ScalarMetric for summary statistics
-        misc_results = [r for r in results.values() if isinstance(r, ScalarMetric)]
-        assert len(misc_results) > 0
+            results = analysis._run_analysis(sample_mask_data)
 
-        # Check for summary_statistics result
-        summary_results = [r for r in misc_results if "summary" in r.name.lower()]
-        assert len(summary_results) > 0
+            # Results should now be a dict, not a list
+            assert isinstance(results, dict)
+            # Should contain ScalarMetric for summary statistics
+            misc_results = [r for r in results.values() if isinstance(r, ScalarMetric)]
+            assert len(misc_results) > 0
+
+            # Check for summary_statistics result
+            summary_results = [r for r in misc_results if "summary" in r.name.lower()]
+            assert len(summary_results) > 0
+        finally:
+            unregister_functional_connectome("test_scalar_connectome")

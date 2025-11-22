@@ -1,4 +1,6 @@
 """
+from __future__ import annotations
+
 Core MaskData class - the central API contract for the toolkit.
 
 This class encapsulates a single subject's lesion data with metadata, provenance
