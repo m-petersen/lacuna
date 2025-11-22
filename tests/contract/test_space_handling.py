@@ -4,9 +4,9 @@ Contract tests for space handling requirements.
 T032-T035: Tests for explicit space/resolution requirements and error messages.
 """
 
+import pytest
 import nibabel as nib
 import numpy as np
-import pytest
 
 
 @pytest.mark.contract
@@ -18,7 +18,7 @@ def test_space_requirement_error(synthetic_mask_img):
     with pytest.raises(ValueError) as exc_info:
         MaskData(
             synthetic_mask_img,
-            metadata={"subject_id": "sub-001", "resolution": 2},  # Missing 'space'
+            metadata={"subject_id": "sub-001", "resolution": 2}  # Missing 'space'
         )
 
     error_msg = str(exc_info.value)
@@ -35,7 +35,7 @@ def test_resolution_requirement_error(synthetic_mask_img):
     with pytest.raises(ValueError) as exc_info:
         MaskData(
             synthetic_mask_img,
-            metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym"},  # Missing 'resolution'
+            metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym"}  # Missing 'resolution'
         )
 
     error_msg = str(exc_info.value)
@@ -45,7 +45,7 @@ def test_resolution_requirement_error(synthetic_mask_img):
 
 @pytest.mark.contract
 def test_separated_space_resolution_attributes():
-    """T034: Test that VoxelMap stores space and resolution separately."""
+    """T034: Test that VoxelMapResult stores space and resolution separately."""
     from lacuna.core.data_types import VoxelMap
 
     # Create test image
@@ -53,7 +53,12 @@ def test_separated_space_resolution_attributes():
     affine = np.eye(4)
     test_img = nib.Nifti1Image(data, affine)
 
-    result = VoxelMap(name="test_map", data=test_img, space="MNI152NLin2009cAsym", resolution=2.0)
+    result = VoxelMap(
+        name="test_map",
+        data=test_img,
+        space="MNI152NLin2009cAsym",
+        resolution=2.0
+    )
 
     # Space and resolution should be separate attributes
     assert hasattr(result, "space")
@@ -73,7 +78,11 @@ def test_supported_spaces_error_message(synthetic_mask_img):
     with pytest.raises(ValueError) as exc_info:
         MaskData(
             synthetic_mask_img,
-            metadata={"subject_id": "sub-001", "space": "UnsupportedSpace", "resolution": 2},
+            metadata={
+                "subject_id": "sub-001",
+                "space": "UnsupportedSpace",
+                "resolution": 2
+            }
         )
 
     error_msg = str(exc_info.value)

@@ -62,55 +62,59 @@ class ImmutableDict(dict):
 
 class MaskData:
     """
-    Central data container for a single subject's lesion analysis.
+    Central data container for a single subject's mask-based analysis.
 
-    This class encapsulates lesion image data, optional anatomical scan, spatial
-    metadata, subject identifiers, processing provenance, and analysis results.
-    It enforces immutability-by-convention: transformations should return new
-    instances rather than modifying in place.
+    This class encapsulates binary mask image data, spatial metadata, subject
+    identifiers, processing provenance, and analysis results. It enforces
+    immutability-by-convention: transformations should return new instances
+    rather than modifying in place.
 
     Parameters
     ----------
     mask_img : nibabel.Nifti1Image
-        Binary lesion mask (3D only, values must be 0 or 1).
+        Binary mask (3D only, values must be 0 or 1).
     metadata : dict, optional
-        Subject metadata. Must contain 'space' and 'resolution' keys unless
-        provenance is provided. 'subject_id' defaults to "sub-unknown" if not provided.
+        Subject metadata. Must contain 'space' and 'resolution' keys.
+        'subject_id' defaults to "sub-unknown" if not provided.
     provenance : list of dict, optional
-        Processing history (for deserialization only). If provided without
-        metadata["space"], the most recent transformation's output_space is used.
+        Processing history (for deserialization only).
     results : dict, optional
         Analysis results (for deserialization only).
 
     Raises
     ------
     ValueError
-        If metadata is missing 'space' or 'resolution' keys and provenance is None,
+        If metadata is missing 'space' or 'resolution' keys,
         if mask_img is not 3D, or if mask_img is not binary (0/1 values only).
 
     Attributes
     ----------
     mask_img : nibabel.Nifti1Image
-        The lesion mask image (read-only).
+        The binary mask image (read-only).
     affine : np.ndarray
         4x4 affine transformation matrix (read-only).
-    metadata : dict
+    space : str
+        Coordinate space identifier (e.g., 'MNI152NLin6Asym').
+    resolution : float
+        Spatial resolution in millimeters.
+    metadata : ImmutableDict
         Subject and session metadata (read-only view).
     provenance : list
         Processing history (read-only view).
     results : dict
-        Analysis results (read-only view).
+        Analysis results (read-only view, nested structure).
 
     Examples
     --------
     >>> import nibabel as nib
-    >>> mask_img = nib.load("lesion.nii.gz")
-    >>> lesion = MaskData(
+    >>> mask_img = nib.load("mask.nii.gz")
+    >>> mask_data = MaskData(
     ...     mask_img,
     ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     ... )
-    >>> print(f"Volume: {lesion.get_volume_mm3()} mm³")
-    >>> print(f"Space: {lesion.get_coordinate_space()}")
+    >>> print(f"Volume: {mask_data.get_volume_mm3()} mm³")
+    >>> print(f"Space: {mask_data.space}")  # New property!
+    >>> print(f"Resolution: {mask_data.resolution}mm")  # New property!
     """
 
     def __init__(
@@ -228,46 +232,56 @@ class MaskData:
     def from_nifti(
         cls,
         lesion_path: str | Path,
+        space: str | None = None,
+        resolution: float | None = None,
         anatomical_path: str | Path | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> "MaskData":
         """
-        Load lesion data from NIfTI file(s).
+        Load mask data from NIfTI file.
 
         Parameters
         ----------
         lesion_path : str or Path
-            Path to lesion mask NIfTI file.
+            Path to mask NIfTI file.
+        space : str, optional
+            Coordinate space identifier (e.g., 'MNI152NLin6Asym').
+            If not provided, will attempt auto-detection from image header/filename.
+        resolution : float, optional
+            Spatial resolution in millimeters (e.g., 1.0, 2.0).
+            If not provided, will attempt auto-detection from image header/filename.
         anatomical_path : str or Path, optional
-            Path to anatomical NIfTI file.
+            Deprecated. No longer used.
         metadata : dict, optional
-            Subject metadata. Must include 'space' key to specify coordinate space.
-            Auto-generated 'subject_id' if not provided.
+            Additional subject metadata (e.g., session info).
+            'subject_id' auto-generated from filename if not provided.
 
         Returns
         -------
         MaskData
-            Loaded lesion data object.
+            Loaded mask data object.
 
         Raises
         ------
         FileNotFoundError
-            If file paths don't exist.
+            If file path doesn't exist.
         NiftiLoadError
-            If images fail to load or validate.
+            If image fails to load or validate.
         ValueError
-            If 'space' key is missing from metadata.
+            If 'space' or 'resolution' cannot be determined.
 
         Examples
         --------
-        >>> lesion = MaskData.from_nifti(
-        ...     "lesion.nii.gz",
-        ...     metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        >>> mask_data = MaskData.from_nifti(
+        ...     "mask.nii.gz",
+        ...     space="MNI152NLin6Asym",
+        ...     resolution=2.0
         ... )
-        >>> lesion = MaskData.from_nifti(
-        ...     "lesion.nii.gz",
-        ...     anatomical_path="T1w.nii.gz",
-        ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
+        >>> mask_data = MaskData.from_nifti(
+        ...     "mask.nii.gz",
+        ...     space="MNI152NLin6Asym",
+        ...     resolution=2.0,
+        ...     metadata={"subject_id": "sub-001", "session": "baseline"}
         ... )
         """
         lesion_path = Path(lesion_path)
@@ -278,11 +292,15 @@ class MaskData:
         except FileNotFoundError:
             raise
         except Exception as e:
-            raise NiftiLoadError(f"Failed to load lesion from {lesion_path}: {e}") from e
+            raise NiftiLoadError(f"Failed to load mask from {lesion_path}: {e}") from e
 
-        # Auto-generate subject_id from filename if not provided
+        # Initialize metadata dict
         if metadata is None:
             metadata = {}
+        else:
+            metadata = metadata.copy()  # Don't modify caller's dict
+
+        # Auto-generate subject_id from filename if not provided
         if "subject_id" not in metadata:
             # Try to extract BIDS-like subject ID from filename
             filename = lesion_path.stem.replace(".nii", "")
@@ -293,11 +311,14 @@ class MaskData:
                     if part.startswith("sub-"):
                         metadata["subject_id"] = part
                         break
-        # If coordinate space information is missing from metadata, attempt
-        # to detect it from the loaded NIfTI image (affine/header or filename)
-        # using the central get_image_space utility. This keeps behavior
-        # convenient for users while ensuring MaskData always receives
-        # explicit space/resolution metadata downstream.
+
+        # Handle space and resolution (priority: kwargs > metadata > auto-detection)
+        if space is not None:
+            metadata["space"] = space
+        if resolution is not None:
+            metadata["resolution"] = resolution
+
+        # If coordinate space information is still missing, attempt auto-detection
         if "space" not in metadata or "resolution" not in metadata:
             try:
                 # Import lazily to avoid circular imports at module load time
@@ -314,13 +335,14 @@ class MaskData:
                 # Detection is best-effort; leave metadata untouched and allow
                 # __init__ to raise a helpful error if necessary.
                 pass
+
         return cls(mask_img=mask_img, metadata=metadata)
 
     def validate(self) -> bool:
         """
         Validate data integrity.
 
-        Checks that affine is invertible, images are 3D, and spatial properties
+        Checks that affine is invertible, image is 3D, and spatial properties
         are consistent.
 
         Returns
@@ -331,7 +353,7 @@ class MaskData:
         Warns
         -----
         UserWarning
-            If lesion mask is empty or has suspicious properties.
+            If mask is empty or has suspicious properties.
 
         Raises
         ------
@@ -340,7 +362,7 @@ class MaskData:
 
         Examples
         --------
-        >>> lesion.validate()
+        >>> mask_data.validate()
         True
         """
         # Validate images
@@ -354,7 +376,7 @@ class MaskData:
         if not np.any(mask_data > 0):
             import warnings
 
-            warnings.warn("Lesion mask is empty (no non-zero voxels)", UserWarning, stacklevel=2)
+            warnings.warn("Mask is empty (no non-zero voxels)", UserWarning, stacklevel=2)
 
         return True
 
@@ -369,8 +391,8 @@ class MaskData:
 
         Examples
         --------
-        >>> lesion_copy = lesion.copy()
-        >>> lesion_copy is lesion
+        >>> mask_copy = mask_data.copy()
+        >>> mask_copy is mask_data
         False
         """
         return MaskData(
@@ -382,33 +404,33 @@ class MaskData:
 
     def get_coordinate_space(self) -> str:
         """
-        Infer current coordinate space from affine and provenance.
+        Get current coordinate space from metadata.
 
         Returns
         -------
         str
-            Coordinate space identifier (e.g., 'native', 'MNI152NLin6Asym').
+            Coordinate space identifier (e.g., 'MNI152NLin6Asym').
 
         Examples
         --------
-        >>> lesion.get_coordinate_space()
-        'native'
+        >>> mask_data.get_coordinate_space()
+        'MNI152NLin6Asym'
         """
         return self._coordinate_space
 
     def get_volume_mm3(self) -> float:
         """
-        Calculate lesion volume in cubic millimeters.
+        Calculate mask volume in cubic millimeters.
 
         Returns
         -------
         float
-            Total lesion volume (sum of non-zero voxels * voxel volume).
+            Total mask volume (sum of non-zero voxels * voxel volume).
 
         Examples
         --------
-        >>> volume = lesion.get_volume_mm3()
-        >>> print(f"Lesion volume: {volume:.2f} mm³")
+        >>> volume = mask_data.get_volume_mm3()
+        >>> print(f"Mask volume: {volume:.2f} mm³")
         """
         mask_data = self._mask_img.get_fdata()
         num_voxels = np.sum(mask_data > 0)
@@ -430,7 +452,7 @@ class MaskData:
 
         Examples
         --------
-        >>> data = lesion.to_dict()
+        >>> data = mask_data.to_dict()
         >>> import json
         >>> json.dumps(data)  # Should succeed
         """
@@ -452,7 +474,7 @@ class MaskData:
         data : dict
             Output from to_dict().
         mask_img : nibabel.Nifti1Image
-            Lesion image (loaded separately).
+            Mask image (loaded separately).
 
         Returns
         -------
@@ -461,9 +483,9 @@ class MaskData:
 
         Examples
         --------
-        >>> data = lesion.to_dict()
-        >>> mask_img = nib.load("lesion.nii.gz")
-        >>> lesion_restored = MaskData.from_dict(data, mask_img)
+        >>> data = mask_data.to_dict()
+        >>> mask_img = nib.load("mask.nii.gz")
+        >>> mask_restored = MaskData.from_dict(data, mask_img)
         """
         return cls(
             mask_img=mask_img,
@@ -502,7 +524,7 @@ class MaskData:
         Examples
         --------
         >>> # Single result
-        >>> results = {"default": VoxelMap(...)}
+        >>> results = {"default": VoxelMapResult(...)}
         >>> lesion_with_results = lesion.add_result("VolumeAnalysis", results)
         >>> "VolumeAnalysis" in lesion_with_results.results
         True
@@ -559,11 +581,11 @@ class MaskData:
         >>> from lacuna.core.provenance import create_provenance_record
         >>> prov = create_provenance_record(
         ...     function="lacuna.analysis.RegionalDamage",
-        ...     parcel_names=["Schaefer2018_100Parcels7Networks"],
+        ...     atlas_names=["Schaefer2018_100Parcels7Networks"],
         ...     version="0.1.0"
         ... )
-        >>> lesion_regional_damage = lesion.add_provenance(prov)
-        >>> len(lesion_regional_damage.provenance) == len(lesion.provenance) + 1
+        >>> result = mask_data.add_provenance(prov)
+        >>> len(result.provenance) == len(mask_data.provenance) + 1
         True
         """
         # Validate record has required fields
@@ -601,7 +623,7 @@ class MaskData:
 
     @property
     def mask_img(self) -> nib.Nifti1Image:
-        """Binary or continuous lesion mask."""
+        """Binary mask image."""
         return self._mask_img
 
     @property
@@ -625,13 +647,12 @@ class MaskData:
 
         Examples
         --------
-        >>> lesion.metadata["subject_id"]  # OK - reading
+        >>> mask_data.metadata["subject_id"]  # OK - reading
         'sub-001'
-        >>> lesion.metadata["new_key"] = "value"  # Raises TypeError
+        >>> mask_data.metadata["new_key"] = "value"  # Raises TypeError
         Traceback (most recent call last):
             ...
         TypeError: Cannot modify MaskData.metadata - it is immutable.
-        MaskData follows the Value Object pattern for scientific reproducibility.
         To update metadata, create a new MaskData instance instead.
         """
         return ImmutableDict(self._metadata, "metadata")
@@ -651,6 +672,40 @@ class MaskData:
         Access pattern: results['AnalysisName']['result_name']
         """
         return copy.deepcopy(self._results)  # Deep copy for nested structures
+
+    @property
+    def space(self) -> str:
+        """
+        Coordinate space identifier (e.g., 'MNI152NLin6Asym').
+
+        Returns
+        -------
+        str
+            The coordinate space from metadata.
+
+        Examples
+        --------
+        >>> mask_data.space
+        'MNI152NLin6Asym'
+        """
+        return self._metadata["space"]
+
+    @property
+    def resolution(self) -> float:
+        """
+        Spatial resolution in millimeters.
+
+        Returns
+        -------
+        float
+            The spatial resolution from metadata.
+
+        Examples
+        --------
+        >>> mask_data.resolution
+        2.0
+        """
+        return self._metadata["resolution"]
 
     def __getattr__(self, name: str) -> dict[str, Any]:
         """Enable attribute-based access to analysis results.
