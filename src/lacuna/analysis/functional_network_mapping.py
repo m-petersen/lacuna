@@ -23,13 +23,13 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.core.exceptions import ValidationError
 from lacuna.core.mask_data import MaskData
+from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import DataContainer
+    from lacuna.core.data_types import AnalysisResult
 
 
 class FunctionalNetworkMapping(BaseAnalysis):
@@ -264,7 +264,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             msg = "Lesion mask must be binary (only 0 and 1 values)"
             raise ValidationError(msg)
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -278,13 +278,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict[str, DataContainer]
+        dict[str, AnalysisResult]
             Dictionary containing:
-            - 'correlation_map': VoxelMap for correlation (r values)
-            - 'z_map': VoxelMap for Fisher z-transformed
-            - 't_map': VoxelMap (if compute_t_map=True)
-            - 't_threshold_map': VoxelMap (if t_threshold provided)
-            - 'summary_statistics': ScalarMetric for summary statistics
+            - 'correlation_map': VoxelMapResult for correlation (r values)
+            - 'z_map': VoxelMapResult for Fisher z-transformed
+            - 't_map': VoxelMapResult (if compute_t_map=True)
+            - 't_threshold_map': VoxelMapResult (if t_threshold provided)
+            - 'summary_statistics': MiscResult for summary statistics
 
         Notes
         -----
@@ -541,7 +541,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
 
-        # Add summary statistics as ScalarMetric
+        # Add summary statistics as MiscResult
         summary_result = ScalarMetric(
             name="summary_statistics",
             data=summary_dict,

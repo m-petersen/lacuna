@@ -18,13 +18,13 @@ import numpy as np
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets import load_template
 from lacuna.assets.atlases import list_atlases, load_atlas
+from lacuna.core.mask_data import MaskData
 from lacuna.core.data_types import (
     ConnectivityMatrix,
     ScalarMetric,
     Tractogram,
     VoxelMap,
 )
-from lacuna.core.mask_data import MaskData
 from lacuna.utils.cache import get_tdi_cache_dir
 from lacuna.utils.logging import ConsoleLogger
 from lacuna.utils.mrtrix import (
@@ -37,7 +37,7 @@ from lacuna.utils.mrtrix import (
 )
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import DataContainer
+    from lacuna.core.data_types import AnalysisResult
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +176,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         load_to_memory: bool = True,
         check_dependencies: bool = True,
         verbose: bool = False,
+        log_level: int = 1,
     ):
         """Initialize StructuralNetworkMapping analysis.
 
@@ -218,13 +219,15 @@ class StructuralNetworkMapping(BaseAnalysis):
             Load maps into memory (True) or use memory-mapped files (False)
         check_dependencies : bool, default=True
             Check MRtrix3 availability at initialization
+        log_level : int, default=1
+            Logging verbosity level (0=silent, 1=standard, 2=verbose)
 
         Raises
         ------
         ValueError
             If output_resolution is not 1 or 2
         """
-        super().__init__()
+        super().__init__(log_level=log_level)
 
         # Validate output_resolution
         if output_resolution not in (1, 2):
@@ -506,7 +509,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 f"Use thresholding or binarization to convert continuous maps."
             )
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
+    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
         """
         Execute structural network mapping analysis.
 
@@ -517,12 +520,12 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict[str, DataContainer]
+        dict[str, AnalysisResult]
             Dictionary mapping result names to results:
-            - 'disconnection_map': VoxelMap for disconnection map
-            - 'summary_statistics': ScalarMetric for summary statistics
-            - 'lesion_tractogram': Tractogram (if keep_intermediate=True)
-            - 'lesion_tdi': VoxelMap (if keep_intermediate=True)
+            - 'disconnection_map': VoxelMapResult for disconnection map
+            - 'summary_statistics': MiscResult for summary statistics
+            - 'lesion_tractogram': TractogramResult (if keep_intermediate=True)
+            - 'lesion_tdi': VoxelMapResult (if keep_intermediate=True)
             - Connectivity results (if atlas provided): see _compute_connectivity_matrices
 
         Notes
@@ -616,7 +619,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             # Build results dict
             results = {}
 
-            # VoxelMap for disconnection map
+            # VoxelMapResult for disconnection map
             disconnection_result = VoxelMap(
                 name="disconnection_map",
                 data=final_disconn_map,
@@ -633,7 +636,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             )
             results["disconnection_map"] = disconnection_result
 
-            # ScalarMetric for summary statistics
+            # MiscResult for summary statistics
             summary_result = ScalarMetric(
                 name="summary_statistics",
                 data={
@@ -648,7 +651,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # Add intermediate results if keep_intermediate=True
             if self.keep_intermediate:
-                # Add lesion tractogram as Tractogram
+                # Add lesion tractogram as TractogramResult
                 lesion_tractogram_result = Tractogram(
                     name="lesion_tractogram",
                     streamlines=None,  # Not loading into memory
@@ -660,7 +663,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 )
                 results["lesion_tractogram"] = lesion_tractogram_result
 
-                # Add lesion TDI as VoxelMap
+                # Add lesion TDI as VoxelMapResult
                 lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
                 if lesion_tdi_path.exists():
                     lesion_tdi_img = nib.load(lesion_tdi_path)
@@ -709,7 +712,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         lesion_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
-    ) -> dict[str, "DataContainer"]:
+    ) -> dict[str, "AnalysisResult"]:
         """Compute parcellated connectivity matrices.
 
         Parameters
@@ -725,13 +728,13 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        dict[str, DataContainer]
+        dict[str, AnalysisResult]
             Dictionary containing:
-            - 'lesion_connectivity_matrix': ConnectivityMatrix
-            - 'disconnectivity_percent': ConnectivityMatrix
-            - 'full_connectivity_matrix': ConnectivityMatrix
-            - 'lesioned_connectivity_matrix': ConnectivityMatrix (if compute_lesioned=True)
-            - 'matrix_statistics': ScalarMetric
+            - 'lesion_connectivity_matrix': ConnectivityMatrixResult
+            - 'disconnectivity_percent': ConnectivityMatrixResult
+            - 'full_connectivity_matrix': ConnectivityMatrixResult
+            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_lesioned=True)
+            - 'matrix_statistics': MiscResult
         """
 
         # Step 1: Compute full-brain connectivity matrix (cached)
@@ -803,7 +806,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Build results dict
         results = {}
 
-        # Get atlas labels for ConnectivityMatrix
+        # Get atlas labels for ConnectivityMatrixResult
         # Convert dict[int, str] to list[str] ordered by region ID
         atlas_labels = [f"region_{i}" for i in range(lesion_matrix.shape[0])]
         if hasattr(self, "_atlas_labels") and self._atlas_labels is not None:
@@ -811,7 +814,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             sorted_regions = sorted(self._atlas_labels.items())
             atlas_labels = [name for region_id, name in sorted_regions]
 
-        # ConnectivityMatrix for lesion connectivity
+        # ConnectivityMatrixResult for lesion connectivity
         lesion_connectivity_result = ConnectivityMatrix(
             name="lesion_connectivity_matrix",
             matrix=lesion_matrix,
@@ -824,7 +827,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         )
         results["lesion_connectivity_matrix"] = lesion_connectivity_result
 
-        # ConnectivityMatrix for disconnectivity percentage
+        # ConnectivityMatrixResult for disconnectivity percentage
         disconn_result = ConnectivityMatrix(
             name="disconnectivity_percent",
             matrix=disconn_pct,
@@ -837,7 +840,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         )
         results["disconnectivity_percent"] = disconn_result
 
-        # ConnectivityMatrix for full connectivity (reference)
+        # ConnectivityMatrixResult for full connectivity (reference)
         full_connectivity_result = ConnectivityMatrix(
             name="full_connectivity_matrix",
             matrix=full_matrix,
@@ -864,7 +867,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             )
             results["lesioned_connectivity_matrix"] = lesioned_result
 
-        # ScalarMetric for matrix statistics
+        # MiscResult for matrix statistics
         stats_result = ScalarMetric(
             name="matrix_statistics",
             data=matrix_stats,
