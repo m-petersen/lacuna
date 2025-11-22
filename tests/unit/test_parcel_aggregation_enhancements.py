@@ -92,6 +92,67 @@ class TestVoxelMapDirectInput:
         assert isinstance(result, ParcelData)
         assert len(result.data) > 0
         assert result.aggregation_method == "mean"
+
+    def test_voxelmap_direct_vs_maskdata_wrapper(self, sample_voxel_map):
+        """Test VoxelMap direct input produces same results as MaskData wrapper."""
+        # Create a binary mask for MaskData (required for validation)
+        # But keep the VoxelMap for aggregation
+        shape = sample_voxel_map.data.shape
+        affine = sample_voxel_map.data.affine
+        
+        # Binary mask for MaskData
+        binary_mask = (np.random.rand(*shape) > 0.5).astype(np.float32)
+        mask_img = nib.Nifti1Image(binary_mask, affine)
+        
+        mask_data = MaskData(
+            mask_img=mask_img,
+            metadata={
+                "subject_id": "test_equivalence",
+                "space": sample_voxel_map.space,
+                "resolution": sample_voxel_map.resolution
+            }
+        )
+        # Store VoxelMap in results (this is what we're actually aggregating)
+        mask_data = mask_data.add_result("TestAnalysis", {"test_map": sample_voxel_map})
+        
+        # Method 1: Direct VoxelMap input (new T149 feature)
+        analysis_direct = ParcelAggregation(
+            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            aggregation="mean"
+        )
+        result_direct = analysis_direct.run(sample_voxel_map)
+        
+        # Method 2: MaskData with cross-analysis reference (traditional)
+        analysis_indirect = ParcelAggregation(
+            source="TestAnalysis.test_map",
+            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            aggregation="mean"
+        )
+        result_indirect = analysis_indirect.run(mask_data)
+        
+        # Extract ParcelData from MaskData result
+        parcel_data_indirect = result_indirect.results["ParcelAggregation"]
+        # Should be single key since we specified one atlas
+        assert len(parcel_data_indirect) == 1
+        indirect_parcel = list(parcel_data_indirect.values())[0]
+        
+        # Both should return ParcelData
+        from lacuna.core.data_types import ParcelData
+        assert isinstance(result_direct, ParcelData)
+        assert isinstance(indirect_parcel, ParcelData)
+        
+        # Should have same number of regions
+        assert len(result_direct.data) == len(indirect_parcel.data)
+        
+        # Should have identical region labels
+        assert set(result_direct.data.keys()) == set(indirect_parcel.data.keys())
+        
+        # Should have identical values (within floating point tolerance)
+        for region in result_direct.data.keys():
+            direct_value = result_direct.data[region]
+            indirect_value = indirect_parcel.data[region]
+            assert abs(direct_value - indirect_value) < 1e-6, \
+                f"Region {region}: direct={direct_value}, indirect={indirect_value}"
     
     def test_voxelmap_preserves_metadata(self, sample_voxel_map):
         """Test VoxelMap metadata is used for space/resolution."""
