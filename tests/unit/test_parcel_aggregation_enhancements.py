@@ -39,19 +39,29 @@ def sample_voxel_map(tmp_path):
 @pytest.fixture
 def sample_mask_data(tmp_path):
     """Create sample MaskData with VoxelMap result."""
-    shape = (10, 10, 10)
+    # Use MNI152NLin6Asym 2mm dimensions for realistic data
+    shape = (91, 109, 91)
     mask = np.random.rand(*shape) > 0.5
-    affine = np.eye(4)
-    affine[:3, :3] *= 2.0  # 2mm resolution
-    
+
+    # MNI152NLin6Asym 2mm affine
+    affine = np.array([
+        [-2., 0., 0., 90.],
+        [0., 2., 0., -126.],
+        [0., 0., 2., -72.],
+        [0., 0., 0., 1.]
+    ])
+
     mask_img = nib.Nifti1Image(mask.astype(np.float32), affine)
-    
+
     mask_data = MaskData(
-        subject_id="test001",
         mask_img=mask_img,
-        metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        metadata={
+            "subject_id": "test001",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2
+        }
     )
-    
+
     # Add a VoxelMap result
     voxel_map = VoxelMap(
         name="CorrelationMap",
@@ -59,9 +69,9 @@ def sample_mask_data(tmp_path):
         space="MNI152NLin6Asym",
         resolution=2.0
     )
-    
+
     mask_data.results["DemoAnalysis"] = {"desc-CorrelationMap": voxel_map}
-    
+
     return mask_data
 
 
