@@ -482,15 +482,17 @@ class BaseAnalysis(ABC):
 
         Notes
         -----
-        Override this method to provide version information for your analysis.
-        Default implementation returns "0.1.0".
+        Returns the lacuna package version for consistent provenance tracking.
+        Override this method if you need custom version information.
 
         Examples
         --------
         >>> def _get_version(self) -> str:
-        ...     return "1.2.3"
+        ...     from .. import __version__
+        ...     return __version__
         """
-        return "0.1.0"
+        from .. import __version__
+        return __version__
 
     def _validate_and_transform_space(
         self,
