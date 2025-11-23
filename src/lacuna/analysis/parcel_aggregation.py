@@ -551,7 +551,7 @@ class ParcelAggregation(BaseAnalysis):
         list[dict]
             List of atlas dictionaries with keys: name, image, labels, space, resolution
         """
-        from lacuna.assets.atlases.loader import BUNDLED_ATLASES_DIR
+        from lacuna.assets.parcellations.loader import BUNDLED_PARCELLATIONS_DIR
 
         # Get atlases from registry (filter by names if provided)
         if self.parcel_names is not None:
@@ -562,17 +562,17 @@ class ParcelAggregation(BaseAnalysis):
                     atlas = load_parcellation(name)
 
                     # Resolve paths (absolute or relative to bundled dir)
-                    atlas_filename_path = Path(atlas.metadata.atlas_filename)
+                    atlas_filename_path = Path(atlas.metadata.parcellation_filename)
                     if atlas_filename_path.is_absolute():
                         atlas_path = atlas_filename_path
                     else:
-                        atlas_path = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
+                        atlas_path = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
 
                     labels_filename_path = Path(atlas.metadata.labels_filename)
                     if labels_filename_path.is_absolute():
                         labels_path = labels_filename_path
                     else:
-                        labels_path = BUNDLED_ATLASES_DIR / atlas.metadata.labels_filename
+                        labels_path = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.labels_filename
 
                     atlases_data.append(
                         {
@@ -596,17 +596,17 @@ class ParcelAggregation(BaseAnalysis):
                 atlas = load_parcellation(metadata.name)
 
                 # Resolve paths (absolute or relative to bundled dir)
-                atlas_filename_path = Path(atlas.metadata.atlas_filename)
+                atlas_filename_path = Path(atlas.metadata.parcellation_filename)
                 if atlas_filename_path.is_absolute():
                     atlas_path = atlas_filename_path
                 else:
-                    atlas_path = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
+                    atlas_path = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
 
                 labels_filename_path = Path(atlas.metadata.labels_filename)
                 if labels_filename_path.is_absolute():
                     labels_path = labels_filename_path
                 else:
-                    labels_path = BUNDLED_ATLASES_DIR / atlas.metadata.labels_filename
+                    labels_path = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.labels_filename
 
                 atlases_data.append(
                     {

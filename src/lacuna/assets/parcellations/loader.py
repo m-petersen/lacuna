@@ -25,8 +25,8 @@ import nibabel as nib
 
 from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY, ParcellationMetadata
 
-# Path to bundled parcellations in package
-BUNDLED_PARCELLATIONS_DIR = Path(__file__).parent.parent.parent / "data" / "parcellations"
+# Path to bundled parcellations in package (stored in data/atlases for now)
+BUNDLED_PARCELLATIONS_DIR = Path(__file__).parent.parent.parent / "data" / "atlases"
 
 
 @dataclass

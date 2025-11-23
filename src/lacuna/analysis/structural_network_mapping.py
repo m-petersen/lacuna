@@ -499,13 +499,13 @@ class StructuralNetworkMapping(BaseAnalysis):
                     logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
                 else:
                     # No transformation needed - use original atlas file
-                    from lacuna.assets.atlases.loader import BUNDLED_ATLASES_DIR
+                    from lacuna.assets.parcellations.loader import BUNDLED_PARCELLATIONS_DIR
 
-                    atlas_filename_path = Path(atlas.metadata.atlas_filename)
+                    atlas_filename_path = Path(atlas.metadata.parcellation_filename)
                     if atlas_filename_path.is_absolute():
                         self._atlas_resolved = atlas_filename_path
                     else:
-                        self._atlas_resolved = BUNDLED_ATLASES_DIR / atlas.metadata.atlas_filename
+                        self._atlas_resolved = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
 
                     if not self._atlas_resolved.exists():
                         raise FileNotFoundError(f"Atlas file not found: {self._atlas_resolved}")
