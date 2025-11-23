@@ -17,7 +17,7 @@ import numpy as np
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets import load_template
-from lacuna.assets.atlases import list_atlases, load_atlas
+from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.assets.connectomes import (
     list_structural_connectomes,
     load_structural_connectome,
@@ -80,11 +80,11 @@ class StructuralNetworkMapping(BaseAnalysis):
         Name of registered structural connectome (e.g., "HCP842_dTOR").
         Use list_structural_connectomes() to see available connectomes.
         The connectome must be pre-registered via register_structural_connectome().
-    atlas_name : str, optional
+    parcellation_name : str, optional
         Name of registered atlas for parcellated connectivity matrices.
-        Use list_atlases() to see available atlases.
+        Use list_parcellations() to see available atlases.
     compute_lesioned : bool, default=False
-        If True and atlas_name provided, compute lesioned connectivity matrix.
+        If True and parcellation_name provided, compute lesioned connectivity matrix.
     output_resolution : {1, 2}, default=2
         Output resolution in mm (must match connectome resolution).
     cache_tdi : bool, default=True
@@ -186,7 +186,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     def __init__(
         self,
         connectome_name: str,
-        atlas_name: str | None = None,
+        parcellation_name: str | None = None,
         compute_lesioned: bool = False,
         output_resolution: Literal[1, 2] = 2,
         cache_tdi: bool = True,
@@ -203,10 +203,10 @@ class StructuralNetworkMapping(BaseAnalysis):
         connectome_name : str
             Name of registered structural connectome (e.g., "HCP842_dTOR").
             Use list_structural_connectomes() to see available options.
-        atlas_name : str, optional
+        parcellation_name : str, optional
             Name of registered atlas for parcellated connectivity matrices.
         compute_lesioned : bool, default=False
-            If True and atlas_name provided, compute lesioned connectivity.
+            If True and parcellation_name provided, compute lesioned connectivity.
         output_resolution : {1, 2}, default=2
             Output resolution in mm (must match connectome resolution).
         cache_tdi : bool, default=True
@@ -255,7 +255,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.template = connectome.template_path  # May be None
 
         # Store analysis parameters
-        self.atlas_name = atlas_name
+        self.parcellation_name = parcellation_name
         self.compute_lesioned = compute_lesioned
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
@@ -435,9 +435,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             raise FileNotFoundError(f"Template not found: {self.template}")
 
         # Load atlas from registry
-        if self.atlas_name is not None:
+        if self.parcellation_name is not None:
             try:
-                atlas = load_atlas(self.atlas_name)
+                atlas = load_parcellation(self.parcellation_name)
                 # Store the atlas image for use in analysis
                 self._atlas_image = atlas.image
                 self._atlas_labels = atlas.labels
@@ -477,7 +477,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                         target_space=target_space,
                         source_resolution=atlas_resolution,
                         interpolation="nearest",  # Preserve integer labels
-                        image_name=f"atlas '{self.atlas_name}'",
+                        image_name=f"atlas '{self.parcellation_name}'",
                         log_level=self.log_level,
                     )
 
@@ -487,7 +487,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
                     # Create deterministic filename based on atlas name and target space
                     atlas_hash = hashlib.md5(
-                        f"{self.atlas_name}_{self.tractogram_space}_{self.output_resolution}".encode()
+                        f"{self.parcellation_name}_{self.tractogram_space}_{self.output_resolution}".encode()
                     ).hexdigest()[:12]
                     transformed_atlas_path = atlas_cache_dir / f"atlas_{atlas_hash}.nii.gz"
 
@@ -511,11 +511,11 @@ class StructuralNetworkMapping(BaseAnalysis):
                         raise FileNotFoundError(f"Atlas file not found: {self._atlas_resolved}")
 
             except KeyError as e:
-                available = [a.name for a in list_atlases()]
+                available = [a.name for a in list_parcellations()]
                 raise ValueError(
-                    f"Atlas '{self.atlas_name}' not found in registry. "
+                    f"Atlas '{self.parcellation_name}' not found in registry. "
                     f"Available atlases: {', '.join(available[:5])}... "
-                    f"Use list_atlases() to see all options."
+                    f"Use list_parcellations() to see all options."
                 ) from e
 
         # Check that lesion is binary
@@ -841,7 +841,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
-                "atlas": self.atlas_name,
+                "atlas": self.parcellation_name,
                 "tractogram": str(self.tractogram_path),
             },
         )
@@ -854,7 +854,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
-                "atlas": self.atlas_name,
+                "atlas": self.parcellation_name,
                 "description": "Percentage of streamlines disconnected by lesion",
             },
         )
@@ -867,7 +867,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
-                "atlas": self.atlas_name,
+                "atlas": self.parcellation_name,
                 "description": "Full brain connectivity matrix (reference)",
             },
         )
@@ -881,7 +881,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 region_labels=atlas_labels,
                 matrix_type="structural",
                 metadata={
-                    "atlas": self.atlas_name,
+                    "atlas": self.parcellation_name,
                     "description": "Intact connectivity excluding lesion streamlines",
                 },
             )
@@ -892,7 +892,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             name="matrix_statistics",
             data=matrix_stats,
             metadata={
-                "atlas": self.atlas_name,
+                "atlas": self.parcellation_name,
             },
         )
         results["matrix_statistics"] = stats_result
@@ -1018,7 +1018,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         """
         return {
             "connectome_name": self.connectome_name,
-            "atlas_name": str(self.atlas_name) if self.atlas_name else None,
+            "parcellation_name": str(self.parcellation_name) if self.parcellation_name else None,
             "compute_lesioned": self.compute_lesioned,
             "output_resolution": self.output_resolution,
             "n_jobs": self.n_jobs,

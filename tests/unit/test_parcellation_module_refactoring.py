@@ -10,7 +10,6 @@ All tests will fail initially - implementation follows in T162-T163.
 """
 
 
-import warnings
 from pathlib import Path
 
 import nibabel as nib
@@ -70,59 +69,6 @@ class TestParcellationModuleImports:
 
         assert BUNDLED_PARCELLATIONS_DIR is not None
         assert isinstance(BUNDLED_PARCELLATIONS_DIR, Path)
-
-
-class TestBackwardCompatibilityAliases:
-    """Test deprecated atlas names still work with warnings."""
-
-    def test_atlas_class_deprecated(self):
-        """Test that Atlas is available as deprecated alias."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            from lacuna.assets.parcellations import Atlas  # noqa: F401
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "Atlas is deprecated" in str(w[0].message)
-            assert "Parcellation" in str(w[0].message)
-
-    def test_atlas_metadata_deprecated(self):
-        """Test that AtlasMetadata is available as deprecated alias."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            from lacuna.assets.parcellations import AtlasMetadata  # noqa: F401
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "AtlasMetadata is deprecated" in str(w[0].message)
-
-    def test_load_atlas_deprecated(self):
-        """Test that load_atlas() works but warns."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            from lacuna.assets.parcellations import load_atlas  # noqa: F401
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "load_atlas is deprecated" in str(w[0].message)
-
-    def test_list_atlases_deprecated(self):
-        """Test that list_atlases() works but warns."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            from lacuna.assets.parcellations import list_atlases  # noqa: F401
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-
-    def test_register_atlas_deprecated(self):
-        """Test that register_atlas() works but warns."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            from lacuna.assets.parcellations import register_atlas  # noqa: F401
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
 
 
 class TestParcellationMetadataStructure:
@@ -224,13 +170,13 @@ class TestParcellationFunctionSignatures:
         assert "TestRegister" in PARCELLATION_REGISTRY
 
     def test_list_parcellations_returns_names(self):
-        """Test list_parcellations() returns list of registered names."""
-        from lacuna.assets.parcellations import list_parcellations
+        """Test list_parcellations() returns list of metadata objects."""
+        from lacuna.assets.parcellations import ParcellationMetadata, list_parcellations
 
-        names = list_parcellations()
-        assert isinstance(names, list)
-        assert len(names) > 0  # Should have bundled parcellations
-        assert all(isinstance(name, str) for name in names)
+        parcellations = list_parcellations()
+        assert isinstance(parcellations, list)
+        assert len(parcellations) > 0  # Should have bundled parcellations
+        assert all(isinstance(p, ParcellationMetadata) for p in parcellations)
 
 
 class TestParcellationClassFunctionality:

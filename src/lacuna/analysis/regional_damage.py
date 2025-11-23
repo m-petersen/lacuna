@@ -49,7 +49,7 @@ class RegionalDamage(ParcelAggregation):
     parcel_names : list of str or None, default=None
         Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
         If None, all registered atlases are processed.
-        Use list_atlases() to see available atlases.
+        Use list_parcellations() to see available atlases.
 
     Raises
     ------
@@ -97,6 +97,7 @@ class RegionalDamage(ParcelAggregation):
         self,
         threshold: float = 0.5,
         parcel_names: list[str] | None = None,
+        log_level: int = 1,
     ):
         """
         Initialize RegionalDamage analysis.
@@ -104,13 +105,24 @@ class RegionalDamage(ParcelAggregation):
         This is equivalent to:
         ParcelAggregation(source="mask_img",
                         aggregation="percent", threshold=threshold,
-                        parcel_names=parcel_names)
+                        parcel_names=parcel_names,
+                        log_level=log_level)
+
+        Parameters
+        ----------
+        threshold : float, default=0.5
+            Threshold for binary lesion conversion
+        parcel_names : list[str] | None, optional
+            List of specific parcellation names to use. If None, uses all available.
+        log_level : int, default=1
+            Logging verbosity level (0=silent, 1=normal, 2=verbose)
         """
         super().__init__(
             source="mask_img",
             aggregation="percent",
             threshold=threshold,
             parcel_names=parcel_names,
+            log_level=log_level,
         )
 
     def _validate_inputs(self, mask_data) -> None:

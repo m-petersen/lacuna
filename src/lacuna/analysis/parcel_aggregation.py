@@ -49,7 +49,7 @@ from nilearn.image import resample_to_img
 from nilearn.maskers import NiftiLabelsMasker
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.assets.atlases import list_atlases, load_atlas
+from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.core.data_types import ParcelData
 from lacuna.core.mask_data import MaskData
 
@@ -140,7 +140,7 @@ class ParcelAggregation(BaseAnalysis):
     - For 4D atlases: each volume is a binary or probability map for one region
     - 4D probabilistic maps are thresholded at `threshold` parameter (default 0.5)
     - Results stored in MaskData.results["ParcelAggregation"] as dict
-      mapping atlas_name_region_name -> aggregated_value
+      mapping parcellation_name_region_name -> aggregated_value
 
     Examples
     --------
@@ -158,7 +158,7 @@ class ParcelAggregation(BaseAnalysis):
     ... )
     >>>
     >>> # Register custom atlases first, then use them
-    >>> from lacuna.assets.atlases import register_atlases_from_directory
+    >>> from lacuna.assets.parcellations import register_parcellations_from_directory
     >>> register_atlases_from_directory("/data/my_atlases")
     >>> analysis = ParcelAggregation(
     ...     source="mask_img",
@@ -409,9 +409,9 @@ class ParcelAggregation(BaseAnalysis):
         ParcelData
             Aggregation result combining all atlas aggregations
         """
-        # Load atlases using same logic as _load_atlases_from_registry
+        # Load atlases using same logic as _load_parcellationes_from_registry
         if not hasattr(self, "atlases") or not self.atlases:
-            self.atlases = self._load_atlases_from_registry()
+            self.atlases = self._load_parcellationes_from_registry()
 
         # Get space and resolution from VoxelMap
         input_space = voxel_map.space
@@ -426,7 +426,7 @@ class ParcelAggregation(BaseAnalysis):
 
         # Process each atlas
         for atlas_info in self.atlases:
-            atlas_name = atlas_info["name"]
+            parcellation_name = atlas_info["name"]
             atlas_space = atlas_info.get("space")
             atlas_resolution = atlas_info.get("resolution")
 
@@ -441,7 +441,7 @@ class ParcelAggregation(BaseAnalysis):
                 input_space=input_space,
                 input_resolution=input_resolution,
                 input_affine=source_img.affine,
-                atlas_name=atlas_name,
+                parcellation_name=parcellation_name,
             )
 
             labels = atlas_info["labels"]
@@ -513,13 +513,13 @@ class ParcelAggregation(BaseAnalysis):
             )
 
         # Load atlases from registry
-        self.atlases = self._load_atlases_from_registry()
+        self.atlases = self._load_parcellationes_from_registry()
 
         if not self.atlases:
             if self.parcel_names is not None:
                 raise ValueError(
                     f"No matching atlases found for specified names: {self.parcel_names}\n"
-                    "Available atlases in registry: check list_atlases()\n"
+                    "Available atlases in registry: check list_parcellations()\n"
                     "Use register_atlas() or register_atlases_from_directory() to add atlases"
                 )
             else:
@@ -542,7 +542,7 @@ class ParcelAggregation(BaseAnalysis):
                     stacklevel=3,
                 )
 
-    def _load_atlases_from_registry(self) -> list[dict]:
+    def _load_parcellationes_from_registry(self) -> list[dict]:
         """
         Load atlases from the registry (bundled or user-registered).
 
@@ -559,7 +559,7 @@ class ParcelAggregation(BaseAnalysis):
             atlases_data = []
             for name in self.parcel_names:
                 try:
-                    atlas = load_atlas(name)
+                    atlas = load_parcellation(name)
 
                     # Resolve paths (absolute or relative to bundled dir)
                     atlas_filename_path = Path(atlas.metadata.atlas_filename)
@@ -590,10 +590,10 @@ class ParcelAggregation(BaseAnalysis):
                     pass
         else:
             # Load all registered atlases
-            atlas_metadatas = list_atlases()
+            atlas_metadatas = list_parcellations()
             atlases_data = []
             for metadata in atlas_metadatas:
-                atlas = load_atlas(metadata.name)
+                atlas = load_parcellation(metadata.name)
 
                 # Resolve paths (absolute or relative to bundled dir)
                 atlas_filename_path = Path(atlas.metadata.atlas_filename)
@@ -630,7 +630,7 @@ class ParcelAggregation(BaseAnalysis):
         input_space: str,
         input_resolution: int,
         input_affine: np.ndarray,
-        atlas_name: str | None = None,
+        parcellation_name: str | None = None,
     ) -> nib.Nifti1Image:
         """
         Transform atlas to match input data space if spaces don't match.
@@ -689,7 +689,7 @@ class ParcelAggregation(BaseAnalysis):
             target_space=target_space,
             source_resolution=atlas_resolution,
             interpolation="nearest",  # Preserve integer labels
-            image_name=f"atlas '{atlas_name}'" if atlas_name else "atlas",
+            image_name=f"atlas '{parcellation_name}'" if parcellation_name else "atlas",
             log_level=self.log_level,
         )
 
@@ -722,7 +722,7 @@ class ParcelAggregation(BaseAnalysis):
 
         # Process each atlas
         for atlas_info in self.atlases:
-            atlas_name = atlas_info["name"]
+            parcellation_name = atlas_info["name"]
             atlas_space = atlas_info.get("space")
             atlas_resolution = atlas_info.get("resolution")
 
@@ -737,7 +737,7 @@ class ParcelAggregation(BaseAnalysis):
                 input_space=input_space,
                 input_resolution=input_resolution,
                 input_affine=source_img.affine,
-                atlas_name=atlas_name,
+                parcellation_name=parcellation_name,
             )
 
             labels = atlas_info["labels"]
@@ -750,7 +750,7 @@ class ParcelAggregation(BaseAnalysis):
                 import warnings
 
                 warnings.warn(
-                    f"Atlas '{atlas_name}' will be resampled to match source data.\n"
+                    f"Atlas '{parcellation_name}' will be resampled to match source data.\n"
                     f"Source shape: {source_shape}, Atlas shape: {atlas_shape}",
                     UserWarning,
                     stacklevel=2,
@@ -770,7 +770,7 @@ class ParcelAggregation(BaseAnalysis):
                 import warnings
 
                 warnings.warn(
-                    f"Skipping atlas '{atlas_name}': unexpected dimensions {atlas_data.ndim}D",
+                    f"Skipping atlas '{parcellation_name}': unexpected dimensions {atlas_data.ndim}D",
                     UserWarning,
                     stacklevel=2,
                 )
@@ -778,9 +778,9 @@ class ParcelAggregation(BaseAnalysis):
 
             # Create one ParcelData per atlas
             roi_result = ParcelData(
-                name=atlas_name,
+                name=parcellation_name,
                 data=atlas_results,
-                parcel_names=[atlas_name],
+                parcel_names=[parcellation_name],
                 aggregation_method=self.aggregation,
                 metadata={
                     "source": self.source,
@@ -795,24 +795,24 @@ class ParcelAggregation(BaseAnalysis):
             #   - Analysis.key: "atlas-Schaefer100_desc-disconnectionMap"
 
             # Shorten atlas name if it's very long
-            short_atlas_name = atlas_name
-            if len(atlas_name) > 30:
+            short_parcellation_name = parcellation_name
+            if len(parcellation_name) > 30:
                 # Extract meaningful part (e.g., "Schaefer2018_100Parcels7Networks" -> "Schaefer100")
-                if "Parcels" in atlas_name:
+                if "Parcels" in parcellation_name:
                     # Extract number of parcels
                     import re
 
-                    match = re.search(r"(\d+)Parcels", atlas_name)
+                    match = re.search(r"(\d+)Parcels", parcellation_name)
                     if match:
                         num_parcels = match.group(1)
-                        if "Schaefer" in atlas_name:
-                            short_atlas_name = f"Schaefer{num_parcels}"
-                        elif "Tian" in atlas_name:
-                            short_atlas_name = f"Tian{num_parcels}"
+                        if "Schaefer" in parcellation_name:
+                            short_parcellation_name = f"Schaefer{num_parcels}"
+                        elif "Tian" in parcellation_name:
+                            short_parcellation_name = f"Tian{num_parcels}"
                         else:
-                            short_atlas_name = atlas_name[:20]
+                            short_parcellation_name = parcellation_name[:20]
                 else:
-                    short_atlas_name = atlas_name[:20]
+                    short_parcellation_name = parcellation_name[:20]
 
             # Extract source key (remove "Analysis." prefix if present)
             if "." in self.source:
@@ -830,7 +830,7 @@ class ParcelAggregation(BaseAnalysis):
             )
 
             # Build BIDS-style result key
-            result_key = f"atlas-{short_atlas_name}_desc-{source_pascal}"
+            result_key = f"atlas-{short_parcellation_name}_desc-{source_pascal}"
 
             atlas_results_dict[result_key] = roi_result
 
