@@ -63,7 +63,7 @@ def test_regional_damage_uses_atlas_registry(tmp_path):
     import numpy as np
 
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.atlases.registry import list_atlases, register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import list_parcellations, register_parcellations_from_directory
 
     # Create mock atlas directory
     atlas_dir = tmp_path / "atlases"
@@ -76,11 +76,11 @@ def test_regional_damage_uses_atlas_registry(tmp_path):
     (atlas_dir / "test_atlas_labels.txt").write_text("1 Region1\n")
 
     # Register atlas
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     # Should be able to instantiate and find atlases
     RegionalDamage()
-    assert len(list_atlases()) > 0
+    assert len(list_parcellations()) > 0
 
 
 def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
@@ -89,7 +89,7 @@ def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
     import numpy as np
 
     from lacuna import MaskData
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
@@ -98,7 +98,7 @@ def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
     atlas_data[20:40, 20:40, 20:40] = 1
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     # Create non-binary lesion
     data = synthetic_mask_img.get_fdata()
@@ -119,7 +119,7 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
 
     from lacuna import MaskData
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
@@ -134,7 +134,7 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
 
     # Create label file
     (atlas_dir / "test_atlas_labels.txt").write_text("1 Region1\n2 Region2\n")
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
@@ -157,7 +157,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
 
     from lacuna import MaskData
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
@@ -168,7 +168,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     atlas_img = nib.Nifti1Image(atlas_data, np.eye(4))
     nib.save(atlas_img, atlas_dir / "test_atlas.nii.gz")
     (atlas_dir / "test_atlas_labels.txt").write_text("1 TestRegion\n")
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
@@ -202,7 +202,7 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
 
     from lacuna import MaskData
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
@@ -220,7 +220,7 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     nib.save(nib.Nifti1Image(atlas_4d, np.eye(4)), atlas_dir / "atlas_4d.nii.gz")
     (atlas_dir / "atlas_4d_labels.txt").write_text("Region1\nRegion2\n")
 
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
@@ -248,7 +248,7 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
 
     from lacuna import MaskData
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
@@ -257,7 +257,7 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
     atlas_data[20:40, 20:40, 20:40] = 1
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
@@ -282,7 +282,7 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
 
     from lacuna import MaskData
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
@@ -291,7 +291,7 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     atlas_data[20:40, 20:40, 20:40] = 1
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}

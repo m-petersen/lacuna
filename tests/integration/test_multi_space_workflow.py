@@ -216,9 +216,9 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
     shutil.copy(atlas_nlin2009c_2mm.parent / "test_atlas_labels.txt", labels_dest)
 
     # Register atlas
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
 
     # Run analysis - should automatically detect and handle space mismatch
     analyzer = RegionalDamage()
@@ -267,9 +267,9 @@ def test_transformation_provenance_tracking(lesion_nlin6_2mm, atlas_nlin2009c_2m
     shutil.copy(atlas_nlin2009c_2mm.parent / "test_atlas_labels.txt", labels_dest)
 
     # Register atlas
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
 
     # Run analysis
     analyzer = RegionalDamage()
@@ -325,9 +325,9 @@ def test_matched_spaces_no_transformation_overhead(
     shutil.copy(atlas_nlin2009c_2mm.parent / "test_atlas_labels.txt", labels_dest)
 
     # Register atlas
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
 
     # Time the analysis
     analyzer = RegionalDamage()

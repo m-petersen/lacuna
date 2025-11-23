@@ -88,9 +88,9 @@ class TestAtlasLabelAssignment:
             )
 
             # Register atlas
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Run analysis - use only this test's atlas
             analysis = ParcelAggregation(
@@ -179,9 +179,9 @@ class TestAtlasLabelAssignment:
             )
 
             # Register atlas
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Run analysis - use only this test's atlas
             analysis = ParcelAggregation(
@@ -256,9 +256,9 @@ class TestAtlasLabelAssignment:
             )
 
             # Register atlas
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Use only this test's atlas
             analysis = ParcelAggregation(

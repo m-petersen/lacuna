@@ -5,17 +5,17 @@ Tests atlas metadata, registry operations, and atlas listing/filtering.
 
 import pytest
 
-from lacuna.assets.atlases import (
-    ATLAS_REGISTRY,
-    AtlasMetadata,
-    list_atlases,
-    register_atlas,
+from lacuna.assets.parcellations import (
+    PARCELLATION_REGISTRY,
+    ParcellationMetadata,
+    list_parcellations,
+    register_parcellation,
 )
 
 
 def test_atlas_metadata_creation():
-    """Test creating AtlasMetadata with required fields."""
-    metadata = AtlasMetadata(
+    """Test creating ParcellationMetadata with required fields."""
+    metadata = ParcellationMetadata(
         name="TestAtlas",
         space="MNI152NLin6Asym",
         resolution=2,
@@ -36,7 +36,7 @@ def test_atlas_metadata_creation():
 
 def test_atlas_metadata_bundled():
     """Test creating bundled atlas metadata."""
-    metadata = AtlasMetadata(
+    metadata = ParcellationMetadata(
         name="BundledAtlas",
         space="MNI152NLin6Asym",
         resolution=1,
@@ -54,24 +54,24 @@ def test_atlas_metadata_bundled():
 def test_atlas_registry_has_bundled_atlases():
     """Test that registry contains expected bundled atlases."""
     # Check for Schaefer atlases (actual names with 2018 and full parcel count)
-    assert "Schaefer2018_100Parcels7Networks" in ATLAS_REGISTRY
-    assert "Schaefer2018_200Parcels7Networks" in ATLAS_REGISTRY
-    assert "Schaefer2018_400Parcels7Networks" in ATLAS_REGISTRY
-    assert "Schaefer2018_1000Parcels7Networks" in ATLAS_REGISTRY
+    assert "Schaefer2018_100Parcels7Networks" in PARCELLATION_REGISTRY
+    assert "Schaefer2018_200Parcels7Networks" in PARCELLATION_REGISTRY
+    assert "Schaefer2018_400Parcels7Networks" in PARCELLATION_REGISTRY
+    assert "Schaefer2018_1000Parcels7Networks" in PARCELLATION_REGISTRY
 
     # Check for Tian atlases (actual names with full details)
-    assert "TianSubcortex_3TS1" in ATLAS_REGISTRY
-    assert "TianSubcortex_3TS2" in ATLAS_REGISTRY
-    assert "TianSubcortex_3TS3" in ATLAS_REGISTRY
+    assert "TianSubcortex_3TS1" in PARCELLATION_REGISTRY
+    assert "TianSubcortex_3TS2" in PARCELLATION_REGISTRY
+    assert "TianSubcortex_3TS3" in PARCELLATION_REGISTRY
 
     # Check for HCP atlas (actual name with threshold)
-    assert "HCP1065_thr0p1" in ATLAS_REGISTRY
+    assert "HCP1065_thr0p1" in PARCELLATION_REGISTRY
 
 
 def test_atlas_registry_metadata_validity():
     """Test that all registered atlases have valid metadata."""
-    for name, metadata in ATLAS_REGISTRY.items():
-        assert isinstance(metadata, AtlasMetadata)
+    for name, metadata in PARCELLATION_REGISTRY.items():
+        assert isinstance(metadata, ParcellationMetadata)
         assert metadata.name == name
         assert len(metadata.description) > 0
         assert len(metadata.space) > 0
@@ -80,21 +80,21 @@ def test_atlas_registry_metadata_validity():
         assert isinstance(metadata.is_4d, bool)
 
 
-def test_list_atlases_all():
+def test_list_parcellations_all():
     """Test listing all atlases without filters."""
-    atlases = list_atlases()
+    atlases = list_parcellations()
 
     assert len(atlases) >= 8  # At least 8 bundled atlases
-    assert all(isinstance(a, AtlasMetadata) for a in atlases)
+    assert all(isinstance(a, ParcellationMetadata) for a in atlases)
 
     # Check they're sorted by name
     names = [a.name for a in atlases]
     assert names == sorted(names)
 
 
-def test_list_atlases_filter_by_space():
+def test_list_parcellations_filter_by_space():
     """Test filtering atlases by coordinate space."""
-    nlin6_atlases = list_atlases(space="MNI152NLin6Asym")
+    nlin6_atlases = list_parcellations(space="MNI152NLin6Asym")
 
     assert len(nlin6_atlases) > 0
     assert all(a.space == "MNI152NLin6Asym" for a in nlin6_atlases)
@@ -104,9 +104,9 @@ def test_list_atlases_filter_by_space():
     assert "Schaefer2018_100Parcels7Networks" in names
 
 
-def test_list_atlases_filter_by_resolution():
+def test_list_parcellations_filter_by_resolution():
     """Test filtering atlases by resolution."""
-    res1_atlases = list_atlases(resolution=1)
+    res1_atlases = list_parcellations(resolution=1)
 
     assert len(res1_atlases) > 0
     assert all(a.resolution == 1 for a in res1_atlases)
@@ -116,9 +116,9 @@ def test_list_atlases_filter_by_resolution():
     assert any("Schaefer" in name for name in names)
 
 
-def test_list_atlases_check_region_counts():
+def test_list_parcellations_check_region_counts():
     """Test that atlases have region count information."""
-    atlases = list_atlases()
+    atlases = list_parcellations()
 
     # Check that region count info exists for some atlases
     has_region_info = [a for a in atlases if a.n_regions is not None]
@@ -130,10 +130,10 @@ def test_list_atlases_check_region_counts():
         assert atlas.n_regions < 10000  # Sanity check
 
 
-def test_list_atlases_combined_filters():
+def test_list_parcellations_combined_filters():
     """Test combining multiple filters."""
     # Bundled atlases in NLin6Asym space at 1mm resolution
-    filtered = list_atlases(space="MNI152NLin6Asym", resolution=1)
+    filtered = list_parcellations(space="MNI152NLin6Asym", resolution=1)
 
     # Should find bundled atlases that match both filters
     assert len(filtered) > 0
@@ -144,10 +144,10 @@ def test_list_atlases_combined_filters():
     assert any("Schaefer" in name for name in names)
 
 
-def test_register_atlas():
+def test_register_parcellation():
     """Test registering a custom atlas."""
     # Create custom atlas metadata
-    custom = AtlasMetadata(
+    custom = ParcellationMetadata(
         name="CustomTestAtlas",
         space="MNI152NLin6Asym",
         resolution=2,
@@ -158,25 +158,25 @@ def test_register_atlas():
     )
 
     # Register it
-    register_atlas(custom)
+    register_parcellation(custom)
 
     # Verify it's in the registry
-    assert "CustomTestAtlas" in ATLAS_REGISTRY
-    assert ATLAS_REGISTRY["CustomTestAtlas"] == custom
+    assert "CustomTestAtlas" in PARCELLATION_REGISTRY
+    assert PARCELLATION_REGISTRY["CustomTestAtlas"] == custom
 
     # Verify it appears in listings
-    atlases = list_atlases()
+    atlases = list_parcellations()
     names = [a.name for a in atlases]
     assert "CustomTestAtlas" in names
 
     # Clean up
-    del ATLAS_REGISTRY["CustomTestAtlas"]
+    del PARCELLATION_REGISTRY["CustomTestAtlas"]
 
 
-def test_register_atlas_overwrites_with_warning():
+def test_register_parcellation_overwrites_with_warning():
     """Test that registering an existing atlas name raises ValueError."""
     # Create atlas with same name as existing one
-    duplicate = AtlasMetadata(
+    duplicate = ParcellationMetadata(
         name="Schaefer2018_100Parcels7Networks",
         space="MNI152NLin6Asym",
         resolution=2,
@@ -188,12 +188,12 @@ def test_register_atlas_overwrites_with_warning():
 
     # Register should raise ValueError
     with pytest.raises(ValueError, match="already registered"):
-        register_atlas(duplicate)
+        register_parcellation(duplicate)
 
 
 def test_schaefer_atlas_metadata():
     """Test specific Schaefer atlas metadata."""
-    schaefer400 = ATLAS_REGISTRY["Schaefer2018_400Parcels7Networks"]
+    schaefer400 = PARCELLATION_REGISTRY["Schaefer2018_400Parcels7Networks"]
 
     assert schaefer400.name == "Schaefer2018_400Parcels7Networks"
     assert "Schaefer" in schaefer400.atlas_filename
@@ -206,7 +206,7 @@ def test_schaefer_atlas_metadata():
 
 def test_tian_atlas_metadata():
     """Test specific Tian atlas metadata."""
-    tian_s2 = ATLAS_REGISTRY["TianSubcortex_3TS2"]
+    tian_s2 = PARCELLATION_REGISTRY["TianSubcortex_3TS2"]
 
     assert tian_s2.name == "TianSubcortex_3TS2"
     assert "Tian" in tian_s2.atlas_filename
@@ -218,7 +218,7 @@ def test_tian_atlas_metadata():
 
 def test_hcp_atlas_metadata():
     """Test HCP1065 atlas metadata."""
-    hcp = ATLAS_REGISTRY["HCP1065_thr0p1"]
+    hcp = PARCELLATION_REGISTRY["HCP1065_thr0p1"]
 
     assert hcp.name == "HCP1065_thr0p1"
     assert "HCP" in hcp.atlas_filename or "White Matter" in hcp.atlas_filename

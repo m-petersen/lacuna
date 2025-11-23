@@ -13,8 +13,8 @@ import pytest
 
 from lacuna import MaskData
 from lacuna.analysis import ParcelAggregation, RegionalDamage
-from lacuna.assets.atlases.loader import load_atlas
-from lacuna.assets.atlases.registry import list_atlases
+from lacuna.assets.parcellations.loader import load_parcellation
+from lacuna.assets.parcellations.registry import list_parcellations
 
 
 class TestMultiAtlasAnalysisWorkflow:
@@ -93,16 +93,16 @@ class TestMultiAtlasAnalysisWorkflow:
 
 
 class TestAtlasDiscovery:
-    """Test atlas discovery with list_atlases() (T068)."""
+    """Test atlas discovery with list_parcellations() (T068)."""
 
     def test_list_all_bundled_atlases(self):
-        """list_atlases() returns all bundled atlases."""
-        atlases = list_atlases()
+        """list_parcellations() returns all bundled atlases."""
+        atlases = list_parcellations()
 
         # Should have atlases
         assert len(atlases) > 0
 
-        # Each should be AtlasMetadata with required fields
+        # Each should be ParcellationMetadata with required fields
         for atlas in atlases:
             assert hasattr(atlas, "name")
             assert hasattr(atlas, "space")
@@ -110,36 +110,36 @@ class TestAtlasDiscovery:
             assert hasattr(atlas, "atlas_type")
 
     def test_filter_atlases_by_space(self):
-        """list_atlases() can filter by space."""
+        """list_parcellations() can filter by space."""
         # Get atlases in specific space
-        mni2009c_atlases = list_atlases(space="MNI152NLin2009cAsym")
+        mni2009c_atlases = list_parcellations(space="MNI152NLin2009cAsym")
 
         # All should be in that space
         for atlas in mni2009c_atlases:
             assert atlas.space == "MNI152NLin2009cAsym"
 
     def test_filter_atlases_by_type(self):
-        """list_atlases() can filter by type."""
+        """list_parcellations() can filter by type."""
         # Get network atlases
-        network_atlases = list_atlases(atlas_type="network")
+        network_atlases = list_parcellations(atlas_type="network")
 
         # All should be network type
         for atlas in network_atlases:
             assert atlas.atlas_type == "network"
 
     def test_filter_atlases_by_region_count(self):
-        """list_atlases() can filter by region count range."""
+        """list_parcellations() can filter by region count range."""
         # Get atlases with 100-500 regions
-        medium_atlases = list_atlases(min_regions=100, max_regions=500)
+        medium_atlases = list_parcellations(min_regions=100, max_regions=500)
 
         # All should be in range
         for atlas in medium_atlases:
             assert 100 <= atlas.n_regions <= 500
 
     def test_combined_filters(self):
-        """list_atlases() can combine multiple filters."""
+        """list_parcellations() can combine multiple filters."""
         # Get network atlases in MNI2009c with 200-400 regions
-        filtered = list_atlases(
+        filtered = list_parcellations(
             space="MNI152NLin2009cAsym", atlas_type="network", min_regions=200, max_regions=400
         )
 
@@ -150,8 +150,8 @@ class TestAtlasDiscovery:
             assert 200 <= atlas.n_regions <= 400
 
     def test_discover_specific_atlases(self):
-        """list_atlases() includes expected bundled atlases."""
-        all_atlases = list_atlases()
+        """list_parcellations() includes expected bundled atlases."""
+        all_atlases = list_parcellations()
         parcel_names = [a.name for a in all_atlases]
 
         # Should include Schaefer parcellations
@@ -166,19 +166,19 @@ class TestAtlasDiscovery:
 class TestAtlasLoadingInDifferentSpaces:
     """Test atlas loading in different coordinate spaces (T069)."""
 
-    def test_load_atlas_returns_correct_space(self):
-        """load_atlas() returns atlas with correct coordinate space."""
+    def test_load_parcellation_returns_correct_space(self):
+        """load_parcellation() returns atlas with correct coordinate space."""
         # Load atlas
-        atlas = load_atlas("Schaefer400")
+        atlas = load_parcellation("Schaefer400")
 
         # Should have correct metadata
         assert atlas.metadata.space == "MNI152NLin6Asym"
         assert atlas.metadata.n_regions == 400
 
-    def test_load_atlas_with_labels(self):
-        """load_atlas() and get_atlas_labels() work together."""
+    def test_load_parcellation_with_labels(self):
+        """load_parcellation() and get_atlas_labels() work together."""
         # Load atlas
-        atlas = load_atlas("TianS2")
+        atlas = load_parcellation("TianS2")
         labels = get_atlas_labels("TianS2")
 
         # Labels should match region count
@@ -196,7 +196,7 @@ class TestAtlasLoadingInDifferentSpaces:
         expected_regions = [100, 200, 400, 1000]
 
         for atlas_name, expected_n in zip(atlases, expected_regions, strict=False):
-            atlas = load_atlas(atlas_name)
+            atlas = load_parcellation(atlas_name)
             assert atlas.metadata.n_regions == expected_n
             assert atlas.metadata.space == "MNI152NLin6Asym"
 
@@ -206,14 +206,14 @@ class TestAtlasLoadingInDifferentSpaces:
         expected_regions = [16, 32, 50]
 
         for atlas_name, expected_n in zip(atlases, expected_regions, strict=False):
-            atlas = load_atlas(atlas_name)
+            atlas = load_parcellation(atlas_name)
             assert atlas.metadata.n_regions == expected_n
             assert atlas.metadata.space == "MNI152NLin6Asym"
 
     def test_atlas_metadata_consistency(self):
         """Atlas metadata from registry is consistent."""
         # Get metadata from registry
-        all_atlases = list_atlases()
+        all_atlases = list_parcellations()
 
         # Check first 3 for consistency
         for atlas_info in all_atlases[:3]:
@@ -230,13 +230,13 @@ class TestAtlasLoadingInDifferentSpaces:
             assert atlas_info.n_regions > 0
 
     def test_invalid_atlas_name_raises_error(self):
-        """load_atlas() raises ValueError for invalid atlas name."""
+        """load_parcellation() raises ValueError for invalid atlas name."""
         with pytest.raises(ValueError, match="not found.*registry"):
-            load_atlas("NonexistentAtlas12345")
+            load_parcellation("NonexistentAtlas12345")
 
     def test_atlas_registry_contains_expected_atlases(self):
         """Atlas registry contains all expected bundled atlases."""
-        all_atlases = list_atlases()
+        all_atlases = list_parcellations()
 
         # Check that we have a reasonable number of atlases
         assert len(all_atlases) >= 8, f"Expected at least 8 atlases, got {len(all_atlases)}"

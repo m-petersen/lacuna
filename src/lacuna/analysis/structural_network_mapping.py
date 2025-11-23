@@ -514,7 +514,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 available = [a.name for a in list_parcellations()]
                 raise ValueError(
                     f"Atlas '{self.parcellation_name}' not found in registry. "
-                    f"Available atlases: {', '.join(available[:5])}... "
+                    f"Available parcellations: {', '.join(available[:5])}... "
                     f"Use list_parcellations() to see all options."
                 ) from e
 

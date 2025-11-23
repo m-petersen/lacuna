@@ -74,8 +74,8 @@ def test_atlas_transformed_when_space_mismatch():
 
                 with patch("lacuna.analysis.structural_network_mapping.compute_tdi_map"):
                     with patch(
-                        "lacuna.analysis.structural_network_mapping.load_atlas"
-                    ) as mock_load_atlas:
+                        "lacuna.analysis.structural_network_mapping.load_parcellation"
+                    ) as mock_load_parcellation:
                         # Mock atlas in different space (MNI152NLin6Asym)
                         atlas_data = np.random.randint(0, 101, size=(182, 218, 182), dtype=np.int16)
                         atlas_img = nib.Nifti1Image(atlas_data, np.eye(4))
@@ -90,7 +90,7 @@ def test_atlas_transformed_when_space_mismatch():
                         mock_atlas.metadata.resolution = 1
                         mock_atlas.metadata.atlas_filename = "test_atlas.nii.gz"
 
-                        mock_load_atlas.return_value = mock_atlas
+                        mock_load_parcellation.return_value = mock_atlas
 
                         with patch("lacuna.spatial.transform.transform_image") as mock_transform:
                             # Mock transformation - returns transformed atlas image
@@ -197,8 +197,8 @@ def test_atlas_not_transformed_when_space_matches():
 
                 with patch("lacuna.analysis.structural_network_mapping.compute_tdi_map"):
                     with patch(
-                        "lacuna.analysis.structural_network_mapping.load_atlas"
-                    ) as mock_load_atlas:
+                        "lacuna.analysis.structural_network_mapping.load_parcellation"
+                    ) as mock_load_parcellation:
                         # Create temp atlas file
                         atlas_dir = Path(tempfile.mkdtemp())
                         atlas_file = atlas_dir / "test_atlas.nii.gz"
@@ -215,7 +215,7 @@ def test_atlas_not_transformed_when_space_matches():
                         mock_atlas.metadata.resolution = 1
                         mock_atlas.metadata.atlas_filename = str(atlas_file)
 
-                        mock_load_atlas.return_value = mock_atlas
+                        mock_load_parcellation.return_value = mock_atlas
 
                         with patch("lacuna.spatial.transform.transform_image") as mock_transform:
                             # Mock - should NOT be called when spaces match
@@ -304,8 +304,8 @@ def test_atlas_transformation_uses_correct_resolution():
 
                 with patch("lacuna.analysis.structural_network_mapping.compute_tdi_map"):
                     with patch(
-                        "lacuna.analysis.structural_network_mapping.load_atlas"
-                    ) as mock_load_atlas:
+                        "lacuna.analysis.structural_network_mapping.load_parcellation"
+                    ) as mock_load_parcellation:
                         # Mock atlas
                         atlas_data = np.random.randint(0, 101, size=(182, 218, 182), dtype=np.int16)
                         atlas_img = nib.Nifti1Image(atlas_data, np.eye(4))
@@ -318,7 +318,7 @@ def test_atlas_transformation_uses_correct_resolution():
                         mock_atlas.metadata.resolution = 1
                         mock_atlas.metadata.atlas_filename = "test_atlas.nii.gz"
 
-                        mock_load_atlas.return_value = mock_atlas
+                        mock_load_parcellation.return_value = mock_atlas
 
                         with patch("lacuna.spatial.transform.transform_image") as mock_transform:
                             # Mock transformation - returns transformed atlas image
