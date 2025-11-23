@@ -431,7 +431,7 @@ class TestResultKeyGeneration:
         )
 
         # Run analysis
-        result = MockAtlasAnalysis(atlas_name="DKT").run(mask_data)
+        result = MockAtlasAnalysis(parcellation_name="DKT").run(mask_data)
 
         # Result should be in dict with descriptive key
         assert "MockAtlasAnalysis" in result.results

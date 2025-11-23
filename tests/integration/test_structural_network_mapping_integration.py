@@ -97,7 +97,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=False,
             n_jobs=2,
             verbose=False,
@@ -142,7 +142,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=True,
             n_jobs=2,
             verbose=False,
@@ -173,7 +173,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=True,
             n_jobs=2,
             verbose=False,
@@ -196,7 +196,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             compute_lesioned=True,
             n_jobs=2,
             verbose=False,
@@ -219,7 +219,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -251,7 +251,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -310,7 +310,7 @@ class TestEdgeCases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -330,7 +330,7 @@ class TestEdgeCases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="Schaefer2018_100Parcels7Networks",
             n_jobs=2,
             verbose=False,
         )
@@ -364,7 +364,7 @@ class TestDifferentAtlases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            atlas_name=atlas_name,
+            parcellation_name=atlas_name,
             n_jobs=2,
             verbose=False,
         )

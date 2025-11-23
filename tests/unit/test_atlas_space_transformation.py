@@ -105,7 +105,7 @@ def test_atlas_transformed_when_space_mismatch():
                             # Initialize analysis with atlas
                             analysis = StructuralNetworkMapping(
                                 connectome_name="test_struct_connectome",
-                                atlas_name="Schaefer2018_100Parcels7Networks",
+                                parcellation_name="Schaefer2018_100Parcels7Networks",
                                 cache_tdi=False,
                                 check_dependencies=False,
                             )
@@ -131,8 +131,8 @@ def test_atlas_transformed_when_space_mismatch():
                             ), "Should use output_resolution for target space"
 
                             # Verify transformed atlas was saved and path set
-                            assert analysis._atlas_resolved is not None
-                            assert "atlas_" in str(analysis._atlas_resolved)
+                            assert analysis._parcellation_resolved is not None
+                            assert "atlas_" in str(analysis._parcellation_resolved)
 
     finally:
         unregister_structural_connectome("test_struct_connectome")
@@ -226,7 +226,7 @@ def test_atlas_not_transformed_when_space_matches():
                             # Initialize analysis with atlas - same space as atlas
                             analysis = StructuralNetworkMapping(
                                 connectome_name="test_struct_no_transform",
-                                atlas_name="Schaefer2018_100Parcels7Networks",
+                                parcellation_name="Schaefer2018_100Parcels7Networks",
                                 cache_tdi=False,
                                 check_dependencies=False,
                             )
@@ -240,7 +240,7 @@ def test_atlas_not_transformed_when_space_matches():
                             ), "Atlas should not be transformed when spaces match"
 
                             # Verify original atlas file is used
-                            assert analysis._atlas_resolved == atlas_file
+                            assert analysis._parcellation_resolved == atlas_file
 
     finally:
         if registered:
@@ -334,7 +334,7 @@ def test_atlas_transformation_uses_correct_resolution():
                             output_res = 2
                             analysis = StructuralNetworkMapping(
                                 connectome_name="test_struct_resolution",
-                                atlas_name="Schaefer2018_100Parcels7Networks",
+                                parcellation_name="Schaefer2018_100Parcels7Networks",
                                 cache_tdi=False,
                                 check_dependencies=False,
                             )
