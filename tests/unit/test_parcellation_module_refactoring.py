@@ -134,19 +134,21 @@ class TestParcellationMetadataStructure:
 
         metadata = ParcellationMetadata(
             name="TestParcellation",
-            path=Path("/fake/path.nii.gz"),
             space="MNI152NLin6Asym",
-            resolution="2mm",
+            resolution=2.0,
             description="Test parcellation",
-            regions=["Region1", "Region2"],
+            parcellation_filename="test.nii.gz",
+            labels_filename="test_labels.txt",
+            region_labels=["Region1", "Region2"],
         )
 
         assert metadata.name == "TestParcellation"
-        assert metadata.path == Path("/fake/path.nii.gz")
         assert metadata.space == "MNI152NLin6Asym"
-        assert metadata.resolution == "2mm"
+        assert metadata.resolution == 2.0
         assert metadata.description == "Test parcellation"
-        assert metadata.regions == ["Region1", "Region2"]
+        assert metadata.parcellation_filename == "test.nii.gz"
+        assert metadata.labels_filename == "test_labels.txt"
+        assert metadata.region_labels == ["Region1", "Region2"]
 
     def test_parcellation_metadata_supports_4d(self):
         """Test that ParcellationMetadata supports is_4d field."""
@@ -154,11 +156,12 @@ class TestParcellationMetadataStructure:
 
         metadata_4d = ParcellationMetadata(
             name="Test4D",
-            path=Path("/fake/4d.nii.gz"),
             space="MNI152NLin6Asym",
-            resolution="2mm",
+            resolution=2.0,
             description="4D parcellation",
-            regions=["Tract1", "Tract2"],
+            parcellation_filename="test_4d.nii.gz",
+            labels_filename="test_4d_labels.txt",
+            region_labels=["Tract1", "Tract2"],
             is_4d=True,
         )
 
@@ -234,52 +237,51 @@ class TestParcellationClassFunctionality:
     """Test Parcellation class functionality."""
 
     def test_parcellation_has_data_attribute(self, tmp_path):
-        """Test Parcellation class provides access to data."""
-        from lacuna.assets.parcellations import Parcellation
+        """Test Parcellation class provides access to image data."""
+        from lacuna.assets.parcellations import Parcellation, ParcellationMetadata
 
         data = np.arange(1, 28).reshape(3, 3, 3)
         img = nib.Nifti1Image(data, affine=np.eye(4))
-        path = tmp_path / "test_data.nii.gz"
-        nib.save(img, path)
-
-        parc = Parcellation(
-            img=img,
-            metadata={
-                "name": "TestData",
-                "path": path,
-                "space": "MNI152NLin6Asym",
-                "resolution": "2mm",
-                "description": "Test",
-                "regions": ["R1"],
-            },
+       
+        metadata = ParcellationMetadata(
+            name="TestData",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            description="Test",
+            parcellation_filename="test.nii.gz",
+            labels_filename="test_labels.txt",
+            region_labels=["R1"],
         )
 
-        assert hasattr(parc, "data")
-        assert parc.data.shape == (3, 3, 3)
+        parc = Parcellation(img=img, labels={1: "R1"}, metadata=metadata)
+
+        assert hasattr(parc, "image")
+        assert parc.image.shape == (3, 3, 3)
+        # Test data access through image
+        assert hasattr(parc.image, "get_fdata")
 
     def test_parcellation_has_metadata_attribute(self, tmp_path):
         """Test Parcellation class provides metadata access."""
-        from lacuna.assets.parcellations import Parcellation
+        from lacuna.assets.parcellations import Parcellation, ParcellationMetadata
 
         data = np.arange(1, 28).reshape(3, 3, 3)
         img = nib.Nifti1Image(data, affine=np.eye(4))
-        path = tmp_path / "test_meta.nii.gz"
-        nib.save(img, path)
 
-        metadata = {
-            "name": "TestMeta",
-            "path": path,
-            "space": "MNI152NLin6Asym",
-            "resolution": "2mm",
-            "description": "Test metadata",
-            "regions": ["R1", "R2"],
-        }
+        metadata = ParcellationMetadata(
+            name="TestMeta",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            description="Test metadata",
+            parcellation_filename="test_meta.nii.gz",
+            labels_filename="test_meta_labels.txt",
+            region_labels=["R1", "R2"],
+        )
 
-        parc = Parcellation(img=img, metadata=metadata)
+        parc = Parcellation(img=img, labels={1: "R1", 2: "R2"}, metadata=metadata)
 
         assert hasattr(parc, "metadata")
-        assert parc.metadata["name"] == "TestMeta"
-        assert parc.metadata["regions"] == ["R1", "R2"]
+        assert parc.metadata.name == "TestMeta"
+        assert parc.metadata.region_labels == ["R1", "R2"]
 
 
 class TestRegionalDamageLogLevel:

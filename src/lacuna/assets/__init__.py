@@ -1,7 +1,7 @@
 """Unified asset management system for Lacuna.
 
 This module provides centralized management of all neuroimaging assets:
-- Atlases (bundled and user-registered)
+- Parcellations (bundled and user-registered, formerly "atlases")
 - Templates (from TemplateFlow)
 - Transforms (from TemplateFlow)
 - Connectomes (structural and functional, user-registered)
@@ -9,7 +9,21 @@ This module provides centralized management of all neuroimaging assets:
 All asset types follow a consistent registry pattern with register/list/load functions.
 """
 
-# Import atlas management
+# Import parcellation management (preferred)
+from lacuna.assets import parcellations  # noqa: F401
+from lacuna.assets.parcellations import (
+    PARCELLATION_REGISTRY,
+    Parcellation,
+    ParcellationMetadata,
+    list_parcellations,
+    load_parcellation,
+    register_parcellation,
+    register_parcellation_from_files,
+    register_parcellations_from_directory,
+    unregister_parcellation,
+)
+
+# Import atlas management (deprecated, use parcellations)
 from lacuna.assets.atlases import (
     ATLAS_REGISTRY,
     Atlas,
