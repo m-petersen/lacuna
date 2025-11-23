@@ -67,10 +67,10 @@ def test_atlas_dir(tmp_path):
 @pytest.fixture
 def regional_damage_analysis(test_atlas_dir):
     """Create RegionalDamage analysis instance with minimal test atlas."""
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Register the test atlas
-    register_atlases_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     # Create analysis without atlas_dir parameter
     return RegionalDamage()

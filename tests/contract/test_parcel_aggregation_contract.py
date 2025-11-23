@@ -79,14 +79,14 @@ def test_atlas_aggregation_validates_atlas_directory(synthetic_mask_img):
     """Test that ParcelAggregation validates atlases are available in registry."""
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
-    from lacuna.assets.atlases.registry import ATLAS_REGISTRY
+    from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY
 
     # Save current registry state
-    saved_registry = ATLAS_REGISTRY.copy()
+    saved_registry = PARCELLATION_REGISTRY.copy()
 
     try:
         # Clear registry
-        ATLAS_REGISTRY.clear()
+        PARCELLATION_REGISTRY.clear()
 
         analysis = ParcelAggregation()
         mask_data = MaskData(
@@ -97,8 +97,8 @@ def test_atlas_aggregation_validates_atlas_directory(synthetic_mask_img):
             analysis.run(mask_data)
     finally:
         # Restore registry
-        ATLAS_REGISTRY.clear()
-        ATLAS_REGISTRY.update(saved_registry)
+        PARCELLATION_REGISTRY.clear()
+        PARCELLATION_REGISTRY.update(saved_registry)
 
 
 def test_atlas_aggregation_validates_source_exists(synthetic_mask_img, tmp_path):
@@ -108,7 +108,7 @@ def test_atlas_aggregation_validates_source_exists(synthetic_mask_img, tmp_path)
 
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
-    from lacuna.assets.atlases.registry import register_atlases_from_directory
+    from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
     atlas_dir = tmp_path / "atlases"
@@ -118,7 +118,7 @@ def test_atlas_aggregation_validates_source_exists(synthetic_mask_img, tmp_path)
     nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
     (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
 
-    register_atlases_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}

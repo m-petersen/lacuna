@@ -10,13 +10,13 @@ import pytest
 
 from lacuna import MaskData
 from lacuna.analysis import ParcelAggregation
-from lacuna.assets.atlases.loader import load_atlas
-from lacuna.assets.atlases.registry import (
-    ATLAS_REGISTRY,
-    list_atlases,
-    register_atlas_from_files,
-    register_atlases_from_directory,
-    unregister_atlas,
+from lacuna.assets.parcellations.loader import load_parcellation
+from lacuna.assets.parcellations.registry import (
+    PARCELLATION_REGISTRY,
+    list_parcellations,
+    register_parcellation_from_files,
+    register_parcellations_from_directory,
+    unregister_parcellation,
 )
 
 
@@ -25,7 +25,7 @@ class TestAtlasRegistryBasics:
 
     def test_list_bundled_atlases(self):
         """Test listing bundled atlases from registry."""
-        atlases = list_atlases()
+        atlases = list_parcellations()
 
         # Should have at least the bundled atlases
         assert len(atlases) >= 8
@@ -39,24 +39,24 @@ class TestAtlasRegistryBasics:
     def test_filter_atlases_by_space(self):
         """Test filtering atlases by coordinate space."""
         # Get atlases in MNI152NLin6Asym space
-        atlases_lin6 = list_atlases(space="MNI152NLin6Asym")
+        atlases_lin6 = list_parcellations(space="MNI152NLin6Asym")
         assert len(atlases_lin6) > 0
         assert all(a.space == "MNI152NLin6Asym" for a in atlases_lin6)
 
         # Get atlases in MNI152NLin2009aAsym space
-        atlases_lin2009a = list_atlases(space="MNI152NLin2009aAsym")
+        atlases_lin2009a = list_parcellations(space="MNI152NLin2009aAsym")
         assert len(atlases_lin2009a) >= 1  # At least HCP1065
 
     def test_filter_atlases_by_resolution(self):
         """Test filtering atlases by resolution."""
         # Get 1mm atlases
-        atlases_1mm = list_atlases(resolution=1)
+        atlases_1mm = list_parcellations(resolution=1)
         assert len(atlases_1mm) > 0
         assert all(a.resolution == 1 for a in atlases_1mm)
 
     def test_load_bundled_atlas(self):
         """Test loading a bundled atlas."""
-        atlas = load_atlas("Schaefer2018_100Parcels7Networks")
+        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
 
         # Check metadata
         assert atlas.metadata.name == "Schaefer2018_100Parcels7Networks"
@@ -209,7 +209,7 @@ class TestCustomAtlasRegistration:
         atlas_path, labels_path = custom_atlas_files
 
         # Register custom atlas
-        register_atlas_from_files(
+        register_parcellation_from_files(
             name="CustomTestAtlas",
             atlas_path=str(atlas_path),
             labels_path=str(labels_path),
@@ -220,10 +220,10 @@ class TestCustomAtlasRegistration:
 
         try:
             # Check it's in the registry
-            assert "CustomTestAtlas" in ATLAS_REGISTRY
+            assert "CustomTestAtlas" in PARCELLATION_REGISTRY
 
             # Load it
-            atlas = load_atlas("CustomTestAtlas")
+            atlas = load_parcellation("CustomTestAtlas")
             assert atlas.metadata.name == "CustomTestAtlas"
             assert atlas.metadata.space == "MNI152NLin6Asym"
             assert atlas.metadata.resolution == 2
@@ -231,7 +231,7 @@ class TestCustomAtlasRegistration:
 
         finally:
             # Cleanup
-            unregister_atlas("CustomTestAtlas")
+            unregister_parcellation("CustomTestAtlas")
 
     def test_use_custom_atlas_in_analysis(self, custom_atlas_files, synthetic_mask_data):
         """Test using a custom registered atlas in analysis."""
@@ -241,7 +241,7 @@ class TestCustomAtlasRegistration:
         synthetic_lesion = synthetic_mask_data
 
         # Register custom atlas
-        register_atlas_from_files(
+        register_parcellation_from_files(
             name="CustomAnalysisAtlas",
             atlas_path=str(atlas_path),
             labels_path=str(labels_path),
@@ -267,9 +267,9 @@ class TestCustomAtlasRegistration:
 
         finally:
             # Cleanup
-            unregister_atlas("CustomAnalysisAtlas")
+            unregister_parcellation("CustomAnalysisAtlas")
 
-    def test_register_atlases_from_directory(self, tmp_path):
+    def test_register_parcellations_from_directory(self, tmp_path):
         """Test bulk registration from directory."""
         # Create two atlas files with BIDS naming
         for i, name in enumerate(["atlas1", "atlas2"]):
@@ -287,7 +287,7 @@ class TestCustomAtlasRegistration:
             labels_path.write_text(f"1 Region_One_{i}\n")
 
         # Register from directory
-        registered = register_atlases_from_directory(
+        registered = register_parcellations_from_directory(
             tmp_path, space="MNI152NLin6Asym", resolution=1
         )
 
@@ -298,13 +298,13 @@ class TestCustomAtlasRegistration:
             # Check they're in registry
             for name in registered:
                 assert name.startswith("tpl-MNI152NLin6Asym_res-01_atlas-")
-                assert name in ATLAS_REGISTRY
+                assert name in PARCELLATION_REGISTRY
 
         finally:
             # Cleanup
             for name in registered:
-                if name in ATLAS_REGISTRY:
-                    unregister_atlas(name)
+                if name in PARCELLATION_REGISTRY:
+                    unregister_parcellation(name)
 
 
 if __name__ == "__main__":

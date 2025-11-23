@@ -1,7 +1,7 @@
 """Tests for 4D atlas support.
 
 Tests cover:
-1. AtlasMetadata with is_4d field
+1. ParcellationMetadata with is_4d field
 2. Automatic detection of 4D atlases during registration
 3. 4D atlas transformation (volume-by-volume)
 4. 4D atlas aggregation in RegionalDamage
@@ -13,18 +13,18 @@ import numpy as np
 
 from lacuna import MaskData
 from lacuna.analysis import RegionalDamage
-from lacuna.assets.atlases.registry import AtlasMetadata, register_atlas, unregister_atlas
+from lacuna.assets.parcellations.registry import ParcellationMetadata, register_parcellation, unregister_parcellation
 from lacuna.core.data_types import ParcelData
 from lacuna.core.spaces import CoordinateSpace
 from lacuna.spatial.transform import transform_image
 
 
-class Test4DAtlasMetadata:
-    """Test AtlasMetadata with is_4d field."""
+class Test4DParcellationMetadata:
+    """Test ParcellationMetadata with is_4d field."""
 
     def test_atlas_metadata_has_is_4d_field(self):
-        """AtlasMetadata should have is_4d boolean field."""
-        metadata = AtlasMetadata(
+        """ParcellationMetadata should have is_4d boolean field."""
+        metadata = ParcellationMetadata(
             name="Test3DAtlas",
             space="MNI152NLin6Asym",
             resolution=2.0,
@@ -38,8 +38,8 @@ class Test4DAtlasMetadata:
         assert metadata.is_4d is False
 
     def test_atlas_metadata_4d_true(self):
-        """AtlasMetadata should accept is_4d=True for 4D atlases."""
-        metadata = AtlasMetadata(
+        """ParcellationMetadata should accept is_4d=True for 4D atlases."""
+        metadata = ParcellationMetadata(
             name="Test4DAtlas",
             space="MNI152NLin6Asym",
             resolution=2.0,
@@ -55,7 +55,7 @@ class Test4DAtlasMetadata:
 
     def test_atlas_metadata_is_4d_defaults_to_false(self):
         """is_4d should default to False if not specified."""
-        metadata = AtlasMetadata(
+        metadata = ParcellationMetadata(
             name="TestDefaultAtlas",
             space="MNI152NLin6Asym",
             resolution=2.0,
@@ -86,7 +86,7 @@ class Test4DAtlasDetection:
 
         try:
             # Register atlas - should detect 3D
-            metadata = AtlasMetadata(
+            metadata = ParcellationMetadata(
                 name="Test3DRegistration",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -102,7 +102,7 @@ class Test4DAtlasDetection:
         finally:
             # Clean up
             try:
-                unregister_atlas("Test3DRegistration")
+                unregister_parcellation("Test3DRegistration")
             except (ValueError, KeyError):
                 pass
 
@@ -121,7 +121,7 @@ class Test4DAtlasDetection:
 
         try:
             # Register atlas - should detect 4D
-            metadata = AtlasMetadata(
+            metadata = ParcellationMetadata(
                 name="Test4DRegistration",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -139,7 +139,7 @@ class Test4DAtlasDetection:
         finally:
             # Clean up
             try:
-                unregister_atlas("Test4DRegistration")
+                unregister_parcellation("Test4DRegistration")
             except (ValueError, KeyError):
                 pass
 
@@ -373,7 +373,7 @@ class Test4DParcelAggregation:
 
         try:
             # Register 4D atlas
-            metadata = AtlasMetadata(
+            metadata = ParcellationMetadata(
                 name="Test4DAtlas_Aggregation",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -383,7 +383,7 @@ class Test4DParcelAggregation:
                 is_4d=True,
                 n_regions=3,
             )
-            register_atlas(metadata)
+            register_parcellation(metadata)
 
             # Run RegionalDamage with 4D atlas
             analysis = RegionalDamage(parcel_names=["Test4DAtlas_Aggregation"], threshold=0.0)
@@ -405,7 +405,7 @@ class Test4DParcelAggregation:
 
         finally:
             try:
-                unregister_atlas("Test4DAtlas_Aggregation")
+                unregister_parcellation("Test4DAtlas_Aggregation")
             except (ValueError, KeyError):
                 pass
 
@@ -436,7 +436,7 @@ class Test4DParcelAggregation:
         labels_path.write_text("1 LargeOverlap\n2 SmallOverlap\n3 NoOverlap\n")
 
         try:
-            metadata = AtlasMetadata(
+            metadata = ParcellationMetadata(
                 name="Test4D_VaryingOverlap",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -446,7 +446,7 @@ class Test4DParcelAggregation:
                 is_4d=True,
                 n_regions=3,
             )
-            register_atlas(metadata)
+            register_parcellation(metadata)
 
             analysis = RegionalDamage(parcel_names=["Test4D_VaryingOverlap"], threshold=0.0)
 
@@ -463,7 +463,7 @@ class Test4DParcelAggregation:
 
         finally:
             try:
-                unregister_atlas("Test4D_VaryingOverlap")
+                unregister_parcellation("Test4D_VaryingOverlap")
             except (ValueError, KeyError):
                 pass
 
@@ -508,7 +508,7 @@ class TestMixed3DAnd4DAtlases:
 
         try:
             # Register both atlases
-            metadata_3d = AtlasMetadata(
+            metadata_3d = ParcellationMetadata(
                 name="Mixed3D",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -518,9 +518,9 @@ class TestMixed3DAnd4DAtlases:
                 is_4d=False,
                 n_regions=2,
             )
-            register_atlas(metadata_3d)
+            register_parcellation(metadata_3d)
 
-            metadata_4d = AtlasMetadata(
+            metadata_4d = ParcellationMetadata(
                 name="Mixed4D",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -530,7 +530,7 @@ class TestMixed3DAnd4DAtlases:
                 is_4d=True,
                 n_regions=2,
             )
-            register_atlas(metadata_4d)
+            register_parcellation(metadata_4d)
 
             # Run with both atlases
             analysis = RegionalDamage(parcel_names=["Mixed3D", "Mixed4D"], threshold=0.0)
@@ -550,8 +550,8 @@ class TestMixed3DAnd4DAtlases:
 
         finally:
             try:
-                unregister_atlas("Mixed3D")
-                unregister_atlas("Mixed4D")
+                unregister_parcellation("Mixed3D")
+                unregister_parcellation("Mixed4D")
             except (ValueError, KeyError):
                 pass
 
@@ -584,7 +584,7 @@ class TestRegionalDamageOutputAPI:
         labels_path.write_text("1 Region1\n2 Region2\n")
 
         try:
-            metadata = AtlasMetadata(
+            metadata = ParcellationMetadata(
                 name="TestOutputAPI",
                 space="MNI152NLin6Asym",
                 resolution=2.0,
@@ -594,7 +594,7 @@ class TestRegionalDamageOutputAPI:
                 is_4d=False,
                 n_regions=2,
             )
-            register_atlas(metadata)
+            register_parcellation(metadata)
 
             analysis = RegionalDamage(parcel_names=["TestOutputAPI"], threshold=0.0)
 
@@ -632,6 +632,6 @@ class TestRegionalDamageOutputAPI:
 
         finally:
             try:
-                unregister_atlas("TestOutputAPI")
+                unregister_parcellation("TestOutputAPI")
             except (ValueError, KeyError):
                 pass

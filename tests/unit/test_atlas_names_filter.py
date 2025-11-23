@@ -51,9 +51,9 @@ class TestAtlasNamesFilter:
             )
 
             # Register all atlases
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Test 1: Process only atlas_B
             analysis = RegionalDamage(parcel_names=["atlas_B"])
@@ -116,9 +116,9 @@ class TestAtlasNamesFilter:
             )
 
             # Register atlas
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request atlas_A and atlas_B (atlas_B doesn't exist)
             analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_B"])
@@ -161,9 +161,9 @@ class TestAtlasNamesFilter:
             )
 
             # Register atlas
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request only atlas_B (doesn't exist)
             analysis = RegionalDamage(parcel_names=["atlas_B"])
@@ -217,9 +217,9 @@ class TestAtlasNamesFilter:
             )
 
             # Register atlases
-            from lacuna.assets.atlases.registry import register_atlases_from_directory
+            from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-            register_atlases_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
+            register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Use ParcelAggregation with parcel_names filter
             analysis = ParcelAggregation(

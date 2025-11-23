@@ -247,11 +247,11 @@ def clean_atlas_registry():
     """
     # Store bundled atlas names before test
     # (these are the atlases pre-registered in the module)
-    from lacuna.assets.atlases.registry import ATLAS_REGISTRY
+    from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY
 
     # On first call, save the bundled atlas names
     if not hasattr(clean_atlas_registry, "_bundled_names"):
-        clean_atlas_registry._bundled_names = set(ATLAS_REGISTRY.keys())
+        clean_atlas_registry._bundled_names = set(PARCELLATION_REGISTRY.keys())
 
     # Run the test
     yield
@@ -259,6 +259,6 @@ def clean_atlas_registry():
     # After test: remove any atlases that weren't bundled
     # (i.e., remove test-registered atlases)
     bundled_names = clean_atlas_registry._bundled_names
-    to_remove = [name for name in ATLAS_REGISTRY.keys() if name not in bundled_names]
+    to_remove = [name for name in PARCELLATION_REGISTRY.keys() if name not in bundled_names]
     for name in to_remove:
-        del ATLAS_REGISTRY[name]
+        del PARCELLATION_REGISTRY[name]

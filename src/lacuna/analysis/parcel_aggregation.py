@@ -116,8 +116,8 @@ class ParcelAggregation(BaseAnalysis):
     parcel_names : list of str or None, default=None
         Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
         If None, all registered atlases are processed.
-        Use register_atlas() or register_atlases_from_directory() to add custom atlases.
-        If None, all atlases found in atlas_dir will be processed.
+        Use register_parcellation() or register_parcellationes_from_directory() to add custom atlases.
+        If None, all parcellations found in atlas_dir will be processed.
         Example: ["HCP1065", "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm"]
 
     Raises
@@ -159,7 +159,7 @@ class ParcelAggregation(BaseAnalysis):
     >>>
     >>> # Register custom atlases first, then use them
     >>> from lacuna.assets.parcellations import register_parcellations_from_directory
-    >>> register_atlases_from_directory("/data/my_atlases")
+    >>> register_parcellationes_from_directory("/data/my_atlases")
     >>> analysis = ParcelAggregation(
     ...     source="mask_img",
     ...     aggregation="percent"
@@ -409,9 +409,9 @@ class ParcelAggregation(BaseAnalysis):
         ParcelData
             Aggregation result combining all atlas aggregations
         """
-        # Load atlases using same logic as _load_parcellationes_from_registry
+        # Load atlases using same logic as _load_parcellations_from_registry
         if not hasattr(self, "atlases") or not self.atlases:
-            self.atlases = self._load_parcellationes_from_registry()
+            self.atlases = self._load_parcellations_from_registry()
 
         # Get space and resolution from VoxelMap
         input_space = voxel_map.space
@@ -513,19 +513,19 @@ class ParcelAggregation(BaseAnalysis):
             )
 
         # Load atlases from registry
-        self.atlases = self._load_parcellationes_from_registry()
+        self.atlases = self._load_parcellations_from_registry()
 
         if not self.atlases:
             if self.parcel_names is not None:
                 raise ValueError(
-                    f"No matching atlases found for specified names: {self.parcel_names}\n"
-                    "Available atlases in registry: check list_parcellations()\n"
-                    "Use register_atlas() or register_atlases_from_directory() to add atlases"
+                    f"No matching parcellations found for specified names: {self.parcel_names}\n"
+                    "Available parcellations in registry: check list_parcellations()\n"
+                    "Use register_parcellation() or register_parcellationes_from_directory() to add atlases"
                 )
             else:
                 raise ValueError(
-                    "No valid atlases found in registry\n"
-                    "Use register_atlas() or register_atlases_from_directory() to add atlases"
+                    "No valid parcellations found in registry\n"
+                    "Use register_parcellation() or register_parcellationes_from_directory() to add atlases"
                 )
 
         # Warn if some requested atlases weren't found
@@ -542,7 +542,7 @@ class ParcelAggregation(BaseAnalysis):
                     stacklevel=3,
                 )
 
-    def _load_parcellationes_from_registry(self) -> list[dict]:
+    def _load_parcellations_from_registry(self) -> list[dict]:
         """
         Load atlases from the registry (bundled or user-registered).
 
