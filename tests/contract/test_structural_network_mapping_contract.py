@@ -678,7 +678,7 @@ def test_atlas_accepts_bundled_name():
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
-        atlas_name="schaefer100",
+        parcellation_name="schaefer100",
     )
     assert analysis.atlas_name == "schaefer100"
 
@@ -692,7 +692,7 @@ def test_atlas_accepts_custom_path():
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
-        atlas_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="Schaefer2018_100Parcels7Networks",
     )
     assert analysis.atlas_name == "Schaefer2018_100Parcels7Networks"
 
@@ -705,7 +705,7 @@ def test_compute_lesioned_parameter():
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
-        atlas_name="schaefer100",
+        parcellation_name="schaefer100",
         compute_lesioned=True,
     )
     assert analysis.compute_lesioned is True
@@ -773,7 +773,7 @@ def test_full_connectivity_matrix_caching():
     analysis = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
-        atlas_name="schaefer100",
+        parcellation_name="schaefer100",
     )
 
     # Should have cache attribute
@@ -790,7 +790,7 @@ def test_lesioned_connectivity_optional():
     analysis1 = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
-        atlas_name="schaefer100",
+        parcellation_name="schaefer100",
     )
     assert analysis1.compute_lesioned is False
 
@@ -798,7 +798,7 @@ def test_lesioned_connectivity_optional():
     analysis2 = StructuralNetworkMapping(
         tractogram_path="/path/to/tractogram.tck",
         tractogram_space="MNI152NLin2009cAsym",
-        atlas_name="schaefer100",
+        parcellation_name="schaefer100",
         compute_lesioned=True,
     )
     assert analysis2.compute_lesioned is True
