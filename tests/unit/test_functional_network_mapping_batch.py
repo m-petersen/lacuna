@@ -105,7 +105,7 @@ def test_load_mask_info_returns_tuple(mock_connectome_batch):
         n_subjects=5,
         description="Test batch connectome"
     )
-    
+
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_connectome", method="boes", log_level=0
@@ -144,7 +144,7 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
         n_subjects=5,
         description="Test"
     )
-    
+
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_state", method="boes", log_level=0
@@ -181,7 +181,7 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
         n_subjects=5,
         description="Test"
     )
-    
+
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_sig", method="boes", log_level=0
@@ -211,7 +211,7 @@ def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152)
         n_subjects=5,
         description="Test"
     )
-    
+
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_single",
@@ -245,7 +245,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
         n_subjects=5,
         description="Test"
     )
-    
+
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_multi",
@@ -288,7 +288,7 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
         n_subjects=5,
         description="Test"
     )
-    
+
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_meta",

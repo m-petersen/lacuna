@@ -11,18 +11,6 @@ All asset types follow a consistent registry pattern with register/list/load fun
 
 # Import parcellation management
 from lacuna.assets import parcellations  # noqa: F401
-from lacuna.assets.parcellations import (
-    BUNDLED_PARCELLATIONS_DIR,
-    PARCELLATION_REGISTRY,
-    Parcellation,
-    ParcellationMetadata,
-    list_parcellations,
-    load_parcellation,
-    register_parcellation,
-    register_parcellation_from_files,
-    register_parcellations_from_directory,
-    unregister_parcellation,
-)
 
 # Keep atlases import for existing code (will be removed in separate commit)
 from lacuna.assets.atlases import (
@@ -58,6 +46,18 @@ from lacuna.assets.connectomes import (
     register_structural_connectome,
     unregister_functional_connectome,
     unregister_structural_connectome,
+)
+from lacuna.assets.parcellations import (
+    BUNDLED_PARCELLATIONS_DIR,
+    PARCELLATION_REGISTRY,
+    Parcellation,
+    ParcellationMetadata,
+    list_parcellations,
+    load_parcellation,
+    register_parcellation,
+    register_parcellation_from_files,
+    register_parcellations_from_directory,
+    unregister_parcellation,
 )
 
 # Templates

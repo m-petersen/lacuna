@@ -13,7 +13,11 @@ import numpy as np
 
 from lacuna import MaskData
 from lacuna.analysis import RegionalDamage
-from lacuna.assets.parcellations.registry import ParcellationMetadata, register_parcellation, unregister_parcellation
+from lacuna.assets.parcellations.registry import (
+    ParcellationMetadata,
+    register_parcellation,
+    unregister_parcellation,
+)
 from lacuna.core.data_types import ParcelData
 from lacuna.core.spaces import CoordinateSpace
 from lacuna.spatial.transform import transform_image

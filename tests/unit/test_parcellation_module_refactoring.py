@@ -188,7 +188,7 @@ class TestParcellationClassFunctionality:
 
         data = np.arange(1, 28).reshape(3, 3, 3)
         img = nib.Nifti1Image(data, affine=np.eye(4))
-       
+
         metadata = ParcellationMetadata(
             name="TestData",
             space="MNI152NLin6Asym",

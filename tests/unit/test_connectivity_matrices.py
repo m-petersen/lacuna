@@ -316,23 +316,28 @@ class TestMatrixDimensions:
     @pytest.fixture
     def mock_analysis_parametrized(self):
         """Create mock analysis that can use different atlases."""
-        from lacuna.assets.connectomes import register_structural_connectome, unregister_structural_connectome
         import tempfile
         from pathlib import Path
+
         import nibabel as nib
         import numpy as np
+
+        from lacuna.assets.connectomes import (
+            register_structural_connectome,
+            unregister_structural_connectome,
+        )
 
         def _create_analysis(n_parcels):
             # Create dummy tractogram and TDI files
             with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
                 tractogram_path = Path(f.name)
                 f.write(b"dummy")
-            
+
             with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
                 tdi_path = Path(f.name)
                 tdi_img = nib.Nifti1Image(np.zeros((91, 109, 91), dtype=np.float32), np.eye(4))
                 nib.save(tdi_img, tdi_path)
-            
+
             try:
                 register_structural_connectome(
                     name="test_matrix_dims",
@@ -342,7 +347,7 @@ class TestMatrixDimensions:
                     tdi_path=tdi_path,
                     n_subjects=100
                 )
-                
+
                 with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
                     analysis = StructuralNetworkMapping(
                         connectome_name="test_matrix_dims",

@@ -17,11 +17,11 @@ import numpy as np
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets import load_template
-from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.assets.connectomes import (
     list_structural_connectomes,
     load_structural_connectome,
 )
+from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.core.data_types import (
     ConnectivityMatrix,
     ScalarMetric,
