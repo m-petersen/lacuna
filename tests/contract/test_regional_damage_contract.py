@@ -63,7 +63,10 @@ def test_regional_damage_uses_atlas_registry(tmp_path):
     import numpy as np
 
     from lacuna.analysis.regional_damage import RegionalDamage
-    from lacuna.assets.parcellations.registry import list_parcellations, register_parcellations_from_directory
+    from lacuna.assets.parcellations.registry import (
+        list_parcellations,
+        register_parcellations_from_directory,
+    )
 
     # Create mock atlas directory
     atlas_dir = tmp_path / "atlases"

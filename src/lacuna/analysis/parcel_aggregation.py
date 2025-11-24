@@ -54,7 +54,7 @@ from lacuna.core.data_types import ParcelData
 from lacuna.core.mask_data import MaskData
 
 if TYPE_CHECKING:
-    from lacuna.core.data_types import DataContainer
+    from lacuna.core.data_types import DataContainer, VoxelMap
 
 
 class ParcelAggregation(BaseAnalysis):

@@ -75,9 +75,16 @@ class MaskData:
     ----------
     mask_img : nibabel.Nifti1Image
         Binary mask (3D only, values must be 0 or 1).
+    space : str, optional
+        Coordinate space identifier (e.g., 'MNI152NLin6Asym').
+        If not provided, must be in metadata dict.
+    resolution : float, optional
+        Spatial resolution in millimeters (e.g., 1.0, 2.0).
+        If not provided, must be in metadata dict.
     metadata : dict, optional
-        Subject metadata. Must contain 'space' and 'resolution' keys.
+        Additional subject metadata (e.g., session info, patient ID).
         'subject_id' defaults to "sub-unknown" if not provided.
+        Note: Direct kwargs (space, resolution) override metadata dict values.
     provenance : list of dict, optional
         Processing history (for deserialization only).
     results : dict, optional
@@ -86,7 +93,7 @@ class MaskData:
     Raises
     ------
     ValueError
-        If metadata is missing 'space' or 'resolution' keys,
+        If space or resolution is not provided (via kwargs or metadata dict),
         if mask_img is not 3D, or if mask_img is not binary (0/1 values only).
 
     Attributes
@@ -110,18 +117,31 @@ class MaskData:
     --------
     >>> import nibabel as nib
     >>> mask_img = nib.load("mask.nii.gz")
+
+    # Preferred: Direct kwargs
+    >>> mask_data = MaskData(
+    ...     mask_img,
+    ...     space="MNI152NLin6Asym",
+    ...     resolution=2,
+    ...     metadata={"subject_id": "sub-001"}
+    ... )
+
+    # Also supported: Via metadata dict (backward compatible)
     >>> mask_data = MaskData(
     ...     mask_img,
     ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     ... )
+
     >>> print(f"Volume: {mask_data.get_volume_mm3()} mm³")
-    >>> print(f"Space: {mask_data.space}")  # New property!
-    >>> print(f"Resolution: {mask_data.resolution}mm")  # New property!
+    >>> print(f"Space: {mask_data.space}")
+    >>> print(f"Resolution: {mask_data.resolution}mm")
     """
 
     def __init__(
         self,
         mask_img: nib.Nifti1Image,
+        space: str | None = None,
+        resolution: float | None = None,
         metadata: dict[str, Any] | None = None,
         provenance: list[dict[str, Any]] | None = None,
         results: dict[str, Any] | None = None,
@@ -146,11 +166,19 @@ class MaskData:
         self._affine = mask_img.affine.copy()
         validate_affine(self._affine)
 
-        # Setup metadata
+        # Setup metadata - direct kwargs take priority over metadata dict
         if metadata is None:
             metadata = {}
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
+
+        # Handle space parameter - direct kwarg takes priority
+        if space is not None:
+            metadata["space"] = space
+
+        # Handle resolution parameter - direct kwarg takes priority
+        if resolution is not None:
+            metadata["resolution"] = resolution
 
         # Define supported template spaces (MNI152 variants only)
         SUPPORTED_TEMPLATE_SPACES = [
@@ -162,10 +190,10 @@ class MaskData:
         # Require explicit coordinate space and resolution specification
         if "space" not in metadata:
             raise ValueError(
-                "metadata must contain 'space' key to specify coordinate space.\n"
+                "Coordinate space must be specified via 'space' parameter.\n"
                 "This is required for spatial validation in analysis modules.\n"
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
-                "Example: MaskData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+                "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         # Validate space is in supported list
@@ -174,15 +202,15 @@ class MaskData:
                 f"Invalid space '{metadata['space']}'. "
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
                 "Note: 'native' space is not supported. Use the actual template space instead.\n"
-                "Example: MaskData(img, metadata={{'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+                "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         if "resolution" not in metadata:
             raise ValueError(
-                "metadata must contain 'resolution' key (in mm).\n"
+                "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
                 "This is required for spatial validation and template matching.\n"
                 "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
-                "Example: MaskData(img, metadata={{'subject_id': 'sub-001', 'space': 'MNI152NLin6Asym', 'resolution': 2}})"
+                "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         self._metadata = metadata.copy()

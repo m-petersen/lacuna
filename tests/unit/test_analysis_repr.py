@@ -24,10 +24,10 @@ class TestFunctionalNetworkMappingRepr:
         """Test __repr__ with basic parameters."""
         import h5py
         import numpy as np
-        
+
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
-        
+
         # Create minimal valid H5 file
         with h5py.File(temp_h5, "w") as hf:
             hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
@@ -425,7 +425,7 @@ class TestReprConsistency:
 
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
-        
+
         # Create valid H5 file
         with h5py.File(temp_h5, "w") as hf:
             hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
@@ -491,7 +491,7 @@ class TestReprConsistency:
 
         with tempfile.NamedTemporaryFile(suffix=".h5", delete=False) as f:
             temp_h5 = Path(f.name)
-        
+
         # Create valid H5 file
         with h5py.File(temp_h5, "w") as hf:
             hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))

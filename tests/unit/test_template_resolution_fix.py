@@ -15,7 +15,10 @@ import numpy as np
 import pytest
 
 from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
-from lacuna.assets.connectomes import register_structural_connectome, unregister_structural_connectome
+from lacuna.assets.connectomes import (
+    register_structural_connectome,
+    unregister_structural_connectome,
+)
 from lacuna.core.mask_data import MaskData
 
 
@@ -140,7 +143,7 @@ def test_cache_directory_uses_unified_location():
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as tmp:
         tractogram_path = Path(tmp.name)
         tmp.write(b"dummy")
-    
+
     with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
         tdi_path = Path(tmp.name)
         tmp.write(b"dummy")
