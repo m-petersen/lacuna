@@ -273,7 +273,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.whole_brain_tdi = None  # Will be set during validation
         self._atlas_image = None
         self._atlas_labels = None
-        self._atlas_resolved = None
+        self._parcellation_resolved = None
         self._full_connectivity_matrix = None
         self._cached_tdi_path = None
 
@@ -493,7 +493,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
                     # Save and update references
                     nib.save(transformed_atlas_img, transformed_atlas_path)
-                    self._atlas_resolved = transformed_atlas_path
+                    self._parcellation_resolved = transformed_atlas_path
                     self._atlas_image = transformed_atlas_img
 
                     logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
@@ -503,12 +503,12 @@ class StructuralNetworkMapping(BaseAnalysis):
 
                     atlas_filename_path = Path(atlas.metadata.parcellation_filename)
                     if atlas_filename_path.is_absolute():
-                        self._atlas_resolved = atlas_filename_path
+                        self._parcellation_resolved = atlas_filename_path
                     else:
-                        self._atlas_resolved = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
+                        self._parcellation_resolved = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
 
-                    if not self._atlas_resolved.exists():
-                        raise FileNotFoundError(f"Atlas file not found: {self._atlas_resolved}")
+                    if not self._parcellation_resolved.exists():
+                        raise FileNotFoundError(f"Atlas file not found: {self._parcellation_resolved}")
 
             except KeyError as e:
                 available = [a.name for a in list_parcellations()]
@@ -700,7 +700,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     results["LesionTDI"] = lesion_tdi_result
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
-            if self._atlas_resolved is not None:
+            if self._parcellation_resolved is not None:
                 self.logger.subsection("Computing Connectivity Matrices")
                 connectivity_results = self._compute_connectivity_matrices(
                     mask_data=mask_data,
@@ -924,7 +924,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             command = [
                 "tck2connectome",
                 str(tractogram_path),
-                str(self._atlas_resolved),
+                str(self._parcellation_resolved),
                 str(output_csv),
                 "-symmetric",
                 "-zero_diagonal",
