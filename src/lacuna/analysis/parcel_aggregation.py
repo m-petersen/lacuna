@@ -194,6 +194,11 @@ class ParcelAggregation(BaseAnalysis):
         """Initialize ParcelAggregation analysis."""
         super().__init__(log_level=log_level)
 
+        # Initialize logger for warnings and info messages
+        from lacuna.utils.logging import ConsoleLogger
+
+        self.logger = ConsoleLogger(log_level=log_level)
+
         self.source = source
         self.aggregation = aggregation
         self.threshold = threshold
@@ -533,13 +538,9 @@ class ParcelAggregation(BaseAnalysis):
             found_names = {atlas["name"] for atlas in self.atlases}
             missing_names = set(self.parcel_names) - found_names
             if missing_names:
-                import warnings
-
-                warnings.warn(
-                    f"Some requested atlases were not found: {sorted(missing_names)}\n"
-                    f"Found atlases: {sorted(found_names)}",
-                    UserWarning,
-                    stacklevel=3,
+                self.logger.warning(
+                    f"Some requested parcellations were not found: {sorted(missing_names)}. "
+                    f"Found: {sorted(found_names)}"
                 )
 
     def _load_parcellations_from_registry(self) -> list[dict]:
@@ -743,17 +744,14 @@ class ParcelAggregation(BaseAnalysis):
             labels = atlas_info["labels"]
             atlas_data = atlas_img.get_fdata()
 
-            # Warn if nilearn will resample atlas to match source resolution
+            # Warn if nilearn will resample atlas to match source resolution (verbose only)
             atlas_shape = atlas_data.shape[:3]  # Handle 4D atlases
             source_shape = source_img.get_fdata().shape
             if source_shape != atlas_shape:
-                import warnings
-
-                warnings.warn(
-                    f"Atlas '{parcellation_name}' will be resampled to match source data.\n"
-                    f"Source shape: {source_shape}, Atlas shape: {atlas_shape}",
-                    UserWarning,
-                    stacklevel=2,
+                self.logger.info(
+                    f"Resampling parcellation '{parcellation_name}' to match source data "
+                    f"(source: {source_shape}, parcellation: {atlas_shape})",
+                    verbose=True,  # Only show at log_level=2
                 )
 
             if atlas_data.ndim == 3:
@@ -767,12 +765,8 @@ class ParcelAggregation(BaseAnalysis):
                     source_img, atlas_img, labels, voxel_volume_mm3
                 )
             else:
-                import warnings
-
-                warnings.warn(
-                    f"Skipping atlas '{parcellation_name}': unexpected dimensions {atlas_data.ndim}D",
-                    UserWarning,
-                    stacklevel=2,
+                self.logger.warning(
+                    f"Skipping parcellation '{parcellation_name}': unexpected dimensions {atlas_data.ndim}D"
                 )
                 continue
 
@@ -848,6 +842,8 @@ class ParcelAggregation(BaseAnalysis):
 
         Uses nilearn's NiftiLabelsMasker for robust extraction with automatic
         resampling, masking, and efficient computation.
+        
+        Note: Suppresses nilearn's verbose label removal warnings at log_level < 2.
 
         Parameters
         ----------
@@ -865,6 +861,18 @@ class ParcelAggregation(BaseAnalysis):
         dict[str, float]
             Mapping from region name to aggregated value
         """
+        import warnings
+
+        # Suppress nilearn's verbose label removal warnings unless in verbose mode
+        # These warnings come from sklearn's set_output and are too verbose for standard use
+        if self.log_level < 2:
+            warnings.filterwarnings(
+                "ignore",
+                message=".*following labels were removed.*",
+                category=UserWarning,
+                module="sklearn",
+            )
+
         # Map our aggregation methods to nilearn strategies
         strategy_map = {
             "mean": "mean",
@@ -1008,13 +1016,9 @@ class ParcelAggregation(BaseAnalysis):
 
         # Validate that we have the right number of labels
         if len(sorted_label_ids) != n_regions:
-            import warnings
-
-            warnings.warn(
+            self.logger.warning(
                 f"Number of volumes ({n_regions}) does not match number of labels "
-                f"({len(sorted_label_ids)}). Using available labels.",
-                UserWarning,
-                stacklevel=3,
+                f"({len(sorted_label_ids)}). Using available labels."
             )
 
         for region_idx in range(n_regions):
