@@ -11,11 +11,11 @@ from enum import Enum
 class MessageType(Enum):
     """Types of messages that can be displayed."""
 
-    INFO = "ℹ️"  # General information
-    SUCCESS = "✅"  # Operation completed successfully
-    WARNING = "⚠️"  # Warning message
-    ERROR = "❌"  # Error message
-    PROGRESS = "▶️"  # Progress update
+    INFO = "·"  # General information
+    SUCCESS = "✓"  # Operation completed successfully
+    WARNING = "⚡"  # Warning message
+    ERROR = "✗"  # Error message
+    PROGRESS = "→"  # Progress update
     SECTION = "="  # Section header
     SUBSECTION = "-"  # Subsection header
 
@@ -32,8 +32,8 @@ class ConsoleLogger:
     log_level : int, default=1
         Logging verbosity level:
         - 0: Silent (no output)
-        - 1: Standard (important messages only)
-        - 2: Verbose (detailed progress and debug info)
+        - 1: Standard (high-level progress, results, summaries)
+        - 2: Verbose (detailed operations, resampling, timing)
     verbose : bool, default=True
         Deprecated. Use log_level instead. If provided, overrides log_level.
     width : int, default=70
@@ -50,7 +50,7 @@ class ConsoleLogger:
     ===========================================
 
     >>> logger.info("Loading connectome...")
-    ℹ️  Loading connectome...
+    ·  Loading connectome...
 
     >>> logger.success("Analysis complete", details={"subjects": 10, "time": 42.3})
     ✓ Analysis complete
@@ -58,7 +58,7 @@ class ConsoleLogger:
       - time: 42.3s
 
     >>> logger.progress("Batch 3/10", percent=30)
-    ▶️  Batch 3/10 [30%]
+    → Batch 3/10 [30%]
     """
 
     def __init__(
@@ -154,7 +154,7 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.info("Loading mask information...")
-        ℹ️  Loading mask information...
+        ·  Loading mask information..."
         """
         min_level = 2 if verbose else 1
         indent = self.indent * indent_level
@@ -215,7 +215,7 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.warning("Lesion size smaller than expected")
-        ⚠️  Lesion size smaller than expected
+        ⚡  Lesion size smaller than expected"
         """
         indent = self.indent * indent_level
         self._print(f"{indent}{MessageType.WARNING.value}  {message}", min_level=1)
@@ -234,7 +234,7 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.error("Failed to load connectome")
-        ❌ Failed to load connectome
+        ✗ Failed to load connectome"
         """
         indent = self.indent * indent_level
         self._print(f"{indent}{MessageType.ERROR.value} {message}", min_level=1)
@@ -270,10 +270,10 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.progress("Processing batch", current=3, total=10)
-        ▶️  Processing batch [3/10]
+        →  Processing batch [3/10]
 
         >>> logger.progress("Loading data", percent=65.5)
-        ▶️  Loading data [65.5%]
+        →  Loading data [65.5%]"
         """
         min_level = 2 if verbose else 1
         indent = self.indent * indent_level
