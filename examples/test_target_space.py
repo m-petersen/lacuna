@@ -55,7 +55,7 @@ class TestAnalysis(BaseAnalysis):
 
     def _validate_inputs(self, mask_data):
         space = mask_data.get_coordinate_space()
-        res = mask_data.metadata.get("resolution")
+        res = mask_data.resolution
         print(f"  ✓ Validation: Lesion is in {space} @ {res}mm")
         assert space == self.TARGET_SPACE
         assert res == self.TARGET_RESOLUTION

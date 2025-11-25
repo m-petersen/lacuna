@@ -362,8 +362,8 @@ def test_space_detection_from_metadata(lesion_nlin6_2mm):
     Requirements: FR-004
     """
     # Verify space was detected correctly
-    assert lesion_nlin6_2mm.metadata["space"] == "MNI152NLin6Asym"
-    assert lesion_nlin6_2mm.metadata["resolution"] == 2
+    assert lesion_nlin6_2mm.space == "MNI152NLin6Asym"
+    assert lesion_nlin6_2mm.resolution == 2
 
     # Verify affine matches expected for this space
     expected_affine = REFERENCE_AFFINES.get(("MNI152NLin6Asym", 2))

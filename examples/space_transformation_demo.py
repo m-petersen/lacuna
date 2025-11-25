@@ -170,10 +170,10 @@ def demo_transform_validation(mask_data: "MaskData") -> None:
 
     # Get source space
     source_space = CoordinateSpace(
-        identifier=mask_data.metadata["space"],
-        resolution=mask_data.metadata["resolution"],
+        identifier=mask_data.space,
+        resolution=mask_data.resolution,
         reference_affine=REFERENCE_AFFINES[
-            (mask_data.metadata["space"], mask_data.metadata["resolution"])
+            (mask_data.space, mask_data.resolution)
         ],
     )
 
@@ -226,10 +226,10 @@ def demo_transformation(mask_data: "MaskData") -> "MaskData":
     # Show transformation strategy
     strategy = TransformationStrategy()
     source_space = CoordinateSpace(
-        identifier=mask_data.metadata["space"],
-        resolution=mask_data.metadata["resolution"],
+        identifier=mask_data.space,
+        resolution=mask_data.resolution,
         reference_affine=REFERENCE_AFFINES[
-            (mask_data.metadata["space"], mask_data.metadata["resolution"])
+            (mask_data.space, mask_data.resolution)
         ],
     )
 

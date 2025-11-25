@@ -496,6 +496,71 @@ This provides:
 
 ---
 
+## Phase 10: User Story 8 - VoxelMap Output Space Transformation (Priority: P2)
+
+**Goal**: Add flag to functional/structural network mapping to optionally transform voxelmap outputs back to the input lesion space
+
+**Rationale**:
+- Users may want voxelmap outputs in the same space as their input lesion for easier comparison
+- Currently voxelmap outputs are always in the connectome/template space
+- This enables direct overlay of network maps on the original lesion without manual transformation
+
+### Design Decisions
+
+1. **Parameter Name**: `return_in_lesion_space` (boolean, default=False)
+   - Clear intent: "return results in the same space as the input lesion"
+   - Default False maintains backward compatibility
+
+2. **Behavior**:
+   - When True: Transform VoxelMap outputs (CorrelationMap, ZMap, DisconnectionMap, etc.) back to lesion space
+   - When False (default): Keep outputs in connectome/template space (current behavior)
+   - Only applies to VoxelMap results, not ParcelData or other result types
+
+3. **Implementation**:
+   - Add parameter to FunctionalNetworkMapping and StructuralNetworkMapping
+   - After generating VoxelMap, check if `return_in_lesion_space == True`
+   - If True, use `transform_image()` to transform from connectome space to lesion space
+   - Update VoxelMap metadata to reflect the new space/resolution
+   - Add transformation record to provenance
+
+4. **Space Requirements**:
+   - Requires input MaskData to have valid space/resolution metadata
+   - Target space is the space of the input lesion (from MaskData.metadata)
+   - Uses inverse transformation (connectome space → lesion space)
+
+### Tests for User Story 8
+
+- [ ] T160 [P] [US8] Write contract test for `return_in_lesion_space` parameter in FunctionalNetworkMapping in `tests/contract/test_functional_network_mapping_contract.py`
+- [ ] T161 [P] [US8] Write contract test for `return_in_lesion_space` parameter in StructuralNetworkMapping in `tests/contract/test_structural_network_mapping_contract.py`
+- [ ] T162 [P] [US8] Write contract test for VoxelMap space after transformation in `tests/contract/test_voxelmap_space_contract.py`
+- [ ] T163 [P] [US8] Write unit test for space transformation logic in `tests/unit/test_voxelmap_transformation.py`
+- [ ] T164 [P] [US8] Write integration test for end-to-end workflow with transformation in `tests/integration/test_lesion_space_transformation.py`
+
+### Implementation for User Story 8
+
+**FunctionalNetworkMapping**:
+- [ ] T165 [US8] Add `return_in_lesion_space` parameter (default=False) to `FunctionalNetworkMapping.__init__` in `src/lacuna/analysis/functional_network_mapping.py`
+- [ ] T166 [US8] Add transformation logic after VoxelMap generation in `FunctionalNetworkMapping._run_analysis()` in `src/lacuna/analysis/functional_network_mapping.py`
+- [ ] T167 [US8] Update provenance for transformed VoxelMap results in `src/lacuna/analysis/functional_network_mapping.py`
+
+**StructuralNetworkMapping**:
+- [ ] T168 [US8] Add `return_in_lesion_space` parameter (default=False) to `StructuralNetworkMapping.__init__` in `src/lacuna/analysis/structural_network_mapping.py`
+- [ ] T169 [US8] Add transformation logic after VoxelMap generation in `StructuralNetworkMapping._run_analysis()` in `src/lacuna/analysis/structural_network_mapping.py`
+- [ ] T170 [US8] Update provenance for transformed VoxelMap results in `src/lacuna/analysis/structural_network_mapping.py`
+
+**Shared Utilities**:
+- [ ] T171 [P] [US8] Create helper function `_transform_voxelmap_to_lesion_space()` in `src/lacuna/analysis/base.py` (shared by both analyses)
+- [ ] T172 [P] [US8] Add validation to ensure lesion space is compatible in `src/lacuna/analysis/base.py`
+
+**Documentation**:
+- [ ] T173 [P] [US8] Update docstrings for FunctionalNetworkMapping in `src/lacuna/analysis/functional_network_mapping.py`
+- [ ] T174 [P] [US8] Update docstrings for StructuralNetworkMapping in `src/lacuna/analysis/structural_network_mapping.py`
+- [ ] T175 [P] [US8] Add example to `examples/` showing usage of `return_in_lesion_space` parameter
+
+**Checkpoint**: VoxelMap outputs can be transformed back to lesion space for easier comparison
+
+---
+
 ## Implementation Strategy
 
 ### TDD Workflow
@@ -528,7 +593,7 @@ For each user story:
 
 ## Task Summary
 
-- **Total Tasks**: 115 (was 91)
+- **Total Tasks**: 131 (was 115)
 - **Setup Tasks**: 3
 - **Foundational Tasks**: 13
 - **User Story 1 (P1)**: 15 tasks (7 tests + 8 implementation)
@@ -537,10 +602,11 @@ For each user story:
 - **User Story 4 (P2)**: 16 tasks (6 tests + 10 implementation)
 - **User Story 5 (P3)**: 13 tasks (3 tests + 10 implementation)
 - **User Story 6 (P2)**: 34 tasks (unified containers architecture)
-- **User Story 7 (P2)**: 24 tasks (7 tests + 17 implementation) - NEW
+- **User Story 7 (P2)**: 24 tasks (7 tests + 17 implementation)
+- **User Story 8 (P2)**: 16 tasks (5 tests + 8 implementation + 3 documentation) - NEW
 - **Polish Tasks**: 10
 
-**Parallelizable Tasks**: 52 tasks marked with [P]
+**Parallelizable Tasks**: ~60 tasks marked with [P]
 **MVP Tasks (US1+US2)**: 44 tasks
-**Test Tasks**: 37 tasks across all stories (TDD approach)
+**Test Tasks**: 42 tasks across all stories (TDD approach)
 

@@ -195,6 +195,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         load_to_memory: bool = True,
         check_dependencies: bool = True,
         log_level: int = 1,
+        return_in_lesion_space: bool = False,
     ):
         """Initialize StructuralNetworkMapping analysis.
 
@@ -221,6 +222,10 @@ class StructuralNetworkMapping(BaseAnalysis):
             If True, checks for MRtrix3 availability.
         log_level : int, default=1
             Logging verbosity (0=silent, 1=standard, 2=verbose).
+        return_in_lesion_space : bool, default=False
+            If True, transform VoxelMap outputs back to the input lesion space.
+            If False, outputs remain in the connectome space.
+            Requires input MaskData to have valid space/resolution metadata.
 
         Raises
         ------
@@ -262,6 +267,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
         self.load_to_memory = load_to_memory
+        self.return_in_lesion_space = return_in_lesion_space
 
         # Target space matches tractogram space
         self.TARGET_SPACE = self.tractogram_space
@@ -711,6 +717,10 @@ class StructuralNetworkMapping(BaseAnalysis):
                 # Merge connectivity matrix results into results dict
                 results.update(connectivity_results)
 
+            # Transform VoxelMap results back to lesion space if requested
+            if self.return_in_lesion_space:
+                results = self._transform_results_to_lesion_space(results, mask_data)
+
             return results
 
         finally:
@@ -1024,6 +1034,85 @@ class StructuralNetworkMapping(BaseAnalysis):
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,
+            "return_in_lesion_space": self.return_in_lesion_space,
             "log_level": self.log_level,
         }
+
+    def _transform_results_to_lesion_space(
+        self, results: dict, mask_data: MaskData
+    ) -> dict:
+        """Transform VoxelMap results back to lesion space.
+
+        Parameters
+        ----------
+        results : dict
+            Dictionary of result objects
+        mask_data : MaskData
+            Input mask data with space/resolution metadata
+
+        Returns
+        -------
+        dict
+            Results with transformed VoxelMap objects
+
+        Raises
+        ------
+        ValueError
+            If mask_data lacks space or resolution metadata
+        """
+        from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
+        from lacuna.spatial.transform import transform_image
+
+        # Get reference affine for target space
+        target_key = (mask_data.space, mask_data.resolution)
+        if target_key not in REFERENCE_AFFINES:
+            raise ValueError(
+                f"No reference affine available for {mask_data.space}@{mask_data.resolution}mm. "
+                f"Available spaces: {list(REFERENCE_AFFINES.keys())}"
+            )
+
+        target_space = CoordinateSpace(
+            identifier=mask_data.space,
+            resolution=mask_data.resolution,
+            reference_affine=REFERENCE_AFFINES[target_key]
+        )
+
+        self.logger.info(
+            f"Transforming VoxelMap outputs from {self.TARGET_SPACE}@{self.output_resolution}mm "
+            f"to {target_space.identifier}@{target_space.resolution}mm"
+        )
+
+        transformed_results = {}
+        for key, result in results.items():
+            # Only transform VoxelMap results
+            from lacuna.core.data_types import VoxelMap
+            if isinstance(result, VoxelMap):
+                # Transform the image
+                transformed_img = transform_image(
+                    img=result.data,
+                    source_space=self.TARGET_SPACE,
+                    target_space=target_space,
+                    source_resolution=int(self.output_resolution),
+                    interpolation="linear",
+                    log_level=self.log_level,
+                )
+
+                # Create new VoxelMap with updated space
+                transformed_result = VoxelMap(
+                    name=result.name,
+                    data=transformed_img,
+                    space=target_space.identifier,
+                    resolution=target_space.resolution,
+                    metadata={
+                        **result.metadata,
+                        "transformed_from": f"{self.TARGET_SPACE}@{self.output_resolution}mm",
+                        "transformed_to": f"{target_space.identifier}@{target_space.resolution}mm",
+                    },
+                )
+                transformed_results[key] = transformed_result
+            else:
+                # Keep non-VoxelMap results as-is
+                transformed_results[key] = result
+
+        return transformed_results
 

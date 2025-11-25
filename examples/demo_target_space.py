@@ -14,8 +14,8 @@ class DemoAnalysis(BaseAnalysis):
     TARGET_RESOLUTION = 2
 
     def _validate_inputs(self, mask_data):
-        space = mask_data.metadata.get("space")
-        resolution = mask_data.metadata.get("resolution")
+        space = mask_data.space
+        resolution = mask_data.resolution
         print(f"  ✓ Validation: Lesion is now in {space} @ {resolution}mm")
 
         # This should always pass because _ensure_target_space ran first
@@ -23,8 +23,8 @@ class DemoAnalysis(BaseAnalysis):
         assert resolution == self.TARGET_RESOLUTION
 
     def _run_analysis(self, mask_data):
-        space = mask_data.metadata.get("space")
-        resolution = mask_data.metadata.get("resolution")
+        space = mask_data.space
+        resolution = mask_data.resolution
         shape = mask_data.mask_img.shape
         return {"space": space, "resolution": resolution, "shape": shape}
 

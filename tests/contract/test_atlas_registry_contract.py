@@ -30,7 +30,7 @@ class TestParcellationMetadataContract:
             space="MNI152NLin6Asym",
             resolution=1,
             description="Test atlas",
-            atlas_filename="test.nii.gz",
+            parcellation_filename="test.nii.gz",
             labels_filename="test_labels.txt",
         )
 
@@ -38,7 +38,7 @@ class TestParcellationMetadataContract:
         assert metadata.space == "MNI152NLin6Asym"
         assert metadata.resolution == 1
         assert metadata.description == "Test atlas"
-        assert metadata.atlas_filename == "test.nii.gz"
+        assert metadata.parcellation_filename == "test.nii.gz"
         assert metadata.labels_filename == "test_labels.txt"
 
     def test_atlas_metadata_optional_fields(self):
@@ -50,7 +50,7 @@ class TestParcellationMetadataContract:
             space="MNI152NLin6Asym",
             resolution=1,
             description="Test atlas",
-            atlas_filename="test.nii.gz",
+            parcellation_filename="test.nii.gz",
             labels_filename="test_labels.txt",
             citation="Test et al. (2024)",
             networks=["Visual", "Motor"],
@@ -102,7 +102,7 @@ class TestAtlasRegistryContract:
             assert metadata.name == atlas_name
             assert metadata.space is not None
             assert metadata.resolution is not None
-            assert metadata.atlas_filename is not None
+            assert metadata.parcellation_filename is not None
             assert metadata.labels_filename is not None
 
     def test_schaefer_atlases_metadata(self):
@@ -298,7 +298,7 @@ class TestAtlasRegistrationContract:
             space="MNI152NLin6Asym",
             resolution=1,
             description="Test atlas for registration",
-            atlas_filename=str(atlas_file),
+            parcellation_filename=str(atlas_file),
             labels_filename=str(labels_file),
         )
 
@@ -321,7 +321,7 @@ class TestAtlasRegistrationContract:
             space="MNI152NLin6Asym",
             resolution=1,
             description="Duplicate",
-            atlas_filename="/fake/path.nii.gz",
+            parcellation_filename="/fake/path.nii.gz",
             labels_filename="/fake/labels.txt",
         )
 
@@ -348,7 +348,7 @@ class TestAtlasRegistrationContract:
             space="MNI152NLin6Asym",
             resolution=1,
             description="Test",
-            atlas_filename=str(atlas_file),
+            parcellation_filename=str(atlas_file),
             labels_filename=str(labels_file),
         )
 

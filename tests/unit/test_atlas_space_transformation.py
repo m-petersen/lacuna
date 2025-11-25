@@ -88,7 +88,7 @@ def test_atlas_transformed_when_space_mismatch():
                             "MNI152NLin6Asym"  # Different from tractogram space
                         )
                         mock_atlas.metadata.resolution = 1
-                        mock_atlas.metadata.atlas_filename = "test_atlas.nii.gz"
+                        mock_atlas.metadata.parcellation_filename = "test_atlas.nii.gz"
 
                         mock_load_parcellation.return_value = mock_atlas
 
@@ -213,7 +213,7 @@ def test_atlas_not_transformed_when_space_matches():
                         mock_atlas.metadata = Mock()
                         mock_atlas.metadata.space = "MNI152NLin6Asym"  # Same as tractogram
                         mock_atlas.metadata.resolution = 1
-                        mock_atlas.metadata.atlas_filename = str(atlas_file)
+                        mock_atlas.metadata.parcellation_filename = str(atlas_file)
 
                         mock_load_parcellation.return_value = mock_atlas
 
@@ -316,7 +316,7 @@ def test_atlas_transformation_uses_correct_resolution():
                         mock_atlas.metadata = Mock()
                         mock_atlas.metadata.space = "MNI152NLin6Asym"
                         mock_atlas.metadata.resolution = 1
-                        mock_atlas.metadata.atlas_filename = "test_atlas.nii.gz"
+                        mock_atlas.metadata.parcellation_filename = "test_atlas.nii.gz"
 
                         mock_load_parcellation.return_value = mock_atlas
 

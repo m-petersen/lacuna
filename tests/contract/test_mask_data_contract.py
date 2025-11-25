@@ -94,27 +94,28 @@ class TestSpaceInference:
     """Test that space is always taken from metadata (no provenance fallback)."""
 
     def test_space_required_in_metadata(self):
-        """Space must be provided in metadata."""
+        """Space must be provided as parameter or in metadata."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
-        with pytest.raises(ValueError, match="metadata must contain 'space' key"):
+        with pytest.raises(ValueError, match="Coordinate space must be specified"):
             MaskData(
                 mask_img=mask_img,
-                metadata={"resolution": 2},  # Missing space
+                metadata={},  # No space or resolution
             )
 
     def test_resolution_required_in_metadata(self):
-        """Resolution must be provided in metadata."""
+        """Resolution must be provided as parameter or in metadata."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
-        with pytest.raises(ValueError, match="metadata must contain 'resolution' key"):
+        with pytest.raises(ValueError, match="Spatial resolution must be specified"):
             MaskData(
                 mask_img=mask_img,
-                metadata={"space": "MNI152NLin6Asym"},  # Missing resolution
+                space="MNI152NLin6Asym",  # Space provided but not resolution
+                metadata={},
             )
 
     def test_unsupported_space_rejected(self):
