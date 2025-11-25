@@ -193,10 +193,10 @@ class ParallelStrategy(BatchStrategy):
             results = Parallel(n_jobs=self.n_jobs, backend=self.backend)(
                 delayed(_process_one)(lesion, i) for i, lesion in enumerate(mask_data_list)
             )
-            # Update progress bar all at once after parallel processing
+            # Update progress bar once for the entire batch (not per-item to avoid duplicates)
             if progress_callback:
-                for i in range(len(results)):
-                    progress_callback(i)
+                for _ in range(len(results)):
+                    progress_callback(0)  # Index doesn't matter, just triggers update
 
         # Sort by original index and filter out failures
         results = sorted(results, key=lambda x: x[0])
