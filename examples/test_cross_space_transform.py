@@ -23,7 +23,7 @@ class TestAnalysis(BaseAnalysis):
     def _validate_inputs(self, mask_data: MaskData) -> None:
         """Validate that transformation occurred."""
         space = mask_data.get_coordinate_space()
-        resolution = mask_data.metadata.get("resolution")
+        resolution = mask_data.resolution
         print("\n✓ Validation check:")
         print(f"  Received: {space} @ {resolution}mm")
         print(f"  Expected: {self.TARGET_SPACE} @ {self.TARGET_RESOLUTION}mm")
@@ -37,7 +37,7 @@ class TestAnalysis(BaseAnalysis):
         return {
             "lesion_volume_mm3": float(np.sum(mask_data.mask_img.get_fdata() > 0)),
             "space": mask_data.get_coordinate_space(),
-            "resolution": mask_data.metadata.get("resolution"),
+            "resolution": mask_data.resolution,
         }
 
 
@@ -102,8 +102,8 @@ def main():
         print("\n✓ Analysis completed successfully!")
 
         # Verify transformation happened
-        result_space = result.metadata.get("space")
-        result_resolution = result.metadata.get("resolution")
+        result_space = result.space
+        result_resolution = result.resolution
         print("\n✓ Result verification:")
         print(f"  Final space: {result_space} @ {result_resolution}mm")
         print(f"  Result shape: {result.mask_img.shape}")

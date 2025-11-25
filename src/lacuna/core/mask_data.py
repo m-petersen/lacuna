@@ -172,14 +172,6 @@ class MaskData:
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
 
-        # Handle space parameter - direct kwarg takes priority
-        if space is not None:
-            metadata["space"] = space
-
-        # Handle resolution parameter - direct kwarg takes priority
-        if resolution is not None:
-            metadata["resolution"] = resolution
-
         # Define supported template spaces (MNI152 variants only)
         SUPPORTED_TEMPLATE_SPACES = [
             "MNI152NLin6Asym",
@@ -187,8 +179,12 @@ class MaskData:
             "MNI152NLin2009cAsym",
         ]
 
-        # Require explicit coordinate space and resolution specification
-        if "space" not in metadata:
+        # Handle space parameter - direct kwarg takes priority, then metadata dict
+        if space is not None:
+            self._space = space
+        elif "space" in metadata:
+            self._space = metadata["space"]
+        else:
             raise ValueError(
                 "Coordinate space must be specified via 'space' parameter.\n"
                 "This is required for spatial validation in analysis modules.\n"
@@ -197,15 +193,20 @@ class MaskData:
             )
 
         # Validate space is in supported list
-        if metadata["space"] not in SUPPORTED_TEMPLATE_SPACES:
+        if self._space not in SUPPORTED_TEMPLATE_SPACES:
             raise ValueError(
-                f"Invalid space '{metadata['space']}'. "
+                f"Invalid space '{self._space}'. "
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
                 "Note: 'native' space is not supported. Use the actual template space instead.\n"
                 "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
-        if "resolution" not in metadata:
+        # Handle resolution parameter - direct kwarg takes priority, then metadata dict
+        if resolution is not None:
+            self._resolution = float(resolution)
+        elif "resolution" in metadata:
+            self._resolution = float(metadata["resolution"])
+        else:
             raise ValueError(
                 "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
                 "This is required for spatial validation and template matching.\n"
@@ -427,6 +428,8 @@ class MaskData:
         """
         return MaskData(
             mask_img=self._mask_img,
+            space=self._space,
+            resolution=self._resolution,
             metadata=copy.deepcopy(self._metadata),
             provenance=copy.deepcopy(self._provenance),
             results=copy.deepcopy(self._results),
@@ -578,6 +581,8 @@ class MaskData:
         # Return new instance
         return MaskData(
             mask_img=self._mask_img,
+            space=self._space,
+            resolution=self._resolution,
             metadata=copy.deepcopy(self._metadata),
             provenance=copy.deepcopy(self._provenance),
             results=new_results,
@@ -634,6 +639,8 @@ class MaskData:
         # Return new instance
         return MaskData(
             mask_img=self._mask_img,
+            space=self._space,
+            resolution=self._resolution,
             metadata=copy.deepcopy(self._metadata),
             provenance=new_provenance,
             results=copy.deepcopy(self._results),
@@ -641,13 +648,13 @@ class MaskData:
 
     def _infer_coordinate_space(self) -> str:
         """
-        Get coordinate space from metadata.
+        Get coordinate space.
 
         Returns the coordinate space identifier (e.g., 'MNI152NLin6Asym').
-        This is always present in metadata (validated in __init__).
+        This is always present (validated in __init__).
 
         """
-        return self._metadata["space"]
+        return self._space
 
     # Read-only properties
 
@@ -711,14 +718,14 @@ class MaskData:
         Returns
         -------
         str
-            The coordinate space from metadata.
+            The coordinate space.
 
         Examples
         --------
         >>> mask_data.space
         'MNI152NLin6Asym'
         """
-        return self._metadata["space"]
+        return self._space
 
     @property
     def resolution(self) -> float:
@@ -728,14 +735,14 @@ class MaskData:
         Returns
         -------
         float
-            The spatial resolution from metadata.
+            The spatial resolution.
 
         Examples
         --------
         >>> mask_data.resolution
         2.0
         """
-        return self._metadata["resolution"]
+        return self._resolution
 
     def __getattr__(self, name: str) -> dict[str, Any]:
         """Enable attribute-based access to analysis results.

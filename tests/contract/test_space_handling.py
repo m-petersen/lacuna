@@ -14,16 +14,16 @@ def test_space_requirement_error(synthetic_mask_img):
     """T032: Test that MaskData raises error when space is missing."""
     from lacuna.core.mask_data import MaskData
 
-    # Missing 'space' key should raise error
+    # Missing 'space' parameter should raise error
     with pytest.raises(ValueError) as exc_info:
         MaskData(
             synthetic_mask_img,
-            metadata={"subject_id": "sub-001", "resolution": 2}  # Missing 'space'
+            metadata={"subject_id": "sub-001"}  # No space or resolution
         )
 
     error_msg = str(exc_info.value)
     assert "space" in error_msg.lower()
-    assert "metadata" in error_msg.lower()
+    assert "parameter" in error_msg.lower()  # Changed from "metadata"
 
 
 @pytest.mark.contract
@@ -31,16 +31,17 @@ def test_resolution_requirement_error(synthetic_mask_img):
     """T033: Test that MaskData raises error when resolution is missing."""
     from lacuna.core.mask_data import MaskData
 
-    # Missing 'resolution' key should raise error
+    # Missing 'resolution' parameter should raise error
     with pytest.raises(ValueError) as exc_info:
         MaskData(
             synthetic_mask_img,
-            metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym"}  # Missing 'resolution'
+            space="MNI152NLin6Asym",  # space provided but not resolution
+            metadata={"subject_id": "sub-001"}
         )
 
     error_msg = str(exc_info.value)
     assert "resolution" in error_msg.lower()
-    assert "metadata" in error_msg.lower()
+    assert "parameter" in error_msg.lower()  # Changed from "metadata"
 
 
 @pytest.mark.contract

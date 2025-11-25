@@ -19,7 +19,7 @@ def test_atlas_metadata_creation():
         name="TestAtlas",
         space="MNI152NLin6Asym",
         resolution=2,
-        atlas_filename="test_atlas.nii.gz",
+        parcellation_filename="test_atlas.nii.gz",
         labels_filename="test_atlas_labels.txt",
         n_regions=50,
         description="Test atlas for unit testing",
@@ -30,7 +30,7 @@ def test_atlas_metadata_creation():
     assert metadata.space == "MNI152NLin6Asym"
     assert metadata.resolution == 2
     assert metadata.n_regions == 50
-    assert metadata.atlas_filename == "test_atlas.nii.gz"
+    assert metadata.parcellation_filename == "test_atlas.nii.gz"
     assert metadata.labels_filename == "test_atlas_labels.txt"
 
 
@@ -40,7 +40,7 @@ def test_atlas_metadata_bundled():
         name="BundledAtlas",
         space="MNI152NLin6Asym",
         resolution=1,
-        atlas_filename="bundled_atlas.nii.gz",
+        parcellation_filename="bundled_atlas.nii.gz",
         labels_filename="bundled_atlas_labels.txt",
         n_regions=100,
         description="Bundled atlas",
@@ -151,7 +151,7 @@ def test_register_parcellation():
         name="CustomTestAtlas",
         space="MNI152NLin6Asym",
         resolution=2,
-        atlas_filename="custom_test_atlas.nii.gz",
+        parcellation_filename="custom_test_atlas.nii.gz",
         labels_filename="custom_test_atlas_labels.txt",
         n_regions=25,
         description="Custom atlas for testing",
@@ -180,7 +180,7 @@ def test_register_parcellation_overwrites_with_warning():
         name="Schaefer2018_100Parcels7Networks",
         space="MNI152NLin6Asym",
         resolution=2,
-        atlas_filename="duplicate_atlas.nii.gz",
+        parcellation_filename="duplicate_atlas.nii.gz",
         labels_filename="duplicate_labels.txt",
         n_regions=100,
         description="Duplicate for testing",
@@ -196,12 +196,12 @@ def test_schaefer_atlas_metadata():
     schaefer400 = PARCELLATION_REGISTRY["Schaefer2018_400Parcels7Networks"]
 
     assert schaefer400.name == "Schaefer2018_400Parcels7Networks"
-    assert "Schaefer" in schaefer400.atlas_filename
+    assert "Schaefer" in schaefer400.parcellation_filename
     assert schaefer400.space == "MNI152NLin6Asym"
     assert schaefer400.resolution == 1
     assert schaefer400.n_regions == 400
-    assert schaefer400.atlas_filename is not None
-    assert "Schaefer2018" in schaefer400.atlas_filename
+    assert schaefer400.parcellation_filename is not None
+    assert "Schaefer2018" in schaefer400.parcellation_filename
 
 
 def test_tian_atlas_metadata():
@@ -209,11 +209,11 @@ def test_tian_atlas_metadata():
     tian_s2 = PARCELLATION_REGISTRY["TianSubcortex_3TS2"]
 
     assert tian_s2.name == "TianSubcortex_3TS2"
-    assert "Tian" in tian_s2.atlas_filename
+    assert "Tian" in tian_s2.parcellation_filename
     assert tian_s2.space == "MNI152NLin6Asym"
     assert tian_s2.resolution == 1
     assert tian_s2.n_regions == 32
-    assert tian_s2.atlas_filename is not None
+    assert tian_s2.parcellation_filename is not None
 
 
 def test_hcp_atlas_metadata():
@@ -221,11 +221,11 @@ def test_hcp_atlas_metadata():
     hcp = PARCELLATION_REGISTRY["HCP1065_thr0p1"]
 
     assert hcp.name == "HCP1065_thr0p1"
-    assert "HCP" in hcp.atlas_filename or "White Matter" in hcp.atlas_filename
+    assert "HCP" in hcp.parcellation_filename or "White Matter" in hcp.parcellation_filename
     assert hcp.space == "MNI152NLin2009aAsym"
     assert hcp.resolution == 1
     assert hcp.n_regions == 64  # HCP white matter atlas has 64 tracts
-    assert hcp.atlas_filename is not None
+    assert hcp.parcellation_filename is not None
     assert hcp.is_4d is True  # HCP is a 4D probabilistic atlas
 
 

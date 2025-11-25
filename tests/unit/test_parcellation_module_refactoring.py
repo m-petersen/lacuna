@@ -122,7 +122,7 @@ class TestParcellationFunctionSignatures:
         from lacuna.assets.parcellations import load_parcellation, register_parcellation
 
         # Create minimal test parcellation
-        data = np.arange(1, 28).reshape(3, 3, 3)
+        data = np.arange(1, 28, dtype=np.uint8).reshape(3, 3, 3)
         img = nib.Nifti1Image(data, affine=np.eye(4))
         path = tmp_path / "test.nii.gz"
         nib.save(img, path)

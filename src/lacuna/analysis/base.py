@@ -244,6 +244,8 @@ class BaseAnalysis(ABC):
         # Create a new instance with updated results (manual approach for namespace overwriting)
         result_mask_data = MaskData(
             mask_img=mask_data.mask_img,
+            space=mask_data.space,
+            resolution=mask_data.resolution,
             metadata=mask_data.metadata,
             provenance=mask_data.provenance,
             results=updated_results,

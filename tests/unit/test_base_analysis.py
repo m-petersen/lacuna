@@ -273,8 +273,8 @@ class TestImmutability:
         # Original metadata should be unchanged (except space and resolution are required)
         assert mask_data.metadata["subject_id"] == "sub-001"
         assert mask_data.metadata["age"] == 45
-        assert mask_data.metadata["space"] == "MNI152NLin6Asym"
-        assert mask_data.metadata["resolution"] == 2
+        assert mask_data.space == "MNI152NLin6Asym"
+        assert mask_data.resolution == 2
 
     def test_chained_analyses_preserve_immutability(self, synthetic_mask_img):
         """Test that chaining multiple analyses maintains immutability."""
@@ -431,7 +431,7 @@ class TestResultKeyGeneration:
         )
 
         # Run analysis
-        result = MockAtlasAnalysis(parcellation_name="DKT").run(mask_data)
+        result = MockAtlasAnalysis(atlas_name="DKT").run(mask_data)
 
         # Result should be in dict with descriptive key
         assert "MockAtlasAnalysis" in result.results

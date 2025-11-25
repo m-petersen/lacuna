@@ -333,7 +333,7 @@ class TestStructuralNetworkMappingRepr:
             assert "StructuralNetworkMapping Analysis" in str_output
             assert "Configuration:" in str_output
             assert "connectome_name: test_struct_str" in str_output
-            assert "atlas_name: schaefer100" in str_output
+            assert "parcellation_name: schaefer100" in str_output
             assert "n_jobs: 4" in str_output
         finally:
             unregister_structural_connectome("test_struct_str")

@@ -65,8 +65,8 @@ class TestAnalysis2mm(BaseAnalysis):
 
     def _validate_inputs(self, mask_data):
         # Check that transformation happened correctly
-        space = mask_data.metadata.get("space")
-        resolution = mask_data.metadata.get("resolution")
+        space = mask_data.space
+        resolution = mask_data.resolution
 
         if space != self.TARGET_SPACE:
             raise ValueError(f"Expected {self.TARGET_SPACE}, got {space}")

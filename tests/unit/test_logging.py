@@ -268,11 +268,11 @@ class TestMessageType:
 
     def test_message_type_values(self):
         """Test that all message types have values."""
-        assert MessageType.INFO.value == "ℹ️"
-        assert MessageType.SUCCESS.value == "✅"
-        assert MessageType.WARNING.value == "⚠️"
-        assert MessageType.ERROR.value == "❌"
-        assert MessageType.PROGRESS.value == "▶️"
+        assert MessageType.INFO.value == "·"
+        assert MessageType.SUCCESS.value == "✓"
+        assert MessageType.WARNING.value == "⚡"
+        assert MessageType.ERROR.value == "✗"
+        assert MessageType.PROGRESS.value == "→"
         assert MessageType.SECTION.value == "="
         assert MessageType.SUBSECTION.value == "-"
 
