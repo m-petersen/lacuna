@@ -201,12 +201,14 @@ def test_atlas_aggregation_result_structure(synthetic_mask_img):
     )
     result = analysis.run(mask_data)
 
-    # Results are returned as dict with BIDS-style keys "atlas-{name}_desc-{Source}" (PascalCase)
+    # Results are returned as dict with BIDS-style keys
+    # Format: "parc-{parcellation}_source-{SourceClass}_desc-{key}"
     atlas_results = result.results["ParcelAggregation"]
-    assert "atlas-Schaefer100_desc-MaskImg" in atlas_results
+    expected_key = "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
+    assert expected_key in atlas_results
 
     # Get the ParcelData for this atlas using descriptive key
-    roi_result = atlas_results["atlas-Schaefer100_desc-MaskImg"]
+    roi_result = atlas_results[expected_key]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level values
@@ -233,13 +235,14 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img):
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys per atlas
+    # Format: "parc-{parcellation}_source-MaskData_desc-mask_img"
     atlas_results = result.results["ParcelAggregation"]
-    assert "atlas-Schaefer100_desc-MaskImg" in atlas_results
-    assert "atlas-Schaefer200_desc-MaskImg" in atlas_results
+    assert "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img" in atlas_results
+    assert "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img" in atlas_results
 
     # Each atlas should have its own ParcelData with region data
-    roi_100 = atlas_results["atlas-Schaefer100_desc-MaskImg"].get_data()
-    roi_200 = atlas_results["atlas-Schaefer200_desc-MaskImg"].get_data()
+    roi_100 = atlas_results["parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"].get_data()
+    roi_200 = atlas_results["parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img"].get_data()
     assert len(roi_100) > 0
     assert len(roi_200) > 0
 
@@ -402,3 +405,57 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     # At least one key should reference the source (snake_case format)
     has_source_context = any("disconnection_map" in key or "disconnection" in key.lower() for key in result_keys)
     assert has_source_context, f"Expected source context in keys, got: {result_keys}"
+
+
+def test_multi_source_aggregation_contract(synthetic_mask_img):
+    """
+    Contract: Multi-source aggregation produces separate BIDS-style keys.
+
+    Contract: T012 - Multi-source ParcelAggregation
+    """
+    import nibabel as nib
+    import numpy as np
+
+    from lacuna import MaskData
+    from lacuna.analysis.parcel_aggregation import ParcelAggregation
+    from lacuna.core.keys import parse_result_key
+
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
+
+    # Add mock FNM result
+    correlation_map = nib.Nifti1Image(
+        np.random.randn(64, 64, 64).astype(np.float32), synthetic_mask_img.affine
+    )
+    mask_data._results["FunctionalNetworkMapping"] = {"correlation_map": correlation_map}
+
+    # Run multi-source aggregation
+    analysis = ParcelAggregation(
+        source=["MaskData.mask_img", "FunctionalNetworkMapping.correlation_map"],
+        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        aggregation="mean"
+    )
+
+    result = analysis.run(mask_data)
+    parcel_results = result.results["ParcelAggregation"]
+
+    # Should have results from both sources
+    result_keys = list(parcel_results.keys())
+    assert len(result_keys) >= 2, f"Expected at least 2 results, got {len(result_keys)}: {result_keys}"
+
+    # Keys should be BIDS-style with source differentiation
+    mask_keys = [k for k in result_keys if "MaskData" in k or "mask_img" in k]
+    fnm_keys = [k for k in result_keys if "FunctionalNetworkMapping" in k or "correlation_map" in k]
+
+    assert len(mask_keys) >= 1, f"Expected MaskData key, got keys: {result_keys}"
+    assert len(fnm_keys) >= 1, f"Expected FunctionalNetworkMapping key, got keys: {result_keys}"
+
+    # Keys should be parseable
+    for key in result_keys:
+        if "parc-" in key:  # Only parse BIDS-style keys
+            parsed = parse_result_key(key)
+            assert "parc" in parsed, f"Key {key} should have 'parc' component"
+            assert "source" in parsed, f"Key {key} should have 'source' component"
+            assert "desc" in parsed, f"Key {key} should have 'desc' component"
+

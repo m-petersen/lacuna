@@ -394,12 +394,13 @@ class Test4DParcelAggregation:
 
             result = analysis.run(lesion)
 
-            # Check results
+            # Check results - using BIDS-style keys
             damage_results = result.results["RegionalDamage"]
-            assert "atlas-Test4DAtlas_Aggregation_desc-MaskImg" in damage_results
+            expected_key = "parc-Test4DAtlas_Aggregation_source-MaskData_desc-mask_img"
+            assert expected_key in damage_results
 
             # Get region data
-            region_data = damage_results["atlas-Test4DAtlas_Aggregation_desc-MaskImg"].get_data()
+            region_data = damage_results[expected_key].get_data()
             assert len(region_data) > 0
 
             # Tract1 should have highest damage (full overlap)
@@ -457,9 +458,10 @@ class Test4DParcelAggregation:
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
 
-            # Verify we got results for the atlas (BIDS naming with PascalCase)
-            assert "atlas-Test4D_VaryingOverlap_desc-MaskImg" in damage_results
-            region_data = damage_results["atlas-Test4D_VaryingOverlap_desc-MaskImg"].get_data()
+            # Verify we got results for the atlas (BIDS-style naming)
+            expected_key = "parc-Test4D_VaryingOverlap_source-MaskData_desc-mask_img"
+            assert expected_key in damage_results
+            region_data = damage_results[expected_key].get_data()
             assert len(region_data) > 0
 
             # LargeOverlap should have more damage than SmallOverlap
@@ -542,13 +544,13 @@ class TestMixed3DAnd4DAtlases:
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
 
-            # Should have results from both atlases
-            assert "atlas-Mixed3D_desc-MaskImg" in damage_results
-            assert "atlas-Mixed4D_desc-MaskImg" in damage_results
+            # Should have results from both atlases (BIDS-style keys)
+            assert "parc-Mixed3D_source-MaskData_desc-mask_img" in damage_results
+            assert "parc-Mixed4D_source-MaskData_desc-mask_img" in damage_results
 
             # Each should have region data
-            mixed3d_data = damage_results["atlas-Mixed3D_desc-MaskImg"].get_data()
-            mixed4d_data = damage_results["atlas-Mixed4D_desc-MaskImg"].get_data()
+            mixed3d_data = damage_results["parc-Mixed3D_source-MaskData_desc-mask_img"].get_data()
+            mixed4d_data = damage_results["parc-Mixed4D_source-MaskData_desc-mask_img"].get_data()
             assert len(mixed3d_data) > 0
             assert len(mixed4d_data) > 0
 
@@ -605,16 +607,17 @@ class TestRegionalDamageOutputAPI:
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
 
-            # NEW API: damage_results is a dict with atlas names as keys
+            # NEW API: damage_results is a dict with BIDS-style keys
             assert isinstance(
                 damage_results, dict
             ), "RegionalDamage results should be a dict, not list"
 
-            # Should have the atlas
-            assert "atlas-TestOutputAPI_desc-MaskImg" in damage_results
+            # Should have the atlas with BIDS-style key
+            expected_key = "parc-TestOutputAPI_source-MaskData_desc-mask_img"
+            assert expected_key in damage_results
 
             # Get the ROI result
-            roi_result = damage_results["atlas-TestOutputAPI_desc-MaskImg"]
+            roi_result = damage_results[expected_key]
             assert isinstance(roi_result, ParcelData)
 
             # Access the damage data via get_data()
