@@ -5,12 +5,18 @@ Provides functions to load lesion data from BIDS-compliant datasets and
 export analysis results in BIDS derivatives format.
 """
 
+from __future__ import annotations
+
 import json
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..core.exceptions import LacunaError
 from ..core.mask_data import MaskData
+
+if TYPE_CHECKING:
+    from ..core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
 
 
 class BidsError(LacunaError):
@@ -290,6 +296,290 @@ def _load_bids_manual(
     return mask_data_dict
 
 
+def export_voxelmap(
+    voxelmap: "VoxelMap",
+    output_dir: str | Path,
+    subject_id: str,
+    session_id: str | None = None,
+    desc: str = "map",
+    space: str | None = None,
+    overwrite: bool = False,
+) -> Path:
+    """
+    Export a VoxelMap to BIDS-compliant NIfTI with JSON sidecar.
+
+    Parameters
+    ----------
+    voxelmap : VoxelMap
+        VoxelMap to export
+    output_dir : str or Path
+        Output directory for the file
+    subject_id : str
+        Subject identifier (e.g., 'sub-001')
+    session_id : str, optional
+        Session identifier (e.g., 'ses-01')
+    desc : str, default='map'
+        Description label for BIDS filename
+    space : str, optional
+        Override space from voxelmap.space
+    overwrite : bool, default=False
+        Overwrite existing files
+
+    Returns
+    -------
+    Path
+        Path to the saved NIfTI file
+    """
+    import nibabel as nib
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build BIDS filename
+    space = space or voxelmap.space
+    if session_id:
+        base_name = f"{subject_id}_{session_id}_space-{space}_desc-{desc}_map"
+    else:
+        base_name = f"{subject_id}_space-{space}_desc-{desc}_map"
+
+    nifti_path = output_dir / f"{base_name}.nii.gz"
+    sidecar_path = output_dir / f"{base_name}.json"
+
+    if nifti_path.exists() and not overwrite:
+        raise FileExistsError(f"File exists: {nifti_path}. Use overwrite=True.")
+
+    # Save NIfTI
+    nib.save(voxelmap.data, nifti_path)
+
+    # Create sidecar
+    sidecar = {
+        "Space": space,
+        "Resolution": voxelmap.resolution,
+        "Description": voxelmap.name,
+    }
+    if voxelmap.metadata:
+        sidecar["Metadata"] = voxelmap.metadata
+
+    with open(sidecar_path, "w") as f:
+        json.dump(sidecar, f, indent=2)
+
+    return nifti_path
+
+
+def export_parcel_data(
+    parcel_data: "ParcelData",
+    output_dir: str | Path,
+    subject_id: str,
+    session_id: str | None = None,
+    desc: str = "parcels",
+    overwrite: bool = False,
+) -> Path:
+    """
+    Export ParcelData to BIDS-compliant TSV with JSON sidecar.
+
+    Parameters
+    ----------
+    parcel_data : ParcelData
+        ParcelData to export
+    output_dir : str or Path
+        Output directory for the file
+    subject_id : str
+        Subject identifier (e.g., 'sub-001')
+    session_id : str, optional
+        Session identifier (e.g., 'ses-01')
+    desc : str, default='parcels'
+        Description label for BIDS filename
+    overwrite : bool, default=False
+        Overwrite existing files
+
+    Returns
+    -------
+    Path
+        Path to the saved TSV file
+    """
+    import pandas as pd
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build BIDS filename
+    if session_id:
+        base_name = f"{subject_id}_{session_id}_desc-{desc}_parcels"
+    else:
+        base_name = f"{subject_id}_desc-{desc}_parcels"
+
+    tsv_path = output_dir / f"{base_name}.tsv"
+    sidecar_path = output_dir / f"{base_name}.json"
+
+    if tsv_path.exists() and not overwrite:
+        raise FileExistsError(f"File exists: {tsv_path}. Use overwrite=True.")
+
+    # Create DataFrame
+    df = pd.DataFrame([
+        {"region": k, "value": v}
+        for k, v in parcel_data.data.items()
+    ])
+
+    # Save TSV
+    df.to_csv(tsv_path, sep="\t", index=False)
+
+    # Create sidecar
+    sidecar = {
+        "Description": parcel_data.name,
+        "Parcellation": parcel_data.parcel_names,
+    }
+    if hasattr(parcel_data, "aggregation_method") and parcel_data.aggregation_method:
+        sidecar["AggregationMethod"] = parcel_data.aggregation_method
+    if parcel_data.metadata:
+        sidecar["Metadata"] = parcel_data.metadata
+
+    with open(sidecar_path, "w") as f:
+        json.dump(sidecar, f, indent=2)
+
+    return tsv_path
+
+
+def export_connectivity_matrix(
+    matrix: "ConnectivityMatrix",
+    output_dir: str | Path,
+    subject_id: str,
+    session_id: str | None = None,
+    desc: str = "connectivity",
+    overwrite: bool = False,
+) -> Path:
+    """
+    Export ConnectivityMatrix to BIDS-compliant TSV with JSON sidecar.
+
+    Parameters
+    ----------
+    matrix : ConnectivityMatrix
+        ConnectivityMatrix to export
+    output_dir : str or Path
+        Output directory for the file
+    subject_id : str
+        Subject identifier (e.g., 'sub-001')
+    session_id : str, optional
+        Session identifier (e.g., 'ses-01')
+    desc : str, default='connectivity'
+        Description label for BIDS filename
+    overwrite : bool, default=False
+        Overwrite existing files
+
+    Returns
+    -------
+    Path
+        Path to the saved TSV file
+    """
+    import pandas as pd
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build BIDS filename
+    if session_id:
+        base_name = f"{subject_id}_{session_id}_desc-{desc}_connmatrix"
+    else:
+        base_name = f"{subject_id}_desc-{desc}_connmatrix"
+
+    tsv_path = output_dir / f"{base_name}.tsv"
+    sidecar_path = output_dir / f"{base_name}.json"
+
+    if tsv_path.exists() and not overwrite:
+        raise FileExistsError(f"File exists: {tsv_path}. Use overwrite=True.")
+
+    # Create DataFrame with region labels
+    df = pd.DataFrame(
+        matrix.matrix,
+        index=matrix.region_labels,
+        columns=matrix.region_labels,
+    )
+
+    # Save TSV
+    df.to_csv(tsv_path, sep="\t")
+
+    # Create sidecar
+    sidecar = {
+        "Description": matrix.name,
+        "MatrixType": matrix.matrix_type,
+        "RegionLabels": matrix.region_labels,
+        "Shape": list(matrix.matrix.shape),
+    }
+    if matrix.metadata:
+        sidecar["Metadata"] = matrix.metadata
+
+    with open(sidecar_path, "w") as f:
+        json.dump(sidecar, f, indent=2)
+
+    return tsv_path
+
+
+def export_bids_derivatives_batch(
+    results: list,
+    output_dir: str | Path,
+    include_images: bool = True,
+    include_results: bool = True,
+    include_provenance: bool = True,
+    overwrite: bool = False,
+) -> Path:
+    """
+    Export multiple MaskData results to BIDS derivatives format.
+
+    Parameters
+    ----------
+    results : list[MaskData]
+        List of processed MaskData objects
+    output_dir : str or Path
+        Root directory for derivatives
+    include_images : bool, default=True
+        Save normalized lesion masks as NIfTI files
+    include_results : bool, default=True
+        Save analysis results
+    include_provenance : bool, default=True
+        Save processing provenance
+    overwrite : bool, default=False
+        Overwrite existing files
+
+    Returns
+    -------
+    Path
+        Path to the derivatives directory
+    """
+    output_dir = Path(output_dir)
+
+    # Create dataset_description.json once
+    desc_file = output_dir / "dataset_description.json"
+    if not desc_file.exists():
+        desc_file.parent.mkdir(parents=True, exist_ok=True)
+        from .. import __version__
+
+        dataset_description = {
+            "Name": "Lacuna Derivatives",
+            "BIDSVersion": "1.6.0",
+            "GeneratedBy": [
+                {
+                    "Name": "lesion-decoding-toolkit",
+                    "Version": __version__,
+                    "Description": "Lesion network mapping and analysis",
+                }
+            ],
+        }
+        with open(desc_file, "w") as f:
+            json.dump(dataset_description, f, indent=2)
+
+    # Export each subject
+    for mask_data in results:
+        export_bids_derivatives(
+            mask_data,
+            output_dir,
+            include_images=include_images,
+            include_results=include_results,
+            include_provenance=include_provenance,
+            overwrite=overwrite,
+        )
+
+    return output_dir
+
+
 def export_bids_derivatives(
     mask_data: MaskData,
     output_dir: str | Path,
@@ -405,17 +695,56 @@ def export_bids_derivatives(
 
     # Save results
     if include_results and mask_data.results:
+        from ..core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
+
         for namespace, results_data in mask_data.results.items():
-            results_filename = f"{base_name}_desc-{namespace.lower()}_results.json"
-            results_path = results_dir / results_filename
+            # Handle DataContainer types specially
+            if isinstance(results_data, dict):
+                for key, value in results_data.items():
+                    if isinstance(value, VoxelMap):
+                        # Export VoxelMap as NIfTI
+                        export_voxelmap(
+                            value,
+                            results_dir,
+                            subject_id=subject_id,
+                            session_id=session_id,
+                            desc=f"{namespace.lower()}_{key}",
+                            overwrite=overwrite,
+                        )
+                    elif isinstance(value, ParcelData):
+                        # Export ParcelData as TSV
+                        export_parcel_data(
+                            value,
+                            results_dir,
+                            subject_id=subject_id,
+                            session_id=session_id,
+                            desc=f"{namespace.lower()}_{key}",
+                            overwrite=overwrite,
+                        )
+                    elif isinstance(value, ConnectivityMatrix):
+                        # Export ConnectivityMatrix as TSV
+                        export_connectivity_matrix(
+                            value,
+                            results_dir,
+                            subject_id=subject_id,
+                            session_id=session_id,
+                            desc=f"{namespace.lower()}_{key}",
+                            overwrite=overwrite,
+                        )
+                    else:
+                        # Try to serialize as JSON (for scalar results)
+                        try:
+                            results_filename = f"{base_name}_desc-{namespace.lower()}_{key}.json"
+                            results_path = results_dir / results_filename
 
-            if results_path.exists() and not overwrite:
-                raise FileExistsError(
-                    f"Results file already exists: {results_path}. Use overwrite=True to replace."
-                )
+                            if results_path.exists() and not overwrite:
+                                continue
 
-            with open(results_path, "w") as f:
-                json.dump(results_data, f, indent=2)
+                            with open(results_path, "w") as f:
+                                json.dump(value, f, indent=2)
+                        except (TypeError, ValueError):
+                            # Skip non-serializable results
+                            pass
 
     # Save provenance
     if include_provenance and mask_data.provenance:
