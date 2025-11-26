@@ -8,26 +8,72 @@ automatic strategy selection and progress monitoring.
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Union
 
 from tqdm import tqdm
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch.selection import select_strategy
+from lacuna.core.data_types import VoxelMap, ParcelData
 from lacuna.core.mask_data import MaskData
 
 
+def _detect_input_type(inputs: list) -> str:
+    """
+    Detect the type of inputs in the batch list.
+
+    Parameters
+    ----------
+    inputs : list
+        List of inputs to check
+
+    Returns
+    -------
+    str
+        One of 'mask_data', 'voxel_map', or 'mixed'
+
+    Raises
+    ------
+    ValueError
+        If inputs list is empty
+    """
+    if not inputs:
+        raise ValueError("inputs cannot be empty")
+
+    has_mask_data = False
+    has_voxel_map = False
+
+    for item in inputs:
+        if isinstance(item, MaskData):
+            has_mask_data = True
+        elif isinstance(item, VoxelMap):
+            has_voxel_map = True
+        else:
+            # Unknown type - could be other compatible types
+            pass
+
+    if has_mask_data and has_voxel_map:
+        return "mixed"
+    elif has_voxel_map:
+        return "voxel_map"
+    else:
+        return "mask_data"
+
+
 def batch_process(
-    mask_data_list: list[MaskData],
-    analysis: BaseAnalysis,
+    inputs: list[Union[MaskData, VoxelMap]] | None = None,
+    analysis: BaseAnalysis | None = None,
     n_jobs: int = -1,
     show_progress: bool = True,
     strategy: str | None = None,
     backend: str = "loky",
     lesion_batch_size: int | None = None,
     batch_result_callback: Callable | None = None,
-) -> list[MaskData]:
+    *,
+    mask_data_list: list[MaskData] | None = None,  # Deprecated, use inputs
+) -> list[Union[MaskData, ParcelData]]:
     """
-    Process multiple lesions through an analysis pipeline with automatic optimization.
+    Process multiple subjects through an analysis pipeline with automatic optimization.
 
     This function automatically selects the optimal processing strategy based on
     the analysis type and available system resources. It provides progress monitoring
@@ -35,10 +81,11 @@ def batch_process(
 
     Parameters
     ----------
-    mask_data_list : list[MaskData]
-        List of MaskData objects to process
+    inputs : list[MaskData] or list[VoxelMap]
+        List of MaskData or VoxelMap objects to process.
+        All items must be of the same type (no mixing).
     analysis : BaseAnalysis
-        Analysis instance to apply to each lesion
+        Analysis instance to apply to each input
     n_jobs : int, default=-1
         Number of parallel jobs:
         - -1: Use all available CPU cores
@@ -138,9 +185,33 @@ def batch_process(
     - Individual subject failures emit warnings but don't stop the batch
     - Strategy selection is automatic based on analysis.batch_strategy attribute
     """
+    # Handle deprecated mask_data_list parameter
+    if mask_data_list is not None:
+        import warnings
+        warnings.warn(
+            "mask_data_list parameter is deprecated, use 'inputs' instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if inputs is not None:
+            raise ValueError("Cannot specify both 'inputs' and 'mask_data_list'")
+        inputs = mask_data_list
+
     # Validate inputs
-    if not mask_data_list:
-        raise ValueError("mask_data_list cannot be empty")
+    if not inputs:
+        raise ValueError("inputs cannot be empty")
+
+    # Validate analysis parameter
+    if analysis is None:
+        raise ValueError("analysis parameter is required")
+
+    # Check for mixed input types
+    input_type = _detect_input_type(inputs)
+    if input_type == "mixed":
+        raise TypeError(
+            "batch_process does not support mixed input types. "
+            "All items must be either MaskData or VoxelMap, not both."
+        )
 
     if not isinstance(analysis, BaseAnalysis):
         raise ValueError(f"analysis must be a BaseAnalysis instance, got {type(analysis)}")
@@ -148,7 +219,7 @@ def batch_process(
     # Select processing strategy
     strategy_instance = select_strategy(
         analysis=analysis,
-        n_subjects=len(mask_data_list),
+        n_subjects=len(inputs),
         n_jobs=n_jobs,
         force_strategy=strategy,
         backend=backend,
@@ -160,7 +231,7 @@ def batch_process(
     progress_bar = None
     if show_progress:
         progress_bar = tqdm(
-            total=len(mask_data_list),
+            total=len(inputs),
             desc=f"Processing with {strategy_instance.name} strategy",
             unit="subject",
         )
@@ -176,7 +247,7 @@ def batch_process(
     # Execute batch processing
     try:
         results = strategy_instance.execute(
-            mask_data_list=mask_data_list,
+            mask_data_list=inputs,
             analysis=analysis,
             progress_callback=progress_callback,
         )
