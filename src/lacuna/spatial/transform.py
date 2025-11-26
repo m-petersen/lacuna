@@ -603,8 +603,8 @@ def transform_mask_data(
     from lacuna.core.provenance import TransformationRecord
 
     # Get source space from metadata
-    source_identifier = mask_data.metadata.get("space")
-    source_resolution = mask_data.metadata.get("resolution", 2)
+    source_identifier = mask_data.space
+    source_resolution = mask_data.resolution
 
     if source_identifier is None:
         from pathlib import Path
