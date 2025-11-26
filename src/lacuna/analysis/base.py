@@ -420,8 +420,8 @@ class BaseAnalysis(ABC):
             return mask_data
 
         # Get current space
-        current_space = mask_data.metadata.get("space")
-        current_resolution = mask_data.metadata.get("resolution")
+        current_space = mask_data.space
+        current_resolution = mask_data.resolution
 
         if current_space is None:
             raise ValueError(
@@ -539,8 +539,8 @@ class BaseAnalysis(ABC):
         ...     return mask_data
         """
         # Get current space from metadata
-        current_space = mask_data.metadata.get("space")
-        current_resolution = mask_data.metadata.get("resolution", 2)
+        current_space = mask_data.space
+        current_resolution = mask_data.resolution
 
         if current_space is None:
             raise ValueError(

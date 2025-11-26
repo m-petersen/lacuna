@@ -709,8 +709,8 @@ class ParcelAggregation(BaseAnalysis):
             Dictionary mapping "atlas_{name}" to ParcelData objects
         """
         # Get input data space/resolution once
-        input_space = mask_data.metadata.get("space")
-        input_resolution = mask_data.metadata.get("resolution")
+        input_space = mask_data.space
+        input_resolution = mask_data.resolution
 
         # Get source image (this is what we'll aggregate)
         source_img = self._get_source_image(mask_data)
