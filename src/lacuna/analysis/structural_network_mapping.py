@@ -142,7 +142,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     ...     load_to_memory=True
     ... )
     >>> result = analysis.run(lesion)
-    >>> disconn_map = result.results["StructuralNetworkMapping"]["DisconnectionMap"]
+    >>> disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
     >>> disconn_map.orthoview()
 
     **Memory-efficient batch processing:**
@@ -548,7 +548,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary mapping result names to results:
-            - 'DisconnectionMap': VoxelMapResult for disconnection map
+            - 'disconnection_map': VoxelMapResult for disconnection map
             - 'summary_statistics': MiscResult for summary statistics
             - 'lesion_tractogram': TractogramResult (if keep_intermediate=True)
             - 'lesion_tdi': VoxelMapResult (if keep_intermediate=True)
@@ -647,7 +647,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # VoxelMapResult for disconnection map
             disconnection_result = VoxelMap(
-                name="DisconnectionMap",
+                name="disconnection_map",
                 data=final_disconn_map,
                 space=self.tractogram_space,
                 resolution=float(self.output_resolution),
@@ -660,7 +660,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "load_to_memory": self.load_to_memory,
                 },
             )
-            results["DisconnectionMap"] = disconnection_result
+            results["disconnection_map"] = disconnection_result
 
             # MiscResult for summary statistics
             summary_result = ScalarMetric(
@@ -679,7 +679,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             if self.keep_intermediate:
                 # Add lesion tractogram as TractogramResult
                 lesion_tractogram_result = Tractogram(
-                    name="LesionTractogram",
+                    name="lesion_tractogram",
                     streamlines=None,  # Not loading into memory
                     tractogram_path=lesion_tck_path,
                     metadata={
@@ -687,14 +687,14 @@ class StructuralNetworkMapping(BaseAnalysis):
                         "temp_directory": str(temp_dir_path),
                     },
                 )
-                results["LesionTractogram"] = lesion_tractogram_result
+                results["lesion_tractogram"] = lesion_tractogram_result
 
                 # Add lesion TDI as VoxelMapResult
                 lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
                 if lesion_tdi_path.exists():
                     lesion_tdi_img = nib.load(lesion_tdi_path)
                     lesion_tdi_result = VoxelMap(
-                        name="LesionTDI",
+                        name="lesion_tdi",
                         data=lesion_tdi_img,
                         space=self.tractogram_space,
                         resolution=self.output_resolution,
@@ -703,7 +703,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                             "temp_directory": str(temp_dir_path),
                         },
                     )
-                    results["LesionTDI"] = lesion_tdi_result
+                    results["lesion_tdi"] = lesion_tdi_result
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._parcellation_resolved is not None:

@@ -255,21 +255,21 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         flnm_results = result.results["FunctionalNetworkMapping"]
 
         # Verify expected keys are present
-        expected_keys = ["CorrelationMap", "ZMap", "summary_statistics"]
+        expected_keys = ["correlation_map", "z_map", "summary_statistics"]
         for key in expected_keys:
             assert key in flnm_results, f"Missing expected key: {key}"
 
         # Verify NIfTI images are present
         assert isinstance(
-            flnm_results["CorrelationMap"], nib.Nifti1Image
-        ), "CorrelationMap should be NIfTI image"
-        assert isinstance(flnm_results["ZMap"], nib.Nifti1Image), "ZMap should be NIfTI image"
+            flnm_results["correlation_map"], nib.Nifti1Image
+        ), "correlation_map should be NIfTI image"
+        assert isinstance(flnm_results["z_map"], nib.Nifti1Image), "z_map should be NIfTI image"
 
         # Since compute_t_map=True, these should also be present
-        assert "TMap" in flnm_results, "TMap should be present when compute_t_map=True"
+        assert "t_map" in flnm_results, "t_map should be present when compute_t_map=True"
         assert (
-            "TThresholdMap" in flnm_results
-        ), "TThresholdMap should be present when t_threshold is set"
+            "t_threshold_map" in flnm_results
+        ), "t_threshold_map should be present when t_threshold is set"
     finally:
         unregister_functional_connectome("test_bug_aggregate")
 

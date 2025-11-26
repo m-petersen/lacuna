@@ -64,13 +64,13 @@ def sample_mask_data(tmp_path):
 
     # Add a VoxelMap result
     voxel_map = VoxelMap(
-        name="CorrelationMap",
+        name="correlation_map",
         data=nib.Nifti1Image(np.random.rand(*shape).astype(np.float32), affine),
         space="MNI152NLin6Asym",
         resolution=2.0
     )
 
-    mask_data.results["DemoAnalysis"] = {"desc-CorrelationMap": voxel_map}
+    mask_data.results["DemoAnalysis"] = {"desc-correlation_map": voxel_map}
 
     return mask_data
 
@@ -192,7 +192,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_list(self, sample_mask_data):
         """Test ParcelAggregation with list of sources."""
         analysis = ParcelAggregation(
-            source=["mask_img", "DemoAnalysis.desc-CorrelationMap"],
+            source=["mask_img", "DemoAnalysis.desc-correlation_map"],
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean"
         )
@@ -210,7 +210,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_naming(self, sample_mask_data):
         """Test multi-source results use descriptive BIDS keys."""
         analysis = ParcelAggregation(
-            source=["mask_img", "DemoAnalysis.desc-CorrelationMap"],
+            source=["mask_img", "DemoAnalysis.desc-correlation_map"],
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean"
         )
@@ -222,7 +222,7 @@ class TestMultiSourceAggregation:
         # Format: atlas-{name}_desc-{Source} or atlas-{name}_source-{source}
         keys = list(parcel_results.keys())
         assert any("MaskImg" in k or "mask" in k for k in keys)
-        assert any("CorrelationMap" in k for k in keys)
+        assert any("correlation_map" in k for k in keys)
 
     def test_multi_source_empty_list_raises(self):
         """Test empty source list raises ValueError."""

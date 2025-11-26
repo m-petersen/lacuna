@@ -99,7 +99,7 @@ class TestVoxelMapSpaceContract:
         img = nib.Nifti1Image(data, affine)
 
         voxelmap = VoxelMap(
-            name="CorrelationMap",
+            name="correlation_map",
             data=img,
             space="MNI152NLin2009cAsym",
             resolution=2.0,

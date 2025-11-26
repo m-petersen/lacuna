@@ -8,6 +8,68 @@ This guide helps you migrate code from pre-0.5.0 versions to the optimized v0.5.
 2. **MaskData Replaces LesionData** - More general masking support  
 3. **Explicit Space Handling** - Space and resolution now required
 4. **Simplified Analysis API** - Consistent patterns across all analyses
+5. **snake_case Result Keys** - Analysis result keys now use snake_case (v0.6.0+)
+
+---
+
+## 0. snake_case Result Keys (v0.6.0+)
+
+### What Changed
+
+All analysis result keys have been changed from PascalCase to snake_case for Python convention compliance. This affects `FunctionalNetworkMapping` and `StructuralNetworkMapping` result dictionaries.
+
+### Key Mappings
+
+| Old Key (v0.5.x)    | New Key (v0.6.0+)     | Analysis                      |
+|---------------------|----------------------|-------------------------------|
+| `CorrelationMap`    | `correlation_map`    | FunctionalNetworkMapping      |
+| `ZMap`              | `z_map`              | FunctionalNetworkMapping      |
+| `TMap`              | `t_map`              | FunctionalNetworkMapping      |
+| `TThresholdMap`     | `t_threshold_map`    | FunctionalNetworkMapping      |
+| `DisconnectionMap`  | `disconnection_map`  | StructuralNetworkMapping      |
+| `LesionTractogram`  | `lesion_tractogram`  | StructuralNetworkMapping      |
+| `LesionTDI`         | `lesion_tdi`         | StructuralNetworkMapping      |
+
+### Migration Examples
+
+**Before (v0.5.x):**
+```python
+result = fnm.run(mask_data)
+corr_map = result.results["FunctionalNetworkMapping"]["CorrelationMap"]
+z_map = result.results["FunctionalNetworkMapping"]["ZMap"]
+t_map = result.results["FunctionalNetworkMapping"]["TMap"]
+
+result = snm.run(mask_data)
+disconn = result.results["StructuralNetworkMapping"]["DisconnectionMap"]
+```
+
+**After (v0.6.0+):**
+```python
+result = fnm.run(mask_data)
+corr_map = result.results["FunctionalNetworkMapping"]["correlation_map"]
+z_map = result.results["FunctionalNetworkMapping"]["z_map"]
+t_map = result.results["FunctionalNetworkMapping"]["t_map"]
+
+result = snm.run(mask_data)
+disconn = result.results["StructuralNetworkMapping"]["disconnection_map"]
+```
+
+### Find-and-Replace Pattern
+
+Run this to update your codebase:
+
+```bash
+# FunctionalNetworkMapping keys
+sed -i 's/\["CorrelationMap"\]/["correlation_map"]/g' *.py
+sed -i 's/\["ZMap"\]/["z_map"]/g' *.py
+sed -i 's/\["TMap"\]/["t_map"]/g' *.py
+sed -i 's/\["TThresholdMap"\]/["t_threshold_map"]/g' *.py
+
+# StructuralNetworkMapping keys
+sed -i 's/\["DisconnectionMap"\]/["disconnection_map"]/g' *.py
+sed -i 's/\["LesionTractogram"\]/["lesion_tractogram"]/g' *.py
+sed -i 's/\["LesionTDI"\]/["lesion_tdi"]/g' *.py
+```
 
 ---
 

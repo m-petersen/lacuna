@@ -118,15 +118,15 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
             flnm = result.results["FunctionalNetworkMapping"]
 
             # Check all expected outputs exist
-            assert "CorrelationMap" in flnm
-            assert "ZMap" in flnm
-            assert "TMap" in flnm
+            assert "correlation_map" in flnm
+            assert "z_map" in flnm
+            assert "t_map" in flnm
             assert "summary_statistics" in flnm
 
             # Check shapes - in nested dict, these are VoxelMap objects
             # VoxelMap.data holds the NIfTI image which has .shape
-            assert flnm["CorrelationMap"].shape == (91, 109, 91)
-            assert flnm["TMap"].shape == (91, 109, 91)
+            assert flnm["correlation_map"].shape == (91, 109, 91)
+            assert flnm["t_map"].shape == (91, 109, 91)
 
             # Check aggregated across all subjects
             # In batch results, summary_statistics is already the dict data
@@ -222,8 +222,8 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
 
             # Check data type of nibabel images (get_fdata() converts to float64)
             # So we check the internal data type instead
-            assert flnm["CorrelationMap"].get_data_dtype() == np.float32
-            assert flnm["ZMap"].get_data_dtype() == np.float32
+            assert flnm["correlation_map"].get_data_dtype() == np.float32
+            assert flnm["z_map"].get_data_dtype() == np.float32
     finally:
         unregister_functional_connectome("test_float32_connectome")
 
@@ -256,11 +256,11 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
             flnm = result.results["FunctionalNetworkMapping"]
 
             # T-map should exist
-            assert "TMap" in flnm
-            assert flnm["TMap"].shape == (91, 109, 91)
+            assert "t_map" in flnm
+            assert flnm["t_map"].shape == (91, 109, 91)
 
             # Threshold map should exist
-            assert "TThresholdMap" in flnm
+            assert "t_threshold_map" in flnm
 
             # Statistics should include t-map info
             stats = flnm["summary_statistics"]
