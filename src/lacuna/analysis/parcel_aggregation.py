@@ -51,6 +51,7 @@ from nilearn.maskers import NiftiLabelsMasker
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.core.data_types import ParcelData
+from lacuna.core.keys import build_result_key
 from lacuna.core.mask_data import MaskData
 
 if TYPE_CHECKING:
@@ -185,7 +186,7 @@ class ParcelAggregation(BaseAnalysis):
 
     def __init__(
         self,
-        source: str = "mask_img",
+        source: str | list[str] = "mask_img",
         aggregation: str = "mean",
         threshold: float = 0.5,
         parcel_names: list[str] | None = None,
@@ -199,7 +200,9 @@ class ParcelAggregation(BaseAnalysis):
 
         self.logger = ConsoleLogger(log_level=log_level)
 
-        self.source = source
+        # Normalize and validate source parameter
+        self.sources = self._normalize_sources(source)
+        self.source = source  # Keep original for compatibility
         self.aggregation = aggregation
         self.threshold = threshold
         self.parcel_names = parcel_names
@@ -229,6 +232,40 @@ class ParcelAggregation(BaseAnalysis):
 
         # Will be populated in _validate_inputs
         self.atlases = []
+
+    def _normalize_sources(self, source: str | list[str]) -> list[str]:
+        """
+        Normalize source parameter to a list of sources.
+
+        Parameters
+        ----------
+        source : str or list[str]
+            Single source string or list of sources.
+
+        Returns
+        -------
+        list[str]
+            Normalized list of source strings.
+
+        Raises
+        ------
+        TypeError
+            If source is not str or list[str].
+        ValueError
+            If source list is empty.
+        """
+        if isinstance(source, str):
+            return [source]
+        elif isinstance(source, list):
+            if not source:
+                raise ValueError("source cannot be empty list")
+            if not all(isinstance(s, str) for s in source):
+                raise TypeError("All items in source list must be strings")
+            return source
+        else:
+            raise TypeError(
+                f"source must be str or list[str], got {type(source).__name__}"
+            )
 
     def run(
         self, data: "MaskData | nib.Nifti1Image | list[nib.Nifti1Image]"
@@ -500,22 +537,38 @@ class ParcelAggregation(BaseAnalysis):
         ValueError
             If lesion data is invalid or source data not found
         """
-        # Check that source data exists
-        source_img = self._get_source_image(mask_data)
+        # Build list of available sources
+        available = ["MaskData.mask_img"]
+        if mask_data.results:
+            for analysis_name, analysis_results in mask_data.results.items():
+                for key in analysis_results.keys():
+                    available.append(f"{analysis_name}.{key}")
 
-        if source_img is None:
-            # List available sources from MaskData results
-            available = ["mask_img"]
-            if mask_data.results:
-                for analysis_name, analysis_results in mask_data.results.items():
-                    for key in analysis_results.keys():
-                        available.append(f"{analysis_name}.{key}")
+        # Validate each source exists
+        missing_sources = []
+        for src in self.sources:
+            source_img = self._get_source_image_for_source(mask_data, src)
+            if source_img is None:
+                missing_sources.append(src)
 
-            raise ValueError(
-                f"Source data not found: {self.source}\n"
+        if missing_sources:
+            from lacuna.utils.suggestions import suggest_similar, format_suggestions
+
+            suggestions = []
+            for missing in missing_sources:
+                similar = suggest_similar(missing, available)
+                if similar:
+                    suggestions.extend(similar)
+
+            error_msg = (
+                f"Source data not found: {missing_sources}\n"
                 "Check that the source exists in MaskData.\n"
                 f"Available sources: {', '.join(available)}"
             )
+            if suggestions:
+                error_msg += f"\n\nDid you mean: {format_suggestions(suggestions)}?"
+
+            raise ValueError(error_msg)
 
         # Load atlases from registry
         self.atlases = self._load_parcellations_from_registry()
@@ -696,7 +749,7 @@ class ParcelAggregation(BaseAnalysis):
 
     def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
         """
-        Compute ROI-level aggregation for all atlases.
+        Compute ROI-level aggregation for all atlases and sources.
 
         Parameters
         ----------
@@ -706,129 +759,108 @@ class ParcelAggregation(BaseAnalysis):
         Returns
         -------
         dict[str, DataContainer]
-            Dictionary mapping "atlas_{name}" to ParcelData objects
+            Dictionary mapping BIDS-style keys to ParcelData objects.
+            Keys follow the pattern: parc-{atlas}_source-{SourceClass}_desc-{key}
         """
         # Get input data space/resolution once
         input_space = mask_data.space
         input_resolution = mask_data.resolution
 
-        # Get source image (this is what we'll aggregate)
-        source_img = self._get_source_image(mask_data)
+        # Collect results with BIDS-style keys
+        all_results: dict[str, "DataContainer"] = {}
 
-        # Calculate voxel volume from source data
-        voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
-
-        # Collect results per atlas as dict with descriptive keys
-        atlas_results_dict = {}
-
-        # Process each atlas
-        for atlas_info in self.atlases:
-            parcellation_name = atlas_info["name"]
-            atlas_space = atlas_info.get("space")
-            atlas_resolution = atlas_info.get("resolution")
-
-            # Load atlas image
-            atlas_img = nib.load(atlas_info["atlas_path"])
-
-            # Transform atlas to match input data space if needed
-            atlas_img = self._ensure_atlas_matches_input_space(
-                atlas_img=atlas_img,
-                atlas_space=atlas_space,
-                atlas_resolution=atlas_resolution,
-                input_space=input_space,
-                input_resolution=input_resolution,
-                input_affine=source_img.affine,
-                parcellation_name=parcellation_name,
-            )
-
-            labels = atlas_info["labels"]
-            atlas_data = atlas_img.get_fdata()
-
-            # Warn if nilearn will resample atlas to match source resolution (verbose only)
-            atlas_shape = atlas_data.shape[:3]  # Handle 4D atlases
-            source_shape = source_img.get_fdata().shape
-            if source_shape != atlas_shape:
-                self.logger.info(
-                    f"Resampling parcellation '{parcellation_name}' to match source data "
-                    f"(source: {source_shape}, parcellation: {atlas_shape})",
-                    verbose=True,  # Only show at log_level=2
-                )
-
-            if atlas_data.ndim == 3:
-                # 3D integer-labeled atlas - use nilearn NiftiLabelsMasker
-                atlas_results = self._aggregate_3d_atlas(
-                    source_img, atlas_img, labels, voxel_volume_mm3
-                )
-            elif atlas_data.ndim == 4:
-                # 4D probabilistic atlas - use nilearn resampling
-                atlas_results = self._aggregate_4d_atlas(
-                    source_img, atlas_img, labels, voxel_volume_mm3
-                )
+        # Process each source
+        for source in self.sources:
+            # Parse source string to extract source class and key
+            if "." in source:
+                # Cross-analysis source: "AnalysisName.result_key"
+                source_class, source_key = source.split(".", 1)
             else:
-                self.logger.warning(
-                    f"Skipping parcellation '{parcellation_name}': unexpected dimensions {atlas_data.ndim}D"
+                # Direct source: "mask_img" -> from MaskData
+                source_class = "MaskData"
+                source_key = source
+
+            # Get source image for this source
+            source_img = self._get_source_image_for_source(mask_data, source)
+
+            # Calculate voxel volume from source data
+            voxel_volume_mm3 = np.abs(np.linalg.det(source_img.affine[:3, :3]))
+
+            # Process each atlas
+            for atlas_info in self.atlases:
+                parcellation_name = atlas_info["name"]
+                atlas_space = atlas_info.get("space")
+                atlas_resolution = atlas_info.get("resolution")
+
+                # Load atlas image
+                atlas_img = nib.load(atlas_info["atlas_path"])
+
+                # Transform atlas to match input data space if needed
+                atlas_img = self._ensure_atlas_matches_input_space(
+                    atlas_img=atlas_img,
+                    atlas_space=atlas_space,
+                    atlas_resolution=atlas_resolution,
+                    input_space=input_space,
+                    input_resolution=input_resolution,
+                    input_affine=source_img.affine,
+                    parcellation_name=parcellation_name,
                 )
-                continue
 
-            # Create one ParcelData per atlas
-            roi_result = ParcelData(
-                name=parcellation_name,
-                data=atlas_results,
-                parcel_names=[parcellation_name],
-                aggregation_method=self.aggregation,
-                metadata={
-                    "source": self.source,
-                    "threshold": self.threshold,
-                    "n_regions": len(atlas_results),
-                },
-            )
+                labels = atlas_info["labels"]
+                atlas_data = atlas_img.get_fdata()
 
-            # Format: "atlas-{name}_desc-{source}"
-            # Examples:
-            #   - mask_img: "atlas-Schaefer2018_desc-maskImg"
-            #   - Analysis.key: "atlas-Schaefer100_desc-disconnectionMap"
+                # Warn if nilearn will resample atlas to match source resolution
+                atlas_shape = atlas_data.shape[:3]  # Handle 4D atlases
+                source_shape = source_img.get_fdata().shape
+                if source_shape != atlas_shape:
+                    self.logger.info(
+                        f"Resampling parcellation '{parcellation_name}' to match source data "
+                        f"(source: {source_shape}, parcellation: {atlas_shape})",
+                        verbose=True,  # Only show at log_level=2
+                    )
 
-            # Shorten atlas name if it's very long
-            short_parcellation_name = parcellation_name
-            if len(parcellation_name) > 30:
-                # Extract meaningful part (e.g., "Schaefer2018_100Parcels7Networks" -> "Schaefer100")
-                if "Parcels" in parcellation_name:
-                    # Extract number of parcels
-                    import re
-
-                    match = re.search(r"(\d+)Parcels", parcellation_name)
-                    if match:
-                        num_parcels = match.group(1)
-                        if "Schaefer" in parcellation_name:
-                            short_parcellation_name = f"Schaefer{num_parcels}"
-                        elif "Tian" in parcellation_name:
-                            short_parcellation_name = f"Tian{num_parcels}"
-                        else:
-                            short_parcellation_name = parcellation_name[:20]
+                if atlas_data.ndim == 3:
+                    # 3D integer-labeled atlas - use nilearn NiftiLabelsMasker
+                    atlas_results = self._aggregate_3d_atlas(
+                        source_img, atlas_img, labels, voxel_volume_mm3
+                    )
+                elif atlas_data.ndim == 4:
+                    # 4D probabilistic atlas - use nilearn resampling
+                    atlas_results = self._aggregate_4d_atlas(
+                        source_img, atlas_img, labels, voxel_volume_mm3
+                    )
                 else:
-                    short_parcellation_name = parcellation_name[:20]
+                    self.logger.warning(
+                        f"Skipping parcellation '{parcellation_name}': "
+                        f"unexpected dimensions {atlas_data.ndim}D"
+                    )
+                    continue
 
-            # Extract source key (remove "Analysis." prefix if present)
-            if "." in self.source:
-                # Cross-analysis source: "AnalysisName.result_key" -> "result_key"
-                _, source_key = self.source.split(".", 1)
-            else:
-                # Direct source: "mask_img" -> "mask_img"
-                source_key = self.source
+                # Create ParcelData for this atlas + source combination
+                roi_result = ParcelData(
+                    name=parcellation_name,
+                    data=atlas_results,
+                    parcel_names=[parcellation_name],
+                    aggregation_method=self.aggregation,
+                    metadata={
+                        "source": source,
+                        "source_class": source_class,
+                        "source_key": source_key,
+                        "threshold": self.threshold,
+                        "n_regions": len(atlas_results),
+                    },
+                )
 
-            # Convert source_key to PascalCase for BIDS compliance
-            # Examples: "mask_img" -> "MaskImg", "disconnection_map" -> "DisconnectionMap"
-            source_pascal = "".join(
-                word.capitalize()
-                for word in source_key.split("_")
-            )
+                # Build BIDS-style result key
+                result_key = build_result_key(
+                    parc=parcellation_name,
+                    source=source_class,
+                    desc=source_key,
+                )
 
-            # Build BIDS-style result key
-            result_key = f"atlas-{short_parcellation_name}_desc-{source_pascal}"
+                all_results[result_key] = roi_result
 
-            atlas_results_dict[result_key] = roi_result
-
-        return atlas_results_dict
+        return all_results
 
     def _aggregate_3d_atlas(
         self,
@@ -1100,27 +1132,37 @@ class ParcelAggregation(BaseAnalysis):
         else:
             raise ValueError(f"Unknown aggregation method: {self.aggregation}")
 
-    def _get_source_image(self, mask_data: MaskData) -> nib.Nifti1Image | None:
+    def _get_source_image_for_source(
+        self, mask_data: MaskData, source: str
+    ) -> nib.Nifti1Image | None:
         """
-        Get source image from MaskData based on source parameter.
+        Get source image from MaskData for a specific source string.
 
         Parameters
         ----------
         mask_data : MaskData
             Lesion data containing source
+        source : str
+            Source specification (e.g., "MaskData.mask_img", "FunctionalNetworkMapping.correlation_map")
 
         Returns
         -------
         nib.Nifti1Image or None
             Source image, or None if not found
         """
-        # Direct image sources
-        if self.source == "mask_img":
+        # Handle "MaskData.mask_img" or just "mask_img"
+        if source == "mask_img" or source == "MaskData.mask_img":
             return mask_data.mask_img
 
         # Result from previous analysis: "AnalysisName.result_key"
-        if "." in self.source:
-            analysis_name, result_key = self.source.split(".", 1)
+        if "." in source:
+            analysis_name, result_key = source.split(".", 1)
+
+            # Handle MaskData prefix
+            if analysis_name == "MaskData":
+                if result_key == "mask_img":
+                    return mask_data.mask_img
+                return None
 
             if analysis_name in mask_data.results:
                 analysis_results = mask_data.results[analysis_name]
@@ -1134,6 +1176,7 @@ class ParcelAggregation(BaseAnalysis):
 
                     # If it's a VoxelMap, return the underlying image
                     from lacuna.core.data_types import VoxelMap
+
                     if isinstance(result, VoxelMap):
                         return result.data
 
@@ -1143,6 +1186,26 @@ class ParcelAggregation(BaseAnalysis):
                         if result_path.exists():
                             return nib.load(result_path)
 
+        return None
+
+    def _get_source_image(self, mask_data: MaskData) -> nib.Nifti1Image | None:
+        """
+        Get source image from MaskData based on first source in sources list.
+
+        This is a compatibility method for single-source usage.
+
+        Parameters
+        ----------
+        mask_data : MaskData
+            Lesion data containing source
+
+        Returns
+        -------
+        nib.Nifti1Image or None
+            Source image, or None if not found
+        """
+        if self.sources:
+            return self._get_source_image_for_source(mask_data, self.sources[0])
         return None
 
     def _get_parameters(self) -> dict:

@@ -62,7 +62,7 @@ def sample_mask_data(tmp_path):
         }
     )
 
-    # Add a VoxelMap result
+    # Add a VoxelMap result with snake_case key using add_result (immutable pattern)
     voxel_map = VoxelMap(
         name="correlation_map",
         data=nib.Nifti1Image(np.random.rand(*shape).astype(np.float32), affine),
@@ -70,9 +70,7 @@ def sample_mask_data(tmp_path):
         resolution=2.0
     )
 
-    mask_data.results["DemoAnalysis"] = {"desc-correlation_map": voxel_map}
-
-    return mask_data
+    return mask_data.add_result("DemoAnalysis", {"correlation_map": voxel_map})
 
 
 class TestVoxelMapDirectInput:
@@ -192,7 +190,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_list(self, sample_mask_data):
         """Test ParcelAggregation with list of sources."""
         analysis = ParcelAggregation(
-            source=["mask_img", "DemoAnalysis.desc-correlation_map"],
+            source=["mask_img", "DemoAnalysis.correlation_map"],
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean"
         )
@@ -210,7 +208,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_naming(self, sample_mask_data):
         """Test multi-source results use descriptive BIDS keys."""
         analysis = ParcelAggregation(
-            source=["mask_img", "DemoAnalysis.desc-correlation_map"],
+            source=["mask_img", "DemoAnalysis.correlation_map"],
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean"
         )
@@ -219,9 +217,9 @@ class TestMultiSourceAggregation:
         parcel_results = result.results["ParcelAggregation"]
 
         # Check for BIDS-style keys differentiating sources
-        # Format: atlas-{name}_desc-{Source} or atlas-{name}_source-{source}
+        # Format: parc-{name}_source-{SourceClass}_desc-{key}
         keys = list(parcel_results.keys())
-        assert any("MaskImg" in k or "mask" in k for k in keys)
+        assert any("mask_img" in k for k in keys)
         assert any("correlation_map" in k for k in keys)
 
     def test_multi_source_empty_list_raises(self):

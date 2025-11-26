@@ -101,7 +101,8 @@ class TestAtlasLabelAssignment:
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["ParcelAggregation"]
-            results = atlas_results["atlas-test_4d_atlas_desc-MaskImg"].get_data()
+            # BIDS-style key: parc-{atlas}_source-MaskData_desc-mask_img
+            results = atlas_results["parc-test_4d_atlas_source-MaskData_desc-mask_img"].get_data()
 
             # With new structure, region names don't have atlas prefix
             right_damage = results.get("Region_Right", None)
@@ -192,7 +193,8 @@ class TestAtlasLabelAssignment:
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["ParcelAggregation"]
-            results = atlas_results["atlas-atlas_1indexed_desc-MaskImg"].get_data()
+            # BIDS-style key: parc-{atlas}_source-MaskData_desc-mask_img
+            results = atlas_results["parc-atlas_1indexed_source-MaskData_desc-mask_img"].get_data()
 
             # With new structure, region names don't have atlas prefix
             bottom_damage = results.get("Bottom_Region", None)
@@ -269,7 +271,8 @@ class TestAtlasLabelAssignment:
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["ParcelAggregation"]
-            results = atlas_results["atlas-atlas_3d_desc-MaskImg"].get_data()
+            # BIDS-style key: parc-{atlas}_source-MaskData_desc-mask_img
+            results = atlas_results["parc-atlas_3d_source-MaskData_desc-mask_img"].get_data()
 
             # With new structure, region names don't have atlas prefix
             first_damage = results.get("First_Region", None)
