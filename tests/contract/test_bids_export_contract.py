@@ -3,9 +3,7 @@
 These tests define the expected behavior for BIDS derivative export
 for all container types with proper sidecars.
 
-User Story 4: Complete BIDS derivative export for all container types.
-
-Contract: T042 - BIDS Derivative Export
+Contract:  BIDS Derivative Export
 """
 
 import json
