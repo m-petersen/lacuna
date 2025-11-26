@@ -252,10 +252,19 @@ def _load_bids_manual(
                             "lesion_path": str(lesion_path),
                         }
 
+                        # Parse sidecar for space/resolution
+                        sidecar_data = _parse_sidecar(lesion_path)
+                        space = sidecar_data.get("Space") or sidecar_data.get("space")
+                        resolution = _parse_resolution(
+                            sidecar_data.get("Resolution") or sidecar_data.get("resolution")
+                        )
+
                         mask_data_dict[subject_key] = MaskData.from_nifti(
                             lesion_path=lesion_path,
                             anatomical_path=anatomical_path,
                             metadata=metadata,
+                            space=space,
+                            resolution=resolution,
                         )
         else:
             # Single-session dataset
@@ -286,14 +295,110 @@ def _load_bids_manual(
                         "lesion_path": str(lesion_path),
                     }
 
+                    # Parse sidecar for space/resolution
+                    sidecar_data = _parse_sidecar(lesion_path)
+                    space = sidecar_data.get("Space") or sidecar_data.get("space")
+                    resolution = _parse_resolution(
+                        sidecar_data.get("Resolution") or sidecar_data.get("resolution")
+                    )
+
                     mask_data_dict[subject_id] = MaskData.from_nifti(
-                        lesion_path=lesion_path, anatomical_path=anatomical_path, metadata=metadata
+                        lesion_path=lesion_path,
+                        anatomical_path=anatomical_path,
+                        metadata=metadata,
+                        space=space,
+                        resolution=resolution,
                     )
 
     if not found_any:
         raise BidsError(f"No lesion masks found in BIDS dataset: {bids_root}")
 
     return mask_data_dict
+
+
+def _parse_resolution(value: str | float | int | None) -> float | None:
+    """
+    Parse resolution value from various formats.
+
+    Parameters
+    ----------
+    value : str, float, int, or None
+        Resolution value (e.g., "2mm", "2", 2, 2.0)
+
+    Returns
+    -------
+    float or None
+        Numeric resolution value in mm, or None if not parseable
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    if isinstance(value, str):
+        import re
+
+        # Match numeric part with optional units
+        match = re.match(r"^(\d+(?:\.\d+)?)\s*(mm)?$", value.strip())
+        if match:
+            return float(match.group(1))
+
+    return None
+
+
+def _parse_sidecar(nifti_path: Path) -> dict:
+    """
+    Parse JSON sidecar file for a NIfTI image.
+
+    Parameters
+    ----------
+    nifti_path : Path
+        Path to NIfTI file
+
+    Returns
+    -------
+    dict
+        Sidecar data, or empty dict if no sidecar exists
+    """
+    nifti_path = Path(nifti_path)
+
+    # Try both .nii.gz and .nii extensions
+    if nifti_path.suffix == ".gz":
+        sidecar_path = nifti_path.with_suffix("").with_suffix(".json")
+    else:
+        sidecar_path = nifti_path.with_suffix(".json")
+
+    if sidecar_path.exists():
+        try:
+            with open(sidecar_path) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    return {}
+
+
+def _extract_space_from_filename(filename: str) -> str | None:
+    """
+    Extract space entity from BIDS filename.
+
+    Parameters
+    ----------
+    filename : str
+        BIDS filename (e.g., 'sub-001_space-MNI152NLin6Asym_mask.nii.gz')
+
+    Returns
+    -------
+    str or None
+        Space name if found, None otherwise
+    """
+    import re
+
+    match = re.search(r"space-([a-zA-Z0-9]+)", filename)
+    if match:
+        return match.group(1)
+    return None
 
 
 def export_voxelmap(
