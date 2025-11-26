@@ -32,9 +32,11 @@ def mask_data_with_results(sample_mask_img):
 
     # Add ParcelAggregation results with BIDS-style keys
     pa_results = {
-        build_result_key("Schaefer100", "mask", "mask_img"): {"parcels": [1, 2, 3]},
-        build_result_key("Schaefer100", "fnm", "correlation_map"): {"parcels": [4, 5, 6]},
-        build_result_key("Tian_S4", "mask", "mask_img"): {"parcels": [7, 8, 9]},
+        build_result_key("Schaefer100", "MaskData", "mask_img"): {"parcels": [1, 2, 3]},
+        build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlation_map"): {
+            "parcels": [4, 5, 6]
+        },
+        build_result_key("Tian_S4", "MaskData", "mask_img"): {"parcels": [7, 8, 9]},
     }
     mask = mask.add_result("ParcelAggregation", pa_results)
 
@@ -55,7 +57,7 @@ class TestGetResultAnalysisLevel:
         """Get all results for an analysis namespace."""
         results = mask_data_with_results.get_result("ParcelAggregation")
         assert len(results) == 3
-        assert build_result_key("Schaefer100", "mask", "mask_img") in results
+        assert build_result_key("Schaefer100", "MaskData", "mask_img") in results
 
     def test_get_fnm_results(self, mask_data_with_results):
         """Get FunctionalNetworkMapping results."""
@@ -82,17 +84,17 @@ class TestGetResultWithKeyComponents:
         result = mask_data_with_results.get_result(
             "ParcelAggregation",
             parc="Schaefer100",
-            source="fnm",
+            source="FunctionalNetworkMapping",
             desc="correlation_map",
         )
         assert result == {"parcels": [4, 5, 6]}
 
     def test_get_mask_source_result(self, mask_data_with_results):
-        """Get result from mask source."""
+        """Get result from MaskData source."""
         result = mask_data_with_results.get_result(
             "ParcelAggregation",
             parc="Tian_S4",
-            source="mask",
+            source="MaskData",
             desc="mask_img",
         )
         assert result == {"parcels": [7, 8, 9]}
@@ -112,7 +114,7 @@ class TestGetResultWithKeyComponents:
             mask_data_with_results.get_result(
                 "ParcelAggregation",
                 parc="NonExistent",
-                source="mask",
+                source="MaskData",
                 desc="mask_img",
             )
 
@@ -122,8 +124,8 @@ class TestGetResultWithKeyComponents:
             mask_data_with_results.get_result(
                 "ParcelAggregation",
                 parc="Schaefer100",
-                source="mask",
-                desc="correltion_map",  # typo - similar to correlation_map
+                source="MaskData",
+                desc="correltion_map",  # typo - similar to keys with mask_img
             )
 
 
