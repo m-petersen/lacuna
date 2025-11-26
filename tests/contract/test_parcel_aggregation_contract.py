@@ -395,10 +395,10 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     atlas_results = result.results["ParcelAggregation"]
 
     # Result key should include source context in BIDS format
-    # Should be "atlas-Schaefer100_desc-DisconnectionMap" (PascalCase per BIDS)
+    # Should be "atlas-Schaefer100_desc-disconnection_map" (snake_case)
     result_keys = list(atlas_results.keys())
     assert len(result_keys) > 0
 
-    # At least one key should reference the source (PascalCase format)
-    has_source_context = any("DisconnectionMap" in key or "disconnection" in key.lower() for key in result_keys)
+    # At least one key should reference the source (snake_case format)
+    has_source_context = any("disconnection_map" in key or "disconnection" in key.lower() for key in result_keys)
     assert has_source_context, f"Expected source context in keys, got: {result_keys}"

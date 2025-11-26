@@ -210,14 +210,14 @@ class TestFunctionalNetworkMappingOutputs:
 
             # Results should now be a dict, not a list
             assert isinstance(results, dict)
-            # Should contain VoxelMapResults for CorrelationMap, ZMap
+            # Should contain VoxelMapResults for correlation_map, z_map
             voxel_results = [r for r in results.values() if isinstance(r, VoxelMap)]
-            assert len(voxel_results) >= 2  # At least CorrelationMap and ZMap
+            assert len(voxel_results) >= 2  # At least correlation_map and z_map
 
             # Check for expected result names
             result_names = [r.name for r in voxel_results]
-            assert "CorrelationMap" in result_names
-            assert "ZMap" in result_names
+            assert "correlation_map" in result_names
+            assert "z_map" in result_names
         finally:
             unregister_functional_connectome("test_func_connectome")
 

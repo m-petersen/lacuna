@@ -122,8 +122,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
     ...     method="boes"
     ... )
     >>> result = analysis.run(lesion)
-    >>> correlation_map = result.results["FunctionalNetworkMapping"]["CorrelationMap"]
-    >>> z_map = result.results["FunctionalNetworkMapping"]["ZMap"]
+    >>> correlation_map = result.results["FunctionalNetworkMapping"]["correlation_map"]
+    >>> z_map = result.results["FunctionalNetworkMapping"]["z_map"]
 
     Notes
     -----
@@ -314,9 +314,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary containing:
-            - 'CorrelationMap': VoxelMapResult for correlation (r values)
-            - 'ZMap': VoxelMapResult for Fisher z-transformed
-            - 'TMap': VoxelMapResult (if compute_t_map=True)
+            - 'correlation_map': VoxelMapResult for correlation (r values)
+            - 'z_map': VoxelMapResult for Fisher z-transformed
+            - 't_map': VoxelMapResult (if compute_t_map=True)
             - 't_threshold_map': VoxelMapResult (if t_threshold provided)
             - 'summary_statistics': MiscResult for summary statistics
 
@@ -504,7 +504,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Correlation map (r values)
         correlation_result = VoxelMap(
-            name="CorrelationMap",
+            name="correlation_map",
             data=correlation_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -515,11 +515,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "correlation_coefficient",
             },
         )
-        results["CorrelationMap"] = correlation_result
+        results["correlation_map"] = correlation_result
 
         # Z-map (Fisher z-transformed correlations)
         z_result = VoxelMap(
-            name="ZMap",
+            name="z_map",
             data=z_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -530,7 +530,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "fisher_z",
             },
         )
-        results["ZMap"] = z_result
+        results["z_map"] = z_result
 
         # Summary statistics
         summary_dict = {
@@ -545,7 +545,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Add t-map results if computed
         if t_map_nifti is not None:
             t_result = VoxelMap(
-                name="TMap",
+                name="t_map",
                 data=t_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -555,13 +555,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "t_statistic",
                 },
             )
-            results["TMap"] = t_result
+            results["t_map"] = t_result
             summary_dict["t_min"] = float(np.min(t_map_flat))
             summary_dict["t_max"] = float(np.max(t_map_flat))
 
         if t_threshold_map_nifti is not None:
             threshold_result = VoxelMap(
-                name="TThresholdMap",
+                name="t_threshold_map",
                 data=t_threshold_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -571,7 +571,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "thresholded_t",
                 },
             )
-            results["TThresholdMap"] = threshold_result
+            results["t_threshold_map"] = threshold_result
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
 
@@ -1365,10 +1365,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
         z_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = mean_z_map.astype(np.float32)
         z_map_nifti = nib.Nifti1Image(z_map_3d, mask_affine)
 
-        # Build results dictionary with PascalCase keys (matching _run_analysis)
+        # Build results dictionary with snake_case keys (matching _run_analysis)
         results = {
-            "CorrelationMap": correlation_map_nifti,
-            "ZMap": z_map_nifti,
+            "correlation_map": correlation_map_nifti,
+            "z_map": z_map_nifti,
             "summary_statistics": {
                 "mean": float(np.mean(mean_r_map)),
                 "std": float(np.std(mean_r_map)),
@@ -1385,7 +1385,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
             t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
 
-            results["TMap"] = t_map_nifti
+            results["t_map"] = t_map_nifti
             results["summary_statistics"]["t_min"] = float(np.min(t_map_flat))
             results["summary_statistics"]["t_max"] = float(np.max(t_map_flat))
 
@@ -1397,24 +1397,24 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     t_threshold_mask.astype(np.uint8)
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["TThresholdMap"] = t_threshold_map_nifti
+                results["t_threshold_map"] = t_threshold_map_nifti
                 results["summary_statistics"]["t_threshold"] = self.t_threshold
                 results["summary_statistics"]["n_significant_voxels"] = int(
                     np.sum(t_threshold_mask)
                 )
 
         # Add results to lesion data (returns new instance with results)
-        # Note: Using PascalCase keys to match _run_analysis() structure
+        # Note: Using snake_case keys to match _run_analysis() structure
         batch_results = {
-            "CorrelationMap": results["CorrelationMap"],
-            "ZMap": results["ZMap"],
+            "correlation_map": results["correlation_map"],
+            "z_map": results["z_map"],
             "summary_statistics": results["summary_statistics"],
         }
         # Add optional results if present
-        if "TMap" in results:
-            batch_results["TMap"] = results["TMap"]
-        if "TThresholdMap" in results:
-            batch_results["TThresholdMap"] = results["TThresholdMap"]
+        if "t_map" in results:
+            batch_results["t_map"] = results["t_map"]
+        if "t_threshold_map" in results:
+            batch_results["t_threshold_map"] = results["t_threshold_map"]
 
         mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
 
