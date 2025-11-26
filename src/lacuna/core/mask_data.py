@@ -788,3 +788,97 @@ class MaskData:
             f"'{type(self).__name__}' object has no attribute '{name}'.\n"
             f"Available analysis results: {available}"
         )
+
+    def get_result(
+        self,
+        analysis: str,
+        parc: str | None = None,
+        source: str | None = None,
+        desc: str | None = None,
+    ) -> Any:
+        """
+        Get result by analysis name and optional BIDS-style key components.
+
+        This method provides a convenient way to access results using
+        BIDS-style key components (parc, source, desc) rather than
+        the full key string.
+
+        Parameters
+        ----------
+        analysis : str
+            Analysis namespace (e.g., "ParcelAggregation", "FunctionalNetworkMapping").
+        parc : str, optional
+            Parcellation name filter (e.g., "Schaefer100").
+        source : str, optional
+            Source abbreviation filter (e.g., "fnm", "mask").
+        desc : str, optional
+            Description filter (e.g., "correlation_map").
+
+        Returns
+        -------
+        Any
+            - If no filters: dict of all results for the analysis
+            - If filters: single result matching the key components
+
+        Raises
+        ------
+        KeyError
+            If analysis namespace not found, or if filtered key not found.
+
+        Examples
+        --------
+        >>> # Get all ParcelAggregation results
+        >>> results = mask_data.get_result("ParcelAggregation")
+
+        >>> # Get specific result by key components
+        >>> parcel_data = mask_data.get_result(
+        ...     "ParcelAggregation",
+        ...     parc="Schaefer100",
+        ...     source="fnm",
+        ...     desc="correlation_map"
+        ... )
+
+        See Also
+        --------
+        results : Property for accessing all results.
+        lacuna.core.keys.build_result_key : Build key from components.
+        lacuna.core.keys.parse_result_key : Parse key into components.
+        """
+        from lacuna.core.keys import build_result_key
+        from lacuna.utils.suggestions import format_suggestions, suggest_similar
+
+        if analysis not in self._results:
+            available = list(self._results.keys())
+            suggestions = suggest_similar(analysis, available)
+            hint = format_suggestions(suggestions)
+            msg = f"Analysis '{analysis}' not found in results."
+            if hint:
+                msg = f"{msg} {hint}"
+            raise KeyError(msg)
+
+        analysis_results = self._results[analysis]
+
+        # If no filters, return all results for this analysis
+        if parc is None and source is None and desc is None:
+            return analysis_results
+
+        # Build key from components
+        if parc is None or source is None or desc is None:
+            raise ValueError(
+                "When filtering by key components, all of parc, source, and desc "
+                "must be provided."
+            )
+
+        key = build_result_key(parc, source, desc)
+        if key in analysis_results:
+            return analysis_results[key]
+
+        # Key not found - provide suggestions
+        available_keys = list(analysis_results.keys())
+        suggestions = suggest_similar(key, available_keys)
+        hint = format_suggestions(suggestions)
+        msg = f"Result key '{key}' not found in {analysis}."
+        if hint:
+            msg = f"{msg} {hint}"
+        raise KeyError(msg)
+

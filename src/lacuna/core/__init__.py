@@ -21,6 +21,12 @@ from .exceptions import (
     SpatialMismatchError,
     ValidationError,
 )
+from .keys import (
+    SOURCE_ABBREVIATIONS,
+    build_result_key,
+    get_source_abbreviation,
+    parse_result_key,
+)
 from .mask_data import MaskData
 from .provenance import (
     create_provenance_record,
@@ -63,5 +69,10 @@ __all__ = [
     "create_provenance_record",
     "validate_provenance_record",
     "merge_provenance",
+    # Result key helpers
+    "SOURCE_ABBREVIATIONS",
+    "build_result_key",
+    "parse_result_key",
+    "get_source_abbreviation",
 ]
 

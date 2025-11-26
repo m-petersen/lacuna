@@ -12,6 +12,10 @@ GSP1000 Utilities:
 Logging Utilities:
     - ConsoleLogger: Consistent console logger for user-facing messages
     - log_section, log_info, log_success, log_warning, log_error, log_progress: Convenience functions
+
+Suggestion Utilities:
+    - suggest_similar: Find similar strings for error message suggestions
+    - format_suggestions: Format suggestions for error messages
 """
 
 from lacuna.utils.gsp1000 import create_connectome_batches, validate_connectome_batches
@@ -24,6 +28,7 @@ from lacuna.utils.logging import (
     log_success,
     log_warning,
 )
+from lacuna.utils.suggestions import format_suggestions, suggest_similar
 
 __all__ = [
     "create_connectome_batches",
@@ -35,4 +40,6 @@ __all__ = [
     "log_warning",
     "log_error",
     "log_progress",
+    "suggest_similar",
+    "format_suggestions",
 ]
