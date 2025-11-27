@@ -16,11 +16,14 @@ except ImportError:
 from . import data
 from .batch import batch_process
 from .core.mask_data import MaskData
+from .core.pipeline import Pipeline, analyze
 
 # Exports
 __all__ = [
     "__version__",
     "MaskData",
+    "Pipeline",
+    "analyze",
     "data",
     "batch_process",
 ]
