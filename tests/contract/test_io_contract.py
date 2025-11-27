@@ -197,8 +197,9 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
     results_dir = subject_dir / "results"
     assert results_dir.exists()
 
-    results_files = list(results_dir.glob("*_results.json"))
-    assert len(results_files) == 1
+    # Each scalar result is saved as individual JSON file
+    results_files = list(results_dir.glob("*_desc-volumeanalysis_*.json"))
+    assert len(results_files) >= 1, f"Expected scalar result files, got: {list(results_dir.glob('*.json'))}"
 
     prov_files = list(results_dir.glob("*_desc-provenance.json"))
     assert len(prov_files) == 1
@@ -286,7 +287,7 @@ def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_mask_img)
 
 
 def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_mask_img):
-    """Test selective output options."""
+    """Test selective output options with new explicit parameters."""
     from lacuna import MaskData
     from lacuna.io import export_bids_derivatives
 
@@ -297,13 +298,16 @@ def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_mask_img)
 
     output_dir = tmp_path / "derivatives" / "lacuna"
 
-    # Export only images, no results/provenance
+    # Export only lesion mask, no other results
     subject_dir = export_bids_derivatives(
         mask_data,
         output_dir,
-        include_images=True,
-        include_results=False,
-        include_provenance=False,
+        export_lesion_mask=True,
+        export_voxelmaps=False,
+        export_parcel_data=False,
+        export_connectivity=False,
+        export_scalars=False,
+        export_provenance=False,
     )
 
     # Should have anat dir but not results dir
