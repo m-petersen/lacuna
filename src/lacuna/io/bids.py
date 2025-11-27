@@ -621,9 +621,12 @@ def export_connectivity_matrix(
 def export_bids_derivatives_batch(
     results: list,
     output_dir: str | Path,
-    include_images: bool = True,
-    include_results: bool = True,
-    include_provenance: bool = True,
+    export_lesion_mask: bool = True,
+    export_voxelmaps: bool = True,
+    export_parcel_data: bool = True,
+    export_connectivity: bool = True,
+    export_scalars: bool = True,
+    export_provenance: bool = True,
     overwrite: bool = False,
 ) -> Path:
     """
@@ -635,12 +638,18 @@ def export_bids_derivatives_batch(
         List of processed MaskData objects
     output_dir : str or Path
         Root directory for derivatives
-    include_images : bool, default=True
-        Save normalized lesion masks as NIfTI files
-    include_results : bool, default=True
-        Save analysis results
-    include_provenance : bool, default=True
-        Save processing provenance
+    export_lesion_mask : bool, default=True
+        Save original lesion masks as NIfTI files
+    export_voxelmaps : bool, default=True
+        Save VoxelMap results (e.g., correlation maps) as NIfTI files
+    export_parcel_data : bool, default=True
+        Save ParcelData results as TSV files
+    export_connectivity : bool, default=True
+        Save ConnectivityMatrix results as TSV files
+    export_scalars : bool, default=True
+        Save ScalarMetric and other scalar results as JSON files
+    export_provenance : bool, default=True
+        Save processing provenance as JSON
     overwrite : bool, default=False
         Overwrite existing files
 
@@ -676,9 +685,12 @@ def export_bids_derivatives_batch(
         export_bids_derivatives(
             mask_data,
             output_dir,
-            include_images=include_images,
-            include_results=include_results,
-            include_provenance=include_provenance,
+            export_lesion_mask=export_lesion_mask,
+            export_voxelmaps=export_voxelmaps,
+            export_parcel_data=export_parcel_data,
+            export_connectivity=export_connectivity,
+            export_scalars=export_scalars,
+            export_provenance=export_provenance,
             overwrite=overwrite,
         )
 
@@ -688,13 +700,24 @@ def export_bids_derivatives_batch(
 def export_bids_derivatives(
     mask_data: MaskData,
     output_dir: str | Path,
-    include_images: bool = True,
-    include_results: bool = True,
-    include_provenance: bool = True,
+    export_lesion_mask: bool = True,
+    export_voxelmaps: bool = True,
+    export_parcel_data: bool = True,
+    export_connectivity: bool = True,
+    export_scalars: bool = True,
+    export_provenance: bool = True,
     overwrite: bool = False,
 ) -> Path:
     """
-    Export MaskData to BIDS derivatives format.
+    Export MaskData and all its analysis results to BIDS derivatives format.
+
+    Exports the full spectrum of results stored in a MaskData object:
+    - Lesion mask as NIfTI
+    - VoxelMaps (correlation maps, disconnection maps, etc.) as NIfTI
+    - ParcelData (regional values) as TSV
+    - ConnectivityMatrix as TSV
+    - ScalarMetric and other scalars as JSON
+    - Processing provenance as JSON
 
     Parameters
     ----------
@@ -702,11 +725,17 @@ def export_bids_derivatives(
         Processed lesion data with analysis results.
     output_dir : str or Path
         Root directory for derivatives (e.g., 'derivatives/lacuna-v0.1.0').
-    include_images : bool, default=True
-        Save normalized lesion masks as NIfTI files.
-    include_results : bool, default=True
-        Save analysis results as TSV/JSON files.
-    include_provenance : bool, default=True
+    export_lesion_mask : bool, default=True
+        Save the original lesion mask as NIfTI file.
+    export_voxelmaps : bool, default=True
+        Save VoxelMap results (e.g., correlation maps, z-maps) as NIfTI files.
+    export_parcel_data : bool, default=True
+        Save ParcelData results (regional aggregations) as TSV files.
+    export_connectivity : bool, default=True
+        Save ConnectivityMatrix results as TSV files.
+    export_scalars : bool, default=True
+        Save ScalarMetric and other scalar results as JSON files.
+    export_provenance : bool, default=True
         Save processing provenance as JSON.
     overwrite : bool, default=False
         Overwrite existing files.
@@ -725,14 +754,31 @@ def export_bids_derivatives(
 
     Examples
     --------
+    >>> # Export all results
     >>> output_path = export_bids_derivatives(
     ...     mask_data,
-    ...     'derivatives/lacuna-v0.1.0',
-    ...     include_provenance=True
+    ...     'derivatives/lacuna-v0.1.0'
     ... )
     >>> print(f"Derivatives saved to: {output_path}")
+    >>>
+    >>> # Export only VoxelMaps (NIfTI files)
+    >>> export_bids_derivatives(
+    ...     mask_data,
+    ...     'derivatives/lacuna-v0.1.0',
+    ...     export_lesion_mask=False,
+    ...     export_parcel_data=False,
+    ...     export_connectivity=False,
+    ...     export_scalars=False,
+    ...     export_provenance=False
+    ... )
     """
     import nibabel as nib
+    from ..core.data_types import (
+        ConnectivityMatrix,
+        ParcelData as ParcelDataType,
+        ScalarMetric,
+        VoxelMap,
+    )
 
     output_dir = Path(output_dir)
 
@@ -742,6 +788,12 @@ def export_bids_derivatives(
 
     subject_id = mask_data.metadata["subject_id"]
     session_id = mask_data.metadata.get("session_id")
+
+    # Determine base filename
+    if session_id:
+        base_name = f"{subject_id}_{session_id}"
+    else:
+        base_name = subject_id
 
     # Create subject directory
     subject_dir = output_dir / subject_id
@@ -759,33 +811,33 @@ def export_bids_derivatives(
             "BIDSVersion": "1.6.0",
             "GeneratedBy": [
                 {
-                    "Name": "lesion-decoding-toolkit",
+                    "Name": "lacuna",
                     "Version": __version__,
-                    "Description": "Lesion network mapping and analysis",
+                    "Description": "Lesion network mapping and analysis toolkit",
                 }
             ],
         }
         with open(desc_file, "w") as f:
             json.dump(dataset_description, f, indent=2)
 
-    # Create subject directories
-    if include_images:
+    # Determine which directories we need
+    needs_anat = export_lesion_mask
+    needs_results = (
+        export_voxelmaps or export_parcel_data or export_connectivity or
+        export_scalars or export_provenance
+    )
+
+    # Create directories
+    if needs_anat:
         anat_dir = subject_dir / "anat"
         anat_dir.mkdir(parents=True, exist_ok=True)
 
-    if include_results or include_provenance:
+    if needs_results:
         results_dir = subject_dir / "results"
         results_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save lesion image
-    if include_images:
-        # Determine output filename
-        if session_id:
-            base_name = f"{subject_id}_{session_id}"
-        else:
-            base_name = subject_id
-
-        # Get coordinate space from metadata
+    # Save lesion mask
+    if export_lesion_mask:
         coord_space = mask_data.get_coordinate_space()
         lesion_filename = f"{base_name}_space-{coord_space}_desc-lesion_mask.nii.gz"
         lesion_path = anat_dir / lesion_filename
@@ -795,64 +847,70 @@ def export_bids_derivatives(
                 f"Lesion mask already exists: {lesion_path}. Use overwrite=True to replace."
             )
 
-        # Save NIfTI
         nib.save(mask_data.mask_img, lesion_path)
 
-    # Save results
-    if include_results and mask_data.results:
-        from ..core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
-
+    # Save analysis results
+    if mask_data.results:
         for namespace, results_data in mask_data.results.items():
-            # Handle DataContainer types specially
-            if isinstance(results_data, dict):
-                for key, value in results_data.items():
-                    if isinstance(value, VoxelMap):
-                        # Export VoxelMap as NIfTI
-                        export_voxelmap(
-                            value,
-                            results_dir,
-                            subject_id=subject_id,
-                            session_id=session_id,
-                            desc=f"{namespace.lower()}_{key}",
-                            overwrite=overwrite,
-                        )
-                    elif isinstance(value, ParcelData):
-                        # Export ParcelData as TSV
-                        export_parcel_data(
-                            value,
-                            results_dir,
-                            subject_id=subject_id,
-                            session_id=session_id,
-                            desc=f"{namespace.lower()}_{key}",
-                            overwrite=overwrite,
-                        )
-                    elif isinstance(value, ConnectivityMatrix):
-                        # Export ConnectivityMatrix as TSV
-                        export_connectivity_matrix(
-                            value,
-                            results_dir,
-                            subject_id=subject_id,
-                            session_id=session_id,
-                            desc=f"{namespace.lower()}_{key}",
-                            overwrite=overwrite,
-                        )
+            if not isinstance(results_data, dict):
+                continue
+
+            for key, value in results_data.items():
+                # VoxelMap -> NIfTI
+                if isinstance(value, VoxelMap) and export_voxelmaps:
+                    export_voxelmap(
+                        value,
+                        results_dir,
+                        subject_id=subject_id,
+                        session_id=session_id,
+                        desc=f"{namespace.lower()}_{key}",
+                        overwrite=overwrite,
+                    )
+
+                # ParcelData -> TSV
+                elif isinstance(value, ParcelDataType) and export_parcel_data:
+                    _export_parcel_data(
+                        value,
+                        results_dir,
+                        subject_id=subject_id,
+                        session_id=session_id,
+                        desc=f"{namespace.lower()}_{key}",
+                        overwrite=overwrite,
+                    )
+
+                # ConnectivityMatrix -> TSV
+                elif isinstance(value, ConnectivityMatrix) and export_connectivity:
+                    export_connectivity_matrix(
+                        value,
+                        results_dir,
+                        subject_id=subject_id,
+                        session_id=session_id,
+                        desc=f"{namespace.lower()}_{key}",
+                        overwrite=overwrite,
+                    )
+
+                # ScalarMetric or other serializable -> JSON
+                elif export_scalars:
+                    if isinstance(value, ScalarMetric):
+                        data_to_save = value.get_data()
                     else:
-                        # Try to serialize as JSON (for scalar results)
-                        try:
-                            results_filename = f"{base_name}_desc-{namespace.lower()}_{key}.json"
-                            results_path = results_dir / results_filename
+                        data_to_save = value
 
-                            if results_path.exists() and not overwrite:
-                                continue
+                    try:
+                        results_filename = f"{base_name}_desc-{namespace.lower()}_{key}.json"
+                        results_path = results_dir / results_filename
 
-                            with open(results_path, "w") as f:
-                                json.dump(value, f, indent=2)
-                        except (TypeError, ValueError):
-                            # Skip non-serializable results
-                            pass
+                        if results_path.exists() and not overwrite:
+                            continue
+
+                        with open(results_path, "w") as f:
+                            json.dump(data_to_save, f, indent=2, default=str)
+                    except (TypeError, ValueError):
+                        # Skip non-serializable results
+                        pass
 
     # Save provenance
-    if include_provenance and mask_data.provenance:
+    if export_provenance and mask_data.provenance:
         prov_filename = f"{base_name}_desc-provenance.json"
         prov_path = results_dir / prov_filename
 
@@ -861,10 +919,24 @@ def export_bids_derivatives(
                 f"Provenance file already exists: {prov_path}. Use overwrite=True to replace."
             )
 
+        # Convert provenance to serializable format
+        prov_data = []
+        for step in mask_data.provenance:
+            if hasattr(step, "to_dict"):
+                prov_data.append(step.to_dict())
+            elif isinstance(step, dict):
+                prov_data.append(step)
+            else:
+                prov_data.append(str(step))
+
         with open(prov_path, "w") as f:
-            json.dump(mask_data.provenance, f, indent=2)
+            json.dump(prov_data, f, indent=2, default=str)
 
     return subject_dir
+
+
+# Alias to avoid name collision with ParcelData type
+_export_parcel_data = export_parcel_data
 
 
 def save_nifti(mask_data: MaskData, output_path: str | Path, save_anatomical: bool = False) -> None:
