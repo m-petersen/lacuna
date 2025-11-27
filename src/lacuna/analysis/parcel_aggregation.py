@@ -209,10 +209,17 @@ class ParcelAggregation(BaseAnalysis):
 
         # Validate aggregation method
         if aggregation not in self.VALID_AGGREGATIONS:
-            raise ValueError(
+            from lacuna.utils.suggestions import format_suggestions, suggest_similar
+
+            suggestions = suggest_similar(aggregation, list(self.VALID_AGGREGATIONS))
+            hint = format_suggestions(suggestions)
+            msg = (
                 f"Invalid aggregation method: '{aggregation}'\n"
                 f"Valid options: {', '.join(self.VALID_AGGREGATIONS)}"
             )
+            if hint:
+                msg = f"{msg}\n{hint}"
+            raise ValueError(msg)
 
         # Threshold validation removed - accepts any float value (T061)
         # This allows for flexible thresholding (e.g., negative z-scores, arbitrary cutoffs)
