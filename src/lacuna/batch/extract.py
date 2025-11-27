@@ -11,6 +11,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Any, overload
 
+import nibabel as nib
 import pandas as pd
 
 if TYPE_CHECKING:
@@ -51,6 +52,7 @@ def _get_identifier(item: MaskData | ParcelData | Any) -> str:
 
 def extract_voxelmaps(
     results: list[MaskData],
+    source: str | None = None,
     analysis: str | None = None,
     key: str | None = None,
 ) -> dict[str, VoxelMap]:
@@ -60,10 +62,15 @@ def extract_voxelmaps(
     ----------
     results : list[MaskData]
         Batch processing results (MaskData with results attached)
+    source : str, optional
+        Combined source string in format "Analysis.key" (e.g., "FunctionalNetworkMapping.correlation_map").
+        This is the preferred format matching result key notation.
     analysis : str, optional
-        Analysis name to extract from (e.g., "FunctionalNetworkMapping")
+        Analysis name to extract from (e.g., "FunctionalNetworkMapping").
+        Can be used instead of source for separate specification.
     key : str, optional
-        Result key to extract (e.g., "correlation_map")
+        Result key to extract (e.g., "correlation_map").
+        Used with analysis parameter.
 
     Returns
     -------
@@ -72,6 +79,13 @@ def extract_voxelmaps(
 
     Examples
     --------
+    >>> # Preferred: use source with dotted notation
+    >>> voxelmaps = extract_voxelmaps(
+    ...     results,
+    ...     source="FunctionalNetworkMapping.correlation_map"
+    ... )
+    >>>
+    >>> # Alternative: separate analysis and key
     >>> voxelmaps = extract_voxelmaps(
     ...     results,
     ...     analysis="FunctionalNetworkMapping",
@@ -81,6 +95,35 @@ def extract_voxelmaps(
     ...     nib.save(vmap.data, f"{subject_id}_correlation.nii.gz")
     """
     from lacuna.core.data_types import VoxelMap
+
+    def _to_voxelmap(value: Any, key_name: str, analysis_name: str) -> VoxelMap | None:
+        """Convert value to VoxelMap if possible."""
+        if isinstance(value, VoxelMap):
+            return value
+        elif isinstance(value, nib.Nifti1Image):
+            # Wrap Nifti1Image in VoxelMap
+            return VoxelMap(
+                name=key_name,
+                data=value,
+                space="unknown",  # Best effort - space info not available
+                resolution=float(value.header.get_zooms()[0]),  # type: ignore
+                metadata={"source_analysis": analysis_name},
+            )
+        return None
+
+    def _is_voxelmap_like(value: Any) -> bool:
+        """Check if value is VoxelMap or can be converted to one."""
+        return isinstance(value, (VoxelMap, nib.Nifti1Image))
+
+    # Parse source string if provided (e.g., "FunctionalNetworkMapping.correlation_map")
+    if source is not None:
+        if "." in source:
+            parts = source.split(".", 1)
+            analysis = parts[0]
+            key = parts[1]
+        else:
+            # Single word - treat as analysis name
+            analysis = source
 
     extracted = {}
 
@@ -97,28 +140,29 @@ def extract_voxelmaps(
         try:
             if analysis and key:
                 analysis_results = item.results.get(analysis, {})
-                voxelmap = analysis_results.get(key)
+                value = analysis_results.get(key)
+                voxelmap = _to_voxelmap(value, key, analysis) if value else None
             elif analysis:
-                # Get first VoxelMap from analysis
+                # Get first VoxelMap-like from analysis
                 analysis_results = item.results.get(analysis, {})
                 voxelmap = None
-                for v in analysis_results.values():
-                    if isinstance(v, VoxelMap):
-                        voxelmap = v
+                for k, v in analysis_results.items():
+                    if _is_voxelmap_like(v):
+                        voxelmap = _to_voxelmap(v, k, analysis)
                         break
             else:
                 # Search all analyses
                 voxelmap = None
-                for analysis_results in item.results.values():
+                for analysis_name, analysis_results in item.results.items():
                     if isinstance(analysis_results, dict):
-                        for v in analysis_results.values():
-                            if isinstance(v, VoxelMap):
-                                voxelmap = v
+                        for k, v in analysis_results.items():
+                            if _is_voxelmap_like(v):
+                                voxelmap = _to_voxelmap(v, k, analysis_name)
                                 break
                     if voxelmap:
                         break
 
-            if voxelmap is not None and isinstance(voxelmap, VoxelMap):
+            if voxelmap is not None:
                 extracted[identifier] = voxelmap
         except (KeyError, AttributeError):
             continue
@@ -238,6 +282,7 @@ def extract_parcel_table(
 
 def extract_scalars(
     results: list[MaskData],
+    source: str | None = None,
     analysis: str | None = None,
     key: str | None = None,
 ) -> pd.Series:
@@ -247,6 +292,9 @@ def extract_scalars(
     ----------
     results : list[MaskData]
         Batch processing results
+    source : str, optional
+        Combined source string in format "Analysis.key" (e.g., "FunctionalNetworkMapping.summary_statistics").
+        This is the preferred format matching result key notation.
     analysis : str, optional
         Analysis name to extract from
     key : str, optional
@@ -261,12 +309,20 @@ def extract_scalars(
     --------
     >>> volumes = extract_scalars(
     ...     results,
-    ...     analysis="RegionalDamage",
-    ...     key="lesion_volume"
+    ...     source="RegionalDamage.lesion_volume"
     ... )
     >>> print(volumes.describe())
     """
     from lacuna.core.data_types import ScalarMetric
+
+    # Parse source string if provided (e.g., "FunctionalNetworkMapping.summary_statistics")
+    if source is not None:
+        if "." in source:
+            parts = source.split(".", 1)
+            analysis = parts[0]
+            key = parts[1]
+        else:
+            analysis = source
 
     extracted = {}
 
