@@ -194,12 +194,19 @@ class MaskData:
 
         # Validate space is in supported list
         if self._space not in SUPPORTED_TEMPLATE_SPACES:
-            raise ValueError(
+            from lacuna.utils.suggestions import format_suggestions, suggest_similar
+
+            suggestions = suggest_similar(self._space, SUPPORTED_TEMPLATE_SPACES)
+            hint = format_suggestions(suggestions)
+            msg = (
                 f"Invalid space '{self._space}'. "
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
                 "Note: 'native' space is not supported. Use the actual template space instead.\n"
                 "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
             )
+            if hint:
+                msg = f"{msg}\n{hint}"
+            raise ValueError(msg)
 
         # Handle resolution parameter - direct kwarg takes priority, then metadata dict
         if resolution is not None:
