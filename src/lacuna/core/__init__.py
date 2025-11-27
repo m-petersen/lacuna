@@ -28,6 +28,7 @@ from .keys import (
     parse_result_key,
 )
 from .mask_data import MaskData
+from .pipeline import Pipeline, analyze
 from .provenance import (
     create_provenance_record,
     merge_provenance,
@@ -52,6 +53,9 @@ __all__ = [
     "AnalysisError",
     # Core data
     "MaskData",
+    # Pipeline
+    "Pipeline",
+    "analyze",
     # Output classes
     "DataContainer",
     "VoxelMap",
