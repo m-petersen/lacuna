@@ -459,3 +459,100 @@ def test_multi_source_aggregation_contract(synthetic_mask_img):
             assert "source" in parsed, f"Key {key} should have 'source' component"
             assert "desc" in parsed, f"Key {key} should have 'desc' component"
 
+
+def test_multi_source_aggregation_dict_format(synthetic_mask_img):
+    """Test that ParcelAggregation accepts dictionary format for source specification."""
+    from lacuna import MaskData
+    from lacuna.analysis import ParcelAggregation
+    from lacuna.core import VoxelMap
+    import numpy as np
+
+    # Create mask data
+    mask_data = MaskData(
+        mask_img=synthetic_mask_img,
+        space="MNI152NLin6Asym",
+        resolution=2.0
+    )
+
+    # Create a VoxelMap result to aggregate
+    correlation_data = np.random.randn(*synthetic_mask_img.shape).astype(np.float32)
+    import nibabel as nib
+    correlation_img = nib.Nifti1Image(correlation_data, synthetic_mask_img.affine)
+    correlation_map = VoxelMap(
+        name="correlation_map",
+        data=correlation_img,
+        space="MNI152NLin6Asym",
+        resolution=2.0
+    )
+    z_map = VoxelMap(
+        name="z_map",
+        data=correlation_img,
+        space="MNI152NLin6Asym",
+        resolution=2.0
+    )
+
+    mask_data._results["FunctionalNetworkMapping"] = {
+        "correlation_map": correlation_map,
+        "z_map": z_map
+    }
+
+    # NEW: Dictionary format for sources
+    analysis = ParcelAggregation(
+        source={
+            "MaskData": "mask_img",
+            "FunctionalNetworkMapping": ["correlation_map", "z_map"]
+        },
+        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        aggregation="mean"
+    )
+
+    # Verify sources were normalized correctly
+    assert "MaskData.mask_img" in analysis.sources
+    assert "FunctionalNetworkMapping.correlation_map" in analysis.sources
+    assert "FunctionalNetworkMapping.z_map" in analysis.sources
+
+    # Run and verify results
+    result = analysis.run(mask_data)
+    parcel_results = result.results["ParcelAggregation"]
+
+    # Should have results from all three sources
+    result_keys = list(parcel_results.keys())
+    assert len(result_keys) >= 3, f"Expected at least 3 results, got {len(result_keys)}"
+
+
+def test_source_dict_format_validation():
+    """Test that dictionary source format validates input correctly."""
+    from lacuna.analysis import ParcelAggregation
+    import pytest
+
+    # Empty dict should raise
+    with pytest.raises(ValueError, match="empty"):
+        ParcelAggregation(source={})
+
+    # Non-string namespace should raise
+    with pytest.raises(TypeError, match="namespace"):
+        ParcelAggregation(source={123: "key"})
+
+    # Non-string value should raise
+    with pytest.raises(TypeError, match="str or list"):
+        ParcelAggregation(source={"Namespace": 123})
+
+    # Empty list value should raise
+    with pytest.raises(ValueError, match="empty"):
+        ParcelAggregation(source={"Namespace": []})
+
+    # Non-string item in list should raise
+    with pytest.raises(TypeError, match="key"):
+        ParcelAggregation(source={"Namespace": ["valid", 123]})
+
+    # Valid single key dict should work
+    agg = ParcelAggregation(source={"FunctionalNetworkMapping": "correlation_map"})
+    assert agg.sources == ["FunctionalNetworkMapping.correlation_map"]
+
+    # Valid list keys dict should work
+    agg = ParcelAggregation(source={"FunctionalNetworkMapping": ["correlation_map", "z_map"]})
+    assert agg.sources == [
+        "FunctionalNetworkMapping.correlation_map",
+        "FunctionalNetworkMapping.z_map"
+    ]
+

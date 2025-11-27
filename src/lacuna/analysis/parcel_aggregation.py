@@ -98,11 +98,24 @@ class ParcelAggregation(BaseAnalysis):
 
     Parameters
     ----------
-    source : str, default="mask_img"
-        Source of data to aggregate. Options:
+    source : str or list[str] or dict[str, str | list[str]], default="mask_img"
+        Source of data to aggregate. Accepts multiple formats:
+
+        **String format:**
         - "mask_img": Use the lesion mask directly
         - "{AnalysisName}.{result_key}": Use result from previous analysis
-          Example: "FunctionalNetworkMapping.network_map"
+          Example: "FunctionalNetworkMapping.correlation_map"
+
+        **List format:**
+        - List of strings in the above formats for multi-source aggregation
+          Example: ["MaskData.mask_img", "FunctionalNetworkMapping.correlation_map"]
+
+        **Dict format (recommended for multi-source):**
+        - Mapping of analysis namespace to result key(s)
+          Example: {"FunctionalNetworkMapping": "correlation_map"}
+          Example: {"FunctionalNetworkMapping": ["correlation_map", "z_map"]}
+          Example: {"MaskData": "mask_img", "FunctionalNetworkMapping": ["correlation_map", "z_map"]}
+
     aggregation : str, default="mean"
         Aggregation method to use. Options:
         - "mean": Mean value across ROI voxels
@@ -186,7 +199,7 @@ class ParcelAggregation(BaseAnalysis):
 
     def __init__(
         self,
-        source: str | list[str] = "mask_img",
+        source: str | list[str] | dict[str, str | list[str]] = "mask_img",
         aggregation: str = "mean",
         threshold: float = 0.5,
         parcel_names: list[str] | None = None,
@@ -240,29 +253,68 @@ class ParcelAggregation(BaseAnalysis):
         # Will be populated in _validate_inputs
         self.atlases = []
 
-    def _normalize_sources(self, source: str | list[str]) -> list[str]:
+    def _normalize_sources(
+        self, source: str | list[str] | dict[str, str | list[str]]
+    ) -> list[str]:
         """
         Normalize source parameter to a list of sources.
 
         Parameters
         ----------
-        source : str or list[str]
-            Single source string or list of sources.
+        source : str or list[str] or dict[str, str | list[str]]
+            Source specification in one of these formats:
+            - str: Single source like "mask_img" or "FunctionalNetworkMapping.correlation_map"
+            - list[str]: Multiple sources as strings
+            - dict: Mapping of namespace to key(s), e.g.,
+              {"FunctionalNetworkMapping": "correlation_map"} or
+              {"FunctionalNetworkMapping": ["correlation_map", "z_map"]}
 
         Returns
         -------
         list[str]
-            Normalized list of source strings.
+            Normalized list of source strings in "Namespace.key" format.
 
         Raises
         ------
         TypeError
-            If source is not str or list[str].
+            If source is not str, list[str], or dict.
         ValueError
-            If source list is empty.
+            If source list/dict is empty.
+
+        Examples
+        --------
+        >>> agg._normalize_sources("mask_img")
+        ['mask_img']
+        >>> agg._normalize_sources({"FunctionalNetworkMapping": "correlation_map"})
+        ['FunctionalNetworkMapping.correlation_map']
+        >>> agg._normalize_sources({"FunctionalNetworkMapping": ["correlation_map", "z_map"]})
+        ['FunctionalNetworkMapping.correlation_map', 'FunctionalNetworkMapping.z_map']
         """
         if isinstance(source, str):
             return [source]
+        elif isinstance(source, dict):
+            if not source:
+                raise ValueError("source dict cannot be empty")
+            sources = []
+            for namespace, keys in source.items():
+                if not isinstance(namespace, str):
+                    raise TypeError(f"Source namespace must be str, got {type(namespace).__name__}")
+                if isinstance(keys, str):
+                    # Single key: {"FunctionalNetworkMapping": "correlation_map"}
+                    sources.append(f"{namespace}.{keys}")
+                elif isinstance(keys, list):
+                    # Multiple keys: {"FunctionalNetworkMapping": ["correlation_map", "z_map"]}
+                    if not keys:
+                        raise ValueError(f"Source keys for '{namespace}' cannot be empty")
+                    for key in keys:
+                        if not isinstance(key, str):
+                            raise TypeError(f"Source key must be str, got {type(key).__name__}")
+                        sources.append(f"{namespace}.{key}")
+                else:
+                    raise TypeError(
+                        f"Source value must be str or list[str], got {type(keys).__name__}"
+                    )
+            return sources
         elif isinstance(source, list):
             if not source:
                 raise ValueError("source cannot be empty list")
@@ -271,7 +323,7 @@ class ParcelAggregation(BaseAnalysis):
             return source
         else:
             raise TypeError(
-                f"source must be str or list[str], got {type(source).__name__}"
+                f"source must be str, list[str], or dict, got {type(source).__name__}"
             )
 
     def run(
