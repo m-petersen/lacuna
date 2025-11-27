@@ -84,6 +84,7 @@ def test_structural_network_mapping_can_instantiate():
 def test_structural_network_mapping_validates_mrtrix_available():
     """Test that StructuralNetworkMapping checks for MRtrix3 availability."""
     import tempfile
+    import uuid
     from pathlib import Path
 
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -92,6 +93,8 @@ def test_structural_network_mapping_validates_mrtrix_available():
         unregister_structural_connectome,
     )
 
+    connectome_name = f"test_snm_mrtrix_{uuid.uuid4().hex[:8]}"
+
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
         temp_tck = Path(f.name)
     with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
@@ -99,7 +102,7 @@ def test_structural_network_mapping_validates_mrtrix_available():
 
     try:
         register_structural_connectome(
-            name="test_structural",
+            name=connectome_name,
             space="MNI152NLin2009cAsym",
             resolution=2.0,
             tractogram_path=temp_tck,
@@ -109,11 +112,11 @@ def test_structural_network_mapping_validates_mrtrix_available():
         )
 
         # Should check if MRtrix3 commands are available during initialization
-        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+        analysis = StructuralNetworkMapping(connectome_name=connectome_name)
         # Should have check_dependencies parameter or _check_dependencies attribute
         assert hasattr(analysis, "_check_dependencies") or hasattr(analysis, "check_dependencies")
     finally:
-        unregister_structural_connectome("test_structural")
+        unregister_structural_connectome(connectome_name)
         temp_tck.unlink(missing_ok=True)
         temp_tdi.unlink(missing_ok=True)
 
@@ -121,6 +124,7 @@ def test_structural_network_mapping_validates_mrtrix_available():
 def test_structural_network_mapping_has_run_method():
     """Test that StructuralNetworkMapping has the run() method from BaseAnalysis."""
     import tempfile
+    import uuid
     from pathlib import Path
 
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -129,6 +133,8 @@ def test_structural_network_mapping_has_run_method():
         unregister_structural_connectome,
     )
 
+    connectome_name = f"test_snm_run_{uuid.uuid4().hex[:8]}"
+
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
         temp_tck = Path(f.name)
     with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
@@ -136,7 +142,7 @@ def test_structural_network_mapping_has_run_method():
 
     try:
         register_structural_connectome(
-            name="test_structural",
+            name=connectome_name,
             space="MNI152NLin2009cAsym",
             resolution=2.0,
             tractogram_path=temp_tck,
@@ -145,11 +151,11 @@ def test_structural_network_mapping_has_run_method():
             description="Test"
         )
 
-        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+        analysis = StructuralNetworkMapping(connectome_name=connectome_name)
         assert hasattr(analysis, "run")
         assert callable(analysis.run)
     finally:
-        unregister_structural_connectome("test_structural")
+        unregister_structural_connectome(connectome_name)
         temp_tck.unlink(missing_ok=True)
         temp_tdi.unlink(missing_ok=True)
 
@@ -187,6 +193,7 @@ def test_structural_network_mapping_validates_binary_mask():
 def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
     """Test that run() returns a MaskData object with namespaced results."""
     import tempfile
+    import uuid
     from pathlib import Path
 
     from lacuna import MaskData
@@ -195,6 +202,8 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
         register_structural_connectome,
         unregister_structural_connectome,
     )
+
+    connectome_name = f"test_snm_mask_{uuid.uuid4().hex[:8]}"
 
     # Mark lesion as MNI152 space
     mask_data = MaskData(
@@ -208,7 +217,7 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
 
     try:
         register_structural_connectome(
-            name="test_structural",
+            name=connectome_name,
             space="MNI152NLin2009cAsym",
             resolution=2.0,
             tractogram_path=temp_tck,
@@ -219,14 +228,15 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
 
         # Note: This test will fail until implementation exists
         # It defines the expected behavior
-        analysis = StructuralNetworkMapping(connectome_name="test_structural")
+        analysis = StructuralNetworkMapping(connectome_name=connectome_name)
 
         # For now, expect this to fail during actual run
         # The test documents the expected interface
-        with pytest.raises((FileNotFoundError, RuntimeError)):
+        from lacuna.utils.mrtrix import MRtrixError
+        with pytest.raises((FileNotFoundError, RuntimeError, MRtrixError)):
             analysis.run(mask_data)
     finally:
-        unregister_structural_connectome("test_structural")
+        unregister_structural_connectome(connectome_name)
         temp_tck.unlink(missing_ok=True)
         temp_tdi.unlink(missing_ok=True)
 
@@ -234,6 +244,7 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img):
 def test_structural_network_mapping_result_structure():
     """Test that results should contain expected keys and data types."""
     import tempfile
+    import uuid
     from pathlib import Path
 
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -242,6 +253,8 @@ def test_structural_network_mapping_result_structure():
         unregister_structural_connectome,
     )
 
+    connectome_name = f"test_snm_result_{uuid.uuid4().hex[:8]}"
+
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
         temp_tck = Path(f.name)
     with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
@@ -249,7 +262,7 @@ def test_structural_network_mapping_result_structure():
 
     try:
         register_structural_connectome(
-            name="test_structural",
+            name=connectome_name,
             space="MNI152NLin2009cAsym",
             resolution=2.0,
             tractogram_path=temp_tck,
@@ -258,7 +271,7 @@ def test_structural_network_mapping_result_structure():
             description="Test"
         )
 
-        StructuralNetworkMapping(connectome_name="test_structural")
+        StructuralNetworkMapping(connectome_name=connectome_name)
 
         # Document expected result structure
         expected_keys = {
@@ -270,7 +283,7 @@ def test_structural_network_mapping_result_structure():
         # This documents the contract
         assert expected_keys is not None
     finally:
-        unregister_structural_connectome("test_structural")
+        unregister_structural_connectome(connectome_name)
         temp_tck.unlink(missing_ok=True)
         temp_tdi.unlink(missing_ok=True)
 
@@ -278,6 +291,7 @@ def test_structural_network_mapping_result_structure():
 def test_structural_network_mapping_accepts_n_jobs():
     """Test that StructuralNetworkMapping accepts n_jobs parameter for MRtrix."""
     import tempfile
+    import uuid
     from pathlib import Path
 
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -286,6 +300,8 @@ def test_structural_network_mapping_accepts_n_jobs():
         unregister_structural_connectome,
     )
 
+    connectome_name = f"test_snm_njobs_{uuid.uuid4().hex[:8]}"
+
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
         temp_tck = Path(f.name)
     with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
@@ -293,7 +309,7 @@ def test_structural_network_mapping_accepts_n_jobs():
 
     try:
         register_structural_connectome(
-            name="test_structural",
+            name=connectome_name,
             space="MNI152NLin2009cAsym",
             resolution=2.0,
             tractogram_path=temp_tck,
@@ -303,12 +319,12 @@ def test_structural_network_mapping_accepts_n_jobs():
         )
 
         analysis = StructuralNetworkMapping(
-            connectome_name="test_structural",
+            connectome_name=connectome_name,
             n_jobs=8,
         )
         assert analysis.n_jobs == 8
     finally:
-        unregister_structural_connectome("test_structural")
+        unregister_structural_connectome(connectome_name)
         temp_tck.unlink(missing_ok=True)
         temp_tdi.unlink(missing_ok=True)
 
