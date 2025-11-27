@@ -130,7 +130,7 @@ class VoxelMap(DataContainer):
     def summary(self) -> str:
         """Get a summary description of this result."""
         shape = self.data.shape
-        return f"{self.name}: {shape} voxels, " f"space={self.space}@{self.resolution}mm"
+        return f"{self.name}: {shape} voxels, space={self.space}, resolution={self.resolution}mm"
 
     def __repr__(self) -> str:
         """Return string representation."""
@@ -138,7 +138,8 @@ class VoxelMap(DataContainer):
             f"VoxelMap("
             f"name='{self.name}', "
             f"shape={self.data.shape}, "
-            f"space='{self.space}@{self.resolution}mm')"
+            f"space='{self.space}', "
+            f"resolution={self.resolution})"
         )
 
 
