@@ -367,47 +367,6 @@ class TestGetLesionVoxelIndicesVectorized:
         
         assert result["n_voxels"] == 10000
         assert result["time_ms"] < 500  # Should be much faster than 10.5s baseline
-    
-    @pytest.mark.slow
-    def test_vectorized_vs_original_comparison(self, mock_connectome_info, create_lesion_mask):
-        """Direct comparison between original and vectorized implementations."""
-        analysis = self._setup_analysis(mock_connectome_info)
-        
-        test_sizes = [100, 1000, 10000]
-        
-        print("\n" + "="*70)
-        print("PERFORMANCE COMPARISON: Legacy vs. Current (Vectorized)")
-        print("="*70)
-        print(f"{'Size':<12} {'Legacy (ms)':<18} {'Current (ms)':<18} {'Speedup':<10}")
-        print("-"*70)
-        
-        for size in test_sizes:
-            mask_data = create_lesion_mask(n_voxels=size)
-            
-            # Benchmark legacy
-            times_legacy = []
-            for _ in range(3):
-                start = time.perf_counter()
-                _ = analysis._get_lesion_voxel_indices_legacy(mask_data)
-                times_legacy.append(time.perf_counter() - start)
-            avg_legacy = np.mean(times_legacy) * 1000
-            
-            # Benchmark current (vectorized)
-            times_current = []
-            for _ in range(3):
-                start = time.perf_counter()
-                _ = analysis._get_lesion_voxel_indices(mask_data)
-                times_current.append(time.perf_counter() - start)
-            avg_current = np.mean(times_current) * 1000
-            
-            speedup = avg_legacy / avg_current
-            
-            print(f"{size:,}".ljust(12) +
-                  f"{avg_legacy:.2f}".ljust(18) +
-                  f"{avg_current:.2f}".ljust(18) +
-                  f"{speedup:.1f}x")
-        
-        print("="*70)
 
 
 @pytest.mark.slow

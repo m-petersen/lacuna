@@ -46,12 +46,12 @@ class TestBatchProcessAPI:
         assert callable(batch_process)
 
     def test_batch_process_accepts_required_parameters(self, synthetic_mask_data):
-        """batch_process should accept mask_data_list and analysis parameters."""
+        """batch_process should accept inputs and analysis parameters."""
         analysis = MockAnalysis()
 
         # Should not raise
         result = batch_process(
-            mask_data_list=[synthetic_mask_data],
+            inputs=[synthetic_mask_data],
             analysis=analysis,
             n_jobs=1,
             show_progress=False,
@@ -65,7 +65,7 @@ class TestBatchProcessAPI:
         analysis = MockAnalysis()
 
         result = batch_process(
-            mask_data_list=batch_mask_data_list,
+            inputs=batch_mask_data_list,
             analysis=analysis,
             n_jobs=1,
             show_progress=False,
@@ -79,16 +79,16 @@ class TestBatchProcessAPI:
             assert "MockAnalysis" in mask_data.results
 
     def test_batch_process_raises_on_empty_list(self):
-        """batch_process should raise ValueError if mask_data_list is empty."""
+        """batch_process should raise ValueError if inputs is empty."""
         analysis = MockAnalysis()
 
         with pytest.raises(ValueError, match="cannot be empty"):
-            batch_process(mask_data_list=[], analysis=analysis)
+            batch_process(inputs=[], analysis=analysis)
 
     def test_batch_process_raises_on_invalid_analysis(self, synthetic_mask_data):
         """batch_process should raise ValueError if analysis is not BaseAnalysis."""
         with pytest.raises(ValueError, match="must be a BaseAnalysis instance"):
-            batch_process(mask_data_list=[synthetic_mask_data], analysis="not_an_analysis")
+            batch_process(inputs=[synthetic_mask_data], analysis="not_an_analysis")
 
     def test_batch_process_accepts_n_jobs_parameter(self, synthetic_mask_data):
         """batch_process should accept n_jobs parameter for parallelization control."""
@@ -97,7 +97,7 @@ class TestBatchProcessAPI:
         # Test different n_jobs values
         for n_jobs in [-1, 1, 2, 4]:
             result = batch_process(
-                mask_data_list=[synthetic_mask_data],
+                inputs=[synthetic_mask_data],
                 analysis=analysis,
                 n_jobs=n_jobs,
                 show_progress=False,
@@ -111,13 +111,13 @@ class TestBatchProcessAPI:
 
         # Test with progress bar disabled
         result = batch_process(
-            mask_data_list=[synthetic_mask_data], analysis=analysis, show_progress=False
+            inputs=[synthetic_mask_data], analysis=analysis, show_progress=False
         )
         assert isinstance(result, list)
 
         # Test with progress bar enabled (should not raise)
         result = batch_process(
-            mask_data_list=[synthetic_mask_data], analysis=analysis, show_progress=True
+            inputs=[synthetic_mask_data], analysis=analysis, show_progress=True
         )
         assert isinstance(result, list)
 
@@ -127,7 +127,7 @@ class TestBatchProcessAPI:
 
         # Test with explicit strategy
         result = batch_process(
-            mask_data_list=[synthetic_mask_data],
+            inputs=[synthetic_mask_data],
             analysis=analysis,
             strategy="parallel",
             show_progress=False,
@@ -136,7 +136,7 @@ class TestBatchProcessAPI:
 
         # Test with None (auto-selection)
         result = batch_process(
-            mask_data_list=[synthetic_mask_data],
+            inputs=[synthetic_mask_data],
             analysis=analysis,
             strategy=None,
             show_progress=False,

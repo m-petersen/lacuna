@@ -84,7 +84,7 @@ class TestThreadingBackend:
     ):
         """Threading backend should process all subjects successfully."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -97,7 +97,7 @@ class TestThreadingBackend:
     def test_threading_backend_adds_results(self, synthetic_lesions, regional_damage_analysis):
         """Threading backend should add analysis results to lesion data."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -113,7 +113,7 @@ class TestThreadingBackend:
     ):
         """Threading backend should work with n_jobs=1."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=1,
             show_progress=False,
@@ -125,7 +125,7 @@ class TestThreadingBackend:
     def test_threading_backend_with_all_cores(self, synthetic_lesions, regional_damage_analysis):
         """Threading backend should work with n_jobs=-1."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=-1,
             show_progress=False,
@@ -141,7 +141,7 @@ class TestLokyBackend:
     def test_loky_backend_processes_all_subjects(self, synthetic_lesions, regional_damage_analysis):
         """Loky backend should process all subjects successfully."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -154,7 +154,7 @@ class TestLokyBackend:
     def test_loky_backend_adds_results(self, synthetic_lesions, regional_damage_analysis):
         """Loky backend should add analysis results to lesion data."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -169,7 +169,7 @@ class TestLokyBackend:
         """Loky should be the default backend."""
         # Don't specify backend - should default to loky
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -187,7 +187,7 @@ class TestMultiprocessingBackend:
     def test_multiprocessing_backend_works(self, synthetic_lesions, regional_damage_analysis):
         """Multiprocessing backend should work for batch processing."""
         results = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=2,
             show_progress=False,
@@ -205,7 +205,7 @@ class TestBackendComparison:
         """Different backends should produce equivalent results."""
         # Process with threading
         results_threading = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=1,  # Use 1 to ensure deterministic order
             show_progress=False,
@@ -214,7 +214,7 @@ class TestBackendComparison:
 
         # Process with loky
         results_loky = batch_process(
-            mask_data_list=synthetic_lesions,
+            inputs=synthetic_lesions,
             analysis=regional_damage_analysis,
             n_jobs=1,  # Use 1 to ensure deterministic order
             show_progress=False,
