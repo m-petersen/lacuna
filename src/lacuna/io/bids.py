@@ -443,9 +443,9 @@ def export_voxelmap(
     # Build BIDS filename
     space = space or voxelmap.space
     if session_id:
-        base_name = f"{subject_id}_{session_id}_space-{space}_desc-{desc}_map"
+        base_name = f"{subject_id}_{session_id}_space-{space}_desc-{desc}"
     else:
-        base_name = f"{subject_id}_space-{space}_desc-{desc}_map"
+        base_name = f"{subject_id}_space-{space}_desc-{desc}"
 
     nifti_path = output_dir / f"{base_name}.nii.gz"
     sidecar_path = output_dir / f"{base_name}.json"

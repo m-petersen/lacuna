@@ -272,7 +272,6 @@ class MaskData:
         lesion_path: str | Path,
         space: str | None = None,
         resolution: float | None = None,
-        anatomical_path: str | Path | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> "MaskData":
         """
@@ -288,8 +287,6 @@ class MaskData:
         resolution : float, optional
             Spatial resolution in millimeters (e.g., 1.0, 2.0).
             If not provided, will attempt auto-detection from image header/filename.
-        anatomical_path : str or Path, optional
-            Deprecated. No longer used.
         metadata : dict, optional
             Additional subject metadata (e.g., session info).
             'subject_id' auto-generated from filename if not provided.

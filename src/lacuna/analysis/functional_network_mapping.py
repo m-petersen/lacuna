@@ -734,96 +734,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Return mean timeseries from selected voxels
         return np.mean(refined_lesion_ts, axis=2)
 
-    def _get_lesion_voxel_indices_legacy(self, mask_data: MaskData) -> np.ndarray:
-        """Get indices of lesion voxels within connectome mask (legacy O(N×M) version).
-
-        **DEPRECATED**: This is the legacy implementation kept for reference.
-        Use _get_lesion_voxel_indices() instead, which uses vectorized O(N) approach.
-
-        This version has O(N×M) complexity due to nested loop searching through
-        mask_indices for each lesion voxel. For large lesions (>1000 voxels),
-        this becomes a significant bottleneck.
-
-        Automatically resamples lesion to connectome space if dimensions don't match.
-
-        Parameters
-        ----------
-        mask_data : MaskData
-            Lesion data in MNI152 space.
-
-        Returns
-        -------
-        np.ndarray
-            1D array of indices into the connectome's voxel dimension.
-
-        See Also
-        --------
-        _get_lesion_voxel_indices : Optimized vectorized version (default)
-        """
-        # Get connectome mask info
-        mask_shape = self._mask_info["mask_shape"]
-        mask_indices = self._mask_info["mask_indices"]
-        mask_affine = self._mask_info["mask_affine"]
-
-        # Get lesion mask
-        mask_img = mask_data.mask_img
-        lesion_shape = mask_img.shape
-
-        # Check if resampling is needed
-        if lesion_shape != mask_shape:
-            self.logger.warning(
-                f"Resampling lesion from {lesion_shape} to {mask_shape}", indent_level=1
-            )
-
-            # Resample lesion to connectome space
-            from nilearn.image import resample_to_img
-
-            # Create template image in connectome space
-            template_img = nib.Nifti1Image(np.zeros(mask_shape), mask_affine)
-
-            # Resample lesion to match connectome
-            mask_img_resampled = resample_to_img(
-                mask_img,
-                template_img,
-                interpolation="nearest",
-                force_resample=True,
-                copy_header=True,
-            )
-            lesion_mask = mask_img_resampled.get_fdata().astype(bool)
-
-            self.logger.success("Resampling complete", indent_level=2)
-        else:
-            lesion_mask = mask_img.get_fdata().astype(bool)
-
-        # Create connectome mask (3D boolean)
-        connectome_mask_3d = np.zeros(mask_shape, dtype=bool)
-        connectome_mask_3d[mask_indices] = True
-
-        # Find overlap
-        lesion_in_connectome = lesion_mask & connectome_mask_3d
-
-        # Convert 3D coordinates to flat indices within connectome mask
-        lesion_coords = np.where(lesion_in_connectome)
-
-        # Find which positions in mask_indices match lesion coordinates
-        voxel_indices = []
-        for i in range(len(lesion_coords[0])):
-            coord = (
-                lesion_coords[0][i],
-                lesion_coords[1][i],
-                lesion_coords[2][i],
-            )
-            # Find index in mask_indices that matches this coordinate
-            matches = (
-                (mask_indices[0] == coord[0])
-                & (mask_indices[1] == coord[1])
-                & (mask_indices[2] == coord[2])
-            )
-            if np.any(matches):
-                voxel_indices.append(np.where(matches)[0][0])
-
-        return np.array(voxel_indices, dtype=int)
-
     def _get_lesion_voxel_indices(self, mask_data: MaskData) -> np.ndarray:
         """Get indices of lesion voxels within connectome mask (vectorized O(N) version).
 
@@ -857,10 +767,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         -------
         np.ndarray
             1D array of indices into the connectome's voxel dimension.
-
-        See Also
-        --------
-        _get_lesion_voxel_indices_legacy : Original O(N×M) implementation (deprecated)
 
         Notes
         -----
