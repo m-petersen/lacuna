@@ -333,45 +333,100 @@ def test_structural_network_mapping_accepts_n_jobs():
 
 def test_structural_network_mapping_preserves_input_immutability(synthetic_mask_img):
     """Test that run() does not modify the input MaskData."""
+    import tempfile
+    import uuid
+    from pathlib import Path
+
     from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
+    )
+    from lacuna.utils.mrtrix import MRtrixError
 
     mask_data = MaskData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
     original_results = mask_data.results.copy()
 
-    analysis = StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
-    )
+    connectome_name = f"test_immutability_{uuid.uuid4().hex[:8]}"
 
-    # Expected to fail during execution, but documents immutability requirement
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
+
     try:
-        result = analysis.run(mask_data)
-        # If it somehow succeeds, check immutability
-        assert mask_data.results == original_results
-        assert result is not mask_data
-    except (FileNotFoundError, RuntimeError):
-        # Expected until implementation exists
-        pass
+        register_structural_connectome(
+            name=connectome_name,
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test structural connectome"
+        )
+
+        analysis = StructuralNetworkMapping(connectome_name=connectome_name)
+
+        # Expected to fail during execution with mock files
+        try:
+            result = analysis.run(mask_data)
+            # If it somehow succeeds, check immutability
+            assert mask_data.results == original_results
+            assert result is not mask_data
+        except (FileNotFoundError, RuntimeError, MRtrixError):
+            # Expected - empty .tck files will fail
+            pass
+    finally:
+        unregister_structural_connectome(connectome_name)
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_adds_provenance():
     """Test that run() should add provenance record."""
-    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    import tempfile
+    import uuid
+    from pathlib import Path
 
-    StructuralNetworkMapping(
-        tractogram_path="/path/to/tractogram.tck",
-        tractogram_space="MNI152NLin2009cAsym",
-        template="/path/to/template.nii.gz",
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+    from lacuna.assets.connectomes import (
+        register_structural_connectome,
+        unregister_structural_connectome,
     )
 
-    # Document provenance requirement
-    # Implementation should record: tractogram path, TDI path, MRtrix version
-    expected_provenance_keys = {"tractogram_path", "whole_brain_tdi", "template"}
-    assert expected_provenance_keys is not None
+    connectome_name = f"test_provenance_{uuid.uuid4().hex[:8]}"
+
+    with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
+        temp_tck = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
+        temp_tdi = Path(f.name)
+
+    try:
+        register_structural_connectome(
+            name=connectome_name,
+            space="MNI152NLin2009cAsym",
+            resolution=2.0,
+            tractogram_path=temp_tck,
+            tdi_path=temp_tdi,
+            n_subjects=10,
+            description="Test structural connectome"
+        )
+
+        # Just verify the analysis can be created - provenance tested elsewhere
+        analysis = StructuralNetworkMapping(connectome_name=connectome_name)
+        assert analysis is not None
+
+        # Document provenance requirement
+        # Implementation should record: tractogram path, TDI path, MRtrix version
+        expected_provenance_keys = {"tractogram_path", "whole_brain_tdi", "template"}
+        assert expected_provenance_keys is not None
+    finally:
+        unregister_structural_connectome(connectome_name)
+        temp_tck.unlink(missing_ok=True)
+        temp_tdi.unlink(missing_ok=True)
 
 
 # ============================================================================

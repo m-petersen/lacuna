@@ -304,7 +304,6 @@ def _load_bids_manual(
 
                     mask_data_dict[subject_id] = MaskData.from_nifti(
                         lesion_path=lesion_path,
-                        anatomical_path=anatomical_path,
                         metadata=metadata,
                         space=space,
                         resolution=resolution,
