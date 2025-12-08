@@ -5,18 +5,20 @@ A scientific Python package for neuroimaging lesion analysis.
 ## Overview
 
 Lacuna provides researchers with an end-to-end pipeline for:
-- Loading lesion data from NIfTI files and BIDS-compliant datasets
-- Performing spatial preprocessing and normalization
-- Conducting lesion network mapping analyses
+- Loading binary mask data from NIfTI files and BIDS-compliant datasets
+- Performing spatial preprocessing
+- Conducting functional and structural network mapping analyses
 - Exporting results in standard formats
 
 ## Features
 
-- **Standardized Data Handling**: Work with a consistent `LesionData` API across all pipeline stages
-- **BIDS Compliance**: First-class support for BIDS dataset organization
+- **Standardized Data Handling**: Work with a consistent `MaskData` API across all pipeline stages
+- **BIDS Compliance**: First-class support for BIDS dataset organization and derivatives export
 - **Provenance Tracking**: Automatic recording of all transformations for reproducibility
-- **Spatial Correctness**: Built on validated neuroimaging libraries (nibabel, nilearn)
+- **Spatial Correctness**: Built on validated neuroimaging libraries (nibabel, nilearn, templateflow)
 - **Modular Architecture**: Easy to extend with new analysis modules
+- **Network Mapping**: Functional and structural connectivity-based lesion network mapping
+- **Registry System**: Pre-configured atlases, parcellations, and connectomes for reproducible analyses
 
 ## Installation
 
@@ -52,18 +54,25 @@ pip install -e ".[dev]"
 
 ## Quick Start
 
-### Load a Single Lesion Mask
+### Load a Single Mask
 
 ```python
-from lacuna import LesionData
+import nibabel as nib
+from lacuna import MaskData
 
-# Load a NIfTI lesion mask
-lesion = LesionData.from_nifti("path/to/lesion_mask.nii.gz")
+# Load a binary mask (e.g., lesion, ROI)
+mask_img = nib.load("path/to/mask.nii.gz")
+mask = MaskData(
+    mask_img=mask_img,
+    space="MNI152NLin6Asym",
+    resolution=2.0,
+    metadata={"subject_id": "sub-001"}
+)
 
 # Inspect the data
-print(f"Subject ID: {lesion.metadata['subject_id']}")
-print(f"Lesion volume: {lesion.get_volume_mm3()} mm³")
-print(f"Coordinate space: {lesion.get_coordinate_space()}")
+print(f"Space: {mask.space}")
+print(f"Resolution: {mask.resolution}mm")
+print(f"Volume: {mask.get_volume_mm3():.1f} mm³")
 ```
 
 ### Load a BIDS Dataset
@@ -71,60 +80,106 @@ print(f"Coordinate space: {lesion.get_coordinate_space()}")
 ```python
 from lacuna.io import load_bids_dataset
 
-# Load all subjects with lesion masks
+# Load all subjects with masks from a BIDS dataset
 dataset = load_bids_dataset("path/to/bids_dataset")
 
 # Process each subject
-for subject_id, lesion in dataset.items():
-    print(f"Processing {subject_id}: {lesion.get_volume_mm3()} mm³")
+for subject_id, mask in dataset.items():
+    print(f"Processing {subject_id}: space={mask.space}, resolution={mask.resolution}mm")
 ```
 
-### Spatial Normalization
+### Functional Network Mapping
 
 ```python
-from lacuna import LesionData
-from lacuna.preprocess import normalize_to_mni
+from lacuna.analysis import FunctionalNetworkMapping
+from lacuna.assets.connectomes import register_functional_connectome
 
-# Load lesion in native space
-lesion = LesionData.from_nifti("lesion_native.nii.gz")
-
-# Normalize to MNI152 space
-lesion_mni = normalize_to_mni(lesion, template="MNI152_2mm")
-
-# Check provenance
-print(f"Transformations applied: {len(lesion_mni.provenance)}")
-```
-
-### Lesion Network Mapping
-
-```python
-from lacuna.analysis import LesionNetworkMapping
-
-# Initialize analyzer
-lnm = LesionNetworkMapping(
-    connectome="HCP1200",
-    atlas="Schaefer2018_400Parcels"
+# Register your functional connectome
+register_functional_connectome(
+    name="MyConnectome",
+    space="MNI152NLin6Asym",
+    resolution=2.0,
+    data_path="/path/to/connectome",
+    n_subjects=1000
 )
 
-# Run analysis (requires MNI152 space)
-results = lnm.fit(lesion_mni)
+# Initialize analyzer with the registered connectome
+fnm = FunctionalNetworkMapping(
+    connectome_name="MyConnectome",
+    method="boes"
+)
 
-# Access network disruption scores
-for network, score in results['network_disruption_scores'].items():
-    print(f"{network}: {score:.3f}")
+# Run analysis
+result = fnm.run(mask)
+
+# Access results
+corr_map = result.results['FunctionalNetworkMapping']['correlation_map']
+print(f"Correlation map shape: {corr_map.get_data().shape}")
+```
+
+### Structural Network Mapping
+
+```python
+from lacuna.analysis import StructuralNetworkMapping
+from lacuna.assets.connectomes import register_structural_connectome
+
+# Register your structural connectome
+register_structural_connectome(
+    name="MyTractogram",
+    space="MNI152NLin2009cAsym",
+    resolution=2.0,
+    tractogram_path="/path/to/tractogram.tck",
+    n_subjects=985
+)
+
+# Initialize with the registered connectome
+snm = StructuralNetworkMapping(
+    connectome_name="MyTractogram",
+    parcellation_name="Schaefer2018_100Parcels7Networks"
+)
+
+# Run analysis (requires MRtrix3)
+result = snm.run(mask)
+```
+
+### Batch Processing
+
+```python
+from lacuna import batch_process
+from lacuna.analysis import RegionalDamage
+
+# Process multiple masks in parallel
+masks = [mask1, mask2, mask3]
+analysis = RegionalDamage(
+    parcel_names=["Schaefer2018_100Parcels7Networks"],
+    threshold=0.5
+)
+
+results = batch_process(
+    inputs=masks,
+    analysis=analysis,
+    n_jobs=-1,
+    show_progress=True
+)
+
+# Extract results as DataFrame
+from lacuna.batch import extract_parcel_table
+df = extract_parcel_table(results, "RegionalDamage")
+print(df.head())
 ```
 
 ### Save Results
 
 ```python
-from lacuna.io import export_bids_derivatives
+from lacuna.io.bids import export_bids_derivatives
 
-# Export to BIDS derivatives format
+# Export single subject results to BIDS derivatives format
 export_bids_derivatives(
-    lesion_mni,
-    output_dir="derivatives/lacuna-v0.1.0",
-    include_images=True,
-    include_results=True
+    mask_data=result,
+    output_dir="derivatives/lacuna",
+    export_lesion_mask=True,
+    export_voxelmaps=True,
+    export_parcel_data=True
 )
 ```
 
@@ -136,10 +191,11 @@ export_bids_derivatives(
 - numpy >= 1.24
 - scipy >= 1.10
 - pandas >= 2.0
+- templateflow >= 24.0
 
 ## Documentation
 
-Full documentation is available at: https://lacuna.readthedocs.io
+Full documentation and API reference: See `notebooks/comprehensive_api_test.ipynb` for examples.
 
 ## Development
 
@@ -149,28 +205,35 @@ Full documentation is available at: https://lacuna.readthedocs.io
 # Install development dependencies
 pip install -e ".[dev]"
 
-# Run all tests
-pytest
+# Run fast tests (unit + contract, ~30s)
+make test-fast
 
-# Run with coverage
-pytest --cov=lacuna --cov-report=html
+# Run full CI suite (~2 min)
+make ci-native
 
 # Run specific test categories
-pytest -m contract  # Contract tests only
-pytest -m integration  # Integration tests only
+make test-unit          # Unit tests only (~15s)
+make test-contract      # Contract tests only (~15s)
+make test-integration   # Integration tests (~1 min)
+
+# Run with coverage
+make test-coverage
 ```
 
 ### Code Quality
 
 ```bash
 # Format code
-black src tests
+make format
 
 # Lint code
-ruff check src tests
+make lint
 
 # Type check
-mypy src
+make typecheck
+
+# Run all checks (format + lint + typecheck)
+make check
 ```
 
 ## Citation
@@ -180,7 +243,7 @@ If you use this toolkit in your research, please cite:
 ```bibtex
 @software{lacuna,
   title = {Lacuna},
-  author = {Lacuna Contributors},
+  author = {Petersen, M},
   year = {2025},
   url = {https://github.com/lacuna/lacuna}
 }
@@ -194,7 +257,7 @@ MIT License - see LICENSE file for details
 
 Contributions are welcome! See [DEVELOPMENT.md](DEVELOPMENT.md) for:
 - Setting up your development environment
-- Running tests locally with `act`
+- Running tests locally (native and Docker)
 - Code formatting and linting
 - Versioning and release workflow
 
@@ -203,18 +266,17 @@ Quick start for contributors:
 # Install with dev dependencies
 pip install -e ".[dev]"
 
-# Install act (task runner)
-brew install act  # macOS
-# or: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+# Run tests before committing
+make test-fast
 
-# Run tests
-act -j test
+# Run full CI before pushing
+make ci-native
 
 # Format code
-act -j format -W .github/workflows/local-format.yml
+make format
 ```
 
 ## Support
 
-- Issue Tracker: https://github.com/lacuna/lacuna/issues
-- Documentation: https://lacuna.readthedocs.io
+- Issue Tracker: https://github.com/m-petersen/lacuna/issues
+- Examples: See `notebooks/comprehensive_api_test.ipynb` and `examples/`
