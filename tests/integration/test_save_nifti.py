@@ -62,28 +62,26 @@ def test_save_lesion_with_results(tmp_path, synthetic_mask_img):
     assert reloaded_img.shape == synthetic_mask_img.shape
 
 
-def test_save_lesion_and_anatomical(tmp_path, synthetic_mask_img, synthetic_anatomical_img):
-    """Test saving both lesion and anatomical images."""
+def test_save_lesion_and_anatomical(tmp_path, synthetic_mask_img):
+    """Test saving lesion mask image.
+
+    Note: anatomical_img parameter was removed from MaskData.
+    This test now verifies basic lesion saving functionality.
+    """
     mask_data = MaskData(
         mask_img=synthetic_mask_img,
-        anatomical_img=synthetic_anatomical_img,
         metadata={"subject_id": "sub-test003", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     lesion_path = tmp_path / "lesion.nii.gz"
-    save_nifti(mask_data, lesion_path, save_anatomical=True)
+    save_nifti(mask_data, lesion_path)
 
-    # Both files should exist
+    # Lesion file should exist
     assert lesion_path.exists()
-    anat_path = tmp_path / "anat.nii.gz"
-    assert anat_path.exists()
 
-    # Verify both are valid NIfTI files
+    # Verify it's a valid NIfTI file
     mask_img = nib.load(lesion_path)
-    anat_img = nib.load(anat_path)
-
     assert mask_img.shape == synthetic_mask_img.shape
-    assert anat_img.shape == synthetic_anatomical_img.shape
 
 
 def test_save_multiple_subjects(tmp_path, synthetic_mask_img):

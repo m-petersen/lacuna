@@ -30,19 +30,29 @@ def test_load_single_subject_lesion_only(tmp_path):
 
     # Load using MaskData
     mask_data = MaskData.from_nifti(
-        lesion_path, metadata={"subject_id": "sub-test-001", "age": 45, "sex": "M"}
+        lesion_path,
+        metadata={
+            "subject_id": "sub-test-001",
+            "age": 45,
+            "sex": "M",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+        },
     )
 
     # Verify loaded correctly
     assert mask_data.mask_img.shape == shape
-    assert mask_data.anatomical_img is None
     assert mask_data.metadata["subject_id"] == "sub-test-001"
     assert mask_data.metadata["age"] == 45
     assert mask_data.get_volume_mm3() > 0
 
 
 def test_load_single_subject_with_anatomical(tmp_path):
-    """Test loading single subject with both lesion and anatomical images."""
+    """Test loading single subject lesion mask.
+
+    Note: anatomical_path parameter was removed from MaskData.from_nifti().
+    This test now verifies basic lesion loading with metadata.
+    """
     from lacuna import MaskData
 
     shape = (64, 64, 64)
@@ -56,22 +66,19 @@ def test_load_single_subject_with_anatomical(tmp_path):
     lesion_path = tmp_path / "lesion.nii.gz"
     nib.save(mask_img, lesion_path)
 
-    # Create anatomical
-    anat_data = np.random.rand(*shape).astype(np.float32) * 1000
-    anat_img = nib.Nifti1Image(anat_data, affine)
-    anat_path = tmp_path / "T1w.nii.gz"
-    nib.save(anat_img, anat_path)
-
-    # Load both
+    # Load lesion with site metadata
     mask_data = MaskData.from_nifti(
-        lesion_path=lesion_path,
-        anatomical_path=anat_path,
-        metadata={"subject_id": "sub-test-002", "site": "hospital_a"},
+        lesion_path,
+        metadata={
+            "subject_id": "sub-test-002",
+            "site": "hospital_a",
+            "space": "MNI152NLin6Asym",
+            "resolution": 2,
+        },
     )
 
     # Verify
     assert mask_data.mask_img.shape == shape
-    assert mask_data.anatomical_img.shape == shape
     assert np.array_equal(mask_data.affine, affine)
     assert mask_data.metadata["subject_id"] == "sub-test-002"
 
@@ -199,6 +206,8 @@ def test_single_subject_metadata_persistence(tmp_path):
         "sex": "F",
         "diagnosis": "stroke",
         "days_post_stroke": 7,
+        "space": "MNI152NLin6Asym",
+        "resolution": 2,
     }
 
     mask_data = MaskData.from_nifti(lesion_path, metadata=metadata)

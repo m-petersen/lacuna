@@ -112,14 +112,24 @@ def load_bids_dataset(
     # Load lesion masks using pybids
     mask_data_dict = {}
 
-    # Get all lesion masks
-    lesion_files = layout.get(
-        suffix=["mask", "roi"],
-        label="lesion",
-        extension=[".nii", ".nii.gz"],
-        subject=subjects,
-        session=sessions,
-    )
+    # Get all lesion masks - try multiple approaches for BIDS compatibility
+    # BIDS doesn't have a 'label' entity, so we search for mask/roi suffix
+    # and filter by filename pattern for lesion-related files
+    try:
+        lesion_files = layout.get(
+            suffix=["mask", "roi"],
+            extension=[".nii", ".nii.gz"],
+            subject=subjects,
+            session=sessions,
+        )
+        # Filter to only include lesion-related files
+        lesion_files = [
+            f for f in lesion_files
+            if "lesion" in f.filename.lower() or "desc-lesion" in f.filename.lower()
+        ]
+    except Exception:
+        # Fall back to manual loading if pybids query fails
+        return _load_bids_manual(bids_root, subjects, sessions, derivatives)
 
     if not lesion_files:
         raise BidsError(f"No lesion masks found in BIDS dataset: {bids_root}")
@@ -221,9 +231,15 @@ def _load_bids_manual(
                 # Look for lesion mask in anat folder
                 anat_dir = session_dir / "anat"
                 if anat_dir.exists():
+                    # Look for BIDS-compliant desc-lesion pattern
                     lesion_files = list(
-                        anat_dir.glob(f"{subject_id}_{session_id}*mask-lesion*.nii*")
+                        anat_dir.glob(f"{subject_id}_{session_id}*desc-lesion*mask*.nii*")
                     )
+                    # Also try legacy mask-lesion pattern
+                    if not lesion_files:
+                        lesion_files = list(
+                            anat_dir.glob(f"{subject_id}_{session_id}*mask-lesion*.nii*")
+                        )
                     lesion_files.extend(
                         anat_dir.glob(f"{subject_id}_{session_id}*roi-lesion*.nii*")
                     )
@@ -270,7 +286,11 @@ def _load_bids_manual(
             # Single-session dataset
             anat_dir = subject_dir / "anat"
             if anat_dir.exists():
-                lesion_files = list(anat_dir.glob(f"{subject_id}*mask-lesion*.nii*"))
+                # Look for BIDS-compliant desc-lesion pattern
+                lesion_files = list(anat_dir.glob(f"{subject_id}*desc-lesion*mask*.nii*"))
+                # Also try legacy mask-lesion pattern
+                if not lesion_files:
+                    lesion_files = list(anat_dir.glob(f"{subject_id}*mask-lesion*.nii*"))
                 lesion_files.extend(anat_dir.glob(f"{subject_id}*roi-lesion*.nii*"))
 
                 if lesion_files:

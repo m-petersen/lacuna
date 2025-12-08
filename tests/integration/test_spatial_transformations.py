@@ -135,8 +135,8 @@ class TestImageDimensionHandling:
 
         assert result.ndim == 3
 
-    def test_transform_4d_image_non_singleton_fails(self):
-        """4D images with non-singleton 4th dimension should raise error."""
+    def test_transform_4d_image_multiple_volumes(self):
+        """4D images with multiple volumes should be transformed volume by volume."""
         # Create 4D test image with multiple volumes
         data = np.random.rand(91, 109, 91, 5)
         affine = np.array(
@@ -149,15 +149,18 @@ class TestImageDimensionHandling:
         )
         img = nib.Nifti1Image(data, affine)
 
-        # Should raise ValueError
-        with pytest.raises(ValueError, match="Cannot transform 4D image"):
-            transform_image(
-                img=img,
-                source_space="MNI152NLin6Asym",
-                target_space="MNI152NLin2009cAsym",
-                source_resolution=2.0,
-                interpolation="linear",
-            )
+        # Should transform each volume independently and return 4D result
+        result = transform_image(
+            img=img,
+            source_space="MNI152NLin6Asym",
+            target_space="MNI152NLin2009cAsym",
+            source_resolution=2.0,
+            interpolation="linear",
+        )
+
+        # Result should be 4D with same number of volumes
+        assert result.ndim == 4
+        assert result.shape[-1] == 5
 
 
 class TestSpaceVariantCanonicalization:

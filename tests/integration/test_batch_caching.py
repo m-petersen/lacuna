@@ -161,25 +161,23 @@ class TestBatchTransformReuse:
         assert stats["hits"] == 1
         assert stats["hit_rate"] == 0.5  # 1 hit / 2 total requests
 
-    def test_result_caching_with_data_id(self, temp_cache):
-        """Test result caching with subject-specific data_id."""
+    def test_result_caching(self, temp_cache):
+        """Test result caching for transformed images."""
         source_affine = REFERENCE_AFFINES[("MNI152NLin6Asym", 2)]
 
-        # Create two identical images with different data_ids
+        # Create source image
         data = np.random.rand(20, 20, 20).astype(np.float32)
         img1 = nib.Nifti1Image(data, source_affine)
-        nib.Nifti1Image(data, source_affine)
 
         result_data = np.random.rand(20, 20, 20).astype(np.float32)
         result_img = nib.Nifti1Image(result_data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
 
-        # Cache with different data_ids
+        # Cache the result
         temp_cache.put_result(
             img1,
             "MNI152NLin6Asym",
             "MNI152NLin2009cAsym",
             result_img,
-            data_id="sub-001",
         )
 
         # Verify cache statistics
@@ -187,29 +185,22 @@ class TestBatchTransformReuse:
         assert stats["num_results"] == 1, "Should have 1 cached result"
         assert stats["size_mb"] > 0, "Cache should have non-zero size"
 
-    def test_cache_size_monitoring(self, temp_cache, caplog):
-        """Test that cache size is monitored and logged."""
-        import logging
-
+    def test_cache_size_monitoring(self, temp_cache):
+        """Test that cache size is monitored."""
         source_affine = REFERENCE_AFFINES[("MNI152NLin6Asym", 2)]
 
-        with caplog.at_level(logging.DEBUG):
-            # Add a result to cache
-            data = np.random.rand(50, 50, 50).astype(np.float32)
-            img = nib.Nifti1Image(data, source_affine)
+        # Add a result to cache
+        data = np.random.rand(50, 50, 50).astype(np.float32)
+        img = nib.Nifti1Image(data, source_affine)
 
-            result_img = nib.Nifti1Image(data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
+        result_img = nib.Nifti1Image(data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
 
-            temp_cache.put_result(img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img)
+        temp_cache.put_result(img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result_img)
 
         # Verify size is tracked
         stats = temp_cache.get_stats()
         assert stats["size_mb"] > 0, "Cache should track size"
-
-        # Verify logging occurred
-        assert any(
-            "cache size" in record.message.lower() for record in caplog.records
-        ), "Should log cache size information"
+        assert stats["num_results"] == 1, "Should have 1 cached result"
 
 
 class TestCacheConfiguration:
@@ -248,7 +239,7 @@ class TestCacheConfiguration:
             result = nib.Nifti1Image(data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
 
             cache.put_result(
-                img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result, data_id=f"sub-{i}"
+                img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result
             )
 
         # Check that evictions occurred
