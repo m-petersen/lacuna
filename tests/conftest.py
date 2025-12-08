@@ -83,10 +83,10 @@ def simple_bids_dataset(tmp_path):
         ├── sub-001/
         │   └── anat/
         │       ├── sub-001_T1w.nii.gz
-        │       └── sub-001_mask-lesion.nii.gz
+        │       └── sub-001_desc-lesion_mask.nii.gz
         └── sub-002/
             └── anat/
-                └── sub-002_mask-lesion.nii.gz
+                └── sub-002_desc-lesion_mask.nii.gz
     """
     dataset_root = tmp_path / "bids_dataset"
     dataset_root.mkdir()
@@ -114,7 +114,7 @@ def simple_bids_dataset(tmp_path):
     data1 = np.zeros(shape, dtype=np.uint8)
     data1[30:35, 30:35, 30:35] = 1
     lesion1 = nib.Nifti1Image(data1, affine)
-    nib.save(lesion1, sub1_dir / "sub-001_mask-lesion.nii.gz")
+    nib.save(lesion1, sub1_dir / "sub-001_desc-lesion_mask.nii.gz")
 
     # Anatomical for sub-001
     anat1_data = np.random.rand(*shape).astype(np.float32) * 1000
@@ -128,7 +128,7 @@ def simple_bids_dataset(tmp_path):
     data2 = np.zeros(shape, dtype=np.uint8)
     data2[25:30, 25:30, 25:30] = 1
     lesion2 = nib.Nifti1Image(data2, affine)
-    nib.save(lesion2, sub2_dir / "sub-002_mask-lesion.nii.gz")
+    nib.save(lesion2, sub2_dir / "sub-002_desc-lesion_mask.nii.gz")
 
     return dataset_root
 
@@ -144,10 +144,10 @@ def multisession_bids_dataset(tmp_path):
         └── sub-001/
             ├── ses-01/
             │   └── anat/
-            │       └── sub-001_ses-01_mask-lesion.nii.gz
+            │       └── sub-001_ses-01_desc-lesion_mask.nii.gz
             └── ses-02/
                 └── anat/
-                    └── sub-001_ses-02_mask-lesion.nii.gz
+                    └── sub-001_ses-02_desc-lesion_mask.nii.gz
     """
     dataset_root = tmp_path / "bids_multisession"
     dataset_root.mkdir()
@@ -174,7 +174,7 @@ def multisession_bids_dataset(tmp_path):
     data1 = np.zeros(shape, dtype=np.uint8)
     data1[30:35, 30:35, 30:35] = 1
     lesion1 = nib.Nifti1Image(data1, affine)
-    nib.save(lesion1, ses1_dir / "sub-001_ses-01_mask-lesion.nii.gz")
+    nib.save(lesion1, ses1_dir / "sub-001_ses-01_desc-lesion_mask.nii.gz")
 
     # Session 2
     ses2_dir = dataset_root / "sub-001" / "ses-02" / "anat"
@@ -183,7 +183,7 @@ def multisession_bids_dataset(tmp_path):
     data2 = np.zeros(shape, dtype=np.uint8)
     data2[25:30, 25:30, 25:30] = 1
     lesion2 = nib.Nifti1Image(data2, affine)
-    nib.save(lesion2, ses2_dir / "sub-001_ses-02_mask-lesion.nii.gz")
+    nib.save(lesion2, ses2_dir / "sub-001_ses-02_desc-lesion_mask.nii.gz")
 
     return dataset_root
 

@@ -113,9 +113,10 @@ class TestAtlasRegistryWithAnalysis:
         assert "ParcelAggregation" in result.results
         aggregation_results = result.results["ParcelAggregation"]
 
-        # Should have ParcelData for Schaefer100
-        assert "Schaefer2018_100Parcels7Networks" in aggregation_results
-        roi_result = aggregation_results["Schaefer2018_100Parcels7Networks"]
+        # Should have ParcelData for Schaefer100 (BIDS-style key format)
+        expected_key = "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
+        assert expected_key in aggregation_results
+        roi_result = aggregation_results[expected_key]
         region_data = roi_result.get_data()
 
         # Should have multiple regions
@@ -138,13 +139,15 @@ class TestAtlasRegistryWithAnalysis:
 
         aggregation_results = result.results["ParcelAggregation"]
 
-        # Should have results from both atlases
-        assert "Schaefer2018_100Parcels7Networks" in aggregation_results
-        assert "Schaefer2018_200Parcels7Networks" in aggregation_results
+        # Should have results from both atlases (BIDS-style key format)
+        schaefer100_key = "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
+        schaefer200_key = "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img"
+        assert schaefer100_key in aggregation_results
+        assert schaefer200_key in aggregation_results
 
         # Each should have region data
-        schaefer100_data = aggregation_results["Schaefer2018_100Parcels7Networks"].get_data()
-        schaefer200_data = aggregation_results["Schaefer2018_200Parcels7Networks"].get_data()
+        schaefer100_data = aggregation_results[schaefer100_key].get_data()
+        schaefer200_data = aggregation_results[schaefer200_key].get_data()
 
         assert len(schaefer100_data) > 0
         assert len(schaefer200_data) > 0
@@ -166,10 +169,10 @@ class TestAtlasRegistryWithAnalysis:
 
         aggregation_results = result.results["ParcelAggregation"]
 
-        # Should have results from all three atlases
-        assert "Schaefer2018_100Parcels7Networks" in aggregation_results
-        assert "Schaefer2018_200Parcels7Networks" in aggregation_results
-        assert "TianSubcortex_3TS1" in aggregation_results
+        # Should have results from all three atlases (BIDS-style key format)
+        has_schaefer100 = any(
+            "Schaefer2018_100Parcels7Networks" in k for k in aggregation_results.keys()
+        )
         has_schaefer200 = any(
             "Schaefer2018_200Parcels7Networks" in k for k in aggregation_results.keys()
         )
@@ -211,7 +214,7 @@ class TestCustomAtlasRegistration:
         # Register custom atlas
         register_parcellation_from_files(
             name="CustomTestAtlas",
-            atlas_path=str(atlas_path),
+            parcellation_path=str(atlas_path),
             labels_path=str(labels_path),
             space="MNI152NLin6Asym",
             resolution=2,
@@ -243,7 +246,7 @@ class TestCustomAtlasRegistration:
         # Register custom atlas
         register_parcellation_from_files(
             name="CustomAnalysisAtlas",
-            atlas_path=str(atlas_path),
+            parcellation_path=str(atlas_path),
             labels_path=str(labels_path),
             space="MNI152NLin6Asym",
             resolution=2,
@@ -258,11 +261,12 @@ class TestCustomAtlasRegistration:
 
             result = analysis.run(synthetic_lesion)
 
-            # Check results
+            # Check results (BIDS-style key format)
             aggregation_results = result.results["ParcelAggregation"]
-            assert "CustomAnalysisAtlas" in aggregation_results
+            expected_key = "parc-CustomAnalysisAtlas_source-MaskData_desc-mask_img"
+            assert expected_key in aggregation_results
 
-            custom_data = aggregation_results["CustomAnalysisAtlas"].get_data()
+            custom_data = aggregation_results[expected_key].get_data()
             assert len(custom_data) == 2  # Two regions
 
         finally:

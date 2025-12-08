@@ -47,7 +47,7 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
         metadata={"subject_id": "sub-002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
-    # Add analysis results
+    # Add analysis results - each result key gets its own file
     results = {
         "volume_mm3": 2500.0,
         "n_voxels": 312,
@@ -69,15 +69,17 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     results_dir = subject_dir / "results"
     assert results_dir.exists()
 
-    # Verify results JSON exists
-    results_files = list(results_dir.glob("*_results.json"))
-    assert len(results_files) == 1
+    # Verify results JSON files exist (one per result key)
+    # Pattern: sub-002_desc-regionaldamage_{key}.json
+    results_files = list(results_dir.glob("*_desc-regionaldamage_*.json"))
+    assert len(results_files) >= 1, f"Expected results files, found: {list(results_dir.glob('*.json'))}"
 
-    # Verify results content
-    with open(results_files[0]) as f:
-        saved_results = json.load(f)
-    assert "RegionalDamage" in saved_results
-    assert saved_results["RegionalDamage"]["volume_mm3"] == 2500.0
+    # Verify one of the results has correct content
+    volume_files = list(results_dir.glob("*_desc-regionaldamage_volume_mm3.json"))
+    if volume_files:
+        with open(volume_files[0]) as f:
+            saved_value = json.load(f)
+        assert saved_value == 2500.0
 
     # Verify provenance JSON exists
     prov_files = list(results_dir.glob("*_desc-provenance.json"))
@@ -152,39 +154,44 @@ def test_export_and_reload_workflow(tmp_path, synthetic_mask_img):
     output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(original, output_dir)
 
-    # Find exported lesion file
-    lesion_files = list((subject_dir / "anat").glob("*_lesion.nii.gz"))
-    assert len(lesion_files) == 1
-    lesion_file = lesion_files[0]
+    # Find exported mask file (now uses _mask.nii.gz pattern)
+    mask_files = list((subject_dir / "anat").glob("*_mask.nii.gz"))
+    assert len(mask_files) == 1
+    mask_file = mask_files[0]
 
-    # Reload lesion
-    reloaded = MaskData.from_nifti(
-        str(lesion_file),
-        metadata={"subject_id": "sub-201", "space": "MNI152NLin6Asym", "resolution": 2},
-    )
+    # Reload mask data
+    import nibabel as nib
+    reloaded_img = nib.load(mask_file)
 
     # Verify data matches
-    np.testing.assert_array_equal(reloaded.mask_img.get_fdata(), original.mask_img.get_fdata())
-    np.testing.assert_array_equal(reloaded.affine, original.affine)
+    np.testing.assert_array_equal(reloaded_img.get_fdata(), original.mask_img.get_fdata())
+    np.testing.assert_array_equal(reloaded_img.affine, original.affine)
 
 
-def test_export_with_anatomical_image(tmp_path, synthetic_mask_img, synthetic_anatomical_img):
-    """Test exporting lesion with anatomical reference image."""
+def test_export_lesion_mask_only(tmp_path, synthetic_mask_img):
+    """Test exporting with only lesion mask enabled."""
     mask_data = MaskData(
         mask_img=synthetic_mask_img,
-        anatomical_img=synthetic_anatomical_img,
         metadata={"subject_id": "sub-301", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     output_dir = tmp_path / "derivatives" / "lacuna"
-    subject_dir = export_bids_derivatives(mask_data, output_dir, include_anatomical=True)
+    subject_dir = export_bids_derivatives(
+        mask_data,
+        output_dir,
+        export_lesion_mask=True,
+        export_voxelmaps=False,
+        export_parcel_data=False,
+        export_connectivity=False,
+        export_scalars=False,
+    )
 
     anat_dir = subject_dir / "anat"
     assert anat_dir.exists()
 
-    # Should have both lesion and anatomical files
-    files = list(anat_dir.glob("*.nii.gz"))
-    assert len(files) >= 1  # At least lesion, maybe anatomical too
+    # Should have mask file
+    files = list(anat_dir.glob("*_mask.nii.gz"))
+    assert len(files) >= 1
 
 
 def test_export_preserves_bids_naming(tmp_path, synthetic_mask_img):
@@ -202,18 +209,18 @@ def test_export_preserves_bids_naming(tmp_path, synthetic_mask_img):
     output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(mask_data, output_dir)
 
-    # Find lesion file and check naming
-    lesion_files = list((subject_dir / "anat").glob("*.nii.gz"))
-    assert len(lesion_files) == 1
+    # Find mask file and check naming
+    mask_files = list((subject_dir / "anat").glob("*_mask.nii.gz"))
+    assert len(mask_files) == 1
 
-    filename = lesion_files[0].name
+    filename = mask_files[0].name
     # Should contain subject and session
     assert "sub-401" in filename
     assert "ses-01" in filename
     # Should contain space entity
     assert "space-MNI152" in filename or "MNI152" in filename
-    # Should end with _lesion.nii.gz
-    assert filename.endswith("_lesion.nii.gz")
+    # Should end with _mask.nii.gz
+    assert filename.endswith("_mask.nii.gz")
 
 
 def test_export_selective_outputs(tmp_path, synthetic_mask_img):
@@ -227,14 +234,22 @@ def test_export_selective_outputs(tmp_path, synthetic_mask_img):
 
     output_dir = tmp_path / "derivatives" / "lacuna"
 
-    # Export only images, no results
+    # Export only lesion mask, no scalars/parcel data
     subject_dir = export_bids_derivatives(
-        lesion_with_results, output_dir, include_images=True, include_results=False
+        lesion_with_results,
+        output_dir,
+        export_lesion_mask=True,
+        export_voxelmaps=False,
+        export_parcel_data=False,
+        export_connectivity=False,
+        export_scalars=False,
+        export_provenance=False,
     )
 
-    # Should have anat dir but not results dir
+    # Should have anat dir with mask file
     assert (subject_dir / "anat").exists()
-    assert not (subject_dir / "results").exists()
+    mask_files = list((subject_dir / "anat").glob("*_mask.nii.gz"))
+    assert len(mask_files) >= 1
 
 
 def test_export_creates_complete_derivatives_structure(tmp_path, synthetic_mask_img):

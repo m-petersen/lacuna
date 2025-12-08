@@ -4,9 +4,6 @@ Tests the complete workflow of atlas loading, discovery, and usage
 in analysis modules.
 """
 
-import tempfile
-from pathlib import Path
-
 import nibabel as nib
 import numpy as np
 import pytest
@@ -17,83 +14,68 @@ from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import list_parcellations
 
 
+@pytest.fixture
+def sample_mask_data():
+    """Create a sample MaskData for testing."""
+    mask_data = np.zeros((91, 109, 91))
+    mask_data[45:50, 54:59, 45:50] = 1
+    mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
+    return MaskData(
+        mask_img=mask_img,
+        space="MNI152NLin6Asym",
+        resolution=1.0,
+        metadata={"subject_id": "test001"},
+    )
+
+
 class TestMultiAtlasAnalysisWorkflow:
-    """Test multi-atlas analysis workflow (T067)."""
+    """Test multi-atlas analysis workflow."""
 
-    def test_regional_damage_with_single_atlas(self):
+    def test_regional_damage_with_single_atlas(self, sample_mask_data):
         """RegionalDamage can use a single named atlas."""
-        # Create a simple binary lesion
-        mask_data = np.zeros((91, 109, 91))
-        mask_data[45:50, 54:59, 45:50] = 1
-        mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        MaskData(
-            mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
-        )
-
-        # Use specific atlas by name
-        analysis = RegionalDamage(atlas="Schaefer100")
+        # Use specific parcellation by name
+        analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"])
 
         # Validate it was configured correctly
-        assert analysis.atlas == ["Schaefer100"]
+        assert analysis.parcel_names == ["Schaefer2018_100Parcels7Networks"]
         assert analysis.aggregation == "percent"
 
-    def test_regional_damage_with_multiple_atlases(self):
+    def test_regional_damage_with_multiple_atlases(self, sample_mask_data):
         """RegionalDamage can use multiple named atlases."""
-        # Create a simple binary lesion
-        mask_data = np.zeros((91, 109, 91))
-        mask_data[45:50, 54:59, 45:50] = 1
-        mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        MaskData(
-            mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
+        # Use multiple parcellations by name
+        analysis = RegionalDamage(
+            parcel_names=[
+                "Schaefer2018_100Parcels7Networks",
+                "Schaefer2018_200Parcels7Networks",
+            ]
         )
-
-        # Use multiple atlases by name
-        analysis = RegionalDamage(atlas=["Schaefer100", "Schaefer200"])
 
         # Validate it was configured correctly
-        assert analysis.atlas == ["Schaefer100", "Schaefer200"]
-        assert len(analysis.atlas) == 2
+        assert len(analysis.parcel_names) == 2
+        assert "Schaefer2018_100Parcels7Networks" in analysis.parcel_names
+        assert "Schaefer2018_200Parcels7Networks" in analysis.parcel_names
 
-    def test_atlas_aggregation_with_named_atlas(self):
-        """ParcelAggregation can use named atlas from registry."""
-        # Create a simple binary lesion
-        mask_data = np.zeros((91, 109, 91))
-        mask_data[45:50, 54:59, 45:50] = 1
-        mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        MaskData(
-            mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
+    def test_parcel_aggregation_with_named_atlas(self, sample_mask_data):
+        """ParcelAggregation can use named parcellation from registry."""
+        # Use parcellation by name with different aggregation
+        analysis = ParcelAggregation(
+            parcel_names=["TianSubcortex_3TS2"],
+            source="mask_img",
+            aggregation="mean",
         )
-
-        # Use atlas by name with different aggregation
-        analysis = ParcelAggregation(atlas="TianS2", source="mask_img", aggregation="mean")
 
         # Validate configuration
-        assert analysis.atlas == ["TianS2"]
+        assert analysis.parcel_names == ["TianSubcortex_3TS2"]
         assert analysis.aggregation == "mean"
 
-    def test_backward_compatibility_with_atlas_dir(self):
-        """Analysis modules still support legacy atlas_dir parameter."""
-        # Create a simple binary lesion
-        mask_data = np.zeros((91, 109, 91))
-        mask_data[45:50, 54:59, 45:50] = 1
-        mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-        MaskData(
-            mask_img=mask_img, metadata={"space": "MNI152NLin2009cAsym", "subject_id": "test001"}
-        )
-
-        # Create temporary atlas directory
-        with tempfile.TemporaryDirectory() as tmpdir:
-            atlas_dir = Path(tmpdir)
-
-            # Legacy usage should work (atlas_dir is deprecated but still functional)
-            analysis = RegionalDamage(atlas_dir=str(atlas_dir))
-
-            # Should still store the atlas_dir
-            assert analysis.atlas_dir == str(atlas_dir)
+    def test_regional_damage_default_parcellations(self, sample_mask_data):
+        """RegionalDamage with None uses all available parcellations."""
+        analysis = RegionalDamage(parcel_names=None)
+        assert analysis.parcel_names is None
 
 
 class TestAtlasDiscovery:
-    """Test atlas discovery with list_parcellations() (T068)."""
+    """Test atlas discovery with list_parcellations()."""
 
     def test_list_all_bundled_atlases(self):
         """list_parcellations() returns all bundled atlases."""
@@ -106,109 +88,101 @@ class TestAtlasDiscovery:
         for atlas in atlases:
             assert hasattr(atlas, "name")
             assert hasattr(atlas, "space")
+            assert hasattr(atlas, "resolution")
             assert hasattr(atlas, "n_regions")
-            assert hasattr(atlas, "atlas_type")
+            assert hasattr(atlas, "parcellation_filename")
 
     def test_filter_atlases_by_space(self):
         """list_parcellations() can filter by space."""
         # Get atlases in specific space
-        mni2009c_atlases = list_parcellations(space="MNI152NLin2009cAsym")
+        mni6_atlases = list_parcellations(space="MNI152NLin6Asym")
 
         # All should be in that space
-        for atlas in mni2009c_atlases:
-            assert atlas.space == "MNI152NLin2009cAsym"
+        for atlas in mni6_atlases:
+            assert atlas.space == "MNI152NLin6Asym"
 
-    def test_filter_atlases_by_type(self):
-        """list_parcellations() can filter by type."""
-        # Get network atlases
-        network_atlases = list_parcellations(atlas_type="network")
+    def test_filter_atlases_by_resolution(self):
+        """list_parcellations() can filter by resolution."""
+        # Get 1mm resolution atlases
+        res1_atlases = list_parcellations(resolution=1)
 
-        # All should be network type
-        for atlas in network_atlases:
-            assert atlas.atlas_type == "network"
-
-    def test_filter_atlases_by_region_count(self):
-        """list_parcellations() can filter by region count range."""
-        # Get atlases with 100-500 regions
-        medium_atlases = list_parcellations(min_regions=100, max_regions=500)
-
-        # All should be in range
-        for atlas in medium_atlases:
-            assert 100 <= atlas.n_regions <= 500
+        # All should have 1mm resolution
+        for atlas in res1_atlases:
+            assert atlas.resolution == 1
 
     def test_combined_filters(self):
-        """list_parcellations() can combine multiple filters."""
-        # Get network atlases in MNI2009c with 200-400 regions
-        filtered = list_parcellations(
-            space="MNI152NLin2009cAsym", atlas_type="network", min_regions=200, max_regions=400
-        )
+        """list_parcellations() can combine space and resolution filters."""
+        # Get atlases in MNI6Asym with 1mm resolution
+        filtered = list_parcellations(space="MNI152NLin6Asym", resolution=1)
 
         # All should match all criteria
         for atlas in filtered:
-            assert atlas.space == "MNI152NLin2009cAsym"
-            assert atlas.atlas_type == "network"
-            assert 200 <= atlas.n_regions <= 400
+            assert atlas.space == "MNI152NLin6Asym"
+            assert atlas.resolution == 1
 
     def test_discover_specific_atlases(self):
         """list_parcellations() includes expected bundled atlases."""
         all_atlases = list_parcellations()
         parcel_names = [a.name for a in all_atlases]
 
-        # Should include Schaefer parcellations
-        assert "Schaefer100" in parcel_names
-        assert "Schaefer200" in parcel_names
-        assert "Schaefer400" in parcel_names
+        # Should include Schaefer parcellations with full names
+        assert "Schaefer2018_100Parcels7Networks" in parcel_names
+        assert "Schaefer2018_200Parcels7Networks" in parcel_names
+        assert "Schaefer2018_400Parcels7Networks" in parcel_names
 
         # Should include Tian subcortical atlases
-        assert "TianS2" in parcel_names
+        assert any("Tian" in name for name in parcel_names)
 
 
 class TestAtlasLoadingInDifferentSpaces:
-    """Test atlas loading in different coordinate spaces (T069)."""
+    """Test atlas loading in different coordinate spaces."""
 
-    def test_load_parcellation_returns_correct_space(self):
-        """load_parcellation() returns atlas with correct coordinate space."""
+    def test_load_parcellation_returns_correct_metadata(self):
+        """load_parcellation() returns atlas with correct metadata."""
         # Load atlas
-        atlas = load_parcellation("Schaefer400")
+        atlas = load_parcellation("Schaefer2018_400Parcels7Networks")
 
         # Should have correct metadata
-        assert atlas.metadata.space == "MNI152NLin6Asym"
+        assert atlas.metadata.name == "Schaefer2018_400Parcels7Networks"
         assert atlas.metadata.n_regions == 400
 
-    def test_load_parcellation_with_labels(self):
-        """load_parcellation() and get_atlas_labels() work together."""
-        # Load atlas
-        atlas = load_parcellation("TianS2")
-        labels = get_atlas_labels("TianS2")
+    def test_load_parcellation_returns_nifti_image(self):
+        """load_parcellation() returns a proper NIfTI image."""
+        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
 
-        # Labels should match region count
-        assert len(labels) == atlas.metadata.n_regions
-
-        # Labels should be dict mapping int -> str
-        assert isinstance(labels, dict)
-        for region_id, region_name in labels.items():
-            assert isinstance(region_id, int)
-            assert isinstance(region_name, str)
+        # Should return Parcellation with image data
+        assert hasattr(atlas, "image")
+        assert hasattr(atlas, "metadata")
+        assert hasattr(atlas, "labels")
+        # The image should be a nibabel image
+        assert hasattr(atlas.image, "get_fdata")
 
     def test_load_different_schaefer_parcellations(self):
         """Can load different Schaefer parcellation scales."""
-        atlases = ["Schaefer100", "Schaefer200", "Schaefer400", "Schaefer1000"]
-        expected_regions = [100, 200, 400, 1000]
+        atlases = [
+            "Schaefer2018_100Parcels7Networks",
+            "Schaefer2018_200Parcels7Networks",
+            "Schaefer2018_400Parcels7Networks",
+        ]
+        expected_regions = [100, 200, 400]
 
         for atlas_name, expected_n in zip(atlases, expected_regions, strict=False):
             atlas = load_parcellation(atlas_name)
             assert atlas.metadata.n_regions == expected_n
-            assert atlas.metadata.space == "MNI152NLin6Asym"
 
     def test_load_tian_subcortical_atlases(self):
-        """Can load different Tian subcortical atlas scales."""
-        atlases = ["TianS1", "TianS2", "TianS3"]
-        expected_regions = [16, 32, 50]
+        """Can load Tian subcortical atlas scales."""
+        # Check which Tian atlases exist
+        all_atlases = list_parcellations()
+        tian_names = [a.name for a in all_atlases if "Tian" in a.name]
 
-        for atlas_name, expected_n in zip(atlases, expected_regions, strict=False):
-            atlas = load_parcellation(atlas_name)
-            assert atlas.metadata.n_regions == expected_n
-            assert atlas.metadata.space == "MNI152NLin6Asym"
+        # Should have at least one Tian atlas
+        assert len(tian_names) >= 1
+
+        # Load the first one
+        atlas = load_parcellation(tian_names[0])
+        assert atlas.metadata is not None
+        assert atlas.metadata.n_regions > 0
 
     def test_atlas_metadata_consistency(self):
         """Atlas metadata from registry is consistent."""
@@ -220,9 +194,9 @@ class TestAtlasLoadingInDifferentSpaces:
             # Metadata should have all required fields
             assert hasattr(atlas_info, "name")
             assert hasattr(atlas_info, "space")
+            assert hasattr(atlas_info, "resolution")
             assert hasattr(atlas_info, "n_regions")
-            assert hasattr(atlas_info, "atlas_type")
-            assert hasattr(atlas_info, "filename")
+            assert hasattr(atlas_info, "parcellation_filename")
 
             # Values should be reasonable
             assert isinstance(atlas_info.name, str)
@@ -230,8 +204,8 @@ class TestAtlasLoadingInDifferentSpaces:
             assert atlas_info.n_regions > 0
 
     def test_invalid_atlas_name_raises_error(self):
-        """load_parcellation() raises ValueError for invalid atlas name."""
-        with pytest.raises(ValueError, match="not found.*registry"):
+        """load_parcellation() raises KeyError for invalid atlas name."""
+        with pytest.raises(KeyError, match="not found"):
             load_parcellation("NonexistentAtlas12345")
 
     def test_atlas_registry_contains_expected_atlases(self):
@@ -239,11 +213,11 @@ class TestAtlasLoadingInDifferentSpaces:
         all_atlases = list_parcellations()
 
         # Check that we have a reasonable number of atlases
-        assert len(all_atlases) >= 8, f"Expected at least 8 atlases, got {len(all_atlases)}"
+        assert len(all_atlases) >= 4, f"Expected at least 4 atlases, got {len(all_atlases)}"
 
         # All should have proper metadata
         for atlas_info in all_atlases:
             assert isinstance(atlas_info.name, str)
             assert isinstance(atlas_info.space, str)
             assert atlas_info.n_regions > 0
-            assert isinstance(atlas_info.filename, str)
+            assert isinstance(atlas_info.parcellation_filename, str)

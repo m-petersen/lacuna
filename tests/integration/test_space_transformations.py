@@ -24,7 +24,13 @@ def test_transformation_logging_messages(synthetic_mask_img, capsys):
     )
 
     # Transform to another space
-    target_space = CoordinateSpace(identifier="MNI152NLin2009cAsym", resolution=2.0)
+    # Note: CoordinateSpace requires reference_affine parameter
+    from lacuna.core.spaces import REFERENCE_AFFINES
+
+    target_affine = REFERENCE_AFFINES.get(("MNI152NLin2009cAsym", 2), np.eye(4))
+    target_space = CoordinateSpace(
+        identifier="MNI152NLin2009cAsym", resolution=2.0, reference_affine=target_affine
+    )
 
     # This should log transformation messages
     # Note: Actual transformation requires templates, so this may fail
