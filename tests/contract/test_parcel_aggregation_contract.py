@@ -5,7 +5,105 @@ Tests the interface and behavior requirements for composable ROI-level
 aggregation of voxel-level maps following the BaseAnalysis contract.
 """
 
+import nibabel as nib
+import numpy as np
 import pytest
+
+from lacuna.assets.parcellations.registry import (
+    register_parcellations_from_directory,
+    unregister_parcellation,
+)
+
+
+@pytest.fixture
+def local_test_atlas(tmp_path):
+    """Create and register a local test atlas for ParcelAggregation tests.
+
+    This avoids TemplateFlow downloads for CI.
+    """
+    atlas_dir = tmp_path / "atlases"
+    atlas_dir.mkdir()
+
+    # Use same dimensions as synthetic_mask_img (91, 109, 91) or (64, 64, 64)
+    # Use 64x64x64 to match synthetic_mask_img in conftest
+    shape = (64, 64, 64)
+    affine = np.eye(4)
+
+    # Create atlas with 5 regions
+    atlas_data = np.zeros(shape, dtype=np.int16)
+    atlas_data[10:20, 20:40, 20:40] = 1
+    atlas_data[20:30, 20:40, 20:40] = 2
+    atlas_data[30:40, 20:40, 20:40] = 3
+    atlas_data[40:50, 20:40, 20:40] = 4
+    atlas_data[20:40, 40:50, 20:40] = 5
+
+    atlas_img = nib.Nifti1Image(atlas_data, affine)
+    atlas_path = atlas_dir / "test_parc_contract_atlas.nii.gz"
+    nib.save(atlas_img, atlas_path)
+
+    # Create labels file
+    labels_path = atlas_dir / "test_parc_contract_atlas_labels.txt"
+    labels_path.write_text("1 Region_A\\n2 Region_B\\n3 Region_C\\n4 Region_D\\n5 Region_E\\n")
+
+    # Register the atlas
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
+    yield "test_parc_contract_atlas"
+
+    # Cleanup
+    try:
+        unregister_parcellation("test_parc_contract_atlas")
+    except KeyError:
+        pass
+
+
+@pytest.fixture
+def local_test_atlas_pair(tmp_path):
+    """Create two local test atlases for multi-atlas tests.
+
+    This avoids TemplateFlow downloads for CI.
+    """
+    atlas_dir = tmp_path / "atlases_pair"
+    atlas_dir.mkdir()
+
+    shape = (64, 64, 64)
+    affine = np.eye(4)
+
+    # Atlas 1: 5 regions
+    atlas_data_1 = np.zeros(shape, dtype=np.int16)
+    atlas_data_1[10:20, 20:40, 20:40] = 1
+    atlas_data_1[20:30, 20:40, 20:40] = 2
+    atlas_data_1[30:40, 20:40, 20:40] = 3
+    atlas_data_1[40:50, 20:40, 20:40] = 4
+    atlas_data_1[20:40, 40:50, 20:40] = 5
+    atlas_img_1 = nib.Nifti1Image(atlas_data_1, affine)
+    nib.save(atlas_img_1, atlas_dir / "test_atlas_100.nii.gz")
+    (atlas_dir / "test_atlas_100_labels.txt").write_text(
+        "1 Atlas100_A\\n2 Atlas100_B\\n3 Atlas100_C\\n4 Atlas100_D\\n5 Atlas100_E\\n"
+    )
+
+    # Atlas 2: 3 regions (different parcellation)
+    atlas_data_2 = np.zeros(shape, dtype=np.int16)
+    atlas_data_2[10:25, 20:40, 20:40] = 1
+    atlas_data_2[25:40, 20:40, 20:40] = 2
+    atlas_data_2[40:55, 20:40, 20:40] = 3
+    atlas_img_2 = nib.Nifti1Image(atlas_data_2, affine)
+    nib.save(atlas_img_2, atlas_dir / "test_atlas_200.nii.gz")
+    (atlas_dir / "test_atlas_200_labels.txt").write_text(
+        "1 Atlas200_X\\n2 Atlas200_Y\\n3 Atlas200_Z\\n"
+    )
+
+    # Register both atlases
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
+    yield ("test_atlas_100", "test_atlas_200")
+
+    # Cleanup
+    for name in ["test_atlas_100", "test_atlas_200"]:
+        try:
+            unregister_parcellation(name)
+        except KeyError:
+            pass
 
 
 def test_atlas_aggregation_import():
@@ -133,7 +231,7 @@ def test_atlas_aggregation_validates_source_exists(synthetic_mask_img, tmp_path)
         analysis.run(mask_data)
 
 
-def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_mask_img):
+def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_mask_img, local_test_atlas):
     """Test that ParcelAggregation can access results from previous analyses."""
     import nibabel as nib
     import numpy as np
@@ -150,11 +248,11 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_mask_img):
     network_map = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_mask_img.affine)
     mask_data._results["MockAnalysis"] = {"network_map": network_map}
 
-    # Should be able to aggregate the network map using bundled atlas
+    # Should be able to aggregate the network map using local test atlas
     analysis = ParcelAggregation(
         source="MockAnalysis.network_map",
         aggregation="mean",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
 
     result = analysis.run(mask_data)
@@ -163,7 +261,7 @@ def test_atlas_aggregation_can_chain_with_other_analyses(synthetic_mask_img):
     assert "ParcelAggregation" in result.results
 
 
-def test_atlas_aggregation_returns_mask_data(synthetic_mask_img):
+def test_atlas_aggregation_returns_mask_data(synthetic_mask_img, local_test_atlas):
     """Test that run() returns a MaskData object with namespaced results."""
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
@@ -174,7 +272,7 @@ def test_atlas_aggregation_returns_mask_data(synthetic_mask_img):
 
     analysis = ParcelAggregation(
         source="mask_img",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
     result = analysis.run(mask_data)
 
@@ -185,7 +283,7 @@ def test_atlas_aggregation_returns_mask_data(synthetic_mask_img):
     assert "ParcelAggregation" in result.results
 
 
-def test_atlas_aggregation_result_structure(synthetic_mask_img):
+def test_atlas_aggregation_result_structure(synthetic_mask_img, local_test_atlas):
     """Test that results contain ROI-level aggregated values."""
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
@@ -197,14 +295,14 @@ def test_atlas_aggregation_result_structure(synthetic_mask_img):
     analysis = ParcelAggregation(
         source="mask_img",
         aggregation="mean",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
     # Format: "parc-{parcellation}_source-{SourceClass}_desc-{key}"
     atlas_results = result.results["ParcelAggregation"]
-    expected_key = "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
+    expected_key = f"parc-{local_test_atlas}_source-MaskData_desc-mask_img"
     assert expected_key in atlas_results
 
     # Get the ParcelData for this atlas using descriptive key
@@ -212,14 +310,13 @@ def test_atlas_aggregation_result_structure(synthetic_mask_img):
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level values
-    # Format: {"Schaefer2018_100Parcels7Networks_7Networks_LH_Vis_1": 0.523, ...}
     assert len(results_dict) > 0
     for key, value in results_dict.items():
         assert isinstance(key, str)
         assert isinstance(value, (int, float))
 
 
-def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img):
+def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img, local_test_atlas_pair):
     """Test that ParcelAggregation can process multiple atlases from registry."""
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
@@ -228,30 +325,28 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img):
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Use two bundled atlases
+    atlas_100, atlas_200 = local_test_atlas_pair
+
+    # Use two local test atlases
     analysis = ParcelAggregation(
-        parcel_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
+        parcel_names=[atlas_100, atlas_200],
     )
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys per atlas
     # Format: "parc-{parcellation}_source-MaskData_desc-mask_img"
     atlas_results = result.results["ParcelAggregation"]
-    assert "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img" in atlas_results
-    assert "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img" in atlas_results
+    assert f"parc-{atlas_100}_source-MaskData_desc-mask_img" in atlas_results
+    assert f"parc-{atlas_200}_source-MaskData_desc-mask_img" in atlas_results
 
     # Each atlas should have its own ParcelData with region data
-    roi_100 = atlas_results[
-        "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
-    ].get_data()
-    roi_200 = atlas_results[
-        "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img"
-    ].get_data()
+    roi_100 = atlas_results[f"parc-{atlas_100}_source-MaskData_desc-mask_img"].get_data()
+    roi_200 = atlas_results[f"parc-{atlas_200}_source-MaskData_desc-mask_img"].get_data()
     assert len(roi_100) > 0
     assert len(roi_200) > 0
 
 
-def test_atlas_aggregation_preserves_input_immutability(synthetic_mask_img):
+def test_atlas_aggregation_preserves_input_immutability(synthetic_mask_img, local_test_atlas):
     """Test that run() does not modify the input MaskData."""
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
@@ -261,7 +356,7 @@ def test_atlas_aggregation_preserves_input_immutability(synthetic_mask_img):
     )
     original_results = mask_data.results.copy()
 
-    analysis = ParcelAggregation(parcel_names=["Schaefer2018_100Parcels7Networks"])
+    analysis = ParcelAggregation(parcel_names=[local_test_atlas])
     result = analysis.run(mask_data)
 
     # Input should not be modified
@@ -272,7 +367,7 @@ def test_atlas_aggregation_preserves_input_immutability(synthetic_mask_img):
     assert result is not mask_data
 
 
-def test_atlas_aggregation_adds_provenance(synthetic_mask_img):
+def test_atlas_aggregation_adds_provenance(synthetic_mask_img, local_test_atlas):
     """Test that run() adds provenance record."""
     from lacuna import MaskData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
@@ -282,7 +377,7 @@ def test_atlas_aggregation_adds_provenance(synthetic_mask_img):
     )
     original_prov_len = len(mask_data.provenance)
 
-    analysis = ParcelAggregation(parcel_names=["Schaefer2018_100Parcels7Networks"])
+    analysis = ParcelAggregation(parcel_names=[local_test_atlas])
     result = analysis.run(mask_data)
 
     # Should have added provenance
@@ -298,7 +393,7 @@ def test_atlas_aggregation_adds_provenance(synthetic_mask_img):
 # ============================================================================
 
 
-def test_atlas_aggregation_cross_analysis_source_syntax(synthetic_mask_img):
+def test_atlas_aggregation_cross_analysis_source_syntax(synthetic_mask_img, local_test_atlas):
     """Test that ParcelAggregation accepts 'AnalysisName.result_key' syntax.
 
     Contract: T053 - Cross-analysis source syntax
@@ -322,7 +417,7 @@ def test_atlas_aggregation_cross_analysis_source_syntax(synthetic_mask_img):
     analysis = ParcelAggregation(
         source="StructuralNetworkMapping.disconnection_map",
         aggregation="mean",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
 
     # Should successfully run without error
@@ -330,7 +425,7 @@ def test_atlas_aggregation_cross_analysis_source_syntax(synthetic_mask_img):
     assert "ParcelAggregation" in result.results
 
 
-def test_atlas_aggregation_threshold_accepts_any_float(synthetic_mask_img):
+def test_atlas_aggregation_threshold_accepts_any_float(synthetic_mask_img, local_test_atlas):
     """Test that threshold accepts any float value (not restricted to 0.0-1.0).
 
     Contract: T054 - Flexible thresholds
@@ -347,7 +442,7 @@ def test_atlas_aggregation_threshold_accepts_any_float(synthetic_mask_img):
         source="mask_img",
         aggregation="mean",
         threshold=-2.5,
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
     assert analysis_negative.threshold == -2.5
     result = analysis_negative.run(mask_data)
@@ -358,7 +453,7 @@ def test_atlas_aggregation_threshold_accepts_any_float(synthetic_mask_img):
         source="mask_img",
         aggregation="mean",
         threshold=0.0,
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
     assert analysis_zero.threshold == 0.0
 
@@ -367,12 +462,12 @@ def test_atlas_aggregation_threshold_accepts_any_float(synthetic_mask_img):
         source="mask_img",
         aggregation="mean",
         threshold=5.0,
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
     assert analysis_high.threshold == 5.0
 
 
-def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img):
+def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img, local_test_atlas):
     """Test that result keys include source context for traceability.
 
     Contract: T055 - Result key source context
@@ -395,7 +490,7 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     analysis = ParcelAggregation(
         source="StructuralNetworkMapping.disconnection_map",
         aggregation="mean",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
     )
 
     result = analysis.run(mask_data)
@@ -413,7 +508,7 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     assert has_source_context, f"Expected source context in keys, got: {result_keys}"
 
 
-def test_multi_source_aggregation_contract(synthetic_mask_img):
+def test_multi_source_aggregation_contract(synthetic_mask_img, local_test_atlas):
     """
     Contract: Multi-source aggregation produces separate BIDS-style keys.
 
@@ -439,7 +534,7 @@ def test_multi_source_aggregation_contract(synthetic_mask_img):
     # Run multi-source aggregation
     analysis = ParcelAggregation(
         source=["MaskData.mask_img", "FunctionalNetworkMapping.correlation_map"],
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
         aggregation="mean",
     )
 
@@ -468,7 +563,7 @@ def test_multi_source_aggregation_contract(synthetic_mask_img):
             assert "desc" in parsed, f"Key {key} should have 'desc' component"
 
 
-def test_multi_source_aggregation_dict_format(synthetic_mask_img):
+def test_multi_source_aggregation_dict_format(synthetic_mask_img, local_test_atlas):
     """Test that ParcelAggregation accepts dictionary format for source specification."""
     import numpy as np
 
@@ -497,7 +592,7 @@ def test_multi_source_aggregation_dict_format(synthetic_mask_img):
     # NEW: Dictionary format for sources
     analysis = ParcelAggregation(
         source={"MaskData": "mask_img", "FunctionalNetworkMapping": ["correlation_map", "z_map"]},
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=[local_test_atlas],
         aggregation="mean",
     )
 
