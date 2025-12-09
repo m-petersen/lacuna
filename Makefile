@@ -65,10 +65,13 @@ ci-native:  ## Run full CI checks natively (use before commit)
 
 ci-act:  ## Verify CI works in Docker with act (use before push)
 	@echo "=== Verifying CI in Docker ==="
-	act -j test --reuse
+	@echo "Note: Using empty TEMPLATEFLOW_HOME to simulate clean CI environment"
+	act -j test --reuse --env TEMPLATEFLOW_HOME=/tmp/empty_templateflow
 
 ci-act-clean:  ## Run act without reusing containers (clean slate)
-	act -j test
+	@echo "=== Running CI in clean Docker container ==="
+	@echo "Note: Using empty TEMPLATEFLOW_HOME to simulate clean CI environment"
+	act -j test --env TEMPLATEFLOW_HOME=/tmp/empty_templateflow
 
 # === RELEASE ===
 
