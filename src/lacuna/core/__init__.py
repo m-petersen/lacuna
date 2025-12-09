@@ -79,4 +79,3 @@ __all__ = [
     "parse_result_key",
     "get_source_abbreviation",
 ]
-

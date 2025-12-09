@@ -508,7 +508,9 @@ def register_parcellations_from_directory(
             elif part.startswith("res-"):
                 try:
                     res_str = part[4:]
-                    parcellation_resolution = int(res_str) if res_str.isdigit() else parcellation_resolution
+                    parcellation_resolution = (
+                        int(res_str) if res_str.isdigit() else parcellation_resolution
+                    )
                 except (ValueError, AttributeError):
                     pass
 

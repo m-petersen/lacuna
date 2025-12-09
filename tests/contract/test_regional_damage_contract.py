@@ -230,7 +230,8 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    analysis = RegionalDamage()
+    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    analysis = RegionalDamage(parcel_names=["atlas_3d", "atlas_4d"])
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
@@ -260,8 +261,8 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
     atlas_dir.mkdir()
     atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
     atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
+    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test_immut.nii.gz")
+    (atlas_dir / "test_immut_labels.txt").write_text("1 Region1\n")
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
@@ -269,7 +270,8 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
     )
     original_results = mask_data.results.copy()
 
-    analysis = RegionalDamage()
+    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    analysis = RegionalDamage(parcel_names=["test_immut"])
     result = analysis.run(mask_data)
 
     # Input should not be modified
@@ -294,8 +296,8 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     atlas_dir.mkdir()
     atlas_data = np.zeros((64, 64, 64), dtype=np.uint8)
     atlas_data[20:40, 20:40, 20:40] = 1
-    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test.nii.gz")
-    (atlas_dir / "test_labels.txt").write_text("1 Region1\n")
+    nib.save(nib.Nifti1Image(atlas_data, np.eye(4)), atlas_dir / "test_prov.nii.gz")
+    (atlas_dir / "test_prov_labels.txt").write_text("1 Region1\n")
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     mask_data = MaskData(
@@ -303,7 +305,8 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     )
     original_prov_len = len(mask_data.provenance)
 
-    analysis = RegionalDamage()
+    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    analysis = RegionalDamage(parcel_names=["test_prov"])
     result = analysis.run(mask_data)
 
     # Should have added provenance

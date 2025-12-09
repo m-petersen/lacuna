@@ -180,7 +180,7 @@ class TestFunctionalNetworkMappingOutputs:
             resolution=2.0,
             data_path=mock_connectome,
             n_subjects=5,
-            description="Test connectome"
+            description="Test connectome",
         )
 
         try:
@@ -201,7 +201,7 @@ class TestFunctionalNetworkMappingOutputs:
             resolution=2.0,
             data_path=mock_connectome,
             n_subjects=5,
-            description="Test connectome"
+            description="Test connectome",
         )
 
         try:
@@ -229,7 +229,7 @@ class TestFunctionalNetworkMappingOutputs:
             resolution=2.0,
             data_path=mock_connectome,
             n_subjects=5,
-            description="Test connectome"
+            description="Test connectome",
         )
 
         try:
@@ -256,7 +256,7 @@ class TestFunctionalNetworkMappingOutputs:
             resolution=2.0,
             data_path=mock_connectome,
             n_subjects=5,
-            description="Test connectome"
+            description="Test connectome",
         )
 
         try:

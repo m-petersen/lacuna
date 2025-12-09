@@ -110,27 +110,6 @@ def test_save_nifti_basic(tmp_path, synthetic_mask_img):
     assert np.array_equal(loaded_img.affine, synthetic_mask_img.affine)
 
 
-@pytest.mark.skip(reason="anatomical_img feature pending removal (T008)")
-def test_save_nifti_with_anatomical(tmp_path, synthetic_mask_img, synthetic_anatomical_img):
-    """Test saving MaskData with anatomical image."""
-    from lacuna import MaskData
-    from lacuna.io import save_nifti
-
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img,
-        anatomical_img=synthetic_anatomical_img,
-        metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
-    )
-
-    output_path = tmp_path / "lesion.nii.gz"
-    save_nifti(mask_data, output_path, save_anatomical=True)
-
-    # Verify both files exist
-    assert output_path.exists()
-    anat_path = tmp_path / "anat.nii.gz"
-    assert anat_path.exists()
-
-
 def test_save_nifti_invalid_extension(tmp_path, synthetic_mask_img):
     """Test that invalid file extension raises ValueError."""
     from lacuna import MaskData
@@ -199,7 +178,9 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
 
     # Each scalar result is saved as individual JSON file
     results_files = list(results_dir.glob("*_desc-volumeanalysis_*.json"))
-    assert len(results_files) >= 1, f"Expected scalar result files, got: {list(results_dir.glob('*.json'))}"
+    assert (
+        len(results_files) >= 1
+    ), f"Expected scalar result files, got: {list(results_dir.glob('*.json'))}"
 
     prov_files = list(results_dir.glob("*_desc-provenance.json"))
     assert len(prov_files) == 1

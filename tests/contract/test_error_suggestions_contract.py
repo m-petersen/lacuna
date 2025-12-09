@@ -1,7 +1,7 @@
 """Contract tests for error message improvements with fuzzy matching."""
 
-import numpy as np
 import nibabel as nib
+import numpy as np
 import pytest
 
 from lacuna import MaskData

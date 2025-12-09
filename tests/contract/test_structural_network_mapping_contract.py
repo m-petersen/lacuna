@@ -84,6 +84,8 @@ def test_structural_network_mapping_can_instantiate(temp_connectome):
     assert analysis.output_resolution == 2  # default
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_structural_network_mapping_has_run_method(temp_connectome):
     """Test that StructuralNetworkMapping has the run() method from BaseAnalysis."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -124,9 +126,7 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img, temp_c
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Mark lesion as MNI152 space
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img, space="MNI152NLin6Asym", resolution=2
-    )
+    mask_data = MaskData(mask_img=synthetic_mask_img, space="MNI152NLin6Asym", resolution=2)
 
     # Note: This test will fail until implementation exists
     # It defines the expected behavior
@@ -140,6 +140,8 @@ def test_structural_network_mapping_returns_mask_data(synthetic_mask_img, temp_c
         analysis.run(mask_data)
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_structural_network_mapping_result_structure(temp_connectome):
     """Test that results should contain expected keys and data types."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -157,6 +159,8 @@ def test_structural_network_mapping_result_structure(temp_connectome):
     assert expected_keys is not None
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_structural_network_mapping_accepts_n_jobs(temp_connectome):
     """Test that StructuralNetworkMapping accepts n_jobs parameter for MRtrix."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -165,7 +169,11 @@ def test_structural_network_mapping_accepts_n_jobs(temp_connectome):
     assert analysis.n_jobs == 8
 
 
-def test_structural_network_mapping_preserves_input_immutability(temp_connectome, synthetic_mask_img):
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
+def test_structural_network_mapping_preserves_input_immutability(
+    temp_connectome, synthetic_mask_img
+):
     """Test that SNM does not modify the input MaskData object."""
     from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -179,7 +187,6 @@ def test_structural_network_mapping_preserves_input_immutability(temp_connectome
 
     # Store original state
     original_metadata = mask_data.metadata.copy()
-    original_results_keys = set(mask_data.results.keys())
 
     analysis = StructuralNetworkMapping(connectome_name=temp_connectome)
 
@@ -194,12 +201,14 @@ def test_structural_network_mapping_preserves_input_immutability(temp_connectome
     # Results may be modified by run() - that's expected behavior
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_structural_network_mapping_adds_provenance(temp_connectome, synthetic_mask_img):
     """Test that SNM adds provenance information."""
     from lacuna import MaskData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    mask_data = MaskData(
+    MaskData(
         mask_img=synthetic_mask_img,
         space="MNI152NLin6Asym",
         resolution=2,
@@ -295,6 +304,8 @@ def test_batch_strategy_is_parallel():
     assert StructuralNetworkMapping.batch_strategy == "parallel"
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_provenance_includes_memory_settings(temp_connectome):
     """Test that provenance includes memory management settings."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -319,6 +330,8 @@ def test_provenance_includes_memory_settings(temp_connectome):
 # ============================================================================
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_parcellation_parameter_optional(temp_connectome):
     """Test that parcellation_name is an optional parameter."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -328,6 +341,8 @@ def test_parcellation_parameter_optional(temp_connectome):
     assert analysis.parcellation_name is None
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_parcellation_accepts_bundled_name(temp_connectome):
     """Test that parcellation_name can be a bundled atlas name string."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -340,6 +355,8 @@ def test_parcellation_accepts_bundled_name(temp_connectome):
     assert analysis.parcellation_name == "Schaefer2018_100Parcels7Networks"
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_compute_lesioned_parameter(temp_connectome):
     """Test that compute_lesioned parameter is available."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
@@ -408,6 +425,8 @@ def test_matrix_statistics_structure():
     assert expected_stats_with_lesioned is not None
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
 def test_lesioned_connectivity_optional(temp_connectome):
     """Test that lesioned connectivity is only computed when requested."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping

@@ -37,7 +37,7 @@ class TestConnectivityMatrixComputation:
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=1000,
-            description="Test mock connectome"
+            description="Test mock connectome",
         )
 
         with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
@@ -345,7 +345,7 @@ class TestMatrixDimensions:
                     resolution=2.0,
                     tractogram_path=tractogram_path,
                     tdi_path=tdi_path,
-                    n_subjects=100
+                    n_subjects=100,
                 )
 
                 with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):

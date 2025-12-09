@@ -110,15 +110,11 @@ class TestBatchProcessAPI:
         analysis = MockAnalysis()
 
         # Test with progress bar disabled
-        result = batch_process(
-            inputs=[synthetic_mask_data], analysis=analysis, show_progress=False
-        )
+        result = batch_process(inputs=[synthetic_mask_data], analysis=analysis, show_progress=False)
         assert isinstance(result, list)
 
         # Test with progress bar enabled (should not raise)
-        result = batch_process(
-            inputs=[synthetic_mask_data], analysis=analysis, show_progress=True
-        )
+        result = batch_process(inputs=[synthetic_mask_data], analysis=analysis, show_progress=True)
         assert isinstance(result, list)
 
     def test_batch_process_accepts_strategy_parameter(self, synthetic_mask_data):

@@ -232,15 +232,13 @@ class TestCacheConfiguration:
         source_affine = REFERENCE_AFFINES[("MNI152NLin6Asym", 2)]
 
         # Add multiple large results to trigger eviction
-        for i in range(5):
+        for _ in range(5):
             # Create ~0.5 MB image
             data = np.random.rand(80, 80, 20).astype(np.float32)
             img = nib.Nifti1Image(data, source_affine)
             result = nib.Nifti1Image(data, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
 
-            cache.put_result(
-                img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result
-            )
+            cache.put_result(img, "MNI152NLin6Asym", "MNI152NLin2009cAsym", result)
 
         # Check that evictions occurred
         stats = cache.get_stats()

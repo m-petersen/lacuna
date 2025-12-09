@@ -3,12 +3,12 @@
 Tests the BIDS-style result key access helper.
 """
 
-import numpy as np
 import nibabel as nib
+import numpy as np
 import pytest
 
-from lacuna.core.mask_data import MaskData
 from lacuna.core.keys import build_result_key
+from lacuna.core.mask_data import MaskData
 
 
 @pytest.fixture

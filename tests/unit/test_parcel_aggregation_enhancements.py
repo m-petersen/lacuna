@@ -19,21 +19,18 @@ def sample_voxel_map(tmp_path):
     data = np.random.rand(*shape).astype(np.float32)
 
     # MNI152NLin6Asym 2mm affine
-    affine = np.array([
-        [-2., 0., 0., 90.],
-        [0., 2., 0., -126.],
-        [0., 0., 2., -72.],
-        [0., 0., 0., 1.]
-    ])
+    affine = np.array(
+        [
+            [-2.0, 0.0, 0.0, 90.0],
+            [0.0, 2.0, 0.0, -126.0],
+            [0.0, 0.0, 2.0, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
     img = nib.Nifti1Image(data, affine)
 
-    return VoxelMap(
-        name="TestMap",
-        data=img,
-        space="MNI152NLin6Asym",
-        resolution=2.0
-    )
+    return VoxelMap(name="TestMap", data=img, space="MNI152NLin6Asym", resolution=2.0)
 
 
 @pytest.fixture
@@ -44,22 +41,20 @@ def sample_mask_data(tmp_path):
     mask = np.random.rand(*shape) > 0.5
 
     # MNI152NLin6Asym 2mm affine
-    affine = np.array([
-        [-2., 0., 0., 90.],
-        [0., 2., 0., -126.],
-        [0., 0., 2., -72.],
-        [0., 0., 0., 1.]
-    ])
+    affine = np.array(
+        [
+            [-2.0, 0.0, 0.0, 90.0],
+            [0.0, 2.0, 0.0, -126.0],
+            [0.0, 0.0, 2.0, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
     mask_img = nib.Nifti1Image(mask.astype(np.float32), affine)
 
     mask_data = MaskData(
         mask_img=mask_img,
-        metadata={
-            "subject_id": "test001",
-            "space": "MNI152NLin6Asym",
-            "resolution": 2
-        }
+        metadata={"subject_id": "test001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Add a VoxelMap result with snake_case key using add_result (immutable pattern)
@@ -67,7 +62,7 @@ def sample_mask_data(tmp_path):
         name="correlation_map",
         data=nib.Nifti1Image(np.random.rand(*shape).astype(np.float32), affine),
         space="MNI152NLin6Asym",
-        resolution=2.0
+        resolution=2.0,
     )
 
     return mask_data.add_result("DemoAnalysis", {"correlation_map": voxel_map})
@@ -79,14 +74,14 @@ class TestVoxelMapDirectInput:
     def test_voxelmap_direct_input(self, sample_voxel_map):
         """Test ParcelAggregation accepts VoxelMap directly."""
         analysis = ParcelAggregation(
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            parcel_names=["Schaefer2018_100Parcels7Networks"], aggregation="mean"
         )
 
         result = analysis.run(sample_voxel_map)
 
         # Should return ParcelData
         from lacuna.core.data_types import ParcelData
+
         assert isinstance(result, ParcelData)
         assert len(result.data) > 0
         assert result.aggregation_method == "mean"
@@ -107,16 +102,15 @@ class TestVoxelMapDirectInput:
             metadata={
                 "subject_id": "test_equivalence",
                 "space": sample_voxel_map.space,
-                "resolution": sample_voxel_map.resolution
-            }
+                "resolution": sample_voxel_map.resolution,
+            },
         )
         # Store VoxelMap in results (this is what we're actually aggregating)
         mask_data = mask_data.add_result("TestAnalysis", {"test_map": sample_voxel_map})
 
         # Method 1: Direct VoxelMap input (new T149 feature)
         analysis_direct = ParcelAggregation(
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            parcel_names=["Schaefer2018_100Parcels7Networks"], aggregation="mean"
         )
         result_direct = analysis_direct.run(sample_voxel_map)
 
@@ -124,7 +118,7 @@ class TestVoxelMapDirectInput:
         analysis_indirect = ParcelAggregation(
             source="TestAnalysis.test_map",
             parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            aggregation="mean",
         )
         result_indirect = analysis_indirect.run(mask_data)
 
@@ -136,6 +130,7 @@ class TestVoxelMapDirectInput:
 
         # Both should return ParcelData
         from lacuna.core.data_types import ParcelData
+
         assert isinstance(result_direct, ParcelData)
         assert isinstance(indirect_parcel, ParcelData)
 
@@ -149,27 +144,28 @@ class TestVoxelMapDirectInput:
         for region in result_direct.data.keys():
             direct_value = result_direct.data[region]
             indirect_value = indirect_parcel.data[region]
-            assert abs(direct_value - indirect_value) < 1e-6, \
-                f"Region {region}: direct={direct_value}, indirect={indirect_value}"
+            assert (
+                abs(direct_value - indirect_value) < 1e-6
+            ), f"Region {region}: direct={direct_value}, indirect={indirect_value}"
 
     def test_voxelmap_preserves_metadata(self, sample_voxel_map):
         """Test VoxelMap metadata is used for space/resolution."""
         analysis = ParcelAggregation(
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            parcel_names=["Schaefer2018_100Parcels7Networks"], aggregation="mean"
         )
 
         result = analysis.run(sample_voxel_map)
 
         # Metadata should include source VoxelMap info
-        assert "source_space" in result.metadata or result.metadata.get("space") == "MNI152NLin6Asym"
+        assert (
+            "source_space" in result.metadata or result.metadata.get("space") == "MNI152NLin6Asym"
+        )
         assert result.metadata.get("source_resolution") == 2.0 or "resolution" in result.metadata
 
     def test_voxelmap_list_input(self, sample_voxel_map):
         """Test list of VoxelMaps returns list of ParcelData."""
         analysis = ParcelAggregation(
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            parcel_names=["Schaefer2018_100Parcels7Networks"], aggregation="mean"
         )
 
         # Create list of VoxelMaps
@@ -181,6 +177,7 @@ class TestVoxelMapDirectInput:
         assert isinstance(results, list)
         assert len(results) == 3
         from lacuna.core.data_types import ParcelData
+
         assert all(isinstance(r, ParcelData) for r in results)
 
 
@@ -192,7 +189,7 @@ class TestMultiSourceAggregation:
         analysis = ParcelAggregation(
             source=["mask_img", "DemoAnalysis.correlation_map"],
             parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            aggregation="mean",
         )
 
         result = analysis.run(sample_mask_data)
@@ -210,7 +207,7 @@ class TestMultiSourceAggregation:
         analysis = ParcelAggregation(
             source=["mask_img", "DemoAnalysis.correlation_map"],
             parcel_names=["Schaefer2018_100Parcels7Networks"],
-            aggregation="mean"
+            aggregation="mean",
         )
 
         result = analysis.run(sample_mask_data)
@@ -225,17 +222,13 @@ class TestMultiSourceAggregation:
     def test_multi_source_empty_list_raises(self):
         """Test empty source list raises ValueError."""
         with pytest.raises(ValueError, match="source cannot be empty"):
-            ParcelAggregation(
-                source=[],
-                parcel_names=["Schaefer2018_100Parcels7Networks"]
-            )
+            ParcelAggregation(source=[], parcel_names=["Schaefer2018_100Parcels7Networks"])
 
     def test_multi_source_invalid_type_raises(self):
         """Test invalid source type raises TypeError."""
         with pytest.raises(TypeError, match="source must be str"):
             ParcelAggregation(
-                source=123,  # Invalid type
-                parcel_names=["Schaefer2018_100Parcels7Networks"]
+                source=123, parcel_names=["Schaefer2018_100Parcels7Networks"]  # Invalid type
             )
 
 
@@ -247,13 +240,13 @@ class TestNilearnWarningSuppression:
         analysis = ParcelAggregation(
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean",
-            log_level=0  # Quiet mode
+            log_level=0,  # Quiet mode
         )
 
         # This should not raise any warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = analysis.run(sample_mask_data)
+            analysis.run(sample_mask_data)
 
             # Filter for nilearn warnings
             nilearn_warnings = [warn for warn in w if "nilearn" in str(warn.message).lower()]
@@ -275,17 +268,17 @@ class TestNilearnWarningSuppression:
             mask_img=mask_img,
             space="MNI152NLin6Asym",
             resolution=3.0,
-            metadata={"subject_id": "test002"}
+            metadata={"subject_id": "test002"},
         )
 
         analysis = ParcelAggregation(
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean",
-            log_level=2  # Verbose mode
+            log_level=2,  # Verbose mode
         )
 
         # This may raise warnings about resampling
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
             result = analysis.run(mask_data)
 
@@ -312,13 +305,13 @@ class TestAtlasResamplingLogging:
             mask_img=mask_img,
             space="MNI152NLin6Asym",
             resolution=3.0,
-            metadata={"subject_id": "test003"}
+            metadata={"subject_id": "test003"},
         )
 
         analysis = ParcelAggregation(
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean",
-            log_level=3  # DEBUG mode
+            log_level=3,  # DEBUG mode
         )
 
         with caplog.at_level(logging.DEBUG):
@@ -335,16 +328,15 @@ class TestAtlasResamplingLogging:
         analysis = ParcelAggregation(
             parcel_names=["Schaefer2018_100Parcels7Networks"],
             aggregation="mean",
-            log_level=0  # Quiet mode
+            log_level=0,  # Quiet mode
         )
 
         with caplog.at_level(logging.INFO):
-            result = analysis.run(sample_mask_data)
-            captured = capsys.readouterr()
+            analysis.run(sample_mask_data)
+            capsys.readouterr()
 
             # At quiet mode, should have minimal/no output
             # Note: resampling messages are print(), not log()
             assert len(caplog.records) == 0 or all(
                 record.levelno >= logging.WARNING for record in caplog.records
             )
-

@@ -105,26 +105,56 @@ def test_transform_metadata_has_required_fields():
 
 def test_load_transform_returns_path(tmp_path, monkeypatch):
     """Test that load_transform returns a Path object."""
+    import importlib
     import sys
     from pathlib import Path
 
-    # Mock templateflow to return test path
-    def mock_tflow_get(*args, **kwargs):
-        test_file = tmp_path / "test_transform.h5"
-        test_file.write_bytes(b"mock transform data")  # Write some content
-        return str(test_file)
+    # Save original modules to restore later
+    saved_modules = {}
+    modules_to_save = []
+    for k in list(sys.modules.keys()):
+        if "templateflow" in k or "lacuna.assets.transforms" in k:
+            saved_modules[k] = sys.modules[k]
+            modules_to_save.append(k)
 
-    # Create mock templateflow.api module
-    mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
-    monkeypatch.setitem(sys.modules, "templateflow.api", mock_tflow_module)
+    try:
+        # Mock templateflow to return test path
+        def mock_tflow_get(*args, **kwargs):
+            test_file = tmp_path / "test_transform.h5"
+            test_file.write_bytes(b"mock transform data")  # Write some content
+            return str(test_file)
 
-    # Must import after mocking
-    from lacuna.assets.transforms import load_transform
+        # Create mock templateflow.api module
+        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
 
-    result = load_transform("MNI152NLin6Asym_to_MNI152NLin2009cAsym")
+        # Clear existing imports to ensure mock is picked up
+        for mod in modules_to_save:
+            if mod in sys.modules:
+                del sys.modules[mod]
 
-    assert isinstance(result, Path)
-    assert result.exists()
+        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
+        sys.modules["templateflow.api"] = mock_tflow_module
+
+        # Must import after mocking
+        from lacuna.assets.transforms.loader import load_transform
+
+        result = load_transform("MNI152NLin6Asym_to_MNI152NLin2009cAsym")
+
+        assert isinstance(result, Path)
+        assert result.exists()
+    finally:
+        # Restore original modules
+        for mod_name in saved_modules:
+            sys.modules[mod_name] = saved_modules[mod_name]
+        # Clean up any mock modules added
+        mocked_keys = [
+            k for k in sys.modules.keys() if "templateflow" in k and k not in saved_modules
+        ]
+        for k in mocked_keys:
+            del sys.modules[k]
+        # Reload the loader to restore correct state
+        if "lacuna.assets.transforms.loader" in sys.modules:
+            importlib.reload(sys.modules["lacuna.assets.transforms.loader"])
 
 
 def test_load_transform_raises_on_invalid_name():
@@ -137,24 +167,54 @@ def test_load_transform_raises_on_invalid_name():
 
 def test_is_transform_cached_returns_bool(tmp_path, monkeypatch):
     """Test that is_transform_cached returns boolean."""
+    import importlib
     import sys
 
-    # Mock the cache check
-    def mock_tflow_get(*args, **kwargs):
-        test_file = tmp_path / "cached_transform.h5"
-        test_file.write_bytes(b"mock transform data")  # Write some content
-        return str(test_file)
+    # Save original modules to restore later
+    saved_modules = {}
+    modules_to_save = []
+    for k in list(sys.modules.keys()):
+        if "templateflow" in k or "lacuna.assets.transforms" in k:
+            saved_modules[k] = sys.modules[k]
+            modules_to_save.append(k)
 
-    # Create mock templateflow.api module
-    mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
-    monkeypatch.setitem(sys.modules, "templateflow.api", mock_tflow_module)
+    try:
+        # Mock the cache check
+        def mock_tflow_get(*args, **kwargs):
+            test_file = tmp_path / "cached_transform.h5"
+            test_file.write_bytes(b"mock transform data")  # Write some content
+            return str(test_file)
 
-    # Must import after mocking
-    from lacuna.assets.transforms import is_transform_cached
+        # Create mock templateflow.api module
+        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
 
-    result = is_transform_cached("MNI152NLin6Asym_to_MNI152NLin2009cAsym")
+        # Clear existing imports to ensure mock is picked up
+        for mod in modules_to_save:
+            if mod in sys.modules:
+                del sys.modules[mod]
 
-    assert isinstance(result, bool)
+        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
+        sys.modules["templateflow.api"] = mock_tflow_module
+
+        # Must import after mocking
+        from lacuna.assets.transforms.loader import is_transform_cached
+
+        result = is_transform_cached("MNI152NLin6Asym_to_MNI152NLin2009cAsym")
+
+        assert isinstance(result, bool)
+    finally:
+        # Restore original modules
+        for mod_name in saved_modules:
+            sys.modules[mod_name] = saved_modules[mod_name]
+        # Clean up any mock modules added
+        mocked_keys = [
+            k for k in sys.modules.keys() if "templateflow" in k and k not in saved_modules
+        ]
+        for k in mocked_keys:
+            del sys.modules[k]
+        # Reload the loader to restore correct state
+        if "lacuna.assets.transforms.loader" in sys.modules:
+            importlib.reload(sys.modules["lacuna.assets.transforms.loader"])
 
 
 def test_transform_names_follow_convention():

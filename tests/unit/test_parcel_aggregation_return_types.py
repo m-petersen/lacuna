@@ -140,9 +140,9 @@ def test_atlas_aggregation_return_types_mutually_exclusive():
     result_list = analysis.run(nifti_list)
 
     # All return types should be different
-    assert type(result_maskdata) != type(result_nibabel)
-    assert type(result_nibabel) != type(result_list)
-    assert type(result_maskdata) != type(result_list)
+    assert type(result_maskdata) is not type(result_nibabel)
+    assert type(result_nibabel) is not type(result_list)
+    assert type(result_maskdata) is not type(result_list)
 
     # Specific type checks
     assert isinstance(result_maskdata, MaskData)

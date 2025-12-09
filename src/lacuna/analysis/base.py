@@ -494,6 +494,7 @@ class BaseAnalysis(ABC):
         ...     return __version__
         """
         from .. import __version__
+
         return __version__
 
     def _validate_and_transform_space(

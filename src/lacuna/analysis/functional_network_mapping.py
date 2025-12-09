@@ -1466,9 +1466,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             "log_level": self.log_level,
         }
 
-    def _transform_results_to_lesion_space(
-        self, results: dict, mask_data: MaskData
-    ) -> dict:
+    def _transform_results_to_lesion_space(self, results: dict, mask_data: MaskData) -> dict:
         """Transform VoxelMap results back to lesion space.
 
         Parameters
@@ -1488,7 +1486,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         ValueError
             If mask_data lacks space or resolution metadata
         """
-        from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
+        from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
         from lacuna.spatial.transform import transform_image
 
         # Get reference affine for target space
@@ -1502,7 +1500,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         target_space = CoordinateSpace(
             identifier=mask_data.space,
             resolution=mask_data.resolution,
-            reference_affine=REFERENCE_AFFINES[target_key]
+            reference_affine=REFERENCE_AFFINES[target_key],
         )
 
         self.logger.info(

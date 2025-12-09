@@ -3,8 +3,6 @@
 Tests fuzzy matching utilities for error message suggestions.
 """
 
-import pytest
-
 from lacuna.utils.suggestions import format_suggestions, suggest_similar
 
 

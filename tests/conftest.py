@@ -11,6 +11,85 @@ import numpy as np
 import pytest
 
 
+def _check_mrtrix_available():
+    """Check if MRtrix3 is available for tests."""
+    try:
+        from lacuna.utils.mrtrix import check_mrtrix_available
+
+        check_mrtrix_available()
+        return True
+    except (ImportError, Exception):
+        return False
+
+
+def _check_templateflow_available():
+    """Check if TemplateFlow is available and usable.
+
+    Returns True only if TemplateFlow can be imported and at least one
+    template is already cached. This prevents CI failures when
+    TemplateFlow tries to download files in parallel tests.
+    """
+    try:
+        import importlib.util
+        import os
+        from pathlib import Path
+
+        # Check if templateflow is available without importing it
+        if importlib.util.find_spec("templateflow") is None:
+            return False
+
+        home = Path.home()
+        templateflow_home = home / ".cache" / "templateflow"
+
+        # Also check TEMPLATEFLOW_HOME env var
+        if "TEMPLATEFLOW_HOME" in os.environ:
+            templateflow_home = Path(os.environ["TEMPLATEFLOW_HOME"])
+
+        # Check if at least one common template is cached
+        cached_templates = list(templateflow_home.glob("tpl-MNI152*"))
+        if not cached_templates:
+            return False
+
+        return True
+    except (ImportError, Exception):
+        return False
+
+
+# Cache the availability checks to avoid repeated calls
+_MRTRIX_AVAILABLE = None
+_TEMPLATEFLOW_AVAILABLE = None
+
+
+def pytest_configure(config):
+    """Cache availability checks at pytest startup."""
+    global _MRTRIX_AVAILABLE, _TEMPLATEFLOW_AVAILABLE
+    _MRTRIX_AVAILABLE = _check_mrtrix_available()
+    _TEMPLATEFLOW_AVAILABLE = _check_templateflow_available()
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip tests that require unavailable dependencies."""
+    for item in items:
+        # Skip tests marked with requires_mrtrix if MRtrix3 is not available
+        if "requires_mrtrix" in [m.name for m in item.iter_markers()]:
+            if not _MRTRIX_AVAILABLE:
+                item.add_marker(pytest.mark.skip(reason="MRtrix3 not available"))
+
+        # Skip tests marked with requires_templateflow if TemplateFlow is not cached
+        if "requires_templateflow" in [m.name for m in item.iter_markers()]:
+            if not _TEMPLATEFLOW_AVAILABLE:
+                item.add_marker(pytest.mark.skip(reason="TemplateFlow not available or not cached"))
+
+
+# Export helper functions for use in test files (for backward compatibility)
+requires_mrtrix_skipif = pytest.mark.skipif(
+    not _check_mrtrix_available(), reason="MRtrix3 not available"
+)
+requires_templateflow_skipif = pytest.mark.skipif(
+    not _check_templateflow_available(), reason="TemplateFlow not available or not cached"
+)
+
+
 @pytest.fixture
 def synthetic_mask_img():
     """Create a synthetic 3D lesion mask for testing."""

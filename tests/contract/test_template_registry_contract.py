@@ -116,26 +116,56 @@ def test_template_metadata_has_required_fields():
 
 def test_load_template_returns_path(tmp_path, monkeypatch):
     """Test that load_template returns a Path object."""
+    import importlib
     import sys
     from pathlib import Path
 
-    # Mock templateflow to return test path
-    def mock_tflow_get(*args, **kwargs):
-        test_file = tmp_path / "test_template.nii.gz"
-        test_file.touch()
-        return str(test_file)
+    # Save original modules to restore later
+    saved_modules = {}
+    modules_to_save = []
+    for k in list(sys.modules.keys()):
+        if "templateflow" in k or "lacuna.assets.templates" in k:
+            saved_modules[k] = sys.modules[k]
+            modules_to_save.append(k)
 
-    # Create mock templateflow.api module
-    mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
-    monkeypatch.setitem(sys.modules, "templateflow.api", mock_tflow_module)
+    try:
+        # Mock templateflow to return test path
+        def mock_tflow_get(*args, **kwargs):
+            test_file = tmp_path / "test_template.nii.gz"
+            test_file.touch()
+            return str(test_file)
 
-    # Must import after mocking
-    from lacuna.assets.templates import load_template
+        # Create mock templateflow.api module
+        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
 
-    result = load_template("MNI152NLin2009cAsym_res-1")
+        # Clear existing imports to ensure mock is picked up
+        for mod in modules_to_save:
+            if mod in sys.modules:
+                del sys.modules[mod]
 
-    assert isinstance(result, Path)
-    assert result.exists()
+        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
+        sys.modules["templateflow.api"] = mock_tflow_module
+
+        # Must import after mocking
+        from lacuna.assets.templates.loader import load_template
+
+        result = load_template("MNI152NLin2009cAsym_res-1")
+
+        assert isinstance(result, Path)
+        assert result.exists()
+    finally:
+        # Restore original modules
+        for mod_name in saved_modules:
+            sys.modules[mod_name] = saved_modules[mod_name]
+        # Clean up any mock modules added
+        mocked_keys = [
+            k for k in sys.modules.keys() if "templateflow" in k and k not in saved_modules
+        ]
+        for k in mocked_keys:
+            del sys.modules[k]
+        # Reload the loader to restore correct state
+        if "lacuna.assets.templates.loader" in sys.modules:
+            importlib.reload(sys.modules["lacuna.assets.templates.loader"])
 
 
 def test_load_template_raises_on_invalid_name():
@@ -148,24 +178,54 @@ def test_load_template_raises_on_invalid_name():
 
 def test_is_template_cached_returns_bool(tmp_path, monkeypatch):
     """Test that is_template_cached returns boolean."""
+    import importlib
     import sys
 
-    # Mock the cache check
-    def mock_tflow_get(*args, **kwargs):
-        test_file = tmp_path / "cached_template.nii.gz"
-        test_file.touch()
-        return str(test_file)
+    # Save original modules to restore later
+    saved_modules = {}
+    modules_to_save = []
+    for k in list(sys.modules.keys()):
+        if "templateflow" in k or "lacuna.assets.templates" in k:
+            saved_modules[k] = sys.modules[k]
+            modules_to_save.append(k)
 
-    # Create mock templateflow.api module
-    mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
-    monkeypatch.setitem(sys.modules, "templateflow.api", mock_tflow_module)
+    try:
+        # Mock the cache check
+        def mock_tflow_get(*args, **kwargs):
+            test_file = tmp_path / "cached_template.nii.gz"
+            test_file.touch()
+            return str(test_file)
 
-    # Must import after mocking
-    from lacuna.assets.templates import is_template_cached
+        # Create mock templateflow.api module
+        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
 
-    result = is_template_cached("MNI152NLin2009cAsym_res-1")
+        # Clear existing imports to ensure mock is picked up
+        for mod in modules_to_save:
+            if mod in sys.modules:
+                del sys.modules[mod]
 
-    assert isinstance(result, bool)
+        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
+        sys.modules["templateflow.api"] = mock_tflow_module
+
+        # Must import after mocking
+        from lacuna.assets.templates.loader import is_template_cached
+
+        result = is_template_cached("MNI152NLin2009cAsym_res-1")
+
+        assert isinstance(result, bool)
+    finally:
+        # Restore original modules
+        for mod_name in saved_modules:
+            sys.modules[mod_name] = saved_modules[mod_name]
+        # Clean up any mock modules added
+        mocked_keys = [
+            k for k in sys.modules.keys() if "templateflow" in k and k not in saved_modules
+        ]
+        for k in mocked_keys:
+            del sys.modules[k]
+        # Reload the loader to restore correct state
+        if "lacuna.assets.templates.loader" in sys.modules:
+            importlib.reload(sys.modules["lacuna.assets.templates.loader"])
 
 
 def test_template_integration_with_templateflow(tmp_path, monkeypatch):
@@ -173,41 +233,59 @@ def test_template_integration_with_templateflow(tmp_path, monkeypatch):
     import importlib
     import sys
 
-    # Track TemplateFlow API calls
-    calls = []
+    # Save original modules to restore later
+    saved_modules = {}
+    modules_to_save = ["templateflow", "templateflow.api", "lacuna.assets.templates.loader"]
+    for mod_name in modules_to_save:
+        if mod_name in sys.modules:
+            saved_modules[mod_name] = sys.modules[mod_name]
 
-    def mock_tflow_get(*args, **kwargs):
-        calls.append({"args": args, "kwargs": kwargs})
-        test_file = tmp_path / "template.nii.gz"
-        test_file.touch()
-        return str(test_file)
+    try:
+        # Track TemplateFlow API calls
+        calls = []
 
-    # Create mock templateflow.api module
-    mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
-    
-    # Remove any existing templateflow.api from sys.modules to ensure fresh import
-    if "templateflow.api" in sys.modules:
-        del sys.modules["templateflow.api"]
-    if "templateflow" in sys.modules:
-        del sys.modules["templateflow"]
-    
-    monkeypatch.setitem(sys.modules, "templateflow.api", mock_tflow_module)
-    monkeypatch.setitem(sys.modules, "templateflow", type("MockTemplateFlow", (), {"api": mock_tflow_module})())
+        def mock_tflow_get(*args, **kwargs):
+            calls.append({"args": args, "kwargs": kwargs})
+            test_file = tmp_path / "template.nii.gz"
+            test_file.touch()
+            return str(test_file)
 
-    # Must import after mocking and reload to pick up mock
-    from lacuna.assets.templates import loader
-    importlib.reload(loader)
-    from lacuna.assets.templates.loader import load_template
+        # Create mock templateflow.api module
+        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
 
-    # Load template
-    load_template("MNI152NLin2009cAsym_res-1")
+        # Remove any existing templateflow.api from sys.modules to ensure fresh import
+        if "templateflow.api" in sys.modules:
+            del sys.modules["templateflow.api"]
+        if "templateflow" in sys.modules:
+            del sys.modules["templateflow"]
+        if "lacuna.assets.templates.loader" in sys.modules:
+            del sys.modules["lacuna.assets.templates.loader"]
 
-    # Should have called TemplateFlow API
-    assert len(calls) == 1
-    call = calls[0]
+        sys.modules["templateflow.api"] = mock_tflow_module
+        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
 
-    # Check that space, resolution, and modality were passed
-    assert "MNI152NLin2009cAsym" in str(call)
+        # Must import after mocking to pick up mock
+        from lacuna.assets.templates.loader import load_template
+
+        # Load template
+        load_template("MNI152NLin2009cAsym_res-1")
+
+        # Should have called TemplateFlow API
+        assert len(calls) == 1
+        call = calls[0]
+
+        # Check that space, resolution, and modality were passed
+        assert "MNI152NLin2009cAsym" in str(call)
+    finally:
+        # Restore original modules
+        for mod_name in modules_to_save:
+            if mod_name in saved_modules:
+                sys.modules[mod_name] = saved_modules[mod_name]
+            elif mod_name in sys.modules:
+                del sys.modules[mod_name]
+        # Reload the loader to restore correct state
+        if "lacuna.assets.templates.loader" in sys.modules:
+            importlib.reload(sys.modules["lacuna.assets.templates.loader"])
 
 
 def test_template_caching_avoids_redownload(tmp_path, monkeypatch):
@@ -215,42 +293,60 @@ def test_template_caching_avoids_redownload(tmp_path, monkeypatch):
     import importlib
     import sys
 
-    call_count = [0]
-    cache = {}  # Simulate TemplateFlow's internal cache
+    # Save original modules to restore later
+    saved_modules = {}
+    modules_to_save = ["templateflow", "templateflow.api", "lacuna.assets.templates.loader"]
+    for mod_name in modules_to_save:
+        if mod_name in sys.modules:
+            saved_modules[mod_name] = sys.modules[mod_name]
 
-    def mock_tflow_get(*args, **kwargs):
-        # Create a cache key from the args
-        cache_key = str(args) + str(sorted(kwargs.items()))
-        if cache_key not in cache:
-            call_count[0] += 1
-            test_file = tmp_path / f"template_{call_count[0]}.nii.gz"
-            test_file.touch()
-            cache[cache_key] = str(test_file)
-        return cache[cache_key]
+    try:
+        call_count = [0]
+        cache = {}  # Simulate TemplateFlow's internal cache
 
-    # Create mock templateflow.api module
-    mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
+        def mock_tflow_get(*args, **kwargs):
+            # Create a cache key from the args
+            cache_key = str(args) + str(sorted(kwargs.items()))
+            if cache_key not in cache:
+                call_count[0] += 1
+                test_file = tmp_path / f"template_{call_count[0]}.nii.gz"
+                test_file.touch()
+                cache[cache_key] = str(test_file)
+            return cache[cache_key]
 
-    # Remove any existing templateflow from sys.modules to ensure fresh import
-    if "templateflow.api" in sys.modules:
-        del sys.modules["templateflow.api"]
-    if "templateflow" in sys.modules:
-        del sys.modules["templateflow"]
+        # Create mock templateflow.api module
+        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
 
-    monkeypatch.setitem(sys.modules, "templateflow.api", mock_tflow_module)
-    monkeypatch.setitem(sys.modules, "templateflow", type("MockTemplateFlow", (), {"api": mock_tflow_module})())
+        # Remove any existing templateflow from sys.modules to ensure fresh import
+        if "templateflow.api" in sys.modules:
+            del sys.modules["templateflow.api"]
+        if "templateflow" in sys.modules:
+            del sys.modules["templateflow"]
+        if "lacuna.assets.templates.loader" in sys.modules:
+            del sys.modules["lacuna.assets.templates.loader"]
 
-    # Must import after mocking and reload to pick up mock
-    from lacuna.assets.templates import loader
-    importlib.reload(loader)
-    from lacuna.assets.templates.loader import load_template
+        sys.modules["templateflow.api"] = mock_tflow_module
+        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
 
-    # Load twice
-    result1 = load_template("MNI152NLin2009cAsym_res-1")
-    result2 = load_template("MNI152NLin2009cAsym_res-1")
+        # Must import after mocking to pick up mock
+        from lacuna.assets.templates.loader import load_template
 
-    # Should be same path (TemplateFlow caches downloads)
-    assert result1 == result2
+        # Load twice
+        result1 = load_template("MNI152NLin2009cAsym_res-1")
+        result2 = load_template("MNI152NLin2009cAsym_res-1")
+
+        # Should be same path (TemplateFlow caches downloads)
+        assert result1 == result2
+    finally:
+        # Restore original modules
+        for mod_name in modules_to_save:
+            if mod_name in saved_modules:
+                sys.modules[mod_name] = saved_modules[mod_name]
+            elif mod_name in sys.modules:
+                del sys.modules[mod_name]
+        # Reload the loader to restore correct state
+        if "lacuna.assets.templates.loader" in sys.modules:
+            importlib.reload(sys.modules["lacuna.assets.templates.loader"])
 
 
 def test_template_names_follow_convention():

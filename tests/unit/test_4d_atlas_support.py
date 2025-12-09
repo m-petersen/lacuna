@@ -10,6 +10,7 @@ Tests cover:
 
 import nibabel as nib
 import numpy as np
+import pytest
 
 from lacuna import MaskData
 from lacuna.analysis import RegionalDamage
@@ -151,6 +152,8 @@ class Test4DAtlasDetection:
 class Test4DAtlasTransformation:
     """Test volume-by-volume transformation of 4D atlases."""
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_4d_atlas_real_world_scenario(self, tmp_path):
         """Test transformation with realistic 4D atlas scenario (like HCP1065)."""
         # This test mimics the actual error scenario:
@@ -295,6 +298,8 @@ class Test4DAtlasTransformation:
                 val in [0, 1, 2] for val in unique_vals
             ), f"Volume {vol_idx} has unexpected values: {unique_vals}"
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_4d_atlas_different_spaces(self, tmp_path):
         """4D atlas transformation should work across different coordinate spaces."""
         # This test will verify that the transformation works when

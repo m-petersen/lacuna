@@ -45,9 +45,7 @@ def test_bids_fixtures_create_valid_structure(simple_bids_dataset):
     assert (simple_bids_dataset / "sub-002" / "anat").exists()
 
     # Verify lesion mask files exist with BIDS-compliant naming
-    lesion_files = list(
-        (simple_bids_dataset / "sub-001" / "anat").glob("*desc-lesion*mask*.nii*")
-    )
+    lesion_files = list((simple_bids_dataset / "sub-001" / "anat").glob("*desc-lesion*mask*.nii*"))
     assert len(lesion_files) == 1, f"Expected 1 lesion file, found: {lesion_files}"
 
 
@@ -62,8 +60,6 @@ def test_multisession_bids_fixture(multisession_bids_dataset):
 
     # Verify lesion mask files exist
     ses1_files = list(
-        (multisession_bids_dataset / "sub-001" / "ses-01" / "anat").glob(
-            "*desc-lesion*mask*.nii*"
-        )
+        (multisession_bids_dataset / "sub-001" / "ses-01" / "anat").glob("*desc-lesion*mask*.nii*")
     )
     assert len(ses1_files) == 1

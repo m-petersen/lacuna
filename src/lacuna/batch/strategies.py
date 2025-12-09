@@ -19,6 +19,43 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.core.mask_data import MaskData
 
 
+def _process_one_subject(
+    mask_data: MaskData, idx: int, analysis: BaseAnalysis
+) -> tuple[int, MaskData | None]:
+    """
+    Process a single subject with error handling.
+
+    This function is defined at module level to ensure it can be pickled
+    by all multiprocessing backends (including standard 'multiprocessing').
+
+    Parameters
+    ----------
+    mask_data : MaskData
+        The subject data to process
+    idx : int
+        The subject index in the batch
+    analysis : BaseAnalysis
+        The analysis to run on the subject
+
+    Returns
+    -------
+    tuple[int, MaskData | None]
+        Tuple of (index, result) where result is None if processing failed
+    """
+    try:
+        result = analysis.run(mask_data)
+        return idx, result
+    except Exception as e:
+        # Get subject ID from metadata if available
+        subject_id = mask_data.metadata.get("subject_id", f"index_{idx}")
+        warnings.warn(
+            f"Analysis failed for subject {subject_id} (index {idx}): {e}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return idx, None
+
+
 class BatchStrategy(ABC):
     """
     Abstract base class for batch processing strategies.
@@ -159,39 +196,22 @@ class ParallelStrategy(BatchStrategy):
         list[MaskData]
             Successfully processed subjects (failures are filtered out)
         """
-
-        def _process_one(mask_data: MaskData, idx: int) -> tuple[int, MaskData | None]:
-            """Process single subject with error handling."""
-
-            try:
-                result = analysis.run(mask_data)
-                # Note: progress_callback not used here - progress tracking handled differently
-                return idx, result
-            except Exception as e:
-                # Get subject ID from metadata if available
-                subject_id = mask_data.metadata.get("subject_id", f"index_{idx}")
-                warnings.warn(
-                    f"Analysis failed for subject {subject_id} (index {idx}): {e}",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-                return idx, None
-
         # Execute in parallel
         if self.n_jobs == 1:
             # Sequential processing (useful for debugging)
             results = []
             for i, lesion in enumerate(mask_data_list):
-                result = _process_one(lesion, i)
+                result = _process_one_subject(lesion, i, analysis)
                 results.append(result)
                 if progress_callback:
                     progress_callback(i)
         else:
             # Parallel processing with joblib using user-specified backend
-            # Note: We can't pass progress_callback to workers due to pickling issues
-            # Progress bar will update in chunks instead
+            # Uses module-level _process_one_subject for pickle compatibility
+            # with all backends including standard 'multiprocessing'
             results = Parallel(n_jobs=self.n_jobs, backend=self.backend)(
-                delayed(_process_one)(lesion, i) for i, lesion in enumerate(mask_data_list)
+                delayed(_process_one_subject)(lesion, i, analysis)
+                for i, lesion in enumerate(mask_data_list)
             )
             # Update progress bar once for the entire batch (not per-item to avoid duplicates)
             if progress_callback:

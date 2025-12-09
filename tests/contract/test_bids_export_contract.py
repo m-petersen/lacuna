@@ -7,7 +7,6 @@ Contract:  BIDS Derivative Export
 """
 
 import json
-from pathlib import Path
 
 import nibabel as nib
 import numpy as np
@@ -301,9 +300,7 @@ class TestConnectivityMatrixExportContract:
 class TestBatchExportContract:
     """Contract tests for batch BIDS export."""
 
-    def test_batch_export_creates_dataset_description(
-        self, sample_mask_data_for_export, tmp_path
-    ):
+    def test_batch_export_creates_dataset_description(self, sample_mask_data_for_export, tmp_path):
         """Batch export should create single dataset_description.json."""
         from lacuna.io.bids import export_bids_derivatives_batch
 

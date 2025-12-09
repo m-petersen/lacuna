@@ -253,9 +253,7 @@ class ParcelAggregation(BaseAnalysis):
         # Will be populated in _validate_inputs
         self.atlases = []
 
-    def _normalize_sources(
-        self, source: str | list[str] | dict[str, str | list[str]]
-    ) -> list[str]:
+    def _normalize_sources(self, source: str | list[str] | dict[str, str | list[str]]) -> list[str]:
         """
         Normalize source parameter to a list of sources.
 
@@ -322,9 +320,7 @@ class ParcelAggregation(BaseAnalysis):
                 raise TypeError("All items in source list must be strings")
             return source
         else:
-            raise TypeError(
-                f"source must be str, list[str], or dict, got {type(source).__name__}"
-            )
+            raise TypeError(f"source must be str, list[str], or dict, got {type(source).__name__}")
 
     def run(
         self, data: "MaskData | nib.Nifti1Image | list[nib.Nifti1Image]"
@@ -570,7 +566,9 @@ class ParcelAggregation(BaseAnalysis):
         return ParcelData(
             name=f"{self.aggregation}_aggregation",
             data=all_roi_data,
-            parcel_names=self.parcel_names if self.parcel_names else [a["name"] for a in self.atlases],
+            parcel_names=(
+                self.parcel_names if self.parcel_names else [a["name"] for a in self.atlases]
+            ),
             aggregation_method=self.aggregation,
             metadata={
                 "source": "VoxelMap",
@@ -611,7 +609,7 @@ class ParcelAggregation(BaseAnalysis):
                 missing_sources.append(src)
 
         if missing_sources:
-            from lacuna.utils.suggestions import suggest_similar, format_suggestions
+            from lacuna.utils.suggestions import format_suggestions, suggest_similar
 
             suggestions = []
             for missing in missing_sources:
@@ -679,7 +677,9 @@ class ParcelAggregation(BaseAnalysis):
                     if atlas_filename_path.is_absolute():
                         atlas_path = atlas_filename_path
                     else:
-                        atlas_path = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
+                        atlas_path = (
+                            BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
+                        )
 
                     labels_filename_path = Path(atlas.metadata.labels_filename)
                     if labels_filename_path.is_absolute():
@@ -826,7 +826,7 @@ class ParcelAggregation(BaseAnalysis):
         input_resolution = mask_data.resolution
 
         # Collect results with BIDS-style keys
-        all_results: dict[str, "DataContainer"] = {}
+        all_results: dict[str, DataContainer] = {}
 
         # Process each source
         for source in self.sources:
@@ -933,7 +933,7 @@ class ParcelAggregation(BaseAnalysis):
 
         Uses nilearn's NiftiLabelsMasker for robust extraction with automatic
         resampling, masking, and efficient computation.
-        
+
         Note: Suppresses nilearn's verbose label removal warnings at log_level < 2.
 
         Parameters

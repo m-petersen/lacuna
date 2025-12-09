@@ -43,9 +43,7 @@ def test_functional_network_mapping_can_instantiate():
 
     # Create valid H5 file
     with h5py.File(temp_h5, "w") as hf:
-        hf.create_dataset(
-            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
-        )
+        hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
         hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
         hf.create_dataset("mask_affine", data=np.eye(4))
         hf.attrs["mask_shape"] = (91, 109, 91)
@@ -59,7 +57,7 @@ def test_functional_network_mapping_can_instantiate():
             resolution=2.0,
             data_path=temp_h5,
             n_subjects=10,
-            description="Test connectome"
+            description="Test connectome",
         )
         registered = True
 
@@ -91,9 +89,7 @@ def test_functional_network_mapping_has_method_parameter():
 
     # Create valid H5 file
     with h5py.File(temp_h5, "w") as hf:
-        hf.create_dataset(
-            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
-        )
+        hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
         hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
         hf.create_dataset("mask_affine", data=np.eye(4))
         hf.attrs["mask_shape"] = (91, 109, 91)
@@ -106,20 +102,16 @@ def test_functional_network_mapping_has_method_parameter():
             resolution=2.0,
             data_path=temp_h5,
             n_subjects=10,
-            description="Test"
+            description="Test",
         )
         registered = True
 
         # Test BOES method
-        analysis_boes = FunctionalNetworkMapping(
-            connectome_name="test_connectome", method="boes"
-        )
+        analysis_boes = FunctionalNetworkMapping(connectome_name="test_connectome", method="boes")
         assert analysis_boes.method == "boes"
 
         # Test PINI method
-        analysis_pini = FunctionalNetworkMapping(
-            connectome_name="test_connectome", method="pini"
-        )
+        analysis_pini = FunctionalNetworkMapping(connectome_name="test_connectome", method="pini")
         assert analysis_pini.method == "pini"
     finally:
         if registered:
@@ -146,9 +138,7 @@ def test_functional_network_mapping_validates_method():
 
     # Create valid H5 file
     with h5py.File(temp_h5, "w") as hf:
-        hf.create_dataset(
-            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
-        )
+        hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
         hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
         hf.create_dataset("mask_affine", data=np.eye(4))
         hf.attrs["mask_shape"] = (91, 109, 91)
@@ -161,7 +151,7 @@ def test_functional_network_mapping_validates_method():
             resolution=2.0,
             data_path=temp_h5,
             n_subjects=10,
-            description="Test"
+            description="Test",
         )
         registered = True
 
@@ -192,9 +182,7 @@ def test_functional_network_mapping_has_run_method():
 
     # Create valid H5 file
     with h5py.File(temp_h5, "w") as hf:
-        hf.create_dataset(
-            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
-        )
+        hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
         hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
         hf.create_dataset("mask_affine", data=np.eye(4))
         hf.attrs["mask_shape"] = (91, 109, 91)
@@ -207,7 +195,7 @@ def test_functional_network_mapping_has_run_method():
             resolution=2.0,
             data_path=temp_h5,
             n_subjects=10,
-            description="Test"
+            description="Test",
         )
         registered = True
 
@@ -274,9 +262,7 @@ def test_functional_network_mapping_accepts_pini_percentile():
 
     # Create valid H5 file
     with h5py.File(temp_h5, "w") as hf:
-        hf.create_dataset(
-            "timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32)
-        )
+        hf.create_dataset("timeseries", data=np.random.randn(10, 100, 1000).astype(np.float32))
         hf.create_dataset("mask_indices", data=np.array([range(1000)] * 3))
         hf.create_dataset("mask_affine", data=np.eye(4))
         hf.attrs["mask_shape"] = (91, 109, 91)
@@ -289,7 +275,7 @@ def test_functional_network_mapping_accepts_pini_percentile():
             resolution=2.0,
             data_path=temp_h5,
             n_subjects=10,
-            description="Test"
+            description="Test",
         )
         registered = True
 

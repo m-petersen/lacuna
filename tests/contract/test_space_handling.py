@@ -16,10 +16,7 @@ def test_space_requirement_error(synthetic_mask_img):
 
     # Missing 'space' parameter should raise error
     with pytest.raises(ValueError) as exc_info:
-        MaskData(
-            synthetic_mask_img,
-            metadata={"subject_id": "sub-001"}  # No space or resolution
-        )
+        MaskData(synthetic_mask_img, metadata={"subject_id": "sub-001"})  # No space or resolution
 
     error_msg = str(exc_info.value)
     assert "space" in error_msg.lower()
@@ -36,7 +33,7 @@ def test_resolution_requirement_error(synthetic_mask_img):
         MaskData(
             synthetic_mask_img,
             space="MNI152NLin6Asym",  # space provided but not resolution
-            metadata={"subject_id": "sub-001"}
+            metadata={"subject_id": "sub-001"},
         )
 
     error_msg = str(exc_info.value)
@@ -54,12 +51,7 @@ def test_separated_space_resolution_attributes():
     affine = np.eye(4)
     test_img = nib.Nifti1Image(data, affine)
 
-    result = VoxelMap(
-        name="test_map",
-        data=test_img,
-        space="MNI152NLin2009cAsym",
-        resolution=2.0
-    )
+    result = VoxelMap(name="test_map", data=test_img, space="MNI152NLin2009cAsym", resolution=2.0)
 
     # Space and resolution should be separate attributes
     assert hasattr(result, "space")
@@ -79,11 +71,7 @@ def test_supported_spaces_error_message(synthetic_mask_img):
     with pytest.raises(ValueError) as exc_info:
         MaskData(
             synthetic_mask_img,
-            metadata={
-                "subject_id": "sub-001",
-                "space": "UnsupportedSpace",
-                "resolution": 2
-            }
+            metadata={"subject_id": "sub-001", "space": "UnsupportedSpace", "resolution": 2},
         )
 
     error_msg = str(exc_info.value)

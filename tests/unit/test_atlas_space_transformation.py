@@ -43,7 +43,7 @@ def test_atlas_transformed_when_space_mismatch():
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=1000,
-            description="Test structural connectome"
+            description="Test structural connectome",
         )
 
         # Create dummy lesion
@@ -165,7 +165,7 @@ def test_atlas_not_transformed_when_space_matches():
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=1000,
-            description="Test structural connectome"
+            description="Test structural connectome",
         )
         registered = True
 
@@ -273,7 +273,7 @@ def test_atlas_transformation_uses_correct_resolution():
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=1000,
-            description="Test structural connectome"
+            description="Test structural connectome",
         )
 
         # Create dummy lesion

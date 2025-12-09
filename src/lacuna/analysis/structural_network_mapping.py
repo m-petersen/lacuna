@@ -511,10 +511,14 @@ class StructuralNetworkMapping(BaseAnalysis):
                     if atlas_filename_path.is_absolute():
                         self._parcellation_resolved = atlas_filename_path
                     else:
-                        self._parcellation_resolved = BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
+                        self._parcellation_resolved = (
+                            BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
+                        )
 
                     if not self._parcellation_resolved.exists():
-                        raise FileNotFoundError(f"Atlas file not found: {self._parcellation_resolved}")
+                        raise FileNotFoundError(
+                            f"Atlas file not found: {self._parcellation_resolved}"
+                        )
 
             except KeyError as e:
                 available = [a.name for a in list_parcellations()]
@@ -1016,6 +1020,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     def _get_version(self) -> str:
         """Get analysis version for provenance tracking."""
         from .. import __version__
+
         return __version__
 
     def _get_parameters(self) -> dict:
@@ -1038,9 +1043,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             "log_level": self.log_level,
         }
 
-    def _transform_results_to_lesion_space(
-        self, results: dict, mask_data: MaskData
-    ) -> dict:
+    def _transform_results_to_lesion_space(self, results: dict, mask_data: MaskData) -> dict:
         """Transform VoxelMap results back to lesion space.
 
         Parameters
@@ -1060,7 +1063,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         ValueError
             If mask_data lacks space or resolution metadata
         """
-        from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
+        from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
         from lacuna.spatial.transform import transform_image
 
         # Get reference affine for target space
@@ -1074,7 +1077,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         target_space = CoordinateSpace(
             identifier=mask_data.space,
             resolution=mask_data.resolution,
-            reference_affine=REFERENCE_AFFINES[target_key]
+            reference_affine=REFERENCE_AFFINES[target_key],
         )
 
         self.logger.info(
@@ -1086,6 +1089,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         for key, result in results.items():
             # Only transform VoxelMap results
             from lacuna.core.data_types import VoxelMap
+
             if isinstance(result, VoxelMap):
                 # Transform the image
                 transformed_img = transform_image(
@@ -1115,4 +1119,3 @@ class StructuralNetworkMapping(BaseAnalysis):
                 transformed_results[key] = result
 
         return transformed_results
-

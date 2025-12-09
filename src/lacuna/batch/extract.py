@@ -8,7 +8,6 @@ User Story 3: Batch Result Extraction
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any, overload
 
 import nibabel as nib
@@ -268,7 +267,8 @@ def extract_parcel_table(
             if isinstance(parc_filter, str):
                 parc_filter = [parc_filter]
             data_dict = {
-                k: v for k, v in data_dict.items()
+                k: v
+                for k, v in data_dict.items()
                 if any(pf.lower() in k.lower() for pf in parc_filter)
             }
 

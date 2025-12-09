@@ -885,4 +885,3 @@ class MaskData:
         if hint:
             msg = f"{msg} {hint}"
         raise KeyError(msg)
-

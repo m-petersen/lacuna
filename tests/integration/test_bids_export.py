@@ -72,7 +72,9 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     # Verify results JSON files exist (one per result key)
     # Pattern: sub-002_desc-regionaldamage_{key}.json
     results_files = list(results_dir.glob("*_desc-regionaldamage_*.json"))
-    assert len(results_files) >= 1, f"Expected results files, found: {list(results_dir.glob('*.json'))}"
+    assert (
+        len(results_files) >= 1
+    ), f"Expected results files, found: {list(results_dir.glob('*.json'))}"
 
     # Verify one of the results has correct content
     volume_files = list(results_dir.glob("*_desc-regionaldamage_volume_mm3.json"))
@@ -161,6 +163,7 @@ def test_export_and_reload_workflow(tmp_path, synthetic_mask_img):
 
     # Reload mask data
     import nibabel as nib
+
     reloaded_img = nib.load(mask_file)
 
     # Verify data matches
