@@ -11,8 +11,60 @@ import numpy as np
 import pytest
 
 from lacuna.analysis import ParcelAggregation
+from lacuna.assets.parcellations.registry import (
+    register_parcellations_from_directory,
+    unregister_parcellation,
+)
 from lacuna.batch import batch_process
 from lacuna.core.data_types import ParcelData, VoxelMap
+
+
+@pytest.fixture
+def local_test_atlas(tmp_path):
+    """Create and register a local test atlas for batch VoxelMap tests.
+
+    This avoids TemplateFlow downloads for CI.
+    """
+    atlas_dir = tmp_path / "atlases"
+    atlas_dir.mkdir()
+
+    # Use same dimensions as sample_voxelmaps (91, 109, 91)
+    shape = (91, 109, 91)
+    affine = np.array(
+        [
+            [-2.0, 0.0, 0.0, 90.0],
+            [0.0, 2.0, 0.0, -126.0],
+            [0.0, 0.0, 2.0, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+
+    # Create atlas with 5 regions
+    atlas_data = np.zeros(shape, dtype=np.int16)
+    atlas_data[20:40, 30:50, 20:40] = 1
+    atlas_data[40:60, 30:50, 20:40] = 2
+    atlas_data[20:40, 50:70, 20:40] = 3
+    atlas_data[40:60, 50:70, 20:40] = 4
+    atlas_data[30:50, 40:60, 40:60] = 5
+
+    atlas_img = nib.Nifti1Image(atlas_data, affine)
+    atlas_path = atlas_dir / "test_voxelmap_batch_atlas.nii.gz"
+    nib.save(atlas_img, atlas_path)
+
+    # Create labels file
+    labels_path = atlas_dir / "test_voxelmap_batch_atlas_labels.txt"
+    labels_path.write_text("1 Region_A\n2 Region_B\n3 Region_C\n4 Region_D\n5 Region_E\n")
+
+    # Register the atlas
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
+    yield "test_voxelmap_batch_atlas"
+
+    # Cleanup
+    try:
+        unregister_parcellation("test_voxelmap_batch_atlas")
+    except KeyError:
+        pass
 
 
 @pytest.fixture
@@ -49,7 +101,7 @@ def sample_voxelmaps():
 class TestVoxelMapBatchContract:
     """Contract tests for batch processing VoxelMap inputs."""
 
-    def test_batch_process_accepts_voxelmap_list(self, sample_voxelmaps):
+    def test_batch_process_accepts_voxelmap_list(self, sample_voxelmaps, local_test_atlas):
         """
         Contract: batch_process() should accept list[VoxelMap] as input.
 
@@ -59,7 +111,7 @@ class TestVoxelMapBatchContract:
         analysis = ParcelAggregation(
             source="data",  # VoxelMap's data attribute
             aggregation="mean",
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            parcel_names=[local_test_atlas],
         )
 
         # Should not raise - VoxelMap list accepted
@@ -69,7 +121,7 @@ class TestVoxelMapBatchContract:
         assert results is not None
         assert len(results) == 5
 
-    def test_batch_process_voxelmap_returns_parcel_data(self, sample_voxelmaps):
+    def test_batch_process_voxelmap_returns_parcel_data(self, sample_voxelmaps, local_test_atlas):
         """
         Contract: batch_process(list[VoxelMap], ParcelAggregation) returns list with results.
 
@@ -79,7 +131,7 @@ class TestVoxelMapBatchContract:
         - Or list[ParcelData] if single result per input
         """
         analysis = ParcelAggregation(
-            source="data", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="data", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         results = batch_process(sample_voxelmaps, analysis, n_jobs=1, show_progress=False)
@@ -99,12 +151,12 @@ class TestVoxelMapBatchContract:
                 # Direct ParcelData (simplified return)
                 assert isinstance(result, ParcelData)
 
-    def test_batch_process_voxelmap_preserves_order(self, sample_voxelmaps):
+    def test_batch_process_voxelmap_preserves_order(self, sample_voxelmaps, local_test_atlas):
         """
         Contract: Results should maintain the same order as input VoxelMaps.
         """
         analysis = ParcelAggregation(
-            source="data", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="data", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         results = batch_process(sample_voxelmaps, analysis, n_jobs=1, show_progress=False)
@@ -112,7 +164,7 @@ class TestVoxelMapBatchContract:
         # Results should be in same order as input
         assert len(results) == len(sample_voxelmaps)
 
-    def test_batch_process_voxelmap_result_has_identifier(self, sample_voxelmaps):
+    def test_batch_process_voxelmap_result_has_identifier(self, sample_voxelmaps, local_test_atlas):
         """
         Contract: Results should maintain correspondence with input VoxelMaps.
 
@@ -120,7 +172,7 @@ class TestVoxelMapBatchContract:
         same index position.
         """
         analysis = ParcelAggregation(
-            source="data", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="data", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         results = batch_process(sample_voxelmaps, analysis, n_jobs=1, show_progress=False)
@@ -138,7 +190,9 @@ class TestVoxelMapBatchContract:
                 # If it's a MaskData (current behavior), check it has results
                 assert hasattr(result, "results")
 
-    def test_batch_process_rejects_mixed_types(self, sample_voxelmaps, synthetic_mask_img):
+    def test_batch_process_rejects_mixed_types(
+        self, sample_voxelmaps, synthetic_mask_img, local_test_atlas
+    ):
         """
         Contract: batch_process should reject mixed MaskData and VoxelMap lists.
         """
@@ -151,20 +205,16 @@ class TestVoxelMapBatchContract:
         # Mix VoxelMap and MaskData
         mixed_list = [sample_voxelmaps[0], mask_data]
 
-        analysis = ParcelAggregation(
-            source="mask_img", parcel_names=["Schaefer2018_100Parcels7Networks"]
-        )
+        analysis = ParcelAggregation(source="mask_img", parcel_names=[local_test_atlas])
 
         with pytest.raises(TypeError, match="mixed|type"):
             batch_process(mixed_list, analysis, n_jobs=1, show_progress=False)
 
-    def test_batch_process_voxelmap_empty_list_raises(self):
+    def test_batch_process_voxelmap_empty_list_raises(self, local_test_atlas):
         """
         Contract: Empty VoxelMap list should raise ValueError.
         """
-        analysis = ParcelAggregation(
-            source="data", parcel_names=["Schaefer2018_100Parcels7Networks"]
-        )
+        analysis = ParcelAggregation(source="data", parcel_names=[local_test_atlas])
 
         with pytest.raises(ValueError, match="cannot be empty"):
             batch_process([], analysis, n_jobs=1, show_progress=False)
