@@ -8,6 +8,7 @@ loaded via the DataAssetManager integration.
 from dataclasses import is_dataclass
 
 import nibabel as nib
+import numpy as np
 import pytest
 
 
@@ -140,38 +141,81 @@ class TestAtlasRegistryContract:
 class TestAtlasLoaderContract:
     """Contract tests for atlas loading functionality."""
 
+    @pytest.fixture
+    def local_test_atlas(self, tmp_path):
+        """Create and register a local test atlas for testing load_parcellation.
+
+        This avoids TemplateFlow downloads for CI.
+        """
+        from lacuna.assets.parcellations.registry import (
+            register_parcellations_from_directory,
+            unregister_parcellation,
+        )
+
+        atlas_dir = tmp_path / "atlases"
+        atlas_dir.mkdir()
+
+        # Create atlas data
+        shape = (64, 64, 64)
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+
+        atlas_data = np.zeros(shape, dtype=np.int16)
+        atlas_data[15:25, 20:40, 20:40] = 1
+        atlas_data[25:35, 20:40, 20:40] = 2
+        atlas_data[35:45, 20:40, 20:40] = 3
+
+        atlas_img = nib.Nifti1Image(atlas_data, affine)
+        atlas_path = atlas_dir / "test_contract_atlas.nii.gz"
+        nib.save(atlas_img, atlas_path)
+
+        # Create labels file
+        labels_path = atlas_dir / "test_contract_atlas_labels.txt"
+        labels_path.write_text("1 Region_A\n2 Region_B\n3 Region_C\n")
+
+        # Register the atlas
+        register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
+        yield "test_contract_atlas"
+
+        # Cleanup
+        try:
+            unregister_parcellation("test_contract_atlas")
+        except KeyError:
+            pass
+
     def test_load_parcellation_function_exists(self):
         """load_parcellation() function must exist."""
         from lacuna.assets.parcellations.loader import load_parcellation
 
         assert callable(load_parcellation)
 
-    def test_load_parcellation_by_name(self):
+    def test_load_parcellation_by_name(self, local_test_atlas):
         """load_parcellation() must accept atlas name from registry."""
         from lacuna.assets.parcellations.loader import load_parcellation
 
         # Should not raise exception for valid atlas
-        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
+        atlas = load_parcellation(local_test_atlas)
 
         assert atlas is not None
         assert hasattr(atlas, "image"), "Atlas must have 'image' attribute"
         assert hasattr(atlas, "labels"), "Atlas must have 'labels' attribute"
         assert hasattr(atlas, "metadata"), "Atlas must have 'metadata' attribute"
 
-    def test_loaded_atlas_image_is_nifti(self):
+    def test_loaded_atlas_image_is_nifti(self, local_test_atlas):
         """Loaded atlas image must be a nibabel Nifti1Image."""
         from lacuna.assets.parcellations.loader import load_parcellation
 
-        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
+        atlas = load_parcellation(local_test_atlas)
 
         assert isinstance(atlas.image, nib.Nifti1Image)
         assert atlas.image.shape[0] > 0  # Has valid dimensions
 
-    def test_loaded_atlas_labels_is_dict(self):
+    def test_loaded_atlas_labels_is_dict(self, local_test_atlas):
         """Loaded atlas labels must be a dict mapping region_id -> name."""
         from lacuna.assets.parcellations.loader import load_parcellation
 
-        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
+        atlas = load_parcellation(local_test_atlas)
 
         assert isinstance(atlas.labels, dict)
         assert len(atlas.labels) > 0
@@ -180,14 +224,13 @@ class TestAtlasLoaderContract:
             assert isinstance(region_id, int)
             assert isinstance(region_name, str)
 
-    def test_loaded_atlas_metadata_matches_registry(self):
+    def test_loaded_atlas_metadata_matches_registry(self, local_test_atlas):
         """Loaded atlas metadata must match registry entry."""
         from lacuna.assets.parcellations.loader import load_parcellation
         from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY
 
-        atlas_name = "Schaefer2018_100Parcels7Networks"
-        atlas = load_parcellation(atlas_name)
-        expected_metadata = PARCELLATION_REGISTRY[atlas_name]
+        atlas = load_parcellation(local_test_atlas)
+        expected_metadata = PARCELLATION_REGISTRY[local_test_atlas]
 
         assert atlas.metadata.name == expected_metadata.name
         assert atlas.metadata.space == expected_metadata.space
@@ -200,12 +243,12 @@ class TestAtlasLoaderContract:
         with pytest.raises((KeyError, ValueError)):
             load_parcellation("NonexistentAtlas")
 
-    def test_load_parcellation_uses_asset_manager(self):
+    def test_load_parcellation_uses_asset_manager(self, local_test_atlas):
         """load_parcellation() should work without requiring external dependencies."""
         from lacuna.assets.parcellations.loader import load_parcellation
 
-        # Should load bundled atlas without any external parameters
-        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
+        # Should load registered atlas without any external parameters
+        atlas = load_parcellation(local_test_atlas)
 
         assert atlas is not None
 
