@@ -28,7 +28,7 @@ def sample_mask_data():
         mask_img=img,
         space="MNI152NLin6Asym",
         resolution=1.0,
-        metadata={"subject_id": "test_subject"}
+        metadata={"subject_id": "test_subject"},
     )
 
 
@@ -105,14 +105,12 @@ class TestBatchProcessMixedTypeError:
 
     def test_mixed_types_raise_type_error(self, sample_mask_data, sample_voxelmap):
         """batch_process should raise TypeError for mixed inputs."""
-        from lacuna.batch import batch_process
         from lacuna.analysis import ParcelAggregation
+        from lacuna.batch import batch_process
 
         mixed_inputs = [sample_mask_data, sample_voxelmap]
         analysis = ParcelAggregation(
-            source="mask_img",
-            aggregation="mean",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
 
         with pytest.raises(TypeError, match="mixed"):
@@ -120,14 +118,12 @@ class TestBatchProcessMixedTypeError:
 
     def test_error_message_is_descriptive(self, sample_mask_data, sample_voxelmap):
         """TypeError message should explain the issue clearly."""
-        from lacuna.batch import batch_process
         from lacuna.analysis import ParcelAggregation
+        from lacuna.batch import batch_process
 
         mixed_inputs = [sample_mask_data, sample_voxelmap]
         analysis = ParcelAggregation(
-            source="mask_img",
-            aggregation="mean",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
 
         with pytest.raises(TypeError) as exc_info:
@@ -143,24 +139,19 @@ class TestDeprecatedMaskDataListParameter:
 
     def test_mask_data_list_parameter_still_works(self, sample_mask_data):
         """mask_data_list parameter should still work for backward compat."""
-        from lacuna.batch import batch_process
-        from lacuna.analysis import ParcelAggregation
         import warnings
 
+        from lacuna.analysis import ParcelAggregation
+        from lacuna.batch import batch_process
+
         analysis = ParcelAggregation(
-            source="mask_img",
-            aggregation="mean",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
 
         # Should emit deprecation warning but work
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = batch_process(
-                mask_data_list=[sample_mask_data],
-                analysis=analysis,
-                show_progress=False
-            )
+            batch_process(mask_data_list=[sample_mask_data], analysis=analysis, show_progress=False)
             # Should have triggered a deprecation warning
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
@@ -168,14 +159,13 @@ class TestDeprecatedMaskDataListParameter:
 
     def test_cannot_specify_both_inputs_and_mask_data_list(self, sample_mask_data):
         """Should raise ValueError if both inputs and mask_data_list provided."""
-        from lacuna.batch import batch_process
-        from lacuna.analysis import ParcelAggregation
         import warnings
 
+        from lacuna.analysis import ParcelAggregation
+        from lacuna.batch import batch_process
+
         analysis = ParcelAggregation(
-            source="mask_img",
-            aggregation="mean",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
 
         with pytest.raises(ValueError, match="Cannot specify both"):
@@ -185,5 +175,5 @@ class TestDeprecatedMaskDataListParameter:
                     inputs=[sample_mask_data],
                     mask_data_list=[sample_mask_data],
                     analysis=analysis,
-                    show_progress=False
+                    show_progress=False,
                 )

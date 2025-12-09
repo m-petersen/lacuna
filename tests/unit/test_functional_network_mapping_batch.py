@@ -103,7 +103,7 @@ def test_load_mask_info_returns_tuple(mock_connectome_batch):
         resolution=2.0,
         data_path=mock_connectome_batch,
         n_subjects=5,
-        description="Test batch connectome"
+        description="Test batch connectome",
     )
 
     try:
@@ -142,7 +142,7 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
         resolution=2.0,
         data_path=mock_connectome_batch,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -179,7 +179,7 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
         resolution=2.0,
         data_path=mock_connectome_batch,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -209,7 +209,7 @@ def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152)
         resolution=2.0,
         data_path=mock_connectome_batch,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -243,7 +243,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
         resolution=2.0,
         data_path=mock_connectome_batch,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -259,7 +259,11 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
         for i in range(3):
             lesion_copy = MaskData(
                 mask_img=mock_lesion_mni152.mask_img,
-                metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"subject_{i}"},
+                metadata={
+                    "space": "MNI152NLin6Asym",
+                    "resolution": 2,
+                    "subject_id": f"subject_{i}",
+                },
             )
             lesions.append(lesion_copy)
 
@@ -286,7 +290,7 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
         resolution=2.0,
         data_path=mock_connectome_batch,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -333,7 +337,7 @@ def test_load_mask_info_error_handling(tmp_path):
             resolution=2.0,
             data_path=bad_connectome,
             n_subjects=5,
-            description="Test"
+            description="Test",
         )
 
 

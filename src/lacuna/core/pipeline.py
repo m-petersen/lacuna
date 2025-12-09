@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from lacuna.analysis.base import BaseAnalysis
-    from lacuna.core.data_types import VoxelMap
     from lacuna.core.mask_data import MaskData
 
 
@@ -95,7 +94,7 @@ class Pipeline:
         analysis: BaseAnalysis,
         name: str | None = None,
         condition: Any | None = None,
-    ) -> "Pipeline":
+    ) -> Pipeline:
         """
         Add an analysis step to the pipeline.
 
@@ -243,7 +242,7 @@ class Pipeline:
                 lines.append(f"  {i}. {step.name}")
 
             if step.condition is not None:
-                lines.append(f"      (conditional)")
+                lines.append("      (conditional)")
 
         return "\n".join(lines)
 

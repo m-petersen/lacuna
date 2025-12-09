@@ -124,7 +124,8 @@ def load_bids_dataset(
         )
         # Filter to only include lesion-related files
         lesion_files = [
-            f for f in lesion_files
+            f
+            for f in lesion_files
             if "lesion" in f.filename.lower() or "desc-lesion" in f.filename.lower()
         ]
     except Exception:
@@ -421,7 +422,7 @@ def _extract_space_from_filename(filename: str) -> str | None:
 
 
 def export_voxelmap(
-    voxelmap: "VoxelMap",
+    voxelmap: VoxelMap,
     output_dir: str | Path,
     subject_id: str,
     session_id: str | None = None,
@@ -491,7 +492,7 @@ def export_voxelmap(
 
 
 def export_parcel_data(
-    parcel_data: "ParcelData",
+    parcel_data: ParcelData,
     output_dir: str | Path,
     subject_id: str,
     session_id: str | None = None,
@@ -539,10 +540,7 @@ def export_parcel_data(
         raise FileExistsError(f"File exists: {tsv_path}. Use overwrite=True.")
 
     # Create DataFrame
-    df = pd.DataFrame([
-        {"region": k, "value": v}
-        for k, v in parcel_data.data.items()
-    ])
+    df = pd.DataFrame([{"region": k, "value": v} for k, v in parcel_data.data.items()])
 
     # Save TSV
     df.to_csv(tsv_path, sep="\t", index=False)
@@ -564,7 +562,7 @@ def export_parcel_data(
 
 
 def export_connectivity_matrix(
-    matrix: "ConnectivityMatrix",
+    matrix: ConnectivityMatrix,
     output_dir: str | Path,
     subject_id: str,
     session_id: str | None = None,
@@ -792,11 +790,14 @@ def export_bids_derivatives(
     ... )
     """
     import nibabel as nib
+
     from ..core.data_types import (
         ConnectivityMatrix,
-        ParcelData as ParcelDataType,
         ScalarMetric,
         VoxelMap,
+    )
+    from ..core.data_types import (
+        ParcelData as ParcelDataType,
     )
 
     output_dir = Path(output_dir)
@@ -842,8 +843,11 @@ def export_bids_derivatives(
     # Determine which directories we need
     needs_anat = export_lesion_mask
     needs_results = (
-        export_voxelmaps or export_parcel_data or export_connectivity or
-        export_scalars or export_provenance
+        export_voxelmaps
+        or export_parcel_data
+        or export_connectivity
+        or export_scalars
+        or export_provenance
     )
 
     # Create directories

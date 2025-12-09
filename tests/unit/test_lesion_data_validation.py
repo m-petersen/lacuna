@@ -141,29 +141,6 @@ class TestMaskDataValidation:
             with pytest.raises(HeaderDataError, match="Could not decompose affine"):
                 nib.Nifti1Image(data, affine)
 
-    @pytest.mark.skip(reason="anatomical_img feature removed")
-    def test_validate_spatial_mismatch_error(self):
-        """Test that mismatched lesion and anatomical raise ValidationError."""
-        from lacuna.core.exceptions import ValidationError
-
-        # Create lesion
-        mask_data = np.zeros((64, 64, 64), dtype=np.uint8)
-        mask_data[30:35, 30:35, 30:35] = 1
-        affine1 = np.eye(4)
-        affine1[0, 0] = affine1[1, 1] = affine1[2, 2] = 2.0
-        mask_img = nib.Nifti1Image(mask_data, affine1)
-
-        # Create anatomical with different affine
-        anat_data = np.random.rand(64, 64, 64).astype(np.float32)
-        affine2 = np.eye(4)
-        affine2[0, 0] = affine2[1, 1] = affine2[2, 2] = 3.0  # Different voxel size
-        nib.Nifti1Image(anat_data, affine2)
-
-        from lacuna import MaskData
-
-        with pytest.raises(ValidationError, match="Affine matrices don't match"):
-            MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
-
     def test_validate_spatial_mismatch_shape_warning(self):
         """Test that mismatched shapes are allowed but may generate warnings."""
         # Create lesion

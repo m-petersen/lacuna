@@ -169,8 +169,5 @@ def get_source_abbreviation(class_name: str) -> str:
     """
     if class_name not in SOURCE_ABBREVIATIONS:
         available = ", ".join(sorted(SOURCE_ABBREVIATIONS.keys()))
-        raise KeyError(
-            f"Unknown analysis class '{class_name}'. "
-            f"Known classes: {available}"
-        )
+        raise KeyError(f"Unknown analysis class '{class_name}'. " f"Known classes: {available}")
     return SOURCE_ABBREVIATIONS[class_name]

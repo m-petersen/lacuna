@@ -9,7 +9,6 @@ These tests define the expected API after refactoring:
 All tests will fail initially - implementation follows in T162-T163.
 """
 
-
 from pathlib import Path
 
 import nibabel as nib

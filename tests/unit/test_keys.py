@@ -84,9 +84,7 @@ class TestParseResultKey:
 
     def test_parse_multiple_underscores(self):
         """Parse key with multiple underscores in components."""
-        key = build_result_key(
-            "Custom_Atlas_V2", "FunctionalNetworkMapping", "some_long_desc_name"
-        )
+        key = build_result_key("Custom_Atlas_V2", "FunctionalNetworkMapping", "some_long_desc_name")
         result = parse_result_key(key)
         assert result == {
             "parc": "Custom_Atlas_V2",

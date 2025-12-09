@@ -90,7 +90,7 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
         resolution=2.0,
         data_path=connectome_dir,
         n_subjects=100,
-        description="Test batched connectome"
+        description="Test batched connectome",
     )
 
     try:
@@ -150,7 +150,7 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
         resolution=2.0,
         data_path=connectome_dir,
         n_subjects=100,
-        description="Test batched connectome"
+        description="Test batched connectome",
     )
 
     try:
@@ -163,7 +163,7 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
             connectome_name="test_lesion_batch_connectome",
             method="boes",
             log_level=0,
-            compute_t_map=True
+            compute_t_map=True,
         )
 
         # Process with lesion batches of 3
@@ -188,7 +188,10 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
 
         # Verify all results have correct subject count
         for result in results:
-            assert result.results["FunctionalNetworkMapping"]["summary_statistics"]["n_subjects"] == 100
+            assert (
+                result.results["FunctionalNetworkMapping"]["summary_statistics"]["n_subjects"]
+                == 100
+            )
     finally:
         unregister_functional_connectome("test_lesion_batch_connectome")
 
@@ -203,7 +206,7 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
         resolution=2.0,
         data_path=connectome_dir,
         n_subjects=100,
-        description="Test batched connectome"
+        description="Test batched connectome",
     )
 
     try:
@@ -211,10 +214,12 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
             connectome_name="test_float32_connectome",
             method="boes",
             log_level=0,
-            compute_t_map=False
+            compute_t_map=False,
         )
 
-        results = batch_process(mock_lesions[:2], analysis, strategy="vectorized", show_progress=False)
+        results = batch_process(
+            mock_lesions[:2], analysis, strategy="vectorized", show_progress=False
+        )
 
         # Check that output arrays use float32 internally
         for result in results:
@@ -238,7 +243,7 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
         resolution=2.0,
         data_path=connectome_dir,
         n_subjects=100,
-        description="Test batched connectome"
+        description="Test batched connectome",
     )
 
     try:
@@ -250,7 +255,9 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
             t_threshold=2.5,
         )
 
-        results = batch_process(mock_lesions[:2], analysis, strategy="vectorized", show_progress=False)
+        results = batch_process(
+            mock_lesions[:2], analysis, strategy="vectorized", show_progress=False
+        )
 
         for result in results:
             flnm = result.results["FunctionalNetworkMapping"]

@@ -98,7 +98,8 @@ def load_parcellation(
         parcellation_path = BUNDLED_PARCELLATIONS_DIR / metadata.parcellation_filename
     if not parcellation_path.exists():
         raise FileNotFoundError(
-            f"Parcellation file not found: {parcellation_path}\n" f"Expected: {metadata.parcellation_filename}"
+            f"Parcellation file not found: {parcellation_path}\n"
+            f"Expected: {metadata.parcellation_filename}"
         )
 
     image = nib.load(parcellation_path)

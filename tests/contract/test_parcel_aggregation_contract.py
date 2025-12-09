@@ -241,8 +241,12 @@ def test_atlas_aggregation_handles_multiple_atlases(synthetic_mask_img):
     assert "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img" in atlas_results
 
     # Each atlas should have its own ParcelData with region data
-    roi_100 = atlas_results["parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"].get_data()
-    roi_200 = atlas_results["parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img"].get_data()
+    roi_100 = atlas_results[
+        "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
+    ].get_data()
+    roi_200 = atlas_results[
+        "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img"
+    ].get_data()
     assert len(roi_100) > 0
     assert len(roi_200) > 0
 
@@ -403,7 +407,9 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     assert len(result_keys) > 0
 
     # At least one key should reference the source (snake_case format)
-    has_source_context = any("disconnection_map" in key or "disconnection" in key.lower() for key in result_keys)
+    has_source_context = any(
+        "disconnection_map" in key or "disconnection" in key.lower() for key in result_keys
+    )
     assert has_source_context, f"Expected source context in keys, got: {result_keys}"
 
 
@@ -434,7 +440,7 @@ def test_multi_source_aggregation_contract(synthetic_mask_img):
     analysis = ParcelAggregation(
         source=["MaskData.mask_img", "FunctionalNetworkMapping.correlation_map"],
         parcel_names=["Schaefer2018_100Parcels7Networks"],
-        aggregation="mean"
+        aggregation="mean",
     )
 
     result = analysis.run(mask_data)
@@ -442,7 +448,9 @@ def test_multi_source_aggregation_contract(synthetic_mask_img):
 
     # Should have results from both sources
     result_keys = list(parcel_results.keys())
-    assert len(result_keys) >= 2, f"Expected at least 2 results, got {len(result_keys)}: {result_keys}"
+    assert (
+        len(result_keys) >= 2
+    ), f"Expected at least 2 results, got {len(result_keys)}: {result_keys}"
 
     # Keys should be BIDS-style with source differentiation
     mask_keys = [k for k in result_keys if "MaskData" in k or "mask_img" in k]
@@ -462,48 +470,35 @@ def test_multi_source_aggregation_contract(synthetic_mask_img):
 
 def test_multi_source_aggregation_dict_format(synthetic_mask_img):
     """Test that ParcelAggregation accepts dictionary format for source specification."""
+    import numpy as np
+
     from lacuna import MaskData
     from lacuna.analysis import ParcelAggregation
     from lacuna.core import VoxelMap
-    import numpy as np
 
     # Create mask data
-    mask_data = MaskData(
-        mask_img=synthetic_mask_img,
-        space="MNI152NLin6Asym",
-        resolution=2.0
-    )
+    mask_data = MaskData(mask_img=synthetic_mask_img, space="MNI152NLin6Asym", resolution=2.0)
 
     # Create a VoxelMap result to aggregate
     correlation_data = np.random.randn(*synthetic_mask_img.shape).astype(np.float32)
     import nibabel as nib
+
     correlation_img = nib.Nifti1Image(correlation_data, synthetic_mask_img.affine)
     correlation_map = VoxelMap(
-        name="correlation_map",
-        data=correlation_img,
-        space="MNI152NLin6Asym",
-        resolution=2.0
+        name="correlation_map", data=correlation_img, space="MNI152NLin6Asym", resolution=2.0
     )
-    z_map = VoxelMap(
-        name="z_map",
-        data=correlation_img,
-        space="MNI152NLin6Asym",
-        resolution=2.0
-    )
+    z_map = VoxelMap(name="z_map", data=correlation_img, space="MNI152NLin6Asym", resolution=2.0)
 
     mask_data._results["FunctionalNetworkMapping"] = {
         "correlation_map": correlation_map,
-        "z_map": z_map
+        "z_map": z_map,
     }
 
     # NEW: Dictionary format for sources
     analysis = ParcelAggregation(
-        source={
-            "MaskData": "mask_img",
-            "FunctionalNetworkMapping": ["correlation_map", "z_map"]
-        },
+        source={"MaskData": "mask_img", "FunctionalNetworkMapping": ["correlation_map", "z_map"]},
         parcel_names=["Schaefer2018_100Parcels7Networks"],
-        aggregation="mean"
+        aggregation="mean",
     )
 
     # Verify sources were normalized correctly
@@ -522,8 +517,9 @@ def test_multi_source_aggregation_dict_format(synthetic_mask_img):
 
 def test_source_dict_format_validation():
     """Test that dictionary source format validates input correctly."""
-    from lacuna.analysis import ParcelAggregation
     import pytest
+
+    from lacuna.analysis import ParcelAggregation
 
     # Empty dict should raise
     with pytest.raises(ValueError, match="empty"):
@@ -553,6 +549,5 @@ def test_source_dict_format_validation():
     agg = ParcelAggregation(source={"FunctionalNetworkMapping": ["correlation_map", "z_map"]})
     assert agg.sources == [
         "FunctionalNetworkMapping.correlation_map",
-        "FunctionalNetworkMapping.z_map"
+        "FunctionalNetworkMapping.z_map",
     ]
-

@@ -43,11 +43,13 @@ class TestFunctionalNetworkMappingRepr:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered = True
 
-            analysis = FunctionalNetworkMapping(connectome_name="test_repr_connectome", method="boes")
+            analysis = FunctionalNetworkMapping(
+                connectome_name="test_repr_connectome", method="boes"
+            )
 
             repr_str = repr(analysis)
 
@@ -83,7 +85,7 @@ class TestFunctionalNetworkMappingRepr:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered = True
 
@@ -130,7 +132,7 @@ class TestFunctionalNetworkMappingRepr:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered = True
 
@@ -172,7 +174,7 @@ class TestFunctionalNetworkMappingRepr:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered = True
 
@@ -219,11 +221,13 @@ class TestFunctionalNetworkMappingRepr:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered = True
 
-            analysis = FunctionalNetworkMapping(connectome_name="test_multiline_connectome", method="boes")
+            analysis = FunctionalNetworkMapping(
+                connectome_name="test_multiline_connectome", method="boes"
+            )
 
             str_output = str(analysis)
             lines = str_output.split("\n")
@@ -254,7 +258,7 @@ class TestStructuralNetworkMappingRepr:
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
-                description="Test"
+                description="Test",
             )
 
             analysis = StructuralNetworkMapping(
@@ -286,7 +290,7 @@ class TestStructuralNetworkMappingRepr:
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
-                description="Test"
+                description="Test",
             )
 
             analysis = StructuralNetworkMapping(
@@ -320,7 +324,7 @@ class TestStructuralNetworkMappingRepr:
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
-                description="Test"
+                description="Test",
             )
 
             analysis = StructuralNetworkMapping(
@@ -450,7 +454,7 @@ class TestReprConsistency:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered_func = True
 
@@ -461,7 +465,7 @@ class TestReprConsistency:
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
-                description="Test"
+                description="Test",
             )
             registered_struct = True
 
@@ -516,7 +520,7 @@ class TestReprConsistency:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered_func = True
 
@@ -527,15 +531,13 @@ class TestReprConsistency:
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
-                description="Test"
+                description="Test",
             )
             registered_struct = True
 
             analyses = [
                 FunctionalNetworkMapping("test_all_str_func", "boes"),
-                StructuralNetworkMapping(
-                    "test_all_str_struct", check_dependencies=False
-                ),
+                StructuralNetworkMapping("test_all_str_struct", check_dependencies=False),
                 RegionalDamage(threshold=0.5),
                 ParcelAggregation(source="mask_img", aggregation="mean"),
             ]
@@ -578,7 +580,7 @@ class TestReprConsistency:
                 resolution=2.0,
                 data_path=temp_h5,
                 n_subjects=10,
-                description="Test"
+                description="Test",
             )
             registered = True
 

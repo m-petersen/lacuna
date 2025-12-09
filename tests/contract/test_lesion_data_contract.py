@@ -53,21 +53,6 @@ def test_mask_data_init_with_metadata(synthetic_mask_img, lesion_metadata):
     assert lesion.metadata["age"] == 45
 
 
-@pytest.mark.skip(reason="anatomical_img feature pending removal (T008)")
-def test_mask_data_init_with_anatomical(synthetic_mask_img, lesion_metadata):
-    """Test MaskData initialization with anatomical image."""
-    from lacuna.core.mask_data import MaskData
-
-    # Create matching anatomical image
-    anat_data = np.random.rand(*synthetic_mask_img.shape).astype(np.float32)
-    anat_img = nib.Nifti1Image(anat_data, synthetic_mask_img.affine)
-
-    lesion = MaskData(synthetic_mask_img, anatomical_img=anat_img, metadata=lesion_metadata)
-
-    assert lesion.anatomical_img is anat_img
-    assert np.array_equal(lesion.anatomical_img.affine, lesion.affine)
-
-
 def test_mask_data_init_validates_3d_image(synthetic_4d_img):
     """Test that MaskData rejects 4D images."""
     from lacuna.core.exceptions import ValidationError
@@ -75,28 +60,6 @@ def test_mask_data_init_validates_3d_image(synthetic_4d_img):
 
     with pytest.raises(ValidationError, match="3D"):
         MaskData(synthetic_4d_img)
-
-
-@pytest.mark.skip(reason="anatomical_img feature pending removal (T008)")
-def test_mask_data_init_validates_affine_mismatch():
-    """Test that MaskData rejects mismatched anatomical affine."""
-    from lacuna.core.exceptions import SpatialMismatchError
-    from lacuna.core.mask_data import MaskData
-
-    # Create lesion
-    mask_data = np.ones((64, 64, 64), dtype=np.uint8)
-    lesion_affine = np.eye(4)
-    lesion_affine[0, 0] = 2.0
-    mask_img = nib.Nifti1Image(mask_data, lesion_affine)
-
-    # Create anatomical with different affine
-    anat_data = np.random.rand(64, 64, 64).astype(np.float32)
-    anat_affine = np.eye(4)
-    anat_affine[0, 0] = 3.0  # Different voxel size
-    anat_img = nib.Nifti1Image(anat_data, anat_affine)
-
-    with pytest.raises(SpatialMismatchError):
-        MaskData(mask_img, anatomical_img=anat_img)
 
 
 def test_mask_data_from_nifti(tmp_path, synthetic_mask_img):

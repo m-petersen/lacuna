@@ -26,11 +26,7 @@ class TestVoxelMapSpaceContract:
         # Create MaskData with space metadata
         return MaskData(
             mask_img=mask_img,
-            metadata={
-                "space": "MNI152NLin6Asym",
-                "resolution": 2.0,
-                "subject_id": "test_subject"
-            }
+            metadata={"space": "MNI152NLin6Asym", "resolution": 2.0, "subject_id": "test_subject"},
         )
 
     def test_functional_mapping_default_uses_connectome_space(self, mask_data_with_space):
@@ -119,8 +115,7 @@ class TestVoxelMapSpaceContract:
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
-        mask_img = nib.Nifti1Image(data, affine)
+        nib.Nifti1Image(data, affine)
 
         # This should work if we don't request lesion space transformation
         # (tested in actual run, not in contract test)
-

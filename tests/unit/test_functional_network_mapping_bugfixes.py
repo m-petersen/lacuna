@@ -48,7 +48,7 @@ def test_bug_fix_load_mask_info_returns_tuple(simple_connectome):
         resolution=2.0,
         data_path=simple_connectome,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -87,7 +87,7 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
         resolution=2.0,
         data_path=simple_connectome,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -139,7 +139,7 @@ def test_both_fixes_together(simple_connectome):
         resolution=2.0,
         data_path=simple_connectome,
         n_subjects=5,
-        description="Test"
+        description="Test",
     )
 
     try:
@@ -226,7 +226,7 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         resolution=2.0,
         data_path=connectome_path,
         n_subjects=10,
-        description="Test"
+        description="Test",
     )
 
     try:

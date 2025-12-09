@@ -1,10 +1,10 @@
 """Contract tests for Pipeline API."""
 
-import numpy as np
 import nibabel as nib
+import numpy as np
 import pytest
 
-from lacuna import Pipeline, MaskData
+from lacuna import MaskData, Pipeline
 from lacuna.analysis import RegionalDamage
 
 
@@ -12,8 +12,19 @@ class TestPipelineContract:
     """Contract tests for Pipeline class."""
 
     @pytest.fixture
-    def sample_mask_data(self):
-        """Create a minimal MaskData for testing."""
+    def sample_mask_data(self, tmp_path):
+        """Create a minimal MaskData for testing with a registered local atlas."""
+        from lacuna.assets.parcellations.registry import register_parcellations_from_directory
+
+        # Create test atlas to avoid TemplateFlow
+        atlas_dir = tmp_path / "atlases"
+        atlas_dir.mkdir()
+        atlas_data = np.zeros((10, 10, 10), dtype=np.uint8)
+        atlas_data[3:7, 3:7, 3:7] = 1
+        nib.save(nib.Nifti1Image(atlas_data, np.eye(4) * 2), atlas_dir / "test_pipeline.nii.gz")
+        (atlas_dir / "test_pipeline_labels.txt").write_text("1 Region1\n")
+        register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
@@ -43,7 +54,8 @@ class TestPipelineContract:
 
     def test_pipeline_run_returns_mask_data(self, sample_mask_data):
         """Contract: run() returns MaskData with results."""
-        pipeline = Pipeline().add(RegionalDamage())
+        # Use parcel_names to avoid bundled atlases that require TemplateFlow
+        pipeline = Pipeline().add(RegionalDamage(parcel_names=["test_pipeline"]))
         result = pipeline.run(sample_mask_data)
         assert isinstance(result, MaskData)
         assert "RegionalDamage" in result.results
@@ -70,8 +82,19 @@ class TestPipelineConditionalContract:
     """Contract tests for conditional pipeline steps."""
 
     @pytest.fixture
-    def sample_mask_data(self):
-        """Create a minimal MaskData for testing."""
+    def sample_mask_data(self, tmp_path):
+        """Create a minimal MaskData for testing with a registered local atlas."""
+        from lacuna.assets.parcellations.registry import register_parcellations_from_directory
+
+        # Create test atlas to avoid TemplateFlow
+        atlas_dir = tmp_path / "atlases"
+        atlas_dir.mkdir()
+        atlas_data = np.zeros((10, 10, 10), dtype=np.uint8)
+        atlas_data[3:7, 3:7, 3:7] = 1
+        nib.save(nib.Nifti1Image(atlas_data, np.eye(4) * 2), atlas_dir / "test_cond.nii.gz")
+        (atlas_dir / "test_cond_labels.txt").write_text("1 Region1\n")
+        register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
@@ -88,7 +111,7 @@ class TestPipelineConditionalContract:
         """Contract: Step is skipped when condition returns False."""
         # Condition that always returns False
         pipeline = Pipeline().add(
-            RegionalDamage(), condition=lambda x: False
+            RegionalDamage(parcel_names=["test_cond"]), condition=lambda x: False
         )
         result = pipeline.run(sample_mask_data)
         # RegionalDamage should not have run
@@ -98,7 +121,7 @@ class TestPipelineConditionalContract:
         """Contract: Step runs when condition returns True."""
         # Condition that always returns True
         pipeline = Pipeline().add(
-            RegionalDamage(), condition=lambda x: True
+            RegionalDamage(parcel_names=["test_cond"]), condition=lambda x: True
         )
         result = pipeline.run(sample_mask_data)
         assert "RegionalDamage" in result.results
@@ -108,8 +131,20 @@ class TestAnalyzeFunctionContract:
     """Contract tests for analyze() convenience function."""
 
     @pytest.fixture
-    def sample_mask_data(self):
-        """Create a minimal MaskData for testing."""
+    def sample_mask_data(self, tmp_path):
+        """Create a minimal MaskData for testing with a registered local atlas."""
+        from lacuna.assets.parcellations.registry import register_parcellations_from_directory
+
+        # Create test atlas - analyze() uses RegionalDamage without parcel_names,
+        # so it needs atlases registered
+        atlas_dir = tmp_path / "atlases"
+        atlas_dir.mkdir()
+        atlas_data = np.zeros((10, 10, 10), dtype=np.uint8)
+        atlas_data[3:7, 3:7, 3:7] = 1
+        nib.save(nib.Nifti1Image(atlas_data, np.eye(4) * 2), atlas_dir / "test_analyze.nii.gz")
+        (atlas_dir / "test_analyze_labels.txt").write_text("1 Region1\n")
+        register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
+
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)

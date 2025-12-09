@@ -18,7 +18,7 @@ class TestBIDSStyleResultKeys:
 
     def test_parcel_aggregation_uses_bids_style_keys(self):
         """ParcelAggregation should generate BIDS-style keys.
-        
+
         Format: parc-{parcellation}_source-{SourceClass}_desc-{key}
         Example: parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img
         """
@@ -28,15 +28,14 @@ class TestBIDSStyleResultKeys:
         mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
 
         mask_data = MaskData(
-            mask_img=mask_img,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
         # Run analysis
         analysis = ParcelAggregation(
             source="mask_img",
             aggregation="percent",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            parcel_names=["Schaefer2018_100Parcels7Networks"],
         )
 
         result = analysis.run(mask_data)
@@ -60,7 +59,7 @@ class TestBIDSStyleResultKeys:
 
     def test_regional_damage_uses_bids_style_keys(self):
         """RegionalDamage should generate BIDS-style keys.
-        
+
         Format: parc-{parcellation}_source-MaskData_desc-mask_img
         """
         # Create simple test mask
@@ -69,15 +68,11 @@ class TestBIDSStyleResultKeys:
         mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
 
         mask_data = MaskData(
-            mask_img=mask_img,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
         # Run analysis
-        analysis = RegionalDamage(
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
-            threshold=0.5
-        )
+        analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"], threshold=0.5)
 
         result = analysis.run(mask_data)
 
@@ -104,14 +99,12 @@ class TestResultKeyComponents:
         mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
 
         mask_data = MaskData(
-            mask_img=mask_img,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
         # Test ParcelAggregation
         analysis = ParcelAggregation(
-            source="mask_img",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
         result = analysis.run(mask_data)
 
@@ -132,14 +125,12 @@ class TestResultKeyComponents:
         mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
 
         mask_data = MaskData(
-            mask_img=mask_img,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
         # Test ParcelAggregation
         analysis = ParcelAggregation(
-            source="mask_img",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
         result = analysis.run(mask_data)
 
@@ -149,7 +140,9 @@ class TestResultKeyComponents:
             # Extract desc from key
             desc_part = key.split("_desc-")[1]
             # Should be snake_case (lowercase with underscores or just lowercase)
-            assert desc_part.islower() or "_" in desc_part, f"Expected snake_case desc, got: {desc_part}"
+            assert (
+                desc_part.islower() or "_" in desc_part
+            ), f"Expected snake_case desc, got: {desc_part}"
 
     def test_no_old_format_patterns(self):
         """Verify no old-style format patterns like '_from_' or 'atlas-' prefix."""
@@ -159,14 +152,12 @@ class TestResultKeyComponents:
         mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
 
         mask_data = MaskData(
-            mask_img=mask_img,
-            metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
         # Test ParcelAggregation
         analysis = ParcelAggregation(
-            source="mask_img",
-            parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="mask_img", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
         result = analysis.run(mask_data)
 
@@ -178,4 +169,3 @@ class TestResultKeyComponents:
             assert not key.startswith("atlas-"), f"Found old pattern 'atlas-' in: {key}"
             # Should use new format
             assert key.startswith("parc-"), f"Expected new format starting with 'parc-': {key}"
-

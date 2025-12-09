@@ -8,13 +8,12 @@ automatic strategy selection and progress monitoring.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Union
 
 from tqdm import tqdm
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch.selection import select_strategy
-from lacuna.core.data_types import VoxelMap, ParcelData
+from lacuna.core.data_types import ParcelData, VoxelMap
 from lacuna.core.mask_data import MaskData
 
 
@@ -61,7 +60,7 @@ def _detect_input_type(inputs: list) -> str:
 
 
 def batch_process(
-    inputs: list[Union[MaskData, VoxelMap]] | None = None,
+    inputs: list[MaskData | VoxelMap] | None = None,
     analysis: BaseAnalysis | None = None,
     n_jobs: int = -1,
     show_progress: bool = True,
@@ -71,7 +70,7 @@ def batch_process(
     batch_result_callback: Callable | None = None,
     *,
     mask_data_list: list[MaskData] | None = None,  # Deprecated, use inputs
-) -> list[Union[MaskData, ParcelData]]:
+) -> list[MaskData | ParcelData]:
     """
     Process multiple subjects through an analysis pipeline with automatic optimization.
 
@@ -188,6 +187,7 @@ def batch_process(
     # Handle deprecated mask_data_list parameter
     if mask_data_list is not None:
         import warnings
+
         warnings.warn(
             "mask_data_list parameter is deprecated, use 'inputs' instead",
             DeprecationWarning,
