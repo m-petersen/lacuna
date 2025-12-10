@@ -132,8 +132,21 @@ class TestAnalyzeFunctionContract:
 
     @pytest.fixture
     def sample_mask_data(self, tmp_path):
-        """Create a minimal MaskData for testing with a registered local atlas."""
-        from lacuna.assets.parcellations.registry import register_parcellations_from_directory
+        """Create a minimal MaskData for testing with a registered local atlas.
+
+        This fixture temporarily replaces the parcellation registry with only
+        a local test atlas to avoid TemplateFlow dependencies in CI.
+        """
+        from lacuna.assets.parcellations.registry import (
+            PARCELLATION_REGISTRY,
+            register_parcellations_from_directory,
+        )
+
+        # Save original registry
+        saved_registry = PARCELLATION_REGISTRY.copy()
+
+        # Clear registry to avoid loading bundled atlases that need TemplateFlow
+        PARCELLATION_REGISTRY.clear()
 
         # Create test atlas - analyze() uses RegionalDamage without parcel_names,
         # so it needs atlases registered
@@ -150,12 +163,18 @@ class TestAnalyzeFunctionContract:
         affine = np.eye(4)
         affine[:3, :3] *= 2.0
         img = nib.Nifti1Image(data, affine)
-        return MaskData(
-            mask_img=img,
-            space="MNI152NLin6Asym",
-            resolution=2,
-            metadata={"subject_id": "sub-001"},
-        )
+
+        try:
+            yield MaskData(
+                mask_img=img,
+                space="MNI152NLin6Asym",
+                resolution=2,
+                metadata={"subject_id": "sub-001"},
+            )
+        finally:
+            # Restore original registry
+            PARCELLATION_REGISTRY.clear()
+            PARCELLATION_REGISTRY.update(saved_registry)
 
     def test_analyze_single_returns_mask_data(self, sample_mask_data):
         """Contract: analyze(single) returns MaskData."""
