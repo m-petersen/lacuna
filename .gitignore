@@ -66,6 +66,8 @@ Thumbs.db
 *.nii
 !tests/fixtures/*.nii.gz
 !tests/fixtures/*.nii
+!src/lacuna/data/atlases/*.nii.gz
+!src/lacuna/data/templates/*.nii.gz
 
 # Documentation
 docs/_build/
