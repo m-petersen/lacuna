@@ -330,8 +330,9 @@ def test_matched_spaces_no_transformation_overhead(
 
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
 
-    # Time the analysis
-    analyzer = RegionalDamage()
+    # Time the analysis - use explicit parcel_names to avoid loading bundled atlases
+    # that may be in different spaces and require TemplateFlow transforms
+    analyzer = RegionalDamage(parcel_names=["test_atlas"])
 
     start_time = time.time()
     result = analyzer.run(lesion_nlin2009c_2mm)

@@ -135,6 +135,8 @@ class TestImageDimensionHandling:
 
         assert result.ndim == 3
 
+    @pytest.mark.slow
+    @pytest.mark.requires_templateflow
     def test_transform_4d_image_multiple_volumes(self):
         """4D images with multiple volumes should be transformed volume by volume."""
         # Create 4D test image with multiple volumes
