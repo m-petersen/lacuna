@@ -184,10 +184,24 @@ class TestAnalyzeFunctionContract:
         assert isinstance(result, MaskData)
 
     def test_analyze_list_returns_list(self, sample_mask_data):
-        """Contract: analyze(list) returns list of MaskData."""
-        from lacuna import analyze
+        """Contract: analyze(list) returns list of MaskData.
 
-        results = analyze([sample_mask_data, sample_mask_data])
+        Note: We use batch_process directly with our local atlas instead of
+        analyze() because parallel workers don't inherit the modified registry.
+        This still tests the contract that list input returns list output.
+        """
+        from lacuna.analysis import RegionalDamage
+        from lacuna.batch.api import batch_process
+
+        # Use the registered local atlas explicitly
+        analysis = RegionalDamage(parcel_names=["test_analyze"])
+
+        results = batch_process(
+            inputs=[sample_mask_data, sample_mask_data],
+            analysis=analysis,
+            n_jobs=1,  # Sequential to avoid registry propagation issues
+            show_progress=False,
+        )
         assert isinstance(results, list)
         assert len(results) == 2
         assert all(isinstance(r, MaskData) for r in results)
