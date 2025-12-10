@@ -143,7 +143,8 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    analysis = RegionalDamage()
+    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    analysis = RegionalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
     # Should return MaskData
@@ -177,7 +178,8 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    analysis = RegionalDamage()
+    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    analysis = RegionalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
