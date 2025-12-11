@@ -267,17 +267,32 @@ class Pipeline:
         return f"Pipeline(name={self.name!r}, steps={len(self._steps)})"
 
 
-def analyze(data: MaskData | list[MaskData]) -> MaskData | list[MaskData]:
+def analyze(
+    data: MaskData | list[MaskData],
+    *,
+    functional_connectome: str | None = None,
+    structural_connectome: str | None = None,
+) -> MaskData | list[MaskData]:
     """
     Convenience function for common analysis workflows.
 
-    This is a simple entry point for the most common use case:
-    running the standard lesion analysis pipeline.
+    This is a simple entry point that runs the standard lesion analysis
+    pipeline. By default, it runs RegionalDamage (parcel-based lesion
+    quantification). Optionally, you can enable functional or structural
+    lesion network mapping by providing registered connectome names.
 
     Parameters
     ----------
     data : MaskData or list of MaskData
         Input data to analyze
+    functional_connectome : str, optional
+        Name of a registered functional connectome to enable functional
+        lesion network mapping (fLNM). Use `list_functional_connectomes()`
+        to see available connectomes.
+    structural_connectome : str, optional
+        Name of a registered structural connectome to enable structural
+        lesion network mapping (sLNM). Use `list_structural_connectomes()`
+        to see available connectomes.
 
     Returns
     -------
@@ -286,15 +301,55 @@ def analyze(data: MaskData | list[MaskData]) -> MaskData | list[MaskData]:
 
     Examples
     --------
+    Basic usage (parcel aggregation only):
+
     >>> from lacuna import analyze, MaskData
     >>> result = analyze(mask_data)
     >>> print(result.results.keys())
+
+    With functional network mapping:
+
+    >>> result = analyze(mask_data, functional_connectome="GSP1000")
+
+    With structural network mapping:
+
+    >>> result = analyze(mask_data, structural_connectome="dTOR985")
+
+    With both:
+
+    >>> result = analyze(
+    ...     mask_data,
+    ...     functional_connectome="GSP1000",
+    ...     structural_connectome="dTOR985"
+    ... )
     """
     # Import here to avoid circular imports
-    from lacuna.analysis import RegionalDamage
+    from lacuna.analysis import (
+        FunctionalNetworkMapping,
+        RegionalDamage,
+        StructuralNetworkMapping,
+    )
     from lacuna.batch.api import batch_process
 
-    if isinstance(data, list):
-        return batch_process(inputs=data, analysis=RegionalDamage())
+    # Build pipeline of analyses
+    analyses: list = [RegionalDamage()]
 
-    return RegionalDamage().run(data)
+    if functional_connectome:
+        analyses.append(FunctionalNetworkMapping(connectome=functional_connectome))
+
+    if structural_connectome:
+        analyses.append(StructuralNetworkMapping(connectome=structural_connectome))
+
+    # Single analysis: run directly
+    if len(analyses) == 1:
+        if isinstance(data, list):
+            return batch_process(inputs=data, analysis=analyses[0])
+        return analyses[0].run(data)
+
+    # Multiple analyses: use pipeline
+    pipeline = Pipeline(name="analyze", steps=analyses)
+
+    if isinstance(data, list):
+        return [pipeline.run(d) for d in data]
+
+    return pipeline.run(data)
