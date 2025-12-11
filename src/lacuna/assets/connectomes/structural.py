@@ -48,9 +48,9 @@ def register_structural_connectome(
     space: str,
     resolution: float,
     tractogram_path: str | Path,
-    n_subjects: int,
     tdi_path: str | Path | None = None,
     template_path: str | Path | None = None,
+    n_subjects: int | None = None,
     description: str = "",
 ) -> None:
     """Register a structural connectome for sLNM analysis.
@@ -68,13 +68,13 @@ def register_structural_connectome(
         Resolution in mm (typically 1.0 or 2.0)
     tractogram_path : str or Path
         Path to .tck whole-brain streamlines file
-    n_subjects : int
-        Sample size
     tdi_path : str or Path, optional
         Path to whole-brain TDI NIfTI file.
         If None, TDI will be computed during analysis (cached for reuse).
     template_path : str or Path, optional
         Path to template image for output grid
+    n_subjects : int, optional
+        Sample size (for documentation purposes only)
     description : str, optional
         Human-readable description
 
@@ -96,7 +96,6 @@ def register_structural_connectome(
     ...     resolution=1.0,
     ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
     ...     tdi_path="/data/dtor/dTOR985_tdi_1mm.nii.gz",
-    ...     n_subjects=985,
     ...     description="dTOR 985 tractogram (985 subjects, 1mm)"
     ... )
     >>>
@@ -106,7 +105,6 @@ def register_structural_connectome(
     ...     space="MNI152NLin2009cAsym",
     ...     resolution=2.0,
     ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
-    ...     n_subjects=985,
     ...     description="dTOR tractogram (TDI computed on-demand)"
     ... )
     """
@@ -139,7 +137,7 @@ def register_structural_connectome(
         space=space,
         resolution=resolution,
         description=description or f"Structural connectome: {name}",
-        n_subjects=n_subjects,
+        n_subjects=n_subjects or 0,
         tractogram_path=tractogram_path,
         tdi_path=tdi_path,
         template_path=template_path,

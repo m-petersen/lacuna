@@ -8,7 +8,7 @@ complete analysis workflows in a declarative manner.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from lacuna.analysis.base import BaseAnalysis
@@ -26,13 +26,10 @@ class PipelineStep:
         The analysis module to run
     name : str, optional
         Human-readable name for the step (defaults to class name)
-    condition : callable, optional
-        Function that takes MaskData and returns bool to conditionally run step
     """
 
     analysis: BaseAnalysis
     name: str | None = None
-    condition: Any | None = None  # Callable[[MaskData], bool]
 
     def __post_init__(self):
         if self.name is None:
@@ -93,7 +90,6 @@ class Pipeline:
         self,
         analysis: BaseAnalysis,
         name: str | None = None,
-        condition: Any | None = None,
     ) -> Pipeline:
         """
         Add an analysis step to the pipeline.
@@ -104,15 +100,13 @@ class Pipeline:
             The analysis module to add
         name : str, optional
             Human-readable name for this step
-        condition : callable, optional
-            Function (mask_data) -> bool that determines if step should run
 
         Returns
         -------
         Pipeline
             Self for method chaining
         """
-        step = PipelineStep(analysis=analysis, name=name, condition=condition)
+        step = PipelineStep(analysis=analysis, name=name)
         self._steps.append(step)
         return self
 
@@ -135,13 +129,6 @@ class Pipeline:
         result = data
 
         for step in self._steps:
-            # Check condition if specified
-            if step.condition is not None:
-                if not step.condition(result):
-                    if log_level >= 2:
-                        print(f"Skipping {step.name}: condition not met")
-                    continue
-
             # Run the analysis
             if log_level >= 2:
                 print(f"Running {step.name}...")
@@ -193,26 +180,15 @@ class Pipeline:
         results = data_list
 
         for step in self._steps:
-            # Filter based on condition if specified
-            if step.condition is not None:
-                # Process sequentially when conditions are involved
-                processed = []
-                for data in results:
-                    if step.condition(data):
-                        processed.append(step.analysis.run(data))
-                    else:
-                        processed.append(data)
-                results = processed
-            else:
-                # Use batch_process for this step
-                from lacuna.batch.api import batch_process
+            # Use batch_process for this step
+            from lacuna.batch.api import batch_process
 
-                results = batch_process(
-                    inputs=results,
-                    analysis=step.analysis,
-                    n_jobs=n_jobs,
-                    show_progress=show_progress,
-                )
+            results = batch_process(
+                inputs=results,
+                analysis=step.analysis,
+                n_jobs=n_jobs,
+                show_progress=show_progress,
+            )
 
         return results
 
@@ -240,9 +216,6 @@ class Pipeline:
                 lines.append(f"  {i}. {step.name} ({params})")
             else:
                 lines.append(f"  {i}. {step.name}")
-
-            if step.condition is not None:
-                lines.append("      (conditional)")
 
         return "\n".join(lines)
 

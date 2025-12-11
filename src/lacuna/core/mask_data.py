@@ -815,8 +815,8 @@ class MaskData:
         Get result by analysis name and optional BIDS-style key components.
 
         This method provides a convenient way to access results using
-        BIDS-style key components (parc, source, desc) rather than
-        the full key string.
+        BIDS-style key components (parc, source, desc). Any combination
+        of filters can be provided - not all components are required.
 
         Parameters
         ----------
@@ -827,25 +827,29 @@ class MaskData:
         source : str, optional
             Source abbreviation filter (e.g., "fnm", "mask").
         desc : str, optional
-            Description filter (e.g., "correlation_map").
+            Description filter (e.g., "correlation_map", "z_map").
 
         Returns
         -------
         Any
             - If no filters: dict of all results for the analysis
-            - If filters: single result matching the key components
+            - If single match: the result value directly
+            - If multiple matches: dict of matching results
 
         Raises
         ------
         KeyError
-            If analysis namespace not found, or if filtered key not found.
+            If analysis namespace not found, or if no results match filters.
 
         Examples
         --------
         >>> # Get all ParcelAggregation results
         >>> results = mask_data.get_result("ParcelAggregation")
 
-        >>> # Get specific result by key components
+        >>> # Get by desc only (for results without parcellation)
+        >>> z_map = mask_data.get_result("FunctionalNetworkMapping", desc="z_map")
+
+        >>> # Get specific result by all key components
         >>> parcel_data = mask_data.get_result(
         ...     "ParcelAggregation",
         ...     parc="Schaefer100",
@@ -859,7 +863,7 @@ class MaskData:
         lacuna.core.keys.build_result_key : Build key from components.
         lacuna.core.keys.parse_result_key : Parse key into components.
         """
-        from lacuna.core.keys import build_result_key
+        from lacuna.core.keys import parse_result_key
         from lacuna.utils.suggestions import format_suggestions, suggest_similar
 
         if analysis not in self._results:
@@ -877,22 +881,45 @@ class MaskData:
         if parc is None and source is None and desc is None:
             return analysis_results
 
-        # Build key from components
-        if parc is None or source is None or desc is None:
-            raise ValueError(
-                "When filtering by key components, all of parc, source, and desc "
-                "must be provided."
+        # Filter results by provided components
+        # Not all keys have all components (e.g., FNM results may not have parc-)
+        matching = {}
+        for key, value in analysis_results.items():
+            # Try to parse the key - some keys may be simple strings
+            try:
+                parsed = parse_result_key(key)
+            except ValueError:
+                # Key doesn't follow BIDS format - check if desc matches directly
+                if desc is not None and key == desc:
+                    matching[key] = value
+                continue
+
+            # Check each filter if provided
+            if parc is not None and parsed.get("parc") != parc:
+                continue
+            if source is not None and parsed.get("source") != source:
+                continue
+            if desc is not None and parsed.get("desc") != desc:
+                continue
+
+            matching[key] = value
+
+        if len(matching) == 0:
+            # No matches found - provide suggestions
+            available_keys = list(analysis_results.keys())
+            suggestions = suggest_similar(desc or parc or source or "", available_keys)
+            hint = format_suggestions(suggestions)
+            filter_desc = ", ".join(
+                f"{k}={v!r}" for k, v in [("parc", parc), ("source", source), ("desc", desc)] if v
             )
+            msg = f"No results found in {analysis} matching {filter_desc}."
+            if hint:
+                msg = f"{msg} {hint}"
+            raise KeyError(msg)
 
-        key = build_result_key(parc, source, desc)
-        if key in analysis_results:
-            return analysis_results[key]
+        if len(matching) == 1:
+            # Single match - return the value directly
+            return next(iter(matching.values()))
 
-        # Key not found - provide suggestions
-        available_keys = list(analysis_results.keys())
-        suggestions = suggest_similar(key, available_keys)
-        hint = format_suggestions(suggestions)
-        msg = f"Result key '{key}' not found in {analysis}."
-        if hint:
-            msg = f"{msg} {hint}"
-        raise KeyError(msg)
+        # Multiple matches - return as dict
+        return matching
