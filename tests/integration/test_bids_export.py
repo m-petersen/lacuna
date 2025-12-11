@@ -65,26 +65,26 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(lesion_with_results, output_dir)
 
-    # Verify results directory exists
-    results_dir = subject_dir / "results"
-    assert results_dir.exists()
+    # Verify anat directory exists (all outputs go to anat/ per BIDS spec)
+    anat_dir = subject_dir / "anat"
+    assert anat_dir.exists()
 
     # Verify results JSON files exist (one per result key)
     # Pattern: sub-002_desc-regionaldamage_{key}.json
-    results_files = list(results_dir.glob("*_desc-regionaldamage_*.json"))
+    results_files = list(anat_dir.glob("*_desc-regionaldamage_*.json"))
     assert (
         len(results_files) >= 1
-    ), f"Expected results files, found: {list(results_dir.glob('*.json'))}"
+    ), f"Expected results files, found: {list(anat_dir.glob('*.json'))}"
 
     # Verify one of the results has correct content
-    volume_files = list(results_dir.glob("*_desc-regionaldamage_volume_mm3.json"))
+    volume_files = list(anat_dir.glob("*_desc-regionaldamage_volume_mm3.json"))
     if volume_files:
         with open(volume_files[0]) as f:
             saved_value = json.load(f)
         assert saved_value == 2500.0
 
     # Verify provenance JSON exists
-    prov_files = list(results_dir.glob("*_desc-provenance.json"))
+    prov_files = list(anat_dir.glob("*_desc-provenance.json"))
     assert len(prov_files) == 1
 
 

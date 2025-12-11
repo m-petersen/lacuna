@@ -172,17 +172,17 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
     output_dir = tmp_path / "derivatives" / "lacuna"
     subject_dir = export_bids_derivatives(mask_data_with_results, output_dir)
 
-    # Verify results and provenance files
-    results_dir = subject_dir / "results"
-    assert results_dir.exists()
+    # All outputs now go to anat/ directory (BIDS compliant)
+    anat_dir = subject_dir / "anat"
+    assert anat_dir.exists()
 
     # Each scalar result is saved as individual JSON file
-    results_files = list(results_dir.glob("*_desc-volumeanalysis_*.json"))
+    results_files = list(anat_dir.glob("*_desc-volumeanalysis_*.json"))
     assert (
         len(results_files) >= 1
-    ), f"Expected scalar result files, got: {list(results_dir.glob('*.json'))}"
+    ), f"Expected scalar result files, got: {list(anat_dir.glob('*.json'))}"
 
-    prov_files = list(results_dir.glob("*_desc-provenance.json"))
+    prov_files = list(anat_dir.glob("*_desc-provenance.json"))
     assert len(prov_files) == 1
 
 
