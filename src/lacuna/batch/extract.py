@@ -61,7 +61,7 @@ def _unwrap_value(val: Any) -> Any:
 
 
 def extract(
-    batch_results: BatchResults,
+    batch_results: BatchResults | list,
     *,
     analysis: str | None = None,
     parc: str | None = None,
@@ -77,7 +77,9 @@ def extract(
     flexible filtering using BIDS-style key components or analysis namespace.
 
     Args:
-        batch_results: The batch results to extract from.
+        batch_results: The batch results to extract from. Can be either:
+            - list[MaskData]: Direct output from batch_process()
+            - dict[MaskData, dict]: BatchResults format with {subject: results}
         analysis: Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
             "RegionalDamage"). This filters by the top-level namespace in results.
         parc: Filter by parcellation name (e.g., "AAL116", "Schaefer100").
@@ -123,6 +125,18 @@ def extract(
     if not batch_results:
         msg = "batch_results is empty"
         raise ValueError(msg)
+
+    # Handle both list[MaskData] (from batch_process) and dict (BatchResults)
+    # Convert list to dict format: {subject: subject.results}
+    if isinstance(batch_results, list):
+        batch_dict: dict[Any, dict[str, Any]] = {}
+        for item in batch_results:
+            if hasattr(item, "results"):
+                batch_dict[item] = item.results
+            else:
+                # Skip items without results
+                continue
+        batch_results = batch_dict
 
     # Build BIDS-style filter criteria
     bids_filters: dict[str, str] = {}
