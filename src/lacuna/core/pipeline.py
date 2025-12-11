@@ -308,10 +308,10 @@ def analyze(
     analyses: list = [RegionalDamage()]
 
     if functional_connectome:
-        analyses.append(FunctionalNetworkMapping(connectome=functional_connectome))
+        analyses.append(FunctionalNetworkMapping(connectome_name=functional_connectome))
 
     if structural_connectome:
-        analyses.append(StructuralNetworkMapping(connectome=structural_connectome))
+        analyses.append(StructuralNetworkMapping(connectome_name=structural_connectome))
 
     # Single analysis: run directly
     if len(analyses) == 1:
