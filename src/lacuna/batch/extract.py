@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import nibabel as nib
-import pandas as pd
 
 from lacuna.core.keys import parse_result_key
 
@@ -68,8 +67,7 @@ def extract(
     source: str | None = None,
     desc: str | None = None,
     unwrap: bool = False,
-    as_dataframe: bool = False,
-) -> dict[str, Any] | pd.DataFrame:
+) -> dict[str, Any]:
     """Extract analysis results from batch processing results.
 
     Unified extraction function that replaces the legacy `extract_voxelmaps()`,
@@ -91,16 +89,11 @@ def extract(
             plain result keys directly (e.g., "correlation_map").
         unwrap: If True, call `get_data()` on result objects to return raw values.
             If False (default), return wrapper objects (VoxelMap, ParcelData, etc.).
-        as_dataframe: If True, return results as a pandas DataFrame with columns
-            for subject identifier and all extracted result keys.
 
     Returns:
-        If as_dataframe is False:
-            Dictionary mapping subject identifiers to extracted values.
-            If only one result key matches per subject, returns {subject: value}.
-            If multiple keys match, returns {subject: {key: value}}.
-        If as_dataframe is True:
-            DataFrame with 'subject' column and columns for each result key.
+        Dictionary mapping subject identifiers to extracted values.
+        If only one result key matches per subject, returns {subject: value}.
+        If multiple keys match, returns {subject: {key: value}}.
 
     Examples:
         Extract correlation maps from FunctionalNetworkMapping:
@@ -112,9 +105,6 @@ def extract(
 
         Extract all ParcelAggregation results:
         >>> results = extract(batch_results, source="ParcelAggregation")
-
-        Extract results as DataFrame:
-        >>> df = extract(batch_results, parc="Schaefer100", as_dataframe=True)
 
         Extract with unwrapping (raw values):
         >>> results = extract(batch_results, parc="AAL116", unwrap=True)
@@ -216,15 +206,6 @@ def extract(
         filter_desc = ", ".join(filter_parts) if filter_parts else "(no filters)"
         msg = f"No results found matching filters: {filter_desc}"
         raise ValueError(msg)
-
-    if as_dataframe:
-        # Convert to DataFrame format
-        rows: list[dict[str, Any]] = []
-        for identifier, results in extracted.items():
-            row: dict[str, Any] = {"subject": identifier}
-            row.update(results)
-            rows.append(row)
-        return pd.DataFrame(rows)
 
     # Simplify output: if each subject has only one result key, return the value directly
     # Check if all subjects have exactly one result
