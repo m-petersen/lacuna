@@ -1116,8 +1116,9 @@ class ParcelAggregation(BaseAnalysis):
             # Get probability map for this region
             prob_map = atlas_data[:, :, :, region_idx]
 
-            # Threshold to create binary mask
-            region_mask = prob_map >= self.threshold
+            # Threshold to create binary mask (default to 0 if threshold is None)
+            threshold_value = self.threshold if self.threshold is not None else 0.0
+            region_mask = prob_map >= threshold_value
 
             # Get values in this region
             region_values = source_data[region_mask]

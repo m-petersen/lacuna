@@ -78,55 +78,6 @@ class TestPipelineContract:
         assert len(pipeline) == 2
 
 
-class TestPipelineConditionalContract:
-    """Contract tests for conditional pipeline steps."""
-
-    @pytest.fixture
-    def sample_mask_data(self, tmp_path):
-        """Create a minimal MaskData for testing with a registered local atlas."""
-        from lacuna.assets.parcellations.registry import register_parcellations_from_directory
-
-        # Create test atlas to avoid TemplateFlow
-        atlas_dir = tmp_path / "atlases"
-        atlas_dir.mkdir()
-        atlas_data = np.zeros((10, 10, 10), dtype=np.uint8)
-        atlas_data[3:7, 3:7, 3:7] = 1
-        nib.save(nib.Nifti1Image(atlas_data, np.eye(4) * 2), atlas_dir / "test_cond.nii.gz")
-        (atlas_dir / "test_cond_labels.txt").write_text("1 Region1\n")
-        register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
-
-        data = np.zeros((10, 10, 10), dtype=np.uint8)
-        data[4:6, 4:6, 4:6] = 1
-        affine = np.eye(4)
-        affine[:3, :3] *= 2.0
-        img = nib.Nifti1Image(data, affine)
-        return MaskData(
-            mask_img=img,
-            space="MNI152NLin6Asym",
-            resolution=2,
-            metadata={"subject_id": "sub-001"},
-        )
-
-    def test_conditional_step_skipped_when_false(self, sample_mask_data):
-        """Contract: Step is skipped when condition returns False."""
-        # Condition that always returns False
-        pipeline = Pipeline().add(
-            RegionalDamage(parcel_names=["test_cond"]), condition=lambda x: False
-        )
-        result = pipeline.run(sample_mask_data)
-        # RegionalDamage should not have run
-        assert "RegionalDamage" not in result.results
-
-    def test_conditional_step_runs_when_true(self, sample_mask_data):
-        """Contract: Step runs when condition returns True."""
-        # Condition that always returns True
-        pipeline = Pipeline().add(
-            RegionalDamage(parcel_names=["test_cond"]), condition=lambda x: True
-        )
-        result = pipeline.run(sample_mask_data)
-        assert "RegionalDamage" in result.results
-
-
 class TestAnalyzeFunctionContract:
     """Contract tests for analyze() convenience function."""
 

@@ -43,7 +43,8 @@ class RegionalDamage(ParcelAggregation):
 
     Parameters
     ----------
-    threshold : float, default=0.5
+    threshold : float | None, default=None
+        Threshold for binary lesion conversion. If None, no thresholding is applied.
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
     parcel_names : list of str or None, default=None
@@ -95,7 +96,7 @@ class RegionalDamage(ParcelAggregation):
 
     def __init__(
         self,
-        threshold: float = 0.5,
+        threshold: float | None = None,
         parcel_names: list[str] | None = None,
         log_level: int = 1,
     ):
@@ -110,8 +111,8 @@ class RegionalDamage(ParcelAggregation):
 
         Parameters
         ----------
-        threshold : float, default=0.5
-            Threshold for binary lesion conversion
+        threshold : float | None, default=None
+            Threshold for binary lesion conversion. If None, no thresholding is applied.
         parcel_names : list[str] | None, optional
             List of specific parcellation names to use. If None, uses all available.
         log_level : int, default=1

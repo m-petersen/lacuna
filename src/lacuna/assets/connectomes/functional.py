@@ -47,7 +47,7 @@ def register_functional_connectome(
     space: str,
     resolution: float,
     data_path: str | Path,
-    n_subjects: int,
+    n_subjects: int | None = None,
     description: str = "",
 ) -> None:
     """Register a functional connectome for fLNM analysis.
@@ -70,8 +70,8 @@ def register_functional_connectome(
         Resolution in mm (typically 2.0)
     data_path : str or Path
         Path to .h5 file or directory containing batch files
-    n_subjects : int
-        Total sample size
+    n_subjects : int, optional
+        Total sample size (for documentation purposes only)
     description : str, optional
         Human-readable description
 
@@ -92,7 +92,6 @@ def register_functional_connectome(
     ...     space="MNI152NLin6Asym",
     ...     resolution=2.0,
     ...     data_path="/data/gsp/gsp1000_connectome.h5",
-    ...     n_subjects=1000,
     ...     description="GSP1000 voxel-wise connectome"
     ... )
     >>>
@@ -102,7 +101,6 @@ def register_functional_connectome(
     ...     space="MNI152NLin6Asym",
     ...     resolution=2.0,
     ...     data_path="/data/gsp/batches/",
-    ...     n_subjects=1000,
     ...     description="GSP1000 voxel-wise connectome (batched)"
     ... )
     """
@@ -150,7 +148,7 @@ def register_functional_connectome(
         space=space,
         resolution=resolution,
         description=description or f"Functional connectome: {name}",
-        n_subjects=n_subjects,
+        n_subjects=n_subjects or 0,
         data_path=data_path,
         is_batched=is_batched,
     )
