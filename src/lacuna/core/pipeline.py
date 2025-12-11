@@ -320,7 +320,9 @@ def analyze(
         return analyses[0].run(data)
 
     # Multiple analyses: use pipeline
-    pipeline = Pipeline(name="analyze", steps=analyses)
+    pipeline = Pipeline(name="analyze")
+    for analysis in analyses:
+        pipeline.add(analysis)
 
     if isinstance(data, list):
         return [pipeline.run(d) for d in data]
