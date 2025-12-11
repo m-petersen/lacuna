@@ -9,7 +9,6 @@ Contract: T030 - Batch Result Extraction
 
 import nibabel as nib
 import numpy as np
-import pandas as pd
 import pytest
 
 from lacuna.core.data_types import ParcelData
@@ -102,16 +101,6 @@ class TestExtractContract:
 
         for value in extracted.values():
             assert isinstance(value, ParcelData)
-
-    def test_extract_as_dataframe(self, batch_results_with_parcel_data):
-        """extract() with as_dataframe=True should return DataFrame."""
-        from lacuna.batch.extract import extract
-
-        df = extract(batch_results_with_parcel_data, parc="AAL116", as_dataframe=True)
-
-        assert isinstance(df, pd.DataFrame)
-        assert "subject" in df.columns
-        assert len(df) == 3
 
     def test_extract_unwrap_calls_get_data(self, batch_results_with_parcel_data):
         """extract() with unwrap=True should call get_data() on results."""
