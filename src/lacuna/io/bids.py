@@ -848,18 +848,10 @@ def export_bids_derivatives(
         with open(desc_file, "w") as f:
             json.dump(dataset_description, f, indent=2)
 
-    # Determine which directories we need
-    needs_anat = export_lesion_mask or export_voxelmaps
-    needs_results = export_parcel_data or export_connectivity or export_scalars or export_provenance
-
-    # Create directories
-    if needs_anat:
-        anat_dir = subject_dir / "anat"
-        anat_dir.mkdir(parents=True, exist_ok=True)
-
-    if needs_results:
-        results_dir = subject_dir / "results"
-        results_dir.mkdir(parents=True, exist_ok=True)
+    # Create anat/ directory for all derivatives (BIDS compliant)
+    # All lesion-derived outputs go in anat/ per BIDS derivatives spec
+    anat_dir = subject_dir / "anat"
+    anat_dir.mkdir(parents=True, exist_ok=True)
 
     # Save lesion mask - use label entity per BIDS spec
     if export_lesion_mask:
@@ -892,29 +884,29 @@ def export_bids_derivatives(
                         overwrite=overwrite,
                     )
 
-                # ParcelData -> TSV (goes to results/)
+                # ParcelData -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ParcelDataType) and export_parcel_data:
                     _export_parcel_data(
                         value,
-                        results_dir,
+                        anat_dir,
                         subject_id=subject_id,
                         session_id=session_id,
                         desc=f"{namespace.lower()}_{key}",
                         overwrite=overwrite,
                     )
 
-                # ConnectivityMatrix -> TSV (goes to results/)
+                # ConnectivityMatrix -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ConnectivityMatrix) and export_connectivity:
                     export_connectivity_matrix(
                         value,
-                        results_dir,
+                        anat_dir,
                         subject_id=subject_id,
                         session_id=session_id,
                         desc=f"{namespace.lower()}_{key}",
                         overwrite=overwrite,
                     )
 
-                # ScalarMetric or other serializable -> JSON (goes to results/)
+                # ScalarMetric or other serializable -> JSON (goes to anat/ for BIDS compliance)
                 elif export_scalars:
                     if isinstance(value, ScalarMetric):
                         data_to_save = value.get_data()
@@ -923,7 +915,7 @@ def export_bids_derivatives(
 
                     try:
                         results_filename = f"{base_name}_desc-{namespace.lower()}_{key}.json"
-                        results_path = results_dir / results_filename
+                        results_path = anat_dir / results_filename
 
                         if results_path.exists() and not overwrite:
                             continue
@@ -934,10 +926,10 @@ def export_bids_derivatives(
                         # Skip non-serializable results
                         pass
 
-    # Save provenance (goes to results/)
+    # Save provenance (goes to anat/ for BIDS compliance)
     if export_provenance and mask_data.provenance:
         prov_filename = f"{base_name}_desc-provenance.json"
-        prov_path = results_dir / prov_filename
+        prov_path = anat_dir / prov_filename
 
         if prov_path.exists() and not overwrite:
             raise FileExistsError(
@@ -1135,14 +1127,14 @@ def validate_bids_derivatives(
                     )
                 continue
 
-            # Check for expected subdirectories
-            expected_subdirs = ["anat", "results", "func", "dwi"]
+            # Check for expected subdirectories (all outputs go to anat/ per BIDS spec)
+            expected_subdirs = ["anat", "func", "dwi"]
             has_subdirs = any((subj_dir / sd).exists() for sd in expected_subdirs)
 
             if not has_subdirs:
                 warnings_list.append(
                     f"Subject '{subj_name}' has no standard BIDS subdirectories "
-                    f"(anat, results, func, dwi)"
+                    f"(anat, func, dwi)"
                 )
 
             # Check for session subdirectories

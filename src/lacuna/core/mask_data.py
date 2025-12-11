@@ -347,6 +347,17 @@ class MaskData:
                         metadata["subject_id"] = part
                         break
 
+        # Auto-extract session_id from filename if not provided (BIDS compliant)
+        if "session_id" not in metadata:
+            filename = lesion_path.stem.replace(".nii", "")
+            if "ses-" in filename:
+                # Extract ses-XXX pattern
+                parts = filename.split("_")
+                for part in parts:
+                    if part.startswith("ses-"):
+                        metadata["session_id"] = part
+                        break
+
         # Handle space and resolution (priority: kwargs > metadata > auto-detection)
         if space is not None:
             metadata["space"] = space
