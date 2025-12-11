@@ -125,12 +125,12 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
 
             # Check shapes - in nested dict, these are VoxelMap objects
             # VoxelMap.data holds the NIfTI image which has .shape
-            assert flnm["correlation_map"].shape == (91, 109, 91)
-            assert flnm["t_map"].shape == (91, 109, 91)
+            assert flnm["correlation_map"].data.shape == (91, 109, 91)
+            assert flnm["t_map"].data.shape == (91, 109, 91)
 
             # Check aggregated across all subjects
-            # In batch results, summary_statistics is already the dict data
-            summary_data = flnm["summary_statistics"]
+            # summary_statistics is now a ScalarMetric, access .data for the dict
+            summary_data = flnm["summary_statistics"].data
             assert summary_data["n_subjects"] == 100
             assert summary_data["n_batches"] == 5
 
@@ -188,10 +188,9 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
 
         # Verify all results have correct subject count
         for result in results:
-            assert (
-                result.results["FunctionalNetworkMapping"]["summary_statistics"]["n_subjects"]
-                == 100
-            )
+            summary = result.results["FunctionalNetworkMapping"]["summary_statistics"]
+            # summary_statistics is now a ScalarMetric, access .data for the dict
+            assert summary.data["n_subjects"] == 100
     finally:
         unregister_functional_connectome("test_lesion_batch_connectome")
 
@@ -227,8 +226,9 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
 
             # Check data type of nibabel images (get_fdata() converts to float64)
             # So we check the internal data type instead
-            assert flnm["correlation_map"].get_data_dtype() == np.float32
-            assert flnm["z_map"].get_data_dtype() == np.float32
+            # Results are now VoxelMap objects, access .data for the NIfTI image
+            assert flnm["correlation_map"].data.get_data_dtype() == np.float32
+            assert flnm["z_map"].data.get_data_dtype() == np.float32
     finally:
         unregister_functional_connectome("test_float32_connectome")
 
@@ -262,15 +262,15 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
         for result in results:
             flnm = result.results["FunctionalNetworkMapping"]
 
-            # T-map should exist
+            # T-map should exist and be a VoxelMap
             assert "t_map" in flnm
-            assert flnm["t_map"].shape == (91, 109, 91)
+            assert flnm["t_map"].data.shape == (91, 109, 91)
 
             # Threshold map should exist
             assert "t_threshold_map" in flnm
 
-            # Statistics should include t-map info
-            stats = flnm["summary_statistics"]
+            # Statistics should include t-map info (ScalarMetric.data for dict access)
+            stats = flnm["summary_statistics"].data
             assert "t_min" in stats
             assert "t_max" in stats
             assert "t_threshold" in stats
