@@ -220,7 +220,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.return_in_lesion_space = return_in_lesion_space
 
         # Initialize logger
-        self.logger = ConsoleLogger(verbose=(log_level >= 2), width=70)
+        self.logger = ConsoleLogger(log_level=log_level, width=70)
 
         # Internal state
         self._batch_files = None
