@@ -1272,17 +1272,42 @@ class FunctionalNetworkMapping(BaseAnalysis):
         z_map_nifti = nib.Nifti1Image(z_map_3d, mask_affine)
 
         # Build results dictionary with snake_case keys (matching _run_analysis)
+        # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
         results = {
-            "correlation_map": correlation_map_nifti,
-            "z_map": z_map_nifti,
-            "summary_statistics": {
-                "mean": float(np.mean(mean_r_map)),
-                "std": float(np.std(mean_r_map)),
-                "max": float(np.max(mean_r_map)),
-                "min": float(np.min(mean_r_map)),
-                "n_subjects": total_subjects,
-                "n_batches": len(self._get_connectome_files()),
-            },
+            "correlation_map": VoxelMap(
+                name="correlation_map",
+                data=correlation_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "correlation_coefficient",
+                },
+            ),
+            "z_map": VoxelMap(
+                name="z_map",
+                data=z_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "fisher_z",
+                },
+            ),
+            "summary_statistics": ScalarMetric(
+                name="summary_statistics",
+                data={
+                    "mean": float(np.mean(mean_r_map)),
+                    "std": float(np.std(mean_r_map)),
+                    "max": float(np.max(mean_r_map)),
+                    "min": float(np.min(mean_r_map)),
+                    "n_subjects": total_subjects,
+                    "n_batches": len(self._get_connectome_files()),
+                },
+                metadata={"method": self.method},
+            ),
         }
 
         # Add t-map results if computed
@@ -1291,9 +1316,20 @@ class FunctionalNetworkMapping(BaseAnalysis):
             t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
             t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
 
-            results["t_map"] = t_map_nifti
-            results["summary_statistics"]["t_min"] = float(np.min(t_map_flat))
-            results["summary_statistics"]["t_max"] = float(np.max(t_map_flat))
+            results["t_map"] = VoxelMap(
+                name="t_map",
+                data=t_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "t_statistic",
+                },
+            )
+            # Update summary statistics with t-map info
+            results["summary_statistics"].data["t_min"] = float(np.min(t_map_flat))
+            results["summary_statistics"].data["t_max"] = float(np.max(t_map_flat))
 
             # Create thresholded t-map if threshold provided
             if self.t_threshold is not None:
@@ -1303,14 +1339,27 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     t_threshold_mask.astype(np.uint8)
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["t_threshold_map"] = t_threshold_map_nifti
-                results["summary_statistics"]["t_threshold"] = self.t_threshold
-                results["summary_statistics"]["n_significant_voxels"] = int(
+                results["t_threshold_map"] = VoxelMap(
+                    name="t_threshold_map",
+                    data=t_threshold_map_nifti,
+                    space=self.output_space,
+                    resolution=self.output_resolution,
+                    metadata={
+                        "method": self.method,
+                        "threshold": self.t_threshold,
+                        "statistic": "thresholded_t",
+                    },
+                )
+                results["summary_statistics"].data["t_threshold"] = self.t_threshold
+                results["summary_statistics"].data["n_significant_voxels"] = int(
                     np.sum(t_threshold_mask)
                 )
 
+        # Transform VoxelMap results back to lesion space if requested
+        if self.return_in_lesion_space:
+            results = self._transform_results_to_lesion_space(results, mask_data)
+
         # Add results to lesion data (returns new instance with results)
-        # Note: Using snake_case keys to match _run_analysis() structure
         batch_results = {
             "correlation_map": results["correlation_map"],
             "z_map": results["z_map"],
@@ -1391,19 +1440,44 @@ class FunctionalNetworkMapping(BaseAnalysis):
         z_map_nifti = nib.Nifti1Image(z_map_3d, mask_affine)
 
         # Build results dictionary
+        # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
         results = {
-            "correlation_map": correlation_map_nifti,
-            "network_map": correlation_map_nifti,  # Alias for backward compat
-            "z_map": z_map_nifti,
+            "correlation_map": VoxelMap(
+                name="correlation_map",
+                data=correlation_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "correlation_coefficient",
+                },
+            ),
+            "network_map": correlation_map_nifti,  # Alias for backward compat (raw nifti)
+            "z_map": VoxelMap(
+                name="z_map",
+                data=z_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "fisher_z",
+                },
+            ),
             "mean_correlation": float(np.mean(mean_r_map)),
-            "summary_statistics": {
-                "mean": float(np.mean(mean_r_map)),
-                "std": float(np.std(mean_r_map)),
-                "max": float(np.max(mean_r_map)),
-                "min": float(np.min(mean_r_map)),
-                "n_subjects": total_subjects,
-                "n_batches": len(self._get_connectome_files()),
-            },
+            "summary_statistics": ScalarMetric(
+                name="summary_statistics",
+                data={
+                    "mean": float(np.mean(mean_r_map)),
+                    "std": float(np.std(mean_r_map)),
+                    "max": float(np.max(mean_r_map)),
+                    "min": float(np.min(mean_r_map)),
+                    "n_subjects": total_subjects,
+                    "n_batches": len(self._get_connectome_files()),
+                },
+                metadata={"method": self.method},
+            ),
         }
 
         # Add t-map results if computed
@@ -1412,9 +1486,19 @@ class FunctionalNetworkMapping(BaseAnalysis):
             t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
             t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
 
-            results["t_map"] = t_map_nifti
-            results["summary_statistics"]["t_min"] = float(np.min(t_map_flat))
-            results["summary_statistics"]["t_max"] = float(np.max(t_map_flat))
+            results["t_map"] = VoxelMap(
+                name="t_map",
+                data=t_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "t_statistic",
+                },
+            )
+            results["summary_statistics"].data["t_min"] = float(np.min(t_map_flat))
+            results["summary_statistics"].data["t_max"] = float(np.max(t_map_flat))
 
             # Create thresholded t-map if threshold provided
             if self.t_threshold is not None:
@@ -1424,9 +1508,19 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     t_threshold_mask.astype(np.uint8)
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["t_threshold_map"] = t_threshold_map_nifti
-                results["summary_statistics"]["t_threshold"] = self.t_threshold
-                results["summary_statistics"]["n_significant_voxels"] = int(
+                results["t_threshold_map"] = VoxelMap(
+                    name="t_threshold_map",
+                    data=t_threshold_map_nifti,
+                    space=self.output_space,
+                    resolution=self.output_resolution,
+                    metadata={
+                        "method": self.method,
+                        "threshold": self.t_threshold,
+                        "statistic": "thresholded_t",
+                    },
+                )
+                results["summary_statistics"].data["t_threshold"] = self.t_threshold
+                results["summary_statistics"].data["n_significant_voxels"] = int(
                     np.sum(t_threshold_mask)
                 )
 
