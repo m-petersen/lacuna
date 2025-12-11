@@ -3,6 +3,9 @@
 This module provides convenience functions for extracting specific result types
 from batch processing outputs into analysis-friendly formats.
 
+The primary function is `extract()` which provides a unified interface similar
+to `MaskData.get_result()` for extracting results from batch processing outputs.
+
 User Story 3: Batch Result Extraction
 """
 
@@ -47,6 +50,21 @@ def _get_identifier(item: MaskData | ParcelData | Any) -> str:
 
     # Fallback - will be replaced by caller with index
     return ""
+
+
+def _unwrap_value(val: Any) -> Any:
+    """Call get_data() on result objects if they have it.
+    
+    Skips nibabel images (which have deprecated get_data()) and
+    returns them as-is since they're already raw data.
+    """
+    # Skip nibabel images - they're already raw data
+    if isinstance(val, nib.Nifti1Image):
+        return val
+    # Call get_data() on wrapper objects (VoxelMap, ParcelData, etc.)
+    if hasattr(val, "get_data") and callable(val.get_data):
+        return val.get_data()
+    return val
 
 
 def extract_voxelmaps(
@@ -351,7 +369,162 @@ def extract_scalars(
     return pd.Series(extracted, dtype=float)
 
 
+def extract(
+    results: list[MaskData],
+    analysis: str,
+    parc: str | None = None,
+    source: str | None = None,
+    desc: str | None = None,
+    unwrap: bool = False,
+    as_dataframe: bool = False,
+) -> dict[str, Any] | pd.DataFrame:
+    """Extract results from batch processing output.
+
+    This function provides a unified interface for extracting results from
+    batch processing, with an API similar to `MaskData.get_result()`.
+
+    Parameters
+    ----------
+    results : list[MaskData]
+        Batch processing results (MaskData objects with results attached).
+    analysis : str
+        Analysis namespace to extract from (e.g., "FunctionalNetworkMapping",
+        "RegionalDamage", "ParcelAggregation").
+    parc : str, optional
+        Parcellation name filter (e.g., "Schaefer2018_100Parcels7Networks").
+    source : str, optional
+        Source abbreviation filter (e.g., "fnm", "MaskData").
+    desc : str, optional
+        Description filter (e.g., "correlation_map", "z_map", "mask_img").
+    unwrap : bool, default=False
+        If True, call `.get_data()` on result objects to return raw data
+        (numpy arrays, nibabel images, dicts) instead of wrapper objects.
+    as_dataframe : bool, default=False
+        If True and results are ParcelData, return as pandas DataFrame
+        with subjects as rows and parcels as columns.
+
+    Returns
+    -------
+    dict[str, Any] or pd.DataFrame
+        Dictionary mapping subject identifiers to extracted results.
+        If as_dataframe=True and results are ParcelData, returns DataFrame.
+
+    Examples
+    --------
+    >>> # Extract correlation maps from FNM batch results
+    >>> corr_maps = extract(
+    ...     results,
+    ...     analysis="FunctionalNetworkMapping",
+    ...     desc="correlation_map"
+    ... )
+    >>> for subject_id, vmap in corr_maps.items():
+    ...     print(f"{subject_id}: {vmap.get_data().shape}")
+
+    >>> # Extract and unwrap to get raw nibabel images
+    >>> corr_images = extract(
+    ...     results,
+    ...     analysis="FunctionalNetworkMapping",
+    ...     desc="correlation_map",
+    ...     unwrap=True
+    ... )
+    >>> for subject_id, img in corr_images.items():
+    ...     nib.save(img, f"{subject_id}_corr.nii.gz")
+
+    >>> # Extract parcel data as DataFrame
+    >>> df = extract(
+    ...     results,
+    ...     analysis="RegionalDamage",
+    ...     parc="Schaefer2018_100Parcels7Networks",
+    ...     unwrap=True,
+    ...     as_dataframe=True
+    ... )
+    >>> print(df.shape)  # (n_subjects, n_parcels)
+
+    See Also
+    --------
+    MaskData.get_result : Similar API for single-subject result access.
+    extract_voxelmaps : Legacy function for VoxelMap extraction.
+    extract_parcel_table : Legacy function for parcel DataFrame extraction.
+    extract_scalars : Legacy function for scalar extraction.
+    """
+    from lacuna.core.data_types import ParcelData
+    from lacuna.core.keys import parse_result_key
+
+    extracted: dict[str, Any] = {}
+
+    for idx, item in enumerate(results):
+        identifier = _get_identifier(item)
+        if not identifier:
+            identifier = f"subject_{idx:03d}"
+
+        if not hasattr(item, "results") or item.results is None:
+            continue
+
+        # Get results for this analysis
+        analysis_results = item.results.get(analysis, {})
+        if not analysis_results:
+            continue
+
+        # If no filters, get all results for this analysis
+        if parc is None and source is None and desc is None:
+            if unwrap:
+                extracted[identifier] = {k: _unwrap_value(v) for k, v in analysis_results.items()}
+            else:
+                extracted[identifier] = analysis_results
+            continue
+
+        # Filter by components
+        matching: dict[str, Any] = {}
+        for key, value in analysis_results.items():
+            # Try to parse the key
+            try:
+                parsed = parse_result_key(key)
+            except ValueError:
+                # Key doesn't follow BIDS format - check if desc matches directly
+                if desc is not None and key == desc:
+                    matching[key] = value
+                continue
+
+            # Check each filter if provided
+            if parc is not None and parsed.get("parc") != parc:
+                continue
+            if source is not None and parsed.get("source") != source:
+                continue
+            if desc is not None and parsed.get("desc") != desc:
+                continue
+
+            matching[key] = value
+
+        if matching:
+            if len(matching) == 1:
+                result = next(iter(matching.values()))
+                if unwrap:
+                    extracted[identifier] = _unwrap_value(result)
+                else:
+                    extracted[identifier] = result
+            else:
+                if unwrap:
+                    extracted[identifier] = {k: _unwrap_value(v) for k, v in matching.items()}
+                else:
+                    extracted[identifier] = matching
+
+    # Convert to DataFrame if requested and appropriate
+    if as_dataframe and extracted:
+        first_val = next(iter(extracted.values()))
+        # Check if values are dicts (from ParcelData.get_data() or unwrapped)
+        if isinstance(first_val, dict):
+            return pd.DataFrame.from_dict(extracted, orient="index")
+        # Check if values are ParcelData
+        if isinstance(first_val, ParcelData):
+            return pd.DataFrame.from_dict(
+                {k: v.get_data() for k, v in extracted.items()}, orient="index"
+            )
+
+    return extracted
+
+
 __all__ = [
+    "extract",
     "extract_voxelmaps",
     "extract_parcel_table",
     "extract_scalars",
