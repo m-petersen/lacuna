@@ -232,10 +232,15 @@ def _load_bids_manual(
                 # Look for lesion mask in anat folder
                 anat_dir = session_dir / "anat"
                 if anat_dir.exists():
-                    # Look for BIDS-compliant desc-lesion pattern
+                    # Look for BIDS-compliant label-lesion pattern (preferred)
                     lesion_files = list(
-                        anat_dir.glob(f"{subject_id}_{session_id}*desc-lesion*mask*.nii*")
+                        anat_dir.glob(f"{subject_id}_{session_id}*label-lesion*mask*.nii*")
                     )
+                    # Also try desc-lesion pattern (backward compatibility)
+                    if not lesion_files:
+                        lesion_files = list(
+                            anat_dir.glob(f"{subject_id}_{session_id}*desc-lesion*mask*.nii*")
+                        )
                     # Also try legacy mask-lesion pattern
                     if not lesion_files:
                         lesion_files = list(
@@ -287,8 +292,11 @@ def _load_bids_manual(
             # Single-session dataset
             anat_dir = subject_dir / "anat"
             if anat_dir.exists():
-                # Look for BIDS-compliant desc-lesion pattern
-                lesion_files = list(anat_dir.glob(f"{subject_id}*desc-lesion*mask*.nii*"))
+                # Look for BIDS-compliant label-lesion pattern (preferred)
+                lesion_files = list(anat_dir.glob(f"{subject_id}*label-lesion*mask*.nii*"))
+                # Also try desc-lesion pattern (backward compatibility)
+                if not lesion_files:
+                    lesion_files = list(anat_dir.glob(f"{subject_id}*desc-lesion*mask*.nii*"))
                 # Also try legacy mask-lesion pattern
                 if not lesion_files:
                     lesion_files = list(anat_dir.glob(f"{subject_id}*mask-lesion*.nii*"))
@@ -841,14 +849,8 @@ def export_bids_derivatives(
             json.dump(dataset_description, f, indent=2)
 
     # Determine which directories we need
-    needs_anat = export_lesion_mask
-    needs_results = (
-        export_voxelmaps
-        or export_parcel_data
-        or export_connectivity
-        or export_scalars
-        or export_provenance
-    )
+    needs_anat = export_lesion_mask or export_voxelmaps
+    needs_results = export_parcel_data or export_connectivity or export_scalars or export_provenance
 
     # Create directories
     if needs_anat:
@@ -859,10 +861,10 @@ def export_bids_derivatives(
         results_dir = subject_dir / "results"
         results_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save lesion mask
+    # Save lesion mask - use label entity per BIDS spec
     if export_lesion_mask:
         coord_space = mask_data.get_coordinate_space()
-        lesion_filename = f"{base_name}_space-{coord_space}_desc-lesion_mask.nii.gz"
+        lesion_filename = f"{base_name}_space-{coord_space}_label-lesion_mask.nii.gz"
         lesion_path = anat_dir / lesion_filename
 
         if lesion_path.exists() and not overwrite:
@@ -879,18 +881,18 @@ def export_bids_derivatives(
                 continue
 
             for key, value in results_data.items():
-                # VoxelMap -> NIfTI
+                # VoxelMap -> NIfTI (goes to anat/ for spatial data)
                 if isinstance(value, VoxelMap) and export_voxelmaps:
                     export_voxelmap(
                         value,
-                        results_dir,
+                        anat_dir,
                         subject_id=subject_id,
                         session_id=session_id,
                         desc=f"{namespace.lower()}_{key}",
                         overwrite=overwrite,
                     )
 
-                # ParcelData -> TSV
+                # ParcelData -> TSV (goes to results/)
                 elif isinstance(value, ParcelDataType) and export_parcel_data:
                     _export_parcel_data(
                         value,
@@ -901,7 +903,7 @@ def export_bids_derivatives(
                         overwrite=overwrite,
                     )
 
-                # ConnectivityMatrix -> TSV
+                # ConnectivityMatrix -> TSV (goes to results/)
                 elif isinstance(value, ConnectivityMatrix) and export_connectivity:
                     export_connectivity_matrix(
                         value,
@@ -912,7 +914,7 @@ def export_bids_derivatives(
                         overwrite=overwrite,
                     )
 
-                # ScalarMetric or other serializable -> JSON
+                # ScalarMetric or other serializable -> JSON (goes to results/)
                 elif export_scalars:
                     if isinstance(value, ScalarMetric):
                         data_to_save = value.get_data()
@@ -932,7 +934,7 @@ def export_bids_derivatives(
                         # Skip non-serializable results
                         pass
 
-    # Save provenance
+    # Save provenance (goes to results/)
     if export_provenance and mask_data.provenance:
         prov_filename = f"{base_name}_desc-provenance.json"
         prov_path = results_dir / prov_filename
