@@ -810,6 +810,7 @@ class MaskData:
         parc: str | None = None,
         source: str | None = None,
         desc: str | None = None,
+        unwrap: bool = False,
     ) -> Any:
         """
         Get result by analysis name and optional BIDS-style key components.
@@ -828,6 +829,9 @@ class MaskData:
             Source abbreviation filter (e.g., "fnm", "mask").
         desc : str, optional
             Description filter (e.g., "correlation_map", "z_map").
+        unwrap : bool, default=False
+            If True, call `.get_data()` on result objects to return raw data
+            (e.g., numpy arrays, nibabel images) instead of wrapper objects.
 
         Returns
         -------
@@ -835,6 +839,7 @@ class MaskData:
             - If no filters: dict of all results for the analysis
             - If single match: the result value directly
             - If multiple matches: dict of matching results
+            - If unwrap=True: raw data via `.get_data()` instead of wrappers
 
         Raises
         ------
@@ -849,13 +854,12 @@ class MaskData:
         >>> # Get by desc only (for results without parcellation)
         >>> z_map = mask_data.get_result("FunctionalNetworkMapping", desc="z_map")
 
-        >>> # Get specific result by all key components
-        >>> parcel_data = mask_data.get_result(
-        ...     "ParcelAggregation",
-        ...     parc="Schaefer100",
-        ...     source="fnm",
-        ...     desc="correlation_map"
+        >>> # Get unwrapped data directly (nibabel image instead of VoxelMap)
+        >>> corr_img = mask_data.get_result(
+        ...     "FunctionalNetworkMapping", desc="correlation_map", unwrap=True
         ... )
+        >>> corr_img.shape  # Access numpy array directly
+        (91, 109, 91)
 
         See Also
         --------
@@ -877,8 +881,28 @@ class MaskData:
 
         analysis_results = self._results[analysis]
 
+        def _unwrap_value(val: Any) -> Any:
+            """Call get_data() on result objects if they have it.
+            
+            Skips nibabel images (deprecated get_data()) - returns as-is.
+            """
+            import nibabel as nib
+            # Skip nibabel images - they're already raw data
+            if isinstance(val, nib.Nifti1Image):
+                return val
+            # Call get_data() on wrapper objects (VoxelMap, ParcelData, etc.)
+            if hasattr(val, "get_data") and callable(val.get_data):
+                return val.get_data()
+            return val
+
+        def _unwrap_dict(d: dict) -> dict:
+            """Unwrap all values in a dict."""
+            return {k: _unwrap_value(v) for k, v in d.items()}
+
         # If no filters, return all results for this analysis
         if parc is None and source is None and desc is None:
+            if unwrap:
+                return _unwrap_dict(analysis_results)
             return analysis_results
 
         # Filter results by provided components
@@ -919,7 +943,12 @@ class MaskData:
 
         if len(matching) == 1:
             # Single match - return the value directly
-            return next(iter(matching.values()))
+            result = next(iter(matching.values()))
+            if unwrap:
+                return _unwrap_value(result)
+            return result
 
         # Multiple matches - return as dict
+        if unwrap:
+            return _unwrap_dict(matching)
         return matching
