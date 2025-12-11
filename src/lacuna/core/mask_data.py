@@ -883,10 +883,11 @@ class MaskData:
 
         def _unwrap_value(val: Any) -> Any:
             """Call get_data() on result objects if they have it.
-            
+
             Skips nibabel images (deprecated get_data()) - returns as-is.
             """
             import nibabel as nib
+
             # Skip nibabel images - they're already raw data
             if isinstance(val, nib.Nifti1Image):
                 return val

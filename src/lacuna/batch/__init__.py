@@ -31,21 +31,13 @@ Examples
 """
 
 from lacuna.batch.api import batch_process
-from lacuna.batch.extract import (
-    extract,
-    extract_parcel_table,
-    extract_scalars,
-    extract_voxelmaps,
-)
+from lacuna.batch.extract import extract
 from lacuna.batch.selection import select_strategy
 from lacuna.batch.strategies import BatchStrategy, ParallelStrategy, VectorizedStrategy
 
 __all__ = [
     "batch_process",
     "extract",
-    "extract_parcel_table",
-    "extract_scalars",
-    "extract_voxelmaps",
     "select_strategy",
     "BatchStrategy",
     "ParallelStrategy",
