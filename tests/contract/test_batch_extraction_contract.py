@@ -84,10 +84,12 @@ class TestExtractContract:
 
         extracted = extract(batch_results_with_parcel_data, parc="AAL116")
 
-        # All results should have AAL116 in the key
-        for subject_results in extracted.values():
-            for key in subject_results:
-                assert "parc-AAL116" in key
+        # When there's only one matching result per subject, extract returns values directly
+        # Values should be ParcelData objects (the actual result)
+        from lacuna.core.data_types import ParcelData
+
+        for value in extracted.values():
+            assert isinstance(value, ParcelData)
 
     def test_extract_filters_by_source(self, batch_results_with_parcel_data):
         """extract() should filter results by source."""
@@ -95,10 +97,11 @@ class TestExtractContract:
 
         extracted = extract(batch_results_with_parcel_data, source="ParcelAggregation")
 
-        # All results should have ParcelAggregation in the key
-        for subject_results in extracted.values():
-            for key in subject_results:
-                assert "source-ParcelAggregation" in key
+        # When there's only one matching result per subject, extract returns values directly
+        from lacuna.core.data_types import ParcelData
+
+        for value in extracted.values():
+            assert isinstance(value, ParcelData)
 
     def test_extract_as_dataframe(self, batch_results_with_parcel_data):
         """extract() with as_dataframe=True should return DataFrame."""
@@ -116,11 +119,11 @@ class TestExtractContract:
 
         extracted = extract(batch_results_with_parcel_data, parc="AAL116", unwrap=True)
 
-        # Values should be raw data (dicts), not ParcelData objects
-        for subject_results in extracted.values():
-            for value in subject_results.values():
-                assert isinstance(value, dict)
-                assert "region_A" in value
+        # When there's only one matching result per subject, extract returns values directly
+        # With unwrap=True, values should be raw data (dicts from ParcelData.get_data())
+        for value in extracted.values():
+            assert isinstance(value, dict)
+            assert "region_A" in value
 
     def test_extract_without_unwrap_returns_wrapper(self, batch_results_with_parcel_data):
         """extract() with unwrap=False should return wrapper objects."""
@@ -128,10 +131,10 @@ class TestExtractContract:
 
         extracted = extract(batch_results_with_parcel_data, parc="AAL116", unwrap=False)
 
-        # Values should be ParcelData objects
-        for subject_results in extracted.values():
-            for value in subject_results.values():
-                assert isinstance(value, ParcelData)
+        # When there's only one matching result per subject, extract returns values directly
+        # With unwrap=False, values should be ParcelData objects
+        for value in extracted.values():
+            assert isinstance(value, ParcelData)
 
 
 class TestExtractErrorHandling:

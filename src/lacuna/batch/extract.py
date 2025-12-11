@@ -63,6 +63,7 @@ def _unwrap_value(val: Any) -> Any:
 def extract(
     batch_results: BatchResults,
     *,
+    analysis: str | None = None,
     parc: str | None = None,
     source: str | None = None,
     desc: str | None = None,
@@ -73,16 +74,19 @@ def extract(
 
     Unified extraction function that replaces the legacy `extract_voxelmaps()`,
     `extract_parcel_table()`, and `extract_scalars()` functions. Provides
-    flexible filtering using BIDS-style key components.
+    flexible filtering using BIDS-style key components or analysis namespace.
 
     Args:
         batch_results: The batch results to extract from.
+        analysis: Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
+            "RegionalDamage"). This filters by the top-level namespace in results.
         parc: Filter by parcellation name (e.g., "AAL116", "Schaefer100").
-            Matches the 'parc' component of result keys.
+            Matches the 'parc' component of BIDS-style result keys.
         source: Filter by source type (e.g., "ParcelAggregation", "RegionalDamage").
-            Matches the 'source' component of result keys.
-        desc: Filter by description (e.g., "parcel_means", "damage_score").
-            Matches the 'desc' component of result keys.
+            Matches the 'source' component of BIDS-style result keys.
+        desc: Filter by description (e.g., "parcel_means", "correlation_map").
+            Matches the 'desc' component of BIDS-style result keys, OR matches
+            plain result keys directly (e.g., "correlation_map").
         unwrap: If True, call `get_data()` on result objects to return raw values.
             If False (default), return wrapper objects (VoxelMap, ParcelData, etc.).
         as_dataframe: If True, return results as a pandas DataFrame with columns
@@ -90,11 +94,17 @@ def extract(
 
     Returns:
         If as_dataframe is False:
-            Dictionary mapping subject identifiers to dicts of {result_key: value}.
+            Dictionary mapping subject identifiers to extracted values.
+            If only one result key matches per subject, returns {subject: value}.
+            If multiple keys match, returns {subject: {key: value}}.
         If as_dataframe is True:
             DataFrame with 'subject' column and columns for each result key.
 
     Examples:
+        Extract correlation maps from FunctionalNetworkMapping:
+        >>> results = extract(batch_results, analysis="FunctionalNetworkMapping",
+        ...                   desc="correlation_map")
+
         Extract atlas damage for AAL116 parcellation:
         >>> results = extract(batch_results, parc="AAL116")
 
@@ -114,14 +124,14 @@ def extract(
         msg = "batch_results is empty"
         raise ValueError(msg)
 
-    # Build filter criteria
-    filters: dict[str, str] = {}
+    # Build BIDS-style filter criteria
+    bids_filters: dict[str, str] = {}
     if parc is not None:
-        filters["parc"] = parc
+        bids_filters["parc"] = parc
     if source is not None:
-        filters["source"] = source
+        bids_filters["source"] = source
     if desc is not None:
-        filters["desc"] = desc
+        bids_filters["desc"] = desc
 
     # Extract matching results for each subject
     extracted: dict[str, dict[str, Any]] = {}
@@ -130,43 +140,66 @@ def extract(
         identifier = _get_identifier(subject)
         subject_results: dict[str, Any] = {}
 
-        # Results may be nested {namespace: {key: value}} or flat {key: value}
-        # Flatten if needed
-        all_results: dict[str, Any] = {}
-        for key, value in results.items():
-            if isinstance(value, dict):
-                # This is a namespace containing keys -> flatten
-                all_results.update(value)
+        # Results are nested {namespace: {key: value}}
+        # Filter by analysis namespace if specified
+        namespaces_to_search = results.items()
+        if analysis is not None:
+            # Only search in the specified namespace
+            if analysis in results:
+                namespaces_to_search = [(analysis, results[analysis])]
             else:
-                # Already flat
-                all_results[key] = value
-
-        for key, value in all_results.items():
-            # Parse the key to check against filters
-            try:
-                components = parse_result_key(key)
-            except ValueError:
-                # Skip keys that don't parse (non-standard keys)
+                # Namespace not found for this subject
                 continue
 
-            # Check if key matches all filters
-            matches = True
-            for filter_key, filter_value in filters.items():
-                if components.get(filter_key) != filter_value:
-                    matches = False
-                    break
+        for _namespace, namespace_results in namespaces_to_search:
+            if not isinstance(namespace_results, dict):
+                # Skip non-dict values (shouldn't happen but be safe)
+                continue
 
-            if matches:
-                if unwrap:
-                    subject_results[key] = _unwrap_value(value)
+            for key, value in namespace_results.items():
+                # Try to parse as BIDS-style key
+                try:
+                    components = parse_result_key(key)
+                    is_bids_key = True
+                except ValueError:
+                    # Plain key (e.g., "correlation_map")
+                    is_bids_key = False
+                    components = {}
+
+                # Check if key matches filters
+                matches = True
+
+                if is_bids_key:
+                    # Check BIDS-style filters
+                    for filter_key, filter_value in bids_filters.items():
+                        if components.get(filter_key) != filter_value:
+                            matches = False
+                            break
                 else:
-                    subject_results[key] = value
+                    # Plain key - only match on desc filter
+                    # (parc and source don't apply to plain keys)
+                    if desc is not None and key != desc:
+                        matches = False
+                    # If parc or source filters are set, plain keys don't match
+                    if parc is not None or source is not None:
+                        matches = False
+
+                if matches:
+                    if unwrap:
+                        subject_results[key] = _unwrap_value(value)
+                    else:
+                        subject_results[key] = value
 
         if subject_results:
             extracted[identifier] = subject_results
 
     if not extracted:
-        filter_desc = ", ".join(f"{k}={v}" for k, v in filters.items())
+        filter_parts = []
+        if analysis:
+            filter_parts.append(f"analysis={analysis}")
+        for k, v in bids_filters.items():
+            filter_parts.append(f"{k}={v}")
+        filter_desc = ", ".join(filter_parts) if filter_parts else "(no filters)"
         msg = f"No results found matching filters: {filter_desc}"
         raise ValueError(msg)
 
@@ -178,5 +211,14 @@ def extract(
             row.update(results)
             rows.append(row)
         return pd.DataFrame(rows)
+
+    # Simplify output: if each subject has only one result key, return the value directly
+    # Check if all subjects have exactly one result
+    all_single = all(len(v) == 1 for v in extracted.values())
+    if all_single:
+        # Return {subject: value} instead of {subject: {key: value}}
+        return {
+            identifier: next(iter(results.values())) for identifier, results in extracted.items()
+        }
 
     return extracted
