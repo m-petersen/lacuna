@@ -11,8 +11,9 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import ParcelAggregation, RegionalDamage
+from lacuna.core.keys import build_result_key
 
 
 class TestAtlasNamesFilter:
@@ -46,7 +47,7 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n2 {atlas_name}_Region2\n")
 
             # Load lesion
-            mask_data_obj = MaskData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
+            mask_data_obj = SubjectData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
 
             # Register all atlases
             from lacuna.assets.parcellations.registry import register_parcellations_from_directory
@@ -59,10 +60,10 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should only have atlas_B results
-            # Keys use BIDS-style format: parc-{atlas}_source-MaskData_desc-mask_img
-            assert "parc-atlas_B_source-MaskData_desc-mask_img" in atlas_results
-            assert "parc-atlas_A_source-MaskData_desc-mask_img" not in atlas_results
-            assert "parc-atlas_C_source-MaskData_desc-mask_img" not in atlas_results
+            # Keys use BIDS-style format: atlas-{atlas}_source-InputMask
+            assert build_result_key("atlas_B", "SubjectData") in atlas_results
+            assert build_result_key("atlas_A", "SubjectData") not in atlas_results
+            assert build_result_key("atlas_C", "SubjectData") not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
             analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_C"])
@@ -70,9 +71,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
-            assert "parc-atlas_A_source-MaskData_desc-mask_img" in atlas_results
-            assert "parc-atlas_B_source-MaskData_desc-mask_img" not in atlas_results
-            assert "parc-atlas_C_source-MaskData_desc-mask_img" in atlas_results
+            assert build_result_key("atlas_A", "SubjectData") in atlas_results
+            assert build_result_key("atlas_B", "SubjectData") not in atlas_results
+            assert build_result_key("atlas_C", "SubjectData") in atlas_results
 
             # Test 3: Explicitly use all local test atlases (avoid bundled atlases that require TemplateFlow)
             # Note: parcel_names=None would process all registered atlases including bundled ones,
@@ -82,9 +83,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should have all three local atlases
-            assert "parc-atlas_A_source-MaskData_desc-mask_img" in atlas_results
-            assert "parc-atlas_B_source-MaskData_desc-mask_img" in atlas_results
-            assert "parc-atlas_C_source-MaskData_desc-mask_img" in atlas_results
+            assert build_result_key("atlas_A", "SubjectData") in atlas_results
+            assert build_result_key("atlas_B", "SubjectData") in atlas_results
+            assert build_result_key("atlas_C", "SubjectData") in atlas_results
 
     def test_atlas_names_warns_if_not_found(self):
         """Test that warning is issued if requested atlas not found."""
@@ -112,7 +113,7 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            mask_data_obj = MaskData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
+            mask_data_obj = SubjectData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
 
             # Register atlas
             from lacuna.assets.parcellations.registry import register_parcellations_from_directory
@@ -127,7 +128,7 @@ class TestAtlasNamesFilter:
 
             # Should still process atlas_A successfully
             atlas_results = result.results["RegionalDamage"]
-            assert "parc-atlas_A_source-MaskData_desc-mask_img" in atlas_results
+            assert build_result_key("atlas_A", "SubjectData") in atlas_results
 
     def test_atlas_names_raises_if_none_found(self):
         """Test that error is raised if no matching atlases found."""
@@ -155,7 +156,7 @@ class TestAtlasNamesFilter:
             labels_path.write_text("1 Region1\n")
 
             # Load lesion
-            mask_data_obj = MaskData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
+            mask_data_obj = SubjectData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
 
             # Register atlas
             from lacuna.assets.parcellations.registry import register_parcellations_from_directory
@@ -211,7 +212,7 @@ class TestAtlasNamesFilter:
                 labels_path.write_text(f"1 {atlas_name}_Region1\n")
 
             # Load lesion
-            mask_data_obj = MaskData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
+            mask_data_obj = SubjectData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
 
             # Register atlases
             from lacuna.assets.parcellations.registry import register_parcellations_from_directory
@@ -220,7 +221,7 @@ class TestAtlasNamesFilter:
 
             # Use ParcelAggregation with parcel_names filter
             analysis = ParcelAggregation(
-                source="mask_img",
+                source="maskimg",
                 aggregation="mean",
                 parcel_names=["atlas_X"],
             )
@@ -228,6 +229,6 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["ParcelAggregation"]
 
             # Should only have atlas_X results
-            # Keys use BIDS-style format: parc-{atlas}_source-MaskData_desc-mask_img
-            assert "parc-atlas_X_source-MaskData_desc-mask_img" in atlas_results
-            assert "parc-atlas_Y_source-MaskData_desc-mask_img" not in atlas_results
+            # Keys use BIDS-style format: atlas-{atlas}_source-InputMask
+            assert build_result_key("atlas_X", "SubjectData") in atlas_results
+            assert build_result_key("atlas_Y", "SubjectData") not in atlas_results

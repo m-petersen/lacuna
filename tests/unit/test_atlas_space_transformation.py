@@ -16,7 +16,7 @@ from lacuna.assets.connectomes import (
     register_structural_connectome,
     unregister_structural_connectome,
 )
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 def test_atlas_transformed_when_space_mismatch():
@@ -51,7 +51,7 @@ def test_atlas_transformed_when_space_mismatch():
         mask_data_array[4:6, 4:6, 4:6] = 1.0
         mask_img = nib.Nifti1Image(mask_data_array, np.eye(4))
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img,
             metadata={
                 "subject_id": "test",
@@ -174,7 +174,7 @@ def test_atlas_not_transformed_when_space_matches():
         mask_data_array[4:6, 4:6, 4:6] = 1.0
         mask_img = nib.Nifti1Image(mask_data_array, np.eye(4))
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img,
             metadata={
                 "subject_id": "test",
@@ -281,7 +281,7 @@ def test_atlas_transformation_uses_correct_resolution():
         mask_data_array[4:6, 4:6, 4:6] = 1.0
         mask_img = nib.Nifti1Image(mask_data_array, np.eye(4))
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img,
             metadata={
                 "subject_id": "test",

@@ -19,7 +19,7 @@ from lacuna.assets.connectomes import (
     register_structural_connectome,
     unregister_structural_connectome,
 )
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 def test_template_resolved_before_tdi_computation(tmp_path):
@@ -57,7 +57,7 @@ def test_template_resolved_before_tdi_computation(tmp_path):
         mask_data = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data[4:6, 4:6, 4:6] = 1.0
         mask_img = nib.Nifti1Image(mask_data, np.eye(4))
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img,
             metadata={
                 "subject_id": "test",

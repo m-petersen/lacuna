@@ -9,7 +9,7 @@ class TestParcelAggregationAtlasParameter:
     def test_single_atlas_name(self):
         """Test creating ParcelAggregation with single atlas name."""
         analysis = ParcelAggregation(
-            parcel_names=["Schaefer400"], source="mask_img", aggregation="percent"
+            parcel_names=["Schaefer400"], source="maskimg", aggregation="percent"
         )
 
         assert analysis.parcel_names == ["Schaefer400"]
@@ -17,14 +17,14 @@ class TestParcelAggregationAtlasParameter:
     def test_multiple_atlas_names(self):
         """Test creating ParcelAggregation with multiple atlas names."""
         analysis = ParcelAggregation(
-            parcel_names=["Schaefer400", "TianS2"], source="mask_img", aggregation="percent"
+            parcel_names=["Schaefer400", "TianS2"], source="maskimg", aggregation="percent"
         )
 
         assert analysis.parcel_names == ["Schaefer400", "TianS2"]
 
     def test_no_atlas_defaults_to_none(self):
         """Test that omitting parcel_names parameter leaves it as None."""
-        analysis = ParcelAggregation(source="mask_img", aggregation="percent")
+        analysis = ParcelAggregation(source="maskimg", aggregation="percent")
 
         assert analysis.parcel_names is None
 

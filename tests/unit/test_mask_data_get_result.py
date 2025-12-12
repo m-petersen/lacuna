@@ -1,6 +1,6 @@
-"""Unit tests for MaskData.get_result() method.
+"""Unit tests for SubjectData.get_result() method.
 
-Tests the BIDS-style result key access helper.
+Tests the glob pattern-based result key access.
 """
 
 import nibabel as nib
@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from lacuna.core.keys import build_result_key
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 @pytest.fixture
@@ -23,27 +23,29 @@ def sample_mask_img():
 
 @pytest.fixture
 def mask_data_with_results(sample_mask_img):
-    """Create MaskData with some pre-populated results."""
-    mask = MaskData(
+    """Create SubjectData with some pre-populated results."""
+    mask = SubjectData(
         sample_mask_img,
         space="MNI152NLin6Asym",
         resolution=2.0,
     )
 
     # Add ParcelAggregation results with BIDS-style keys
+    # Note: build_result_key("...", "SubjectData", "maskimg") returns
+    # "atlas-..._source-InputMask" (no desc for InputMask)
     pa_results = {
-        build_result_key("Schaefer100", "MaskData", "mask_img"): {"parcels": [1, 2, 3]},
-        build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlation_map"): {
+        build_result_key("Schaefer100", "SubjectData", "maskimg"): {"parcels": [1, 2, 3]},
+        build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlationmap"): {
             "parcels": [4, 5, 6]
         },
-        build_result_key("Tian_S4", "MaskData", "mask_img"): {"parcels": [7, 8, 9]},
+        build_result_key("Tian_S4", "SubjectData", "maskimg"): {"parcels": [7, 8, 9]},
     }
     mask = mask.add_result("ParcelAggregation", pa_results)
 
     # Add FunctionalNetworkMapping results
     fnm_results = {
-        "correlation_map": {"data": [1.0, 2.0]},
-        "z_score_map": {"data": [3.0, 4.0]},
+        "correlationmap": {"data": [1.0, 2.0]},
+        "zscoremap": {"data": [3.0, 4.0]},
     }
     mask = mask.add_result("FunctionalNetworkMapping", fnm_results)
 
@@ -57,13 +59,14 @@ class TestGetResultAnalysisLevel:
         """Get all results for an analysis namespace."""
         results = mask_data_with_results.get_result("ParcelAggregation")
         assert len(results) == 3
-        assert build_result_key("Schaefer100", "MaskData", "mask_img") in results
+        # build_result_key("Schaefer100", "SubjectData", ...) returns atlas-Schaefer100_source-InputMask
+        assert build_result_key("Schaefer100", "SubjectData") in results
 
     def test_get_fnm_results(self, mask_data_with_results):
         """Get FunctionalNetworkMapping results."""
         results = mask_data_with_results.get_result("FunctionalNetworkMapping")
-        assert "correlation_map" in results
-        assert "z_score_map" in results
+        assert "correlationmap" in results
+        assert "zscoremap" in results
 
     def test_unknown_analysis_raises_keyerror(self, mask_data_with_results):
         """Unknown analysis namespace raises KeyError."""
@@ -76,59 +79,49 @@ class TestGetResultAnalysisLevel:
             mask_data_with_results.get_result("ParcelAggragation")  # typo
 
 
-class TestGetResultWithKeyComponents:
-    """Tests for get_result() with BIDS-style key filtering."""
+class TestGetResultWithPattern:
+    """Tests for get_result() with glob pattern filtering."""
 
-    def test_get_specific_result_by_components(self, mask_data_with_results):
-        """Get specific result using parc, source, desc."""
+    def test_get_specific_result_by_pattern(self, mask_data_with_results):
+        """Get specific result using glob pattern."""
         result = mask_data_with_results.get_result(
             "ParcelAggregation",
-            parc="Schaefer100",
-            source="FunctionalNetworkMapping",
-            desc="correlation_map",
+            pattern="*Schaefer100*FunctionalNetworkMapping*correlationmap*",
         )
         assert result == {"parcels": [4, 5, 6]}
 
     def test_get_mask_source_result(self, mask_data_with_results):
-        """Get result from MaskData source."""
+        """Get result from SubjectData source using pattern."""
         result = mask_data_with_results.get_result(
             "ParcelAggregation",
-            parc="Tian_S4",
-            source="MaskData",
-            desc="mask_img",
+            pattern="*Tian_S4*InputMask*",
         )
         assert result == {"parcels": [7, 8, 9]}
 
-    def test_partial_filter_by_parc_only(self, mask_data_with_results):
-        """Partial filtering by parc only returns matching results."""
+    def test_partial_filter_by_parc_pattern(self, mask_data_with_results):
+        """Partial filtering by parc pattern returns matching results."""
         results = mask_data_with_results.get_result(
             "ParcelAggregation",
-            parc="Schaefer100",
-            # source and desc not provided - should filter by parc only
+            pattern="*Schaefer100*",
         )
-        # Should return dict of all Schaefer100 results
+        # Should return dict of all Schaefer100 results (multiple matches)
         assert isinstance(results, dict)
-        # Should contain the key with parc=Schaefer100
-        assert len(results) >= 1
+        assert len(results) == 2
 
-    def test_unknown_key_raises_keyerror(self, mask_data_with_results):
-        """Unknown key raises KeyError."""
+    def test_unknown_pattern_raises_keyerror(self, mask_data_with_results):
+        """Unknown pattern raises KeyError."""
         with pytest.raises(KeyError, match="No results found"):
             mask_data_with_results.get_result(
                 "ParcelAggregation",
-                parc="NonExistent",
-                source="MaskData",
-                desc="mask_img",
+                pattern="*NonExistent*",
             )
 
-    def test_unknown_key_suggests_similar(self, mask_data_with_results):
-        """Unknown key provides helpful error message."""
+    def test_unknown_pattern_suggests_similar(self, mask_data_with_results):
+        """Unknown pattern provides helpful error message."""
         with pytest.raises(KeyError, match="No results found"):
             mask_data_with_results.get_result(
                 "ParcelAggregation",
-                parc="Schaefer100",
-                source="MaskData",
-                desc="correltion_map",  # typo - similar to keys with mask_img
+                pattern="*correltion_map*",  # typo
             )
 
 
@@ -137,7 +130,7 @@ class TestGetResultEmptyResults:
 
     def test_no_results_raises_keyerror(self, sample_mask_img):
         """Empty results raises KeyError."""
-        mask = MaskData(
+        mask = SubjectData(
             sample_mask_img,
             space="MNI152NLin6Asym",
             resolution=2.0,

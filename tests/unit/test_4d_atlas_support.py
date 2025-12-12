@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import RegionalDamage
 from lacuna.assets.parcellations.registry import (
     ParcellationMetadata,
@@ -362,7 +362,7 @@ class Test4DParcelAggregation:
         lesion_affine[3, 3] = 1
         mask_img = nib.Nifti1Image(mask_data, lesion_affine)
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
@@ -401,7 +401,7 @@ class Test4DParcelAggregation:
 
             # Check results - using BIDS-style keys
             damage_results = result.results["RegionalDamage"]
-            expected_key = "parc-Test4DAtlas_Aggregation_source-MaskData_desc-mask_img"
+            expected_key = "atlas-Test4DAtlas_Aggregation_source-InputMask"
             assert expected_key in damage_results
 
             # Get region data
@@ -428,7 +428,7 @@ class Test4DParcelAggregation:
         lesion_affine[3, 3] = 1
         mask_img = nib.Nifti1Image(mask_data, lesion_affine)
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
@@ -464,7 +464,7 @@ class Test4DParcelAggregation:
             damage_results = result.results["RegionalDamage"]
 
             # Verify we got results for the atlas (BIDS-style naming)
-            expected_key = "parc-Test4D_VaryingOverlap_source-MaskData_desc-mask_img"
+            expected_key = "atlas-Test4D_VaryingOverlap_source-InputMask"
             assert expected_key in damage_results
             region_data = damage_results[expected_key].get_data()
             assert len(region_data) > 0
@@ -491,7 +491,7 @@ class TestMixed3DAnd4DAtlases:
         lesion_affine[3, 3] = 1
         mask_img = nib.Nifti1Image(mask_data, lesion_affine)
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
@@ -550,12 +550,12 @@ class TestMixed3DAnd4DAtlases:
             damage_results = result.results["RegionalDamage"]
 
             # Should have results from both atlases (BIDS-style keys)
-            assert "parc-Mixed3D_source-MaskData_desc-mask_img" in damage_results
-            assert "parc-Mixed4D_source-MaskData_desc-mask_img" in damage_results
+            assert "atlas-Mixed3D_source-InputMask" in damage_results
+            assert "atlas-Mixed4D_source-InputMask" in damage_results
 
             # Each should have region data
-            mixed3d_data = damage_results["parc-Mixed3D_source-MaskData_desc-mask_img"].get_data()
-            mixed4d_data = damage_results["parc-Mixed4D_source-MaskData_desc-mask_img"].get_data()
+            mixed3d_data = damage_results["atlas-Mixed3D_source-InputMask"].get_data()
+            mixed4d_data = damage_results["atlas-Mixed4D_source-InputMask"].get_data()
             assert len(mixed3d_data) > 0
             assert len(mixed4d_data) > 0
 
@@ -579,7 +579,7 @@ class TestRegionalDamageOutputAPI:
         lesion_affine[3, 3] = 1
         mask_img = nib.Nifti1Image(mask_data, lesion_affine)
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
         )
 
@@ -618,7 +618,7 @@ class TestRegionalDamageOutputAPI:
             ), "RegionalDamage results should be a dict, not list"
 
             # Should have the atlas with BIDS-style key
-            expected_key = "parc-TestOutputAPI_source-MaskData_desc-mask_img"
+            expected_key = "atlas-TestOutputAPI_source-InputMask"
             assert expected_key in damage_results
 
             # Get the ROI result

@@ -1,8 +1,8 @@
 """
-Unit tests for MaskData validation logic.
+Unit tests for SubjectData validation logic.
 
 Tests edge cases, validation warnings, and error conditions
-for the MaskData validation system.
+for the SubjectData validation system.
 """
 
 import nibabel as nib
@@ -10,12 +10,12 @@ import numpy as np
 import pytest
 
 
-class TestMaskDataValidation:
-    """Unit tests for MaskData.validate() method."""
+class TestSubjectValidation:
+    """Unit tests for SubjectData.validate() method."""
 
     def test_validate_empty_mask_warning(self):
         """Test that empty lesion masks trigger a warning."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         # Create empty mask (all zeros)
         shape = (64, 64, 64)
@@ -25,7 +25,7 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -40,7 +40,7 @@ class TestMaskDataValidation:
         Note: Voxel size validation is not implemented. Various voxel sizes
         (including unusual ones) are allowed.
         """
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -52,7 +52,7 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -117,10 +117,10 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         with pytest.raises(ValidationError, match="3D"):
-            MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+            SubjectData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     def test_validate_non_invertible_affine_error(self):
         """Test that non-invertible affine is caught by nibabel during image creation."""
@@ -154,16 +154,18 @@ class TestMaskDataValidation:
         anat_data = np.random.rand(80, 80, 80).astype(np.float32)
         nib.Nifti1Image(anat_data, affine)
 
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         # Should succeed - different shapes are allowed with same affine
         # (shape checking is disabled in check_spatial_match)
-        lesion = MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        lesion = SubjectData(
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
         assert lesion.mask_img.shape == (64, 64, 64)
 
     def test_validate_valid_mask_data_no_warnings(self):
-        """Test that valid MaskData passes validation without warnings."""
-        from lacuna import MaskData
+        """Test that valid SubjectData passes validation without warnings."""
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -175,7 +177,7 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -185,7 +187,7 @@ class TestMaskDataValidation:
 
     def test_validate_very_small_voxels_no_warning(self):
         """Test that very small voxel sizes are allowed (no validation implemented)."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -197,7 +199,7 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -207,7 +209,7 @@ class TestMaskDataValidation:
 
     def test_validate_anisotropic_voxels_ok(self):
         """Test that anisotropic (but reasonable) voxels are acceptable."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -221,7 +223,7 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -235,7 +237,7 @@ class TestMaskDataValidation:
         Note: RAS+ orientation validation is not implemented. Different orientations
         (neurological vs radiological) are allowed.
         """
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -249,7 +251,7 @@ class TestMaskDataValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -284,7 +286,7 @@ class TestMaskDataValidation:
 
     def test_validate_mask_data_with_both_images(self):
         """Test validation when both lesion and anatomical provided."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         affine = np.eye(4)
@@ -299,7 +301,7 @@ class TestMaskDataValidation:
         anat_data = np.random.rand(*shape).astype(np.float32) * 1000
         nib.Nifti1Image(anat_data, affine)
 
-        mask_data_obj = MaskData(
+        mask_data_obj = SubjectData(
             mask_img=mask_img,
             metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -309,7 +311,7 @@ class TestMaskDataValidation:
 
     def test_validate_metadata_optional(self):
         """Test that validation works with minimal metadata."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
         shape = (64, 64, 64)
         data = np.zeros(shape, dtype=np.uint8)
@@ -321,7 +323,7 @@ class TestMaskDataValidation:
         mask_img = nib.Nifti1Image(data, affine)
 
         # Create with empty metadata
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2},  # Empty metadata
         )

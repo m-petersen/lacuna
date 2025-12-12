@@ -77,9 +77,9 @@ def test_get_atlas_citation_returns_string():
     """Test that get_atlas_citation returns a string."""
     # Test with known atlas names
     known_atlases = [
-        "aal3",
-        "harvard-oxford-cortical",
         "schaefer2018-100parcels-7networks",
+        "harvard-oxford-cortical",
+        "tian-subcortex-3t-s1",
     ]
 
     for atlas_name in known_atlases:

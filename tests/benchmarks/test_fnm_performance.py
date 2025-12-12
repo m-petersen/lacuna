@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 @pytest.fixture
@@ -75,7 +75,7 @@ def create_lesion_mask(mock_connectome_info):
     affine = mock_connectome_info["mask_affine"]
     brain_mask_indices = mock_connectome_info["mask_indices"]
 
-    def _create_lesion(n_voxels: int, seed: int = 42) -> MaskData:
+    def _create_lesion(n_voxels: int, seed: int = 42) -> SubjectData:
         """Create a lesion mask with specified number of voxels.
 
         Parameters
@@ -87,7 +87,7 @@ def create_lesion_mask(mock_connectome_info):
 
         Returns
         -------
-        MaskData
+        SubjectData
             Lesion mask in MNI152NLin6Asym @ 2mm
         """
         rng = np.random.RandomState(seed)
@@ -107,8 +107,8 @@ def create_lesion_mask(mock_connectome_info):
         # Create NIfTI image
         lesion_img = nib.Nifti1Image(lesion_3d, affine)
 
-        # Create MaskData
-        mask_data = MaskData(
+        # Create SubjectData
+        mask_data = SubjectData(
             mask_img=lesion_img,
             space="MNI152NLin6Asym",
             resolution=2.0,

@@ -11,28 +11,28 @@ class TestSuggestSimilar:
 
     def test_exact_match(self):
         """Exact match should be first suggestion."""
-        candidates = ["correlation_map", "z_score_map", "damage_score"]
-        result = suggest_similar("correlation_map", candidates)
-        assert result[0] == "correlation_map"
+        candidates = ["correlationmap", "zscoremap", "damagescore"]
+        result = suggest_similar("correlationmap", candidates)
+        assert result[0] == "correlationmap"
 
     def test_close_typo(self):
         """Close typo should find the correct suggestion first."""
-        candidates = ["correlation_map", "z_score_map", "damage_score"]
+        candidates = ["correlationmap", "zscoremap", "damagescore"]
         result = suggest_similar("correltion_map", candidates)
-        assert result[0] == "correlation_map"
+        assert result[0] == "correlationmap"
 
     def test_partial_match(self):
         """Partial match should find relevant suggestions."""
-        candidates = ["correlation_map", "z_score_map", "damage_score"]
+        candidates = ["correlationmap", "zscoremap", "damagescore"]
         result = suggest_similar("score", candidates)
-        assert "z_score_map" in result
-        assert "damage_score" in result
+        assert "zscoremap" in result
+        assert "damagescore" in result
 
     def test_case_insensitive(self):
         """Matching should be case-insensitive."""
-        candidates = ["correlation_map", "z_score_map"]
+        candidates = ["correlationmap", "zscoremap"]
         result = suggest_similar("CORRELATION_MAP", candidates)
-        assert result[0] == "correlation_map"
+        assert result[0] == "correlationmap"
 
     def test_max_suggestions(self):
         """Should respect max_suggestions limit."""
@@ -42,7 +42,7 @@ class TestSuggestSimilar:
 
     def test_min_similarity(self):
         """Should respect min_similarity threshold."""
-        candidates = ["correlation_map", "z_score_map"]
+        candidates = ["correlationmap", "zscoremap"]
         # Very high threshold - nothing matches
         result = suggest_similar("xyz", candidates, min_similarity=0.9)
         assert result == []
@@ -80,13 +80,13 @@ class TestFormatSuggestions:
 
     def test_single_suggestion(self):
         """Single suggestion formats correctly."""
-        result = format_suggestions(["correlation_map"])
-        assert result == "Did you mean 'correlation_map'?"
+        result = format_suggestions(["correlationmap"])
+        assert result == "Did you mean 'correlationmap'?"
 
     def test_multiple_suggestions(self):
         """Multiple suggestions format correctly."""
-        result = format_suggestions(["correlation_map", "z_score_map"])
-        assert result == "Did you mean one of: 'correlation_map', 'z_score_map'?"
+        result = format_suggestions(["correlationmap", "zscoremap"])
+        assert result == "Did you mean one of: 'correlationmap', 'zscoremap'?"
 
     def test_empty_suggestions(self):
         """Empty suggestions return empty string."""

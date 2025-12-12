@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import FunctionalNetworkMapping
 from lacuna.assets.connectomes import (
     register_functional_connectome,
@@ -110,9 +110,11 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
             ]
         )
         mask_img = nib.Nifti1Image(mask_data_array, affine)
-        lesion = MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        lesion = SubjectData(
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
-        # Call with MaskData object only - should not raise TypeError
+        # Call with SubjectData object only - should not raise TypeError
         try:
             result = analysis._get_lesion_voxel_indices(lesion)
             # Success - method accepts correct signature
@@ -159,7 +161,9 @@ def test_both_fixes_together(simple_connectome):
             ]
         )
         mask_img = nib.Nifti1Image(mask_data_array, affine)
-        lesion = MaskData(mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        lesion = SubjectData(
+            mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+        )
 
         # This should work without TypeErrors
         # (May raise ValidationError if no overlap, but that's expected)
@@ -212,10 +216,10 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
 
     mask_img = nib.Nifti1Image(mask_data_array, affine)
 
-    # Save and load with MaskData
+    # Save and load with SubjectData
     lesion_path = tmp_path / "lesion.nii.gz"
     nib.save(mask_img, lesion_path)
-    lesion = MaskData.from_nifti(
+    lesion = SubjectData.from_nifti(
         str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -255,7 +259,7 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         flnm_results = result.results["FunctionalNetworkMapping"]
 
         # Verify expected keys are present
-        expected_keys = ["correlation_map", "z_map", "summary_statistics"]
+        expected_keys = ["correlationmap", "zmap", "summarystatistics"]
         for key in expected_keys:
             assert key in flnm_results, f"Missing expected key: {key}"
 
@@ -263,20 +267,20 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         from lacuna.core.data_types import VoxelMap
 
         assert isinstance(
-            flnm_results["correlation_map"], VoxelMap
+            flnm_results["correlationmap"], VoxelMap
         ), "correlation_map should be VoxelMap"
-        assert isinstance(flnm_results["z_map"], VoxelMap), "z_map should be VoxelMap"
+        assert isinstance(flnm_results["zmap"], VoxelMap), "z_map should be VoxelMap"
 
         # VoxelMap.data should contain the NIfTI image
         assert isinstance(
-            flnm_results["correlation_map"].data, nib.Nifti1Image
+            flnm_results["correlationmap"].data, nib.Nifti1Image
         ), "correlation_map.data should be NIfTI image"
 
         # Since compute_t_map=True, these should also be present
-        assert "t_map" in flnm_results, "t_map should be present when compute_t_map=True"
-        assert isinstance(flnm_results["t_map"], VoxelMap), "t_map should be VoxelMap"
+        assert "tmap" in flnm_results, "t_map should be present when compute_t_map=True"
+        assert isinstance(flnm_results["tmap"], VoxelMap), "t_map should be VoxelMap"
         assert (
-            "t_threshold_map" in flnm_results
+            "tthresholdmap" in flnm_results
         ), "t_threshold_map should be present when t_threshold is set"
     finally:
         unregister_functional_connectome("test_bug_aggregate")

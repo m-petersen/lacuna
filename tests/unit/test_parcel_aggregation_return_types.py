@@ -1,7 +1,7 @@
 """Unit tests for ParcelAggregation return type matching.
 
 Tests that ParcelAggregation returns appropriate types based on input:
-- MaskData -> MaskData (with results attached)
+- SubjectData -> SubjectData (with results attached)
 - nibabel.Nifti1Image -> ParcelData
 - list[nibabel.Nifti1Image] -> list[ParcelData]
 """
@@ -15,7 +15,7 @@ from lacuna.assets.parcellations.registry import (
     register_parcellations_from_directory,
     unregister_parcellation,
 )
-from lacuna.core import MaskData
+from lacuna.core import SubjectData
 from lacuna.core.data_types import ParcelData
 
 
@@ -62,9 +62,9 @@ def local_test_atlas(tmp_path):
 
 
 def test_atlas_aggregation_maskdata_returns_maskdata(local_test_atlas):
-    """Test that MaskData input returns MaskData output.
+    """Test that SubjectData input returns SubjectData output.
 
-    Contract: T058 - Return type matches input (MaskData)
+    Contract: T058 - Return type matches input (SubjectData)
     """
     # Create synthetic mask
     data = np.zeros((64, 64, 64), dtype=np.uint8)
@@ -73,7 +73,7 @@ def test_atlas_aggregation_maskdata_returns_maskdata(local_test_atlas):
     affine[:3, :3] *= 2.0
     mask_img = nib.Nifti1Image(data, affine)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=mask_img,
         metadata={
             "space": "MNI152NLin6Asym",
@@ -82,15 +82,15 @@ def test_atlas_aggregation_maskdata_returns_maskdata(local_test_atlas):
     )
 
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="percent",
         parcel_names=[local_test_atlas],
     )
 
     result = analysis.run(mask_data)
 
-    # Input: MaskData -> Output: MaskData
-    assert isinstance(result, MaskData)
+    # Input: SubjectData -> Output: SubjectData
+    assert isinstance(result, SubjectData)
     assert hasattr(result, "mask_img")
     assert hasattr(result, "results")
     assert "ParcelAggregation" in result.results
@@ -109,7 +109,7 @@ def test_atlas_aggregation_nibabel_returns_aggregation_result(local_test_atlas):
     nifti_img = nib.Nifti1Image(data, affine)
 
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="mean",
         parcel_names=[local_test_atlas],
     )
@@ -118,7 +118,7 @@ def test_atlas_aggregation_nibabel_returns_aggregation_result(local_test_atlas):
 
     # Input: nibabel.Nifti1Image -> Output: ParcelData
     assert isinstance(result, ParcelData)
-    assert not isinstance(result, MaskData)
+    assert not isinstance(result, SubjectData)
 
 
 def test_atlas_aggregation_nibabel_list_returns_list(local_test_atlas):
@@ -137,7 +137,7 @@ def test_atlas_aggregation_nibabel_list_returns_list(local_test_atlas):
         images.append(nib.Nifti1Image(data, affine))
 
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="percent",
         parcel_names=[local_test_atlas],
     )
@@ -149,7 +149,7 @@ def test_atlas_aggregation_nibabel_list_returns_list(local_test_atlas):
     assert len(results) == 3
     for result in results:
         assert isinstance(result, ParcelData)
-        assert not isinstance(result, MaskData)
+        assert not isinstance(result, SubjectData)
 
 
 def test_atlas_aggregation_return_types_mutually_exclusive(local_test_atlas):
@@ -163,8 +163,8 @@ def test_atlas_aggregation_return_types_mutually_exclusive(local_test_atlas):
     affine = np.eye(4)
     affine[:3, :3] *= 2.0
 
-    # Test with MaskData
-    mask_data = MaskData(
+    # Test with SubjectData
+    mask_data = SubjectData(
         mask_img=nib.Nifti1Image(data, affine),
         metadata={"space": "MNI152NLin6Asym", "resolution": 2.0},
     )
@@ -176,7 +176,7 @@ def test_atlas_aggregation_return_types_mutually_exclusive(local_test_atlas):
     nifti_list = [nib.Nifti1Image(data, affine)]
 
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="mean",
         parcel_names=[local_test_atlas],
     )
@@ -191,6 +191,6 @@ def test_atlas_aggregation_return_types_mutually_exclusive(local_test_atlas):
     assert type(result_maskdata) is not type(result_list)
 
     # Specific type checks
-    assert isinstance(result_maskdata, MaskData)
+    assert isinstance(result_maskdata, SubjectData)
     assert isinstance(result_nibabel, ParcelData)
     assert isinstance(result_list, list)

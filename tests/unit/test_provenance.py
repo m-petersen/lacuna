@@ -162,10 +162,10 @@ class TestAnalysisProvenance:
         self, synthetic_mask_img, local_test_atlas
     ):
         """BaseAnalysis._create_provenance() should include package version."""
-        from lacuna import MaskData, __version__
+        from lacuna import SubjectData, __version__
         from lacuna.analysis.regional_damage import RegionalDamage
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -187,11 +187,11 @@ class TestAnalysisProvenance:
 
     def test_all_analyses_use_package_version(self, synthetic_mask_img, local_test_atlas):
         """All analysis classes should use package version in provenance."""
-        from lacuna import MaskData, __version__
+        from lacuna import SubjectData, __version__
         from lacuna.analysis.parcel_aggregation import ParcelAggregation
         from lacuna.analysis.regional_damage import RegionalDamage
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2},
         )
