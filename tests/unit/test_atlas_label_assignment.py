@@ -11,8 +11,9 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import ParcelAggregation
+from lacuna.core.keys import build_result_key
 
 
 class TestAtlasLabelAssignment:
@@ -83,7 +84,7 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("0 Region_Right\n1 Region_Left\n2 Region_Middle\n")
 
             # Load lesion data
-            mask_data_obj = MaskData.from_nifti(
+            mask_data_obj = SubjectData.from_nifti(
                 lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
             )
 
@@ -94,15 +95,15 @@ class TestAtlasLabelAssignment:
 
             # Run analysis - use only this test's atlas
             analysis = ParcelAggregation(
-                source="mask_img",
+                source="maskimg",
                 aggregation="percent",
                 threshold=0.5,
                 parcel_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["ParcelAggregation"]
-            # BIDS-style key: parc-{atlas}_source-MaskData_desc-mask_img
-            results = atlas_results["parc-test_4d_atlas_source-MaskData_desc-mask_img"].get_data()
+            # BIDS-style key: atlas-{atlas}_source-InputMask
+            results = atlas_results[build_result_key("test_4d_atlas", "SubjectData")].get_data()
 
             # With new structure, region names don't have atlas prefix
             right_damage = results.get("Region_Right", None)
@@ -175,7 +176,7 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 Bottom_Region\n2 Top_Region\n")
 
             # Load and analyze
-            mask_data_obj = MaskData.from_nifti(
+            mask_data_obj = SubjectData.from_nifti(
                 lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
             )
 
@@ -186,15 +187,15 @@ class TestAtlasLabelAssignment:
 
             # Run analysis - use only this test's atlas
             analysis = ParcelAggregation(
-                source="mask_img",
+                source="maskimg",
                 aggregation="percent",
                 threshold=0.5,
                 parcel_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["ParcelAggregation"]
-            # BIDS-style key: parc-{atlas}_source-MaskData_desc-mask_img
-            results = atlas_results["parc-atlas_1indexed_source-MaskData_desc-mask_img"].get_data()
+            # BIDS-style key: atlas-{atlas}_source-InputMask
+            results = atlas_results[build_result_key("atlas_1indexed", "SubjectData")].get_data()
 
             # With new structure, region names don't have atlas prefix
             bottom_damage = results.get("Bottom_Region", None)
@@ -253,7 +254,7 @@ class TestAtlasLabelAssignment:
             labels_path.write_text("1 First_Region\n2 Second_Region\n3 Third_Region\n")
 
             # Load and analyze
-            mask_data_obj = MaskData.from_nifti(
+            mask_data_obj = SubjectData.from_nifti(
                 lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
             )
 
@@ -264,15 +265,15 @@ class TestAtlasLabelAssignment:
 
             # Use only this test's atlas
             analysis = ParcelAggregation(
-                source="mask_img",
+                source="maskimg",
                 aggregation="percent",
                 threshold=0.5,
                 parcel_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["ParcelAggregation"]
-            # BIDS-style key: parc-{atlas}_source-MaskData_desc-mask_img
-            results = atlas_results["parc-atlas_3d_source-MaskData_desc-mask_img"].get_data()
+            # BIDS-style key: atlas-{atlas}_source-InputMask
+            results = atlas_results[build_result_key("atlas_3d", "SubjectData")].get_data()
 
             # With new structure, region names don't have atlas prefix
             first_damage = results.get("First_Region", None)

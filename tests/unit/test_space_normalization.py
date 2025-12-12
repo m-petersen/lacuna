@@ -163,7 +163,7 @@ class TestValidateSpaceCompatibility:
 
 
 class TestValidateSpaceAndResolution:
-    """Test validate_space_and_resolution for MaskData and metadata validation."""
+    """Test validate_space_and_resolution for SubjectData and metadata validation."""
 
     def test_accepts_valid_space_and_resolution(self):
         """Should accept valid space + resolution combination."""
@@ -208,8 +208,8 @@ class TestParcelAggregationSpaceHandling:
 
     @pytest.fixture
     def mask_data_aAsym(self):
-        """Create MaskData in MNI152NLin2009aAsym space."""
-        from lacuna.core.mask_data import MaskData
+        """Create SubjectData in MNI152NLin2009aAsym space."""
+        from lacuna.core.subject_data import SubjectData
 
         # 2mm MNI affine
         affine = np.array(
@@ -222,7 +222,9 @@ class TestParcelAggregationSpaceHandling:
         )
         img = nib.Nifti1Image(np.ones((91, 109, 91)), affine)
 
-        return MaskData(mask_img=img, metadata={"space": "MNI152NLin2009aAsym", "resolution": 2.0})
+        return SubjectData(
+            mask_img=img, metadata={"space": "MNI152NLin2009aAsym", "resolution": 2.0}
+        )
 
     @pytest.fixture
     def atlas_img_cAsym(self):
@@ -298,10 +300,10 @@ class TestResolutionValidationInBaseAnalysis:
 
     @pytest.fixture
     def mask_data_missing_resolution(self):
-        """Test removed: Cannot create MaskData without resolution anymore."""
-        pytest.skip("MaskData now requires resolution at initialization (T006)")
+        """Test removed: Cannot create SubjectData without resolution anymore."""
+        pytest.skip("SubjectData now requires resolution at initialization (T006)")
         return None
 
     def test_detects_missing_resolution(self, mask_data_missing_resolution):
-        """Test removed: MaskData now validates resolution at initialization."""
-        pytest.skip("Resolution validation moved to MaskData.__init__ in T006")
+        """Test removed: SubjectData now validates resolution at initialization."""
+        pytest.skip("Resolution validation moved to SubjectData.__init__ in T006")

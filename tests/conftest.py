@@ -185,7 +185,7 @@ def simple_bids_dataset(tmp_path):
     affine = np.eye(4)
     affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
 
-    # Subject 1 (with anatomical)
+    # SubjectData 1 (with anatomical)
     sub1_dir = dataset_root / "sub-001" / "anat"
     sub1_dir.mkdir(parents=True)
 
@@ -200,7 +200,7 @@ def simple_bids_dataset(tmp_path):
     anat1 = nib.Nifti1Image(anat1_data, affine)
     nib.save(anat1, sub1_dir / "sub-001_T1w.nii.gz")
 
-    # Subject 2 (lesion only, no anatomical)
+    # SubjectData 2 (lesion only, no anatomical)
     sub2_dir = dataset_root / "sub-002" / "anat"
     sub2_dir.mkdir(parents=True)
 
@@ -269,13 +269,13 @@ def multisession_bids_dataset(tmp_path):
 
 @pytest.fixture
 def synthetic_mask_data(synthetic_mask_img):
-    """Create a MaskData object from synthetic lesion image."""
+    """Create a SubjectData object from synthetic lesion image."""
     import sys
 
     sys.path.insert(0, "/home/marvin/projects/lacuna/src")
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    return MaskData(
+    return SubjectData(
         mask_img=synthetic_mask_img,
         metadata={
             "subject_id": "sub-test",
@@ -288,11 +288,11 @@ def synthetic_mask_data(synthetic_mask_img):
 
 @pytest.fixture
 def batch_mask_data_list(synthetic_mask_img):
-    """Create a list of MaskData objects for batch testing."""
+    """Create a list of SubjectData objects for batch testing."""
     import sys
 
     sys.path.insert(0, "/home/marvin/projects/lacuna/src")
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     lesion_list = []
     for i in range(1, 4):  # Create 3 test subjects
@@ -302,7 +302,7 @@ def batch_mask_data_list(synthetic_mask_img):
         data = np.roll(data, shift=i * 2, axis=0)
 
         mask_img = nib.Nifti1Image(data.astype(np.uint8), synthetic_mask_img.affine)
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={
                 "subject_id": f"sub-{i:03d}",

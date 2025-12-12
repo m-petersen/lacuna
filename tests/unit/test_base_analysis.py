@@ -10,7 +10,7 @@ class TestResultNamespacing:
 
     def test_results_namespaced_by_class_name(self, synthetic_mask_img):
         """Test that results are automatically namespaced under class name."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class VolumeAnalysis(BaseAnalysis):
@@ -20,7 +20,7 @@ class TestResultNamespacing:
             def _run_analysis(self, mask_data):
                 return {"volume_mm3": 123.45}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         result = VolumeAnalysis().run(mask_data)
@@ -31,7 +31,7 @@ class TestResultNamespacing:
 
     def test_multiple_analyses_separate_namespaces(self, synthetic_mask_img):
         """Test that different analyses have separate namespaces."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class Analysis1(BaseAnalysis):
@@ -48,7 +48,7 @@ class TestResultNamespacing:
             def _run_analysis(self, mask_data):
                 return {"result": "second"}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         result = Analysis1().run(mask_data)
@@ -62,7 +62,7 @@ class TestResultNamespacing:
 
     def test_namespace_collision_overwrites(self, synthetic_mask_img):
         """Test that running same analysis twice overwrites previous results."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
@@ -76,7 +76,7 @@ class TestResultNamespacing:
             def _run_analysis(self, mask_data):
                 return {"value": self.value}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
@@ -92,7 +92,7 @@ class TestResultNamespacing:
 
     def test_namespace_preserves_other_results(self, synthetic_mask_img):
         """Test that new analysis preserves results from other analyses."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class AnalysisA(BaseAnalysis):
@@ -116,7 +116,7 @@ class TestResultNamespacing:
             def _run_analysis(self, mask_data):
                 return {"c": 3}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
@@ -133,7 +133,7 @@ class TestResultNamespacing:
 
     def test_namespace_with_complex_results(self, synthetic_mask_img):
         """Test namespacing with complex nested result dictionaries."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class ComplexAnalysis(BaseAnalysis):
@@ -148,7 +148,7 @@ class TestResultNamespacing:
                     "metadata": {"method": "correlation", "threshold": 0.05},
                 }
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         result = ComplexAnalysis().run(mask_data)
@@ -164,8 +164,8 @@ class TestImmutability:
     """Test that BaseAnalysis.run() enforces immutability."""
 
     def test_input_mask_data_not_modified(self, synthetic_mask_img):
-        """Test that input MaskData object is never modified."""
-        from lacuna import MaskData
+        """Test that input SubjectData object is never modified."""
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
@@ -175,7 +175,7 @@ class TestImmutability:
             def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         original_results_keys = set(mask_data.results.keys())
@@ -192,7 +192,7 @@ class TestImmutability:
 
     def test_input_results_dict_not_modified(self, synthetic_mask_img):
         """Test that the input results dictionary is not modified."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class Analysis1(BaseAnalysis):
@@ -209,7 +209,7 @@ class TestImmutability:
             def _run_analysis(self, mask_data):
                 return {"value": 2}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
@@ -229,8 +229,8 @@ class TestImmutability:
         assert result1.results["Analysis1"]["value"] == 1
 
     def test_mask_img_not_modified(self, synthetic_mask_img):
-        """Test that running analysis doesn't affect original MaskData image reference."""
-        from lacuna import MaskData
+        """Test that running analysis doesn't affect original SubjectData image reference."""
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
@@ -241,7 +241,7 @@ class TestImmutability:
                 # The analysis can access data but shouldn't modify original
                 return {"modified": True}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         original_img_id = id(mask_data.mask_img)
@@ -249,12 +249,12 @@ class TestImmutability:
         # Run analysis
         TestAnalysis().run(mask_data)
 
-        # Original MaskData should still reference the same image object
+        # Original SubjectData should still reference the same image object
         assert id(mask_data.mask_img) == original_img_id
 
     def test_metadata_not_modified(self, synthetic_mask_img):
         """Test that metadata is not modified."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
@@ -265,7 +265,7 @@ class TestImmutability:
                 return {"result": "test"}
 
         metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
-        mask_data = MaskData(mask_img=synthetic_mask_img, metadata=metadata)
+        mask_data = SubjectData(mask_img=synthetic_mask_img, metadata=metadata)
 
         # Run analysis
         TestAnalysis().run(mask_data)
@@ -278,7 +278,7 @@ class TestImmutability:
 
     def test_chained_analyses_preserve_immutability(self, synthetic_mask_img):
         """Test that chaining multiple analyses maintains immutability."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class A1(BaseAnalysis):
@@ -303,7 +303,7 @@ class TestImmutability:
                 return {"n": 3}
 
         # Start with clean data
-        ld0 = MaskData(
+        ld0 = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
@@ -327,7 +327,7 @@ class TestProvenanceTracking:
 
     def test_provenance_added_after_analysis(self, synthetic_mask_img):
         """Test that provenance is recorded after running analysis."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class TestAnalysis(BaseAnalysis):
@@ -337,7 +337,7 @@ class TestProvenanceTracking:
             def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         original_prov_len = len(mask_data.provenance)
@@ -349,7 +349,7 @@ class TestProvenanceTracking:
 
     def test_provenance_contains_analysis_name(self, synthetic_mask_img):
         """Test that provenance records the analysis class name."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class MyCustomAnalysis(BaseAnalysis):
@@ -359,7 +359,7 @@ class TestProvenanceTracking:
             def _run_analysis(self, mask_data):
                 return {"result": "test"}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         result = MyCustomAnalysis().run(mask_data)
@@ -370,7 +370,7 @@ class TestProvenanceTracking:
 
     def test_provenance_records_parameters(self, synthetic_mask_img):
         """Test that analysis parameters are recorded in provenance."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
 
         class ParameterizedAnalysis(BaseAnalysis):
@@ -388,7 +388,7 @@ class TestProvenanceTracking:
             def _get_parameters(self):
                 return {"threshold": self.threshold, "method": self.method}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         result = ParameterizedAnalysis(threshold=0.8, method="advanced").run(mask_data)
@@ -406,7 +406,7 @@ class TestResultKeyGeneration:
 
     def test_result_key_includes_source_name(self, synthetic_mask_img):
         """Test that result keys include source information (e.g., atlas name)."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
         from lacuna.core.data_types import ParcelData
 
@@ -426,7 +426,7 @@ class TestResultKeyGeneration:
                 )
                 return {f"atlas_{self.atlas_name}": result}
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
@@ -442,7 +442,7 @@ class TestResultKeyGeneration:
 
     def test_result_key_multiple_sources(self, synthetic_mask_img):
         """Test that multiple source-specific results are stored separately."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis.base import BaseAnalysis
         from lacuna.core.data_types import ParcelData
 
@@ -458,7 +458,7 @@ class TestResultKeyGeneration:
                     "atlas_HarvardOxford": ParcelData(name="HarvardOxford", data={"r1": 0.3}),
                 }
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 

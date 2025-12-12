@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import FunctionalNetworkMapping
 from lacuna.assets.connectomes import (
     register_functional_connectome,
@@ -84,10 +84,10 @@ def mock_lesion_mni152(tmp_path):
 
     mask_img = nib.Nifti1Image(mask_data, affine)
 
-    # Save to file and load with MaskData.from_nifti
+    # Save to file and load with SubjectData.from_nifti
     lesion_path = tmp_path / "lesion.nii.gz"
     nib.save(mask_img, lesion_path)
-    lesion = MaskData.from_nifti(
+    lesion = SubjectData.from_nifti(
         str(lesion_path), metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -172,7 +172,7 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
 
 
 def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_mni152):
-    """Test that _get_lesion_voxel_indices() accepts only MaskData argument."""
+    """Test that _get_lesion_voxel_indices() accepts only SubjectData argument."""
     register_functional_connectome(
         name="test_batch_sig",
         space="MNI152NLin6Asym",
@@ -190,7 +190,7 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
         # Load mask info first (required for _get_lesion_voxel_indices)
         analysis._load_mask_info()
 
-        # Should accept MaskData object
+        # Should accept SubjectData object
         voxel_indices = analysis._get_lesion_voxel_indices(mock_lesion_mni152)
 
         # Should return array of indices
@@ -227,9 +227,9 @@ def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152)
         assert isinstance(results, list)
         assert len(results) == 1
 
-        # Result should be MaskData with analysis results
+        # Result should be SubjectData with analysis results
         result = results[0]
-        assert isinstance(result, MaskData)
+        assert isinstance(result, SubjectData)
         assert "FunctionalNetworkMapping" in result.results
     finally:
         unregister_functional_connectome("test_batch_single")
@@ -257,7 +257,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
         # Create multiple lesions (same lesion with different IDs)
         lesions = []
         for i in range(3):
-            lesion_copy = MaskData(
+            lesion_copy = SubjectData(
                 mask_img=mock_lesion_mni152.mask_img,
                 metadata={
                     "space": "MNI152NLin6Asym",
@@ -276,7 +276,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
 
         # All results should have analysis output
         for result in results:
-            assert isinstance(result, MaskData)
+            assert isinstance(result, SubjectData)
             assert "FunctionalNetworkMapping" in result.results
     finally:
         unregister_functional_connectome("test_batch_multi")
@@ -308,7 +308,7 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
             "subject_id": "test_123",
             "custom_field": "test_value",
         }
-        lesion = MaskData(mask_img=mock_lesion_mni152.mask_img, metadata=test_metadata)
+        lesion = SubjectData(mask_img=mock_lesion_mni152.mask_img, metadata=test_metadata)
 
         # Process
         results = analysis.run_batch([lesion])

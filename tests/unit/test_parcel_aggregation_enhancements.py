@@ -6,7 +6,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis.parcel_aggregation import ParcelAggregation
 from lacuna.assets.parcellations.registry import (
     register_parcellations_from_directory,
@@ -87,7 +87,7 @@ def sample_voxel_map(tmp_path):
 
 @pytest.fixture
 def sample_mask_data(tmp_path):
-    """Create sample MaskData with VoxelMap result."""
+    """Create sample SubjectData with VoxelMap result."""
     # Use MNI152NLin6Asym 2mm dimensions for realistic data
     shape = (91, 109, 91)
     mask = np.random.rand(*shape) > 0.5
@@ -104,20 +104,20 @@ def sample_mask_data(tmp_path):
 
     mask_img = nib.Nifti1Image(mask.astype(np.float32), affine)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=mask_img,
         metadata={"subject_id": "test001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
 
     # Add a VoxelMap result with snake_case key using add_result (immutable pattern)
     voxel_map = VoxelMap(
-        name="correlation_map",
+        name="correlationmap",
         data=nib.Nifti1Image(np.random.rand(*shape).astype(np.float32), affine),
         space="MNI152NLin6Asym",
         resolution=2.0,
     )
 
-    return mask_data.add_result("DemoAnalysis", {"correlation_map": voxel_map})
+    return mask_data.add_result("DemoAnalysis", {"correlationmap": voxel_map})
 
 
 class TestVoxelMapDirectInput:
@@ -137,17 +137,17 @@ class TestVoxelMapDirectInput:
         assert result.aggregation_method == "mean"
 
     def test_voxelmap_direct_vs_maskdata_wrapper(self, sample_voxel_map, local_test_atlas):
-        """Test VoxelMap direct input produces same results as MaskData wrapper."""
-        # Create a binary mask for MaskData (required for validation)
+        """Test VoxelMap direct input produces same results as SubjectData wrapper."""
+        # Create a binary mask for SubjectData (required for validation)
         # But keep the VoxelMap for aggregation
         shape = sample_voxel_map.data.shape
         affine = sample_voxel_map.data.affine
 
-        # Binary mask for MaskData
+        # Binary mask for SubjectData
         binary_mask = (np.random.rand(*shape) > 0.5).astype(np.float32)
         mask_img = nib.Nifti1Image(binary_mask, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             metadata={
                 "subject_id": "test_equivalence",
@@ -162,7 +162,7 @@ class TestVoxelMapDirectInput:
         analysis_direct = ParcelAggregation(parcel_names=[local_test_atlas], aggregation="mean")
         result_direct = analysis_direct.run(sample_voxel_map)
 
-        # Method 2: MaskData with cross-analysis reference (traditional)
+        # Method 2: SubjectData with cross-analysis reference (traditional)
         analysis_indirect = ParcelAggregation(
             source="TestAnalysis.test_map",
             parcel_names=[local_test_atlas],
@@ -170,7 +170,7 @@ class TestVoxelMapDirectInput:
         )
         result_indirect = analysis_indirect.run(mask_data)
 
-        # Extract ParcelData from MaskData result
+        # Extract ParcelData from SubjectData result
         parcel_data_indirect = result_indirect.results["ParcelAggregation"]
         # Should be single key since we specified one atlas
         assert len(parcel_data_indirect) == 1
@@ -231,7 +231,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_list(self, sample_mask_data, local_test_atlas):
         """Test ParcelAggregation with list of sources."""
         analysis = ParcelAggregation(
-            source=["mask_img", "DemoAnalysis.correlation_map"],
+            source=["maskimg", "DemoAnalysis.correlationmap"],
             parcel_names=[local_test_atlas],
             aggregation="mean",
         )
@@ -239,7 +239,7 @@ class TestMultiSourceAggregation:
         result = analysis.run(sample_mask_data)
 
         # Should have results for both sources
-        assert isinstance(result, MaskData)
+        assert isinstance(result, SubjectData)
         assert "ParcelAggregation" in result.results
 
         # Should have separate keys for each source
@@ -249,7 +249,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_naming(self, sample_mask_data, local_test_atlas):
         """Test multi-source results use descriptive BIDS keys."""
         analysis = ParcelAggregation(
-            source=["mask_img", "DemoAnalysis.correlation_map"],
+            source=["maskimg", "DemoAnalysis.correlationmap"],
             parcel_names=[local_test_atlas],
             aggregation="mean",
         )
@@ -258,10 +258,11 @@ class TestMultiSourceAggregation:
         parcel_results = result.results["ParcelAggregation"]
 
         # Check for BIDS-style keys differentiating sources
-        # Format: parc-{name}_source-{SourceClass}_desc-{key}
+        # Format: atlas-{name}_source-InputMask (for mask input)
+        # Format: atlas-{name}_source-{Source}_desc-{desc} (for other sources)
         keys = list(parcel_results.keys())
-        assert any("mask_img" in k for k in keys)
-        assert any("correlation_map" in k for k in keys)
+        assert any("InputMask" in k for k in keys), f"Expected InputMask in keys: {keys}"
+        assert any("correlationmap" in k for k in keys), f"Expected correlationmap in keys: {keys}"
 
     def test_multi_source_empty_list_raises(self):
         """Test empty source list raises ValueError."""
@@ -300,13 +301,13 @@ class TestNilearnWarningSuppression:
         """Test nilearn warnings are shown when log_level >= 2."""
         # Create mismatched data to trigger warnings
         shape = (20, 20, 20)  # Different shape from atlas
-        # Create binary mask (MaskData requires binary data)
+        # Create binary mask (SubjectData requires binary data)
         data = (np.random.rand(*shape) > 0.5).astype(np.float32)
         affine = np.eye(4)
         affine[:3, :3] *= 3.0  # Different resolution
 
         mask_img = nib.Nifti1Image(data, affine)
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             space="MNI152NLin6Asym",
             resolution=3.0,
@@ -343,7 +344,7 @@ class TestAtlasResamplingLogging:
         affine[:3, :3] *= 3.0  # Different resolution
 
         mask_img = nib.Nifti1Image(data.astype(np.float32), affine)
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=mask_img,
             space="MNI152NLin6Asym",
             resolution=3.0,

@@ -10,7 +10,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import FunctionalNetworkMapping
 from lacuna.assets.connectomes import (
     register_functional_connectome,
@@ -70,7 +70,7 @@ def mock_lesions(tmp_path, mock_connectome_batched):
         mask_img = nib.Nifti1Image(mask_data_array, affine)
         lesion_path = tmp_path / f"lesion_{i}.nii.gz"
         nib.save(mask_img, lesion_path)
-        lesion = MaskData.from_nifti(
+        lesion = SubjectData.from_nifti(
             str(lesion_path),
             metadata={"space": "MNI152NLin6Asym", "resolution": 2, "subject_id": f"test_{i:03d}"},
         )
@@ -118,19 +118,19 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
             flnm = result.results["FunctionalNetworkMapping"]
 
             # Check all expected outputs exist
-            assert "correlation_map" in flnm
-            assert "z_map" in flnm
-            assert "t_map" in flnm
-            assert "summary_statistics" in flnm
+            assert "correlationmap" in flnm
+            assert "zmap" in flnm
+            assert "tmap" in flnm
+            assert "summarystatistics" in flnm
 
             # Check shapes - in nested dict, these are VoxelMap objects
             # VoxelMap.data holds the NIfTI image which has .shape
-            assert flnm["correlation_map"].data.shape == (91, 109, 91)
-            assert flnm["t_map"].data.shape == (91, 109, 91)
+            assert flnm["correlationmap"].data.shape == (91, 109, 91)
+            assert flnm["tmap"].data.shape == (91, 109, 91)
 
             # Check aggregated across all subjects
             # summary_statistics is now a ScalarMetric, access .data for the dict
-            summary_data = flnm["summary_statistics"].data
+            summary_data = flnm["summarystatistics"].data
             assert summary_data["n_subjects"] == 100
             assert summary_data["n_batches"] == 5
 
@@ -188,7 +188,7 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
 
         # Verify all results have correct subject count
         for result in results:
-            summary = result.results["FunctionalNetworkMapping"]["summary_statistics"]
+            summary = result.results["FunctionalNetworkMapping"]["summarystatistics"]
             # summary_statistics is now a ScalarMetric, access .data for the dict
             assert summary.data["n_subjects"] == 100
     finally:
@@ -227,8 +227,8 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
             # Check data type of nibabel images (get_fdata() converts to float64)
             # So we check the internal data type instead
             # Results are now VoxelMap objects, access .data for the NIfTI image
-            assert flnm["correlation_map"].data.get_data_dtype() == np.float32
-            assert flnm["z_map"].data.get_data_dtype() == np.float32
+            assert flnm["correlationmap"].data.get_data_dtype() == np.float32
+            assert flnm["zmap"].data.get_data_dtype() == np.float32
     finally:
         unregister_functional_connectome("test_float32_connectome")
 
@@ -263,14 +263,14 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
             flnm = result.results["FunctionalNetworkMapping"]
 
             # T-map should exist and be a VoxelMap
-            assert "t_map" in flnm
-            assert flnm["t_map"].data.shape == (91, 109, 91)
+            assert "tmap" in flnm
+            assert flnm["tmap"].data.shape == (91, 109, 91)
 
             # Threshold map should exist
-            assert "t_threshold_map" in flnm
+            assert "tthresholdmap" in flnm
 
             # Statistics should include t-map info (ScalarMetric.data for dict access)
-            stats = flnm["summary_statistics"].data
+            stats = flnm["summarystatistics"].data
             assert "t_min" in stats
             assert "t_max" in stats
             assert "t_threshold" in stats

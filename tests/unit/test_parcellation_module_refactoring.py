@@ -267,7 +267,7 @@ class TestParcelAggregationParcellationParam:
 
         # Should not raise
         analysis = ParcelAggregation(
-            source="mask_img",
+            source="maskimg",
             aggregation="mean",
             parcel_names=["Schaefer2018_100Parcels7Networks"],
         )
@@ -279,7 +279,7 @@ class TestParcelAggregationParcellationParam:
         """Test parcel_names is optional (defaults to all)."""
         from lacuna.analysis import ParcelAggregation
 
-        analysis = ParcelAggregation(source="mask_img", aggregation="mean")
+        analysis = ParcelAggregation(source="maskimg", aggregation="mean")
 
         # Should use all available parcellations
         assert hasattr(analysis, "parcel_names")

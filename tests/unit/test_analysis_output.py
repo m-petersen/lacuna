@@ -37,10 +37,10 @@ def sample_nifti():
 def test_voxel_map_result_initialization(sample_nifti):
     """Test basic VoxelMap initialization with simplified API."""
     result = VoxelMap(
-        name="correlation_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
+        name="correlationmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
-    assert result.name == "correlation_map"
+    assert result.name == "correlationmap"
     assert result.data is sample_nifti
     assert result.space == "MNI152NLin6Asym"
     assert result.resolution == 2.0
@@ -87,11 +87,11 @@ def test_voxel_map_metadata_storage(sample_nifti):
 def test_voxel_map_summary(sample_nifti):
     """Test summary string generation."""
     result = VoxelMap(
-        name="correlation_map", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
+        name="correlationmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
     summary = result.summary()
-    assert "correlation_map" in summary
+    assert "correlationmap" in summary
     assert "91, 109, 91" in summary
     assert "MNI152NLin6Asym" in summary
     assert "2.0mm" in summary
@@ -150,18 +150,18 @@ def test_voxel_map_optional_metadata(sample_nifti):
 
 def test_roi_result_initialization():
     """Test basic ParcelData initialization."""
-    data = {"Schaefer400_1": 0.5, "Schaefer400_2": 0.3, "AAL_Frontal_L": 0.8}
+    data = {"Schaefer400_1": 0.5, "Schaefer400_2": 0.3, "Tian_Frontal_L": 0.8}
 
     result = ParcelData(
         name="atlas_aggregation",
         data=data,
-        parcel_names=["Schaefer400", "AAL"],
+        parcel_names=["Schaefer400", "Tian"],
         aggregation_method="mean",
     )
 
     assert result.name == "atlas_aggregation"
     assert result.data == data
-    assert result.parcel_names == ["Schaefer400", "AAL"]
+    assert result.parcel_names == ["Schaefer400", "Tian"]
     assert result.aggregation_method == "mean"
     assert result.data_type == "ParcelData"
 
@@ -176,18 +176,23 @@ def test_roi_result_get_data_no_filter():
 
 def test_roi_result_get_data_with_atlas_filter():
     """Test filtering ROI data by atlas name."""
-    data = {"Schaefer400_1": 0.5, "Schaefer400_2": 0.3, "AAL_Frontal_L": 0.8, "AAL_Temporal_R": 0.6}
+    data = {
+        "Schaefer400_1": 0.5,
+        "Schaefer400_2": 0.3,
+        "Tian_Frontal_L": 0.8,
+        "Tian_Temporal_R": 0.6,
+    }
 
     result = ParcelData(name="test", data=data)
 
     schaefer_data = result.get_data(atlas_filter="Schaefer400")
     assert len(schaefer_data) == 2
     assert "Schaefer400_1" in schaefer_data
-    assert "AAL_Frontal_L" not in schaefer_data
+    assert "Tian_Frontal_L" not in schaefer_data
 
-    aal_data = result.get_data(atlas_filter="AAL")
-    assert len(aal_data) == 2
-    assert "AAL_Frontal_L" in aal_data
+    tian_data = result.get_data(atlas_filter="Tian")
+    assert len(tian_data) == 2
+    assert "Tian_Frontal_L" in tian_data
 
 
 def test_roi_result_get_top_regions():

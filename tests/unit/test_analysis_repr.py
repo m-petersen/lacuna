@@ -363,7 +363,9 @@ class TestRegionalDamageRepr:
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
-        analysis = RegionalDamage(threshold=0.3, parcel_names=["AAL3", "Schaefer2018"])
+        analysis = RegionalDamage(
+            threshold=0.3, parcel_names=["TianSubcortex_3TS1", "Schaefer2018_100Parcels7Networks"]
+        )
 
         repr_str = repr(analysis)
 
@@ -387,38 +389,38 @@ class TestParcelAggregationRepr:
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
-        analysis = ParcelAggregation(source="mask_img", aggregation="mean", threshold=0.3)
+        analysis = ParcelAggregation(source="maskimg", aggregation="mean", threshold=0.3)
 
         repr_str = repr(analysis)
 
         assert "ParcelAggregation(" in repr_str
-        assert "source='mask_img'" in repr_str
+        assert "source='maskimg'" in repr_str
         assert "aggregation='mean'" in repr_str
         assert "threshold=0.3" in repr_str
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
         analysis = ParcelAggregation(
-            parcel_names=["AAL3", "Schaefer2018"],
-            source="mask_img",
+            parcel_names=["TianSubcortex_3TS1", "Schaefer2018_100Parcels7Networks"],
+            source="maskimg",
             aggregation="percent",
         )
 
         repr_str = repr(analysis)
 
         assert "parcel_names=" in repr_str
-        assert "source='mask_img'" in repr_str
+        assert "source='maskimg'" in repr_str
         assert "aggregation='percent'" in repr_str
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
-        analysis = ParcelAggregation(source="mask_img", aggregation="mean")
+        analysis = ParcelAggregation(source="maskimg", aggregation="mean")
 
         str_output = str(analysis)
 
         assert "ParcelAggregation Analysis" in str_output
         assert "Configuration:" in str_output
-        assert "source: mask_img" in str_output
+        assert "source: maskimg" in str_output
         assert "aggregation: mean" in str_output
 
 
@@ -473,7 +475,7 @@ class TestReprConsistency:
                 FunctionalNetworkMapping("test_all_repr_func", "boes"),
                 StructuralNetworkMapping("test_all_repr_struct", check_dependencies=False),
                 RegionalDamage(threshold=0.5),
-                ParcelAggregation(source="mask_img", aggregation="mean"),
+                ParcelAggregation(source="maskimg", aggregation="mean"),
             ]
 
             for analysis in analyses:
@@ -539,7 +541,7 @@ class TestReprConsistency:
                 FunctionalNetworkMapping("test_all_str_func", "boes"),
                 StructuralNetworkMapping("test_all_str_struct", check_dependencies=False),
                 RegionalDamage(threshold=0.5),
-                ParcelAggregation(source="mask_img", aggregation="mean"),
+                ParcelAggregation(source="maskimg", aggregation="mean"),
             ]
 
             for analysis in analyses:

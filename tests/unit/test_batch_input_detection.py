@@ -16,7 +16,7 @@ from lacuna.assets.parcellations.registry import (
 )
 from lacuna.batch.api import _detect_input_type
 from lacuna.core.data_types import VoxelMap
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 @pytest.fixture
@@ -56,14 +56,14 @@ def local_test_atlas(tmp_path):
 
 @pytest.fixture
 def sample_mask_data():
-    """Create a sample MaskData for testing."""
+    """Create a sample SubjectData for testing."""
     shape = (10, 10, 10)
     affine = np.eye(4)
     data = np.zeros(shape, dtype=np.int8)
     data[4:6, 4:6, 4:6] = 1  # Small lesion
     img = nib.Nifti1Image(data, affine)
 
-    return MaskData(
+    return SubjectData(
         mask_img=img,
         space="MNI152NLin6Asym",
         resolution=1.0,
@@ -91,7 +91,7 @@ class TestDetectInputType:
     """Unit tests for _detect_input_type function."""
 
     def test_detects_mask_data_only(self, sample_mask_data):
-        """Should return 'mask_data' for list containing only MaskData."""
+        """Should return 'mask_data' for list containing only SubjectData."""
         inputs = [sample_mask_data] * 3
         result = _detect_input_type(inputs)
         assert result == "mask_data"
@@ -120,7 +120,7 @@ class TestDetectInputType:
             _detect_input_type([])
 
     def test_single_mask_data(self, sample_mask_data):
-        """Should correctly identify single MaskData."""
+        """Should correctly identify single SubjectData."""
         result = _detect_input_type([sample_mask_data])
         assert result == "mask_data"
 
@@ -135,7 +135,7 @@ class TestDetectInputType:
         # and should default to mask_data since nothing else was found
         inputs = ["not_a_valid_type", 123, None]
         result = _detect_input_type(inputs)
-        # No VoxelMap or MaskData found, defaults to mask_data
+        # No VoxelMap or SubjectData found, defaults to mask_data
         assert result == "mask_data"
 
 
@@ -151,7 +151,7 @@ class TestBatchProcessMixedTypeError:
 
         mixed_inputs = [sample_mask_data, sample_voxelmap]
         analysis = ParcelAggregation(
-            source="mask_img", aggregation="mean", parcel_names=[local_test_atlas]
+            source="maskimg", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         with pytest.raises(TypeError, match="mixed"):
@@ -166,7 +166,7 @@ class TestBatchProcessMixedTypeError:
 
         mixed_inputs = [sample_mask_data, sample_voxelmap]
         analysis = ParcelAggregation(
-            source="mask_img", aggregation="mean", parcel_names=[local_test_atlas]
+            source="maskimg", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         with pytest.raises(TypeError) as exc_info:
@@ -177,7 +177,7 @@ class TestBatchProcessMixedTypeError:
         assert "maskdata" in error_message or "voxelmap" in error_message
 
 
-class TestDeprecatedMaskDataListParameter:
+class TestDeprecatedSubjectListParameter:
     """Unit tests for the deprecated mask_data_list parameter."""
 
     def test_mask_data_list_parameter_still_works(self, sample_mask_data, local_test_atlas):
@@ -188,7 +188,7 @@ class TestDeprecatedMaskDataListParameter:
         from lacuna.batch import batch_process
 
         analysis = ParcelAggregation(
-            source="mask_img", aggregation="mean", parcel_names=[local_test_atlas]
+            source="maskimg", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         # Should emit deprecation warning but work
@@ -212,7 +212,7 @@ class TestDeprecatedMaskDataListParameter:
         from lacuna.batch import batch_process
 
         analysis = ParcelAggregation(
-            source="mask_img", aggregation="mean", parcel_names=[local_test_atlas]
+            source="maskimg", aggregation="mean", parcel_names=[local_test_atlas]
         )
 
         with pytest.raises(ValueError, match="Cannot specify both"):

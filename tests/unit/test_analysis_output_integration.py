@@ -16,7 +16,7 @@ from lacuna.assets.connectomes import (
     register_functional_connectome,
     unregister_functional_connectome,
 )
-from lacuna.core import MaskData
+from lacuna.core import SubjectData
 from lacuna.core.data_types import (
     DataContainer,
     ParcelData,
@@ -45,7 +45,7 @@ def sample_mask_data():
         identifier="MNI152NLin6Asym", resolution=2.0, reference_affine=space_affine
     )
 
-    return MaskData(
+    return SubjectData(
         mask_img=mask_img,
         metadata={
             "subject_id": "test_subject",
@@ -216,8 +216,8 @@ class TestFunctionalNetworkMappingOutputs:
 
             # Check for expected result names
             result_names = [r.name for r in voxel_results]
-            assert "correlation_map" in result_names
-            assert "z_map" in result_names
+            assert "correlationmap" in result_names
+            assert "zmap" in result_names
         finally:
             unregister_functional_connectome("test_func_connectome")
 
