@@ -105,7 +105,7 @@ class TestVoxelMapBatchContract:
         """
         Contract: batch_process() should accept list[VoxelMap] as input.
 
-        When given a list of VoxelMaps instead of MaskData, batch_process
+        When given a list of VoxelMaps instead of SubjectData, batch_process
         should route them correctly through ParcelAggregation.
         """
         analysis = ParcelAggregation(
@@ -187,25 +187,25 @@ class TestVoxelMapBatchContract:
             elif isinstance(result, ParcelData):
                 assert result.data is not None
             else:
-                # If it's a MaskData (current behavior), check it has results
+                # If it's a SubjectData (current behavior), check it has results
                 assert hasattr(result, "results")
 
     def test_batch_process_rejects_mixed_types(
         self, sample_voxelmaps, synthetic_mask_img, local_test_atlas
     ):
         """
-        Contract: batch_process should reject mixed MaskData and VoxelMap lists.
+        Contract: batch_process should reject mixed SubjectData and VoxelMap lists.
         """
-        from lacuna import MaskData
+        from lacuna import SubjectData
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
-        # Mix VoxelMap and MaskData
+        # Mix VoxelMap and SubjectData
         mixed_list = [sample_voxelmaps[0], mask_data]
 
-        analysis = ParcelAggregation(source="mask_img", parcel_names=[local_test_atlas])
+        analysis = ParcelAggregation(source="maskimg", parcel_names=[local_test_atlas])
 
         with pytest.raises(TypeError, match="mixed|type"):
             batch_process(mixed_list, analysis, n_jobs=1, show_progress=False)

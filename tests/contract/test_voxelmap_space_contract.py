@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import FunctionalNetworkMapping, StructuralNetworkMapping
 from lacuna.core.data_types import VoxelMap
 
@@ -14,7 +14,7 @@ class TestVoxelMapSpaceContract:
 
     @pytest.fixture
     def mask_data_with_space(self):
-        """Create MaskData with explicit space/resolution."""
+        """Create SubjectData with explicit space/resolution."""
         # Create a small 3D mask
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
@@ -23,8 +23,8 @@ class TestVoxelMapSpaceContract:
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
         mask_img = nib.Nifti1Image(data, affine)
 
-        # Create MaskData with space metadata
-        return MaskData(
+        # Create SubjectData with space metadata
+        return SubjectData(
             mask_img=mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2.0, "subject_id": "test_subject"},
         )
@@ -95,7 +95,7 @@ class TestVoxelMapSpaceContract:
         img = nib.Nifti1Image(data, affine)
 
         voxelmap = VoxelMap(
-            name="correlation_map",
+            name="correlationmap",
             data=img,
             space="MNI152NLin2009cAsym",
             resolution=2.0,
@@ -111,7 +111,7 @@ class TestVoxelMapSpaceContract:
 
     def test_return_in_lesion_space_requires_valid_metadata(self):
         """Using return_in_lesion_space requires input to have valid space metadata."""
-        # Create MaskData without space metadata
+        # Create SubjectData without space metadata
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.diag([2.0, 2.0, 2.0, 1.0])

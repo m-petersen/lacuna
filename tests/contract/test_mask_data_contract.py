@@ -1,7 +1,7 @@
 """
-Contract tests for MaskData API requirements.
+Contract tests for SubjectData API requirements.
 
-Tests the core contract of MaskData:
+Tests the core contract of SubjectData:
 - Binary mask validation (0/1 values only)
 - Required metadata fields (space, resolution)
 - Removed deprecated features (anatomical_img, registration)
@@ -11,11 +11,11 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 class TestBinaryMaskValidation:
-    """Test that MaskData enforces binary masks (0/1 values only)."""
+    """Test that SubjectData enforces binary masks (0/1 values only)."""
 
     def test_binary_mask_accepted(self):
         """Binary mask (only 0 and 1 values) should be accepted."""
@@ -25,7 +25,7 @@ class TestBinaryMaskValidation:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         # Should not raise
-        result = MaskData(
+        result = SubjectData(
             mask_img=mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -39,7 +39,7 @@ class TestBinaryMaskValidation:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         with pytest.raises(ValueError, match="binary mask with only 0 and 1 values"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 metadata={"space": "MNI152NLin6Asym", "resolution": 2},
             )
@@ -52,7 +52,7 @@ class TestBinaryMaskValidation:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         with pytest.raises(ValueError, match="binary mask with only 0 and 1 values"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 metadata={"space": "MNI152NLin6Asym", "resolution": 2},
             )
@@ -63,7 +63,7 @@ class TestBinaryMaskValidation:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         with pytest.raises(ValueError, match="Please binarize your lesion mask"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 metadata={"space": "MNI152NLin6Asym", "resolution": 2},
             )
@@ -73,7 +73,7 @@ class TestAnatomicalImgRejection:
     """Test that anatomical_img parameter is not accepted (removed feature)."""
 
     def test_anatomical_img_parameter_does_not_exist(self):
-        """MaskData should not accept anatomical_img parameter."""
+        """SubjectData should not accept anatomical_img parameter."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
@@ -83,7 +83,7 @@ class TestAnatomicalImgRejection:
 
         # Should raise TypeError for unexpected keyword argument
         with pytest.raises(TypeError, match="unexpected keyword argument"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 anatomical_img=anat_img,  # Should be rejected
                 metadata={"space": "MNI152NLin6Asym", "resolution": 2},
@@ -100,7 +100,7 @@ class TestSpaceInference:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         with pytest.raises(ValueError, match="Coordinate space must be specified"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 metadata={},  # No space or resolution
             )
@@ -112,7 +112,7 @@ class TestSpaceInference:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         with pytest.raises(ValueError, match="Spatial resolution must be specified"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 space="MNI152NLin6Asym",  # Space provided but not resolution
                 metadata={},
@@ -125,7 +125,7 @@ class TestSpaceInference:
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
         with pytest.raises(ValueError, match="Invalid space"):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 metadata={"space": "native", "resolution": 2},  # Unsupported
             )
@@ -136,7 +136,7 @@ class TestSpaceInference:
         mask_data[3:7, 3:7, 3:7] = 1
         mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
 
-        mask_data_obj = MaskData(
+        mask_data_obj = SubjectData(
             mask_img=mask_img,
             metadata={"space": "MNI152NLin2009cAsym", "resolution": 2},
         )
@@ -155,7 +155,7 @@ class TestSpaceInference:
             ValueError,
             match="MNI152NLin6Asym.*MNI152NLin2009aAsym.*MNI152NLin2009cAsym",
         ):
-            MaskData(
+            SubjectData(
                 mask_img=mask_img,
                 metadata={},  # Missing space and resolution
             )

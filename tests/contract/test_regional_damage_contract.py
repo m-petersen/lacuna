@@ -7,6 +7,8 @@ quantification following the BaseAnalysis contract.
 
 import pytest
 
+from lacuna.core.keys import build_result_key
+
 
 def test_regional_damage_import():
     """Test that RegionalDamage can be imported."""
@@ -43,12 +45,12 @@ def test_regional_damage_has_run_method():
 
 def test_regional_damage_validates_atlas_available(synthetic_mask_img):
     """Test that RegionalDamage validates requested atlas exists."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.regional_damage import RegionalDamage
 
     # Request a nonexistent atlas
     analysis = RegionalDamage(parcel_names=["NonExistentAtlas123"])
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -91,7 +93,7 @@ def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
@@ -109,18 +111,18 @@ def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
 
     non_binary_img = nib.Nifti1Image(data, synthetic_mask_img.affine)
 
-    # MaskData now validates binary mask in __init__
+    # SubjectData now validates binary mask in __init__
     # Should raise error for non-binary mask
     with pytest.raises(ValueError, match="binary"):
-        MaskData(mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        SubjectData(mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
-    """Test that run() returns a MaskData object with namespaced results."""
+    """Test that run() returns a SubjectData object with namespaced results."""
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.regional_damage import RegionalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
@@ -139,7 +141,7 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
     (atlas_dir / "test_atlas_labels.txt").write_text("1 Region1\n2 Region2\n")
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -147,8 +149,8 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
     analysis = RegionalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
-    # Should return MaskData
-    assert isinstance(result, MaskData)
+    # Should return SubjectData
+    assert isinstance(result, SubjectData)
 
     # Should have namespaced results
     assert "RegionalDamage" in result.results
@@ -159,7 +161,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.regional_damage import RegionalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
@@ -174,7 +176,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     (atlas_dir / "test_atlas_labels.txt").write_text("1 TestRegion\n")
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -183,12 +185,12 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
-    # Format: parc-{atlas}_source-MaskData_desc-mask_img
+    # Format: atlas-{atlas}_source-InputMask
     atlas_results = result.results["RegionalDamage"]
-    assert "parc-test_atlas_source-MaskData_desc-mask_img" in atlas_results
+    assert build_result_key("test_atlas", "SubjectData") in atlas_results
 
     # Get the ParcelData for this atlas
-    roi_result = atlas_results["parc-test_atlas_source-MaskData_desc-mask_img"]
+    roi_result = atlas_results[build_result_key("test_atlas", "SubjectData")]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level damage percentages
@@ -206,7 +208,7 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.regional_damage import RegionalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
@@ -228,7 +230,7 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
 
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -237,24 +239,24 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
-    # Format: parc-{atlas}_source-MaskData_desc-mask_img
+    # Format: atlas-{atlas}_source-InputMask
     atlas_results = result.results["RegionalDamage"]
-    assert "parc-atlas_3d_source-MaskData_desc-mask_img" in atlas_results
-    assert "parc-atlas_4d_source-MaskData_desc-mask_img" in atlas_results
+    assert build_result_key("atlas_3d", "SubjectData") in atlas_results
+    assert build_result_key("atlas_4d", "SubjectData") in atlas_results
 
     # Each atlas should have its own ParcelData
-    results_3d = atlas_results["parc-atlas_3d_source-MaskData_desc-mask_img"].get_data()
-    results_4d = atlas_results["parc-atlas_4d_source-MaskData_desc-mask_img"].get_data()
+    results_3d = atlas_results[build_result_key("atlas_3d", "SubjectData")].get_data()
+    results_4d = atlas_results[build_result_key("atlas_4d", "SubjectData")].get_data()
     assert len(results_3d) > 0
     assert len(results_4d) > 0
 
 
 def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_path):
-    """Test that run() does not modify the input MaskData."""
+    """Test that run() does not modify the input SubjectData."""
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.regional_damage import RegionalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
@@ -267,7 +269,7 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
     (atlas_dir / "test_immut_labels.txt").write_text("1 Region1\n")
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
     original_results = mask_data.results.copy()
@@ -289,7 +291,7 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.regional_damage import RegionalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
@@ -302,7 +304,7 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     (atlas_dir / "test_prov_labels.txt").write_text("1 Region1\n")
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
     original_prov_len = len(mask_data.provenance)

@@ -13,7 +13,7 @@ sys.path.insert(0, "/home/marvin/projects/lacuna/src")
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch import batch_process
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 class MockAnalysis(BaseAnalysis):
@@ -26,11 +26,11 @@ class MockAnalysis(BaseAnalysis):
         self.should_fail = should_fail
         self.call_count = 0
 
-    def _validate_inputs(self, mask_data: MaskData) -> None:
+    def _validate_inputs(self, mask_data: SubjectData) -> None:
         """No validation needed for tests."""
         pass
 
-    def _run_analysis(self, mask_data: MaskData) -> dict:
+    def _run_analysis(self, mask_data: SubjectData) -> dict:
         """Mock analysis that increments call count."""
         self.call_count += 1
         if self.should_fail:
@@ -58,10 +58,10 @@ class TestBatchProcessAPI:
         )
         assert isinstance(result, list)
         assert len(result) == 1
-        assert isinstance(result[0], MaskData)
+        assert isinstance(result[0], SubjectData)
 
     def test_batch_process_returns_list_of_mask_data(self, batch_mask_data_list):
-        """batch_process should return a list of MaskData objects."""
+        """batch_process should return a list of SubjectData objects."""
         analysis = MockAnalysis()
 
         result = batch_process(
@@ -74,7 +74,7 @@ class TestBatchProcessAPI:
         assert isinstance(result, list)
         assert len(result) == len(batch_mask_data_list)
         for mask_data in result:
-            assert isinstance(mask_data, MaskData)
+            assert isinstance(mask_data, SubjectData)
             # Verify results were added
             assert "MockAnalysis" in mask_data.results
 
