@@ -31,7 +31,7 @@ from lacuna.assets.connectomes import (
 )
 from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.core.exceptions import ValidationError
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
@@ -90,12 +90,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
     Methods
     -------
-    run(mask_data: MaskData) -> MaskData
+    run(mask_data: SubjectData) -> SubjectData
         Inherited from BaseAnalysis. Computes functional network mapping.
 
     Examples
     --------
-    >>> from lacuna import MaskData
+    >>> from lacuna import SubjectData
     >>> from lacuna.analysis import FunctionalNetworkMapping
     >>> from lacuna.assets.connectomes import (
     ...     list_functional_connectomes,
@@ -116,14 +116,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
     >>> list_functional_connectomes()
     >>>
     >>> # Use registered connectome
-    >>> lesion = MaskData.from_nifti("lesion_mni.nii.gz")
+    >>> lesion = SubjectData.from_nifti("lesion_mni.nii.gz")
     >>> analysis = FunctionalNetworkMapping(
     ...     connectome_name="GSP1000",
     ...     method="boes"
     ... )
     >>> result = analysis.run(lesion)
-    >>> correlation_map = result.results["FunctionalNetworkMapping"]["correlation_map"]
-    >>> z_map = result.results["FunctionalNetworkMapping"]["z_map"]
+    >>> correlation_map = result.results["FunctionalNetworkMapping"]["correlationmap"]
+    >>> z_map = result.results["FunctionalNetworkMapping"]["zmap"]
 
     Notes
     -----
@@ -177,7 +177,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         return_in_lesion_space : bool, default=False
             If True, transform VoxelMap outputs back to the input lesion space.
             If False, outputs remain in the connectome space (MNI152NLin6Asym @ 2mm).
-            Requires input MaskData to have valid space/resolution metadata.
+            Requires input SubjectData to have valid space/resolution metadata.
 
         Raises
         ------
@@ -255,12 +255,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         return self._batch_files
 
-    def _validate_inputs(self, mask_data: MaskData) -> None:
+    def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate inputs for functional network mapping.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data to validate.
 
         Raises
@@ -298,7 +298,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             msg = "Lesion mask must be binary (only 0 and 1 values)"
             raise ValidationError(msg)
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
+    def _run_analysis(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -307,7 +307,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Validated lesion data in MNI152 space.
 
         Returns
@@ -504,7 +504,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Correlation map (r values)
         correlation_result = VoxelMap(
-            name="correlation_map",
+            name="correlationmap",
             data=correlation_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -515,11 +515,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "correlation_coefficient",
             },
         )
-        results["correlation_map"] = correlation_result
+        results["correlationmap"] = correlation_result
 
         # Z-map (Fisher z-transformed correlations)
         z_result = VoxelMap(
-            name="z_map",
+            name="zmap",
             data=z_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -530,7 +530,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "statistic": "fisher_z",
             },
         )
-        results["z_map"] = z_result
+        results["zmap"] = z_result
 
         # Summary statistics
         summary_dict = {
@@ -545,7 +545,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Add t-map results if computed
         if t_map_nifti is not None:
             t_result = VoxelMap(
-                name="t_map",
+                name="tmap",
                 data=t_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -555,13 +555,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "t_statistic",
                 },
             )
-            results["t_map"] = t_result
+            results["tmap"] = t_result
             summary_dict["t_min"] = float(np.min(t_map_flat))
             summary_dict["t_max"] = float(np.max(t_map_flat))
 
         if t_threshold_map_nifti is not None:
             threshold_result = VoxelMap(
-                name="t_threshold_map",
+                name="tthresholdmap",
                 data=t_threshold_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -571,20 +571,20 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "thresholded_t",
                 },
             )
-            results["t_threshold_map"] = threshold_result
+            results["tthresholdmap"] = threshold_result
             summary_dict["n_significant_voxels"] = int(n_significant)
             summary_dict["pct_significant_voxels"] = float(pct_significant)
 
         # Add summary statistics as MiscResult
         summary_result = ScalarMetric(
-            name="summary_statistics",
+            name="summarystatistics",
             data=summary_dict,
             metadata={
                 "method": self.method,
                 "n_subjects": total_subjects,
             },
         )
-        results["summary_statistics"] = summary_result
+        results["summarystatistics"] = summary_result
 
         # Transform VoxelMap results back to lesion space if requested
         if self.return_in_lesion_space:
@@ -734,7 +734,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Return mean timeseries from selected voxels
         return np.mean(refined_lesion_ts, axis=2)
 
-    def _get_lesion_voxel_indices(self, mask_data: MaskData) -> np.ndarray:
+    def _get_lesion_voxel_indices(self, mask_data: SubjectData) -> np.ndarray:
         """Get indices of lesion voxels within connectome mask (vectorized O(N) version).
 
         This uses a lookup array for O(N) complexity instead of O(N×M) nested loops,
@@ -760,7 +760,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data in MNI152 space.
 
         Returns
@@ -872,7 +872,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         return r_maps.astype(np.float32)
 
-    def run_batch(self, mask_data_list: list[MaskData]) -> list[MaskData]:
+    def run_batch(self, mask_data_list: list[SubjectData]) -> list[SubjectData]:
         """Process multiple lesions together using vectorized operations.
 
         This is 10-50x faster than sequential processing because it:
@@ -885,12 +885,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        mask_data_list : list[MaskData]
+        mask_data_list : list[SubjectData]
             Batch of lesions to process together
 
         Returns
         -------
-        list[MaskData]
+        list[SubjectData]
             Processed lesions with results added
 
         Examples
@@ -1206,7 +1206,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
     def _aggregate_results_from_statistics(
         self,
-        mask_data: MaskData,
+        mask_data: SubjectData,
         mean_r_map: np.ndarray,
         mean_z_map: np.ndarray,
         std_z_map: np.ndarray | None,
@@ -1214,7 +1214,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_affine: np.ndarray,
         mask_shape: tuple,
         total_subjects: int,
-    ) -> MaskData:
+    ) -> SubjectData:
         """Aggregate results from pre-computed statistics (memory-optimized).
 
         This method is used by vectorized batch processing with streaming
@@ -1224,7 +1224,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Original lesion data to add results to
         mean_r_map : np.ndarray
             Shape (n_voxels,). Mean correlation map (already Fisher z-averaged).
@@ -1244,7 +1244,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        MaskData
+        SubjectData
             Lesion data with analysis results added
         """
         # Compute t-statistics if requested
@@ -1274,8 +1274,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Build results dictionary with snake_case keys (matching _run_analysis)
         # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
         results = {
-            "correlation_map": VoxelMap(
-                name="correlation_map",
+            "correlationmap": VoxelMap(
+                name="correlationmap",
                 data=correlation_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -1285,8 +1285,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "correlation_coefficient",
                 },
             ),
-            "z_map": VoxelMap(
-                name="z_map",
+            "zmap": VoxelMap(
+                name="zmap",
                 data=z_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -1296,8 +1296,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "fisher_z",
                 },
             ),
-            "summary_statistics": ScalarMetric(
-                name="summary_statistics",
+            "summarystatistics": ScalarMetric(
+                name="summarystatistics",
                 data={
                     "mean": float(np.mean(mean_r_map)),
                     "std": float(np.std(mean_r_map)),
@@ -1316,8 +1316,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
             t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
 
-            results["t_map"] = VoxelMap(
-                name="t_map",
+            results["tmap"] = VoxelMap(
+                name="tmap",
                 data=t_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -1328,8 +1328,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 },
             )
             # Update summary statistics with t-map info
-            results["summary_statistics"].data["t_min"] = float(np.min(t_map_flat))
-            results["summary_statistics"].data["t_max"] = float(np.max(t_map_flat))
+            results["summarystatistics"].data["t_min"] = float(np.min(t_map_flat))
+            results["summarystatistics"].data["t_max"] = float(np.max(t_map_flat))
 
             # Create thresholded t-map if threshold provided
             if self.t_threshold is not None:
@@ -1339,8 +1339,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     t_threshold_mask.astype(np.uint8)
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["t_threshold_map"] = VoxelMap(
-                    name="t_threshold_map",
+                results["tthresholdmap"] = VoxelMap(
+                    name="tthresholdmap",
                     data=t_threshold_map_nifti,
                     space=self.output_space,
                     resolution=self.output_resolution,
@@ -1350,8 +1350,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                         "statistic": "thresholded_t",
                     },
                 )
-                results["summary_statistics"].data["t_threshold"] = self.t_threshold
-                results["summary_statistics"].data["n_significant_voxels"] = int(
+                results["summarystatistics"].data["t_threshold"] = self.t_threshold
+                results["summarystatistics"].data["n_significant_voxels"] = int(
                     np.sum(t_threshold_mask)
                 )
 
@@ -1361,15 +1361,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Add results to lesion data (returns new instance with results)
         batch_results = {
-            "correlation_map": results["correlation_map"],
-            "z_map": results["z_map"],
-            "summary_statistics": results["summary_statistics"],
+            "correlationmap": results["correlationmap"],
+            "zmap": results["zmap"],
+            "summarystatistics": results["summarystatistics"],
         }
         # Add optional results if present
-        if "t_map" in results:
-            batch_results["t_map"] = results["t_map"]
-        if "t_threshold_map" in results:
-            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        if "tmap" in results:
+            batch_results["tmap"] = results["tmap"]
+        if "tthresholdmap" in results:
+            batch_results["tthresholdmap"] = results["tthresholdmap"]
 
         mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
 
@@ -1377,20 +1377,20 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
     def _aggregate_results(
         self,
-        mask_data: MaskData,
+        mask_data: SubjectData,
         all_r_maps: np.ndarray,
         mask_indices: tuple,
         mask_affine: np.ndarray,
         mask_shape: tuple,
         total_subjects: int,
-    ) -> MaskData:
+    ) -> SubjectData:
         """Aggregate correlation maps across all subjects into final results.
 
         This method is reused by both single and batch processing.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Original lesion data to add results to
         all_r_maps : np.ndarray
             Shape (n_subjects, n_voxels). All correlation maps.
@@ -1405,7 +1405,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Returns
         -------
-        MaskData
+        SubjectData
             Lesion data with analysis results added
         """
         # Fisher z-transform
@@ -1442,8 +1442,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Build results dictionary
         # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
         results = {
-            "correlation_map": VoxelMap(
-                name="correlation_map",
+            "correlationmap": VoxelMap(
+                name="correlationmap",
                 data=correlation_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -1454,8 +1454,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 },
             ),
             "network_map": correlation_map_nifti,  # Alias for backward compat (raw nifti)
-            "z_map": VoxelMap(
-                name="z_map",
+            "zmap": VoxelMap(
+                name="zmap",
                 data=z_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -1466,8 +1466,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 },
             ),
             "mean_correlation": float(np.mean(mean_r_map)),
-            "summary_statistics": ScalarMetric(
-                name="summary_statistics",
+            "summarystatistics": ScalarMetric(
+                name="summarystatistics",
                 data={
                     "mean": float(np.mean(mean_r_map)),
                     "std": float(np.std(mean_r_map)),
@@ -1486,8 +1486,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
             t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
 
-            results["t_map"] = VoxelMap(
-                name="t_map",
+            results["tmap"] = VoxelMap(
+                name="tmap",
                 data=t_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
@@ -1497,8 +1497,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "statistic": "t_statistic",
                 },
             )
-            results["summary_statistics"].data["t_min"] = float(np.min(t_map_flat))
-            results["summary_statistics"].data["t_max"] = float(np.max(t_map_flat))
+            results["summarystatistics"].data["t_min"] = float(np.min(t_map_flat))
+            results["summarystatistics"].data["t_max"] = float(np.max(t_map_flat))
 
             # Create thresholded t-map if threshold provided
             if self.t_threshold is not None:
@@ -1508,8 +1508,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     t_threshold_mask.astype(np.uint8)
                 )
                 t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["t_threshold_map"] = VoxelMap(
-                    name="t_threshold_map",
+                results["tthresholdmap"] = VoxelMap(
+                    name="tthresholdmap",
                     data=t_threshold_map_nifti,
                     space=self.output_space,
                     resolution=self.output_resolution,
@@ -1519,23 +1519,23 @@ class FunctionalNetworkMapping(BaseAnalysis):
                         "statistic": "thresholded_t",
                     },
                 )
-                results["summary_statistics"].data["t_threshold"] = self.t_threshold
-                results["summary_statistics"].data["n_significant_voxels"] = int(
+                results["summarystatistics"].data["t_threshold"] = self.t_threshold
+                results["summarystatistics"].data["n_significant_voxels"] = int(
                     np.sum(t_threshold_mask)
                 )
 
         # Add results to lesion data (returns new instance with results)
         # Note: Using individual keys to match _run_analysis() structure
         batch_results = {
-            "correlation_map": results["correlation_map"],
-            "z_map": results["z_map"],
-            "summary_statistics": results["summary_statistics"],
+            "correlationmap": results["correlationmap"],
+            "zmap": results["zmap"],
+            "summarystatistics": results["summarystatistics"],
         }
         # Add optional results if present
-        if "t_map" in results:
-            batch_results["t_map"] = results["t_map"]
-        if "t_threshold_map" in results:
-            batch_results["t_threshold_map"] = results["t_threshold_map"]
+        if "tmap" in results:
+            batch_results["tmap"] = results["tmap"]
+        if "tthresholdmap" in results:
+            batch_results["tthresholdmap"] = results["tthresholdmap"]
 
         mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
 
@@ -1560,14 +1560,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
             "log_level": self.log_level,
         }
 
-    def _transform_results_to_lesion_space(self, results: dict, mask_data: MaskData) -> dict:
+    def _transform_results_to_lesion_space(self, results: dict, mask_data: SubjectData) -> dict:
         """Transform VoxelMap results back to lesion space.
 
         Parameters
         ----------
         results : dict
             Dictionary of result objects
-        mask_data : MaskData
+        mask_data : SubjectData
             Input mask data with space/resolution metadata
 
         Returns
