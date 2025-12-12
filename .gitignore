@@ -97,3 +97,6 @@ specs/
 
 # Notes
 notes/
+
+# Cache directories
+*_cache

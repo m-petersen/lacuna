@@ -121,16 +121,16 @@ print(atlases)
 ```python
 from lacuna.data import get_bundled_atlas
 
-img_path, labels_path = get_bundled_atlas('aal3')
-print(img_path)  # Full path to aal3.nii.gz
-print(labels_path)  # Full path to aal3_labels.txt
+img_path, labels_path = get_bundled_atlas('schaefer2018-100parcels-7networks')
+print(img_path)  # Full path to schaefer2018-100parcels-7networks.nii.gz
+print(labels_path)  # Full path to schaefer2018-100parcels-7networks_labels.txt
 ```
 
 ### Get Citation
 ```python
 from lacuna.data import get_atlas_citation
 
-citation = get_atlas_citation('aal3')
+citation = get_atlas_citation('schaefer2018-100parcels-7networks')
 print(citation)
 # Prints full citation information
 ```
