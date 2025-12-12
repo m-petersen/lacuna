@@ -1,7 +1,7 @@
 """
 Integration tests for BIDS derivatives export functionality.
 
-Tests the complete workflow of exporting MaskData with results to BIDS-compliant
+Tests the complete workflow of exporting SubjectData with results to BIDS-compliant
 derivatives structure, including multi-subject and multi-session scenarios.
 """
 
@@ -9,7 +9,7 @@ import json
 
 import numpy as np
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.core.provenance import create_provenance_record
 from lacuna.io import export_bids_derivatives
 
@@ -17,7 +17,7 @@ from lacuna.io import export_bids_derivatives
 def test_export_single_subject_workflow(tmp_path, synthetic_mask_img):
     """Test complete export workflow for single subject."""
     # Create lesion data
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -42,7 +42,7 @@ def test_export_single_subject_workflow(tmp_path, synthetic_mask_img):
 def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     """Test exporting lesion with analysis results."""
     # Create lesion with results
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -57,7 +57,9 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
 
     # Add provenance
     prov = create_provenance_record(
-        function="compute_regional_damage", parameters={"atlas": "AAL3"}, version="0.1.0"
+        function="compute_regional_damage",
+        parameters={"atlas": "Schaefer2018_100Parcels7Networks"},
+        version="0.1.0",
     )
     lesion_with_results = lesion_with_results.add_provenance(prov)
 
@@ -70,14 +72,14 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     assert anat_dir.exists()
 
     # Verify results JSON files exist (one per result key)
-    # Pattern: sub-002_desc-regionaldamage_{key}.json
-    results_files = list(anat_dir.glob("*_desc-regionaldamage_*.json"))
+    # Pattern: sub-002_desc-{key}_stats.json (namespace removed, BIDS suffix)
+    results_files = list(anat_dir.glob("*_stats.json"))
     assert (
         len(results_files) >= 1
     ), f"Expected results files, found: {list(anat_dir.glob('*.json'))}"
 
     # Verify one of the results has correct content
-    volume_files = list(anat_dir.glob("*_desc-regionaldamage_volume_mm3.json"))
+    volume_files = list(anat_dir.glob("*_desc-volumemm3_stats.json"))
     if volume_files:
         with open(volume_files[0]) as f:
             saved_value = json.load(f)
@@ -94,7 +96,7 @@ def test_export_multi_session(tmp_path, synthetic_mask_img):
     subject_id = "sub-003"
 
     for session in sessions:
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={
                 "subject_id": subject_id,
@@ -123,7 +125,7 @@ def test_export_multiple_subjects(tmp_path, synthetic_mask_img):
     output_dir = tmp_path / "derivatives" / "lacuna"
 
     for subject_id in subjects:
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={"subject_id": subject_id, "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -142,7 +144,7 @@ def test_export_multiple_subjects(tmp_path, synthetic_mask_img):
 def test_export_and_reload_workflow(tmp_path, synthetic_mask_img):
     """Test complete save-export-load workflow."""
     # Create original lesion
-    original = MaskData(
+    original = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={
             "subject_id": "sub-201",
@@ -173,7 +175,7 @@ def test_export_and_reload_workflow(tmp_path, synthetic_mask_img):
 
 def test_export_lesion_mask_only(tmp_path, synthetic_mask_img):
     """Test exporting with only lesion mask enabled."""
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-301", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -199,7 +201,7 @@ def test_export_lesion_mask_only(tmp_path, synthetic_mask_img):
 
 def test_export_preserves_bids_naming(tmp_path, synthetic_mask_img):
     """Test that BIDS naming conventions are followed."""
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={
             "subject_id": "sub-401",
@@ -229,7 +231,7 @@ def test_export_preserves_bids_naming(tmp_path, synthetic_mask_img):
 def test_export_selective_outputs(tmp_path, synthetic_mask_img):
     """Test selective output export options."""
     # Create lesion with results
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-501", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -257,7 +259,7 @@ def test_export_selective_outputs(tmp_path, synthetic_mask_img):
 
 def test_export_creates_complete_derivatives_structure(tmp_path, synthetic_mask_img):
     """Test that complete BIDS derivatives structure is created."""
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-601", "space": "MNI152NLin6Asym", "resolution": 2},
     )

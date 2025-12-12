@@ -12,7 +12,7 @@ import pytest
 
 def test_load_single_subject_lesion_only(tmp_path):
     """Test loading single subject with lesion mask only."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
 
     # Create synthetic lesion
     shape = (64, 64, 64)
@@ -28,8 +28,8 @@ def test_load_single_subject_lesion_only(tmp_path):
     lesion_path = tmp_path / "lesion.nii.gz"
     nib.save(mask_img, lesion_path)
 
-    # Load using MaskData
-    mask_data = MaskData.from_nifti(
+    # Load using SubjectData
+    mask_data = SubjectData.from_nifti(
         lesion_path,
         metadata={
             "subject_id": "sub-test-001",
@@ -50,10 +50,10 @@ def test_load_single_subject_lesion_only(tmp_path):
 def test_load_single_subject_with_anatomical(tmp_path):
     """Test loading single subject lesion mask.
 
-    Note: anatomical_path parameter was removed from MaskData.from_nifti().
+    Note: anatomical_path parameter was removed from SubjectData.from_nifti().
     This test now verifies basic lesion loading with metadata.
     """
-    from lacuna import MaskData
+    from lacuna import SubjectData
 
     shape = (64, 64, 64)
     affine = np.eye(4)
@@ -67,7 +67,7 @@ def test_load_single_subject_with_anatomical(tmp_path):
     nib.save(mask_img, lesion_path)
 
     # Load lesion with site metadata
-    mask_data = MaskData.from_nifti(
+    mask_data = SubjectData.from_nifti(
         lesion_path,
         metadata={
             "subject_id": "sub-test-002",
@@ -85,7 +85,7 @@ def test_load_single_subject_with_anatomical(tmp_path):
 
 def test_single_subject_workflow_with_analysis(tmp_path):
     """Test complete workflow: load → analyze → save."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.core.provenance import create_provenance_record
     from lacuna.io import save_nifti
 
@@ -101,7 +101,7 @@ def test_single_subject_workflow_with_analysis(tmp_path):
     nib.save(mask_img, input_path)
 
     # Load
-    mask_data = MaskData.from_nifti(
+    mask_data = SubjectData.from_nifti(
         input_path,
         metadata={"subject_id": "sub-workflow", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -142,7 +142,7 @@ def test_single_subject_workflow_with_analysis(tmp_path):
 
 def test_single_subject_validation_catches_issues(tmp_path):
     """Test that validation catches common issues."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.core.exceptions import ValidationError
 
     # Create lesion with 4D data (should be caught)
@@ -159,12 +159,12 @@ def test_single_subject_validation_catches_issues(tmp_path):
 
     # Should raise ValidationError for 4D image
     with pytest.raises(ValidationError, match="3D"):
-        MaskData.from_nifti(lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        SubjectData.from_nifti(lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_single_subject_empty_mask_warning(tmp_path):
     """Test that empty lesion mask triggers warning."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
 
     # Create empty lesion (all zeros)
     shape = (64, 64, 64)
@@ -179,7 +179,7 @@ def test_single_subject_empty_mask_warning(tmp_path):
 
     # Should warn about empty mask
     with pytest.warns(UserWarning, match="empty"):
-        mask_data = MaskData.from_nifti(
+        mask_data = SubjectData.from_nifti(
             lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
         mask_data.validate()
@@ -187,7 +187,7 @@ def test_single_subject_empty_mask_warning(tmp_path):
 
 def test_single_subject_metadata_persistence(tmp_path):
     """Test that metadata persists through operations."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
 
     shape = (64, 64, 64)
     data = np.zeros(shape, dtype=np.uint8)
@@ -210,7 +210,7 @@ def test_single_subject_metadata_persistence(tmp_path):
         "resolution": 2,
     }
 
-    mask_data = MaskData.from_nifti(lesion_path, metadata=metadata)
+    mask_data = SubjectData.from_nifti(lesion_path, metadata=metadata)
 
     # Copy should preserve metadata
     mask_data_copy = mask_data.copy()

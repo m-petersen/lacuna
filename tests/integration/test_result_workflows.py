@@ -11,11 +11,11 @@ import pytest
 @pytest.mark.integration
 def test_end_to_end_result_access_workflow(synthetic_mask_img):
     """Test complete workflow: run analysis → access via dict → access via attribute."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
     # Create mask data
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -43,11 +43,11 @@ def test_end_to_end_result_access_workflow(synthetic_mask_img):
 @pytest.mark.integration
 def test_multiple_analyses_result_access(synthetic_mask_img):
     """Test accessing results from multiple sequential analyses."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
     from lacuna.analysis.regional_damage import RegionalDamage
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -74,9 +74,9 @@ def test_multiple_analyses_result_access(synthetic_mask_img):
 @pytest.mark.integration
 def test_result_attribute_error_helpful_message(synthetic_mask_img):
     """Test that accessing non-existent analysis gives helpful error."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 

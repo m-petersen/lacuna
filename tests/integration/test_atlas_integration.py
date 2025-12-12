@@ -8,7 +8,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import ParcelAggregation, RegionalDamage
 from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import list_parcellations
@@ -16,11 +16,11 @@ from lacuna.assets.parcellations.registry import list_parcellations
 
 @pytest.fixture
 def sample_mask_data():
-    """Create a sample MaskData for testing."""
+    """Create a sample SubjectData for testing."""
     mask_data = np.zeros((91, 109, 91))
     mask_data[45:50, 54:59, 45:50] = 1
     mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
-    return MaskData(
+    return SubjectData(
         mask_img=mask_img,
         space="MNI152NLin6Asym",
         resolution=1.0,
@@ -60,7 +60,7 @@ class TestMultiAtlasAnalysisWorkflow:
         # Use parcellation by name with different aggregation
         analysis = ParcelAggregation(
             parcel_names=["TianSubcortex_3TS2"],
-            source="mask_img",
+            source="maskimg",
             aggregation="mean",
         )
 

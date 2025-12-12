@@ -2,12 +2,12 @@
 Integration tests for nibabel image input support in ParcelAggregation.
 
 Tests the enhanced flexibility of ParcelAggregation to accept:
-- MaskData (existing behavior)
+- SubjectData (existing behavior)
 - nibabel.Nifti1Image (new)
 - list[nibabel.Nifti1Image] (new)
 
 Return types should match input types:
-- MaskData -> MaskData
+- SubjectData -> SubjectData
 - nibabel.Nifti1Image -> ParcelData
 - list[nibabel.Nifti1Image] -> list[ParcelData]
 """
@@ -58,7 +58,7 @@ def test_atlas_aggregation_accepts_nibabel_image(sample_nifti_image):
     Contract: T056 - Nibabel image input support
     """
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="percent",
         parcel_names=["Schaefer2018_100Parcels7Networks"],
     )
@@ -66,7 +66,7 @@ def test_atlas_aggregation_accepts_nibabel_image(sample_nifti_image):
     # Should accept nibabel image directly
     result = analysis.run(sample_nifti_image)
 
-    # Result should be ParcelData (not MaskData)
+    # Result should be ParcelData (not SubjectData)
     assert isinstance(result, ParcelData)
 
     # Should have aggregated data
@@ -81,7 +81,7 @@ def test_atlas_aggregation_nibabel_image_returns_correct_type(sample_nifti_image
     Contract: T056 - Return type matches input type
     """
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="mean",
         parcel_names=["Schaefer2018_100Parcels7Networks"],
     )
@@ -90,8 +90,8 @@ def test_atlas_aggregation_nibabel_image_returns_correct_type(sample_nifti_image
 
     # Input: nibabel.Nifti1Image -> Output: ParcelData
     assert isinstance(result, ParcelData)
-    assert not hasattr(result, "mask_img")  # Not a MaskData
-    assert not hasattr(result, "results")  # Not a MaskData
+    assert not hasattr(result, "maskimg")  # Not a SubjectData
+    assert not hasattr(result, "results")  # Not a SubjectData
 
 
 def test_atlas_aggregation_accepts_nibabel_image_list(sample_nifti_images):
@@ -100,7 +100,7 @@ def test_atlas_aggregation_accepts_nibabel_image_list(sample_nifti_images):
     Contract: T057 - Nibabel list input support
     """
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="percent",
         parcel_names=["Schaefer2018_100Parcels7Networks"],
     )
@@ -126,7 +126,7 @@ def test_atlas_aggregation_nibabel_list_preserves_order(sample_nifti_images):
     Contract: T057 - List processing maintains order
     """
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="percent",
         parcel_names=["Schaefer2018_100Parcels7Networks"],
     )
@@ -153,7 +153,7 @@ def test_atlas_aggregation_nibabel_list_batch_processing(sample_nifti_images):
     Contract: T057 - Batch processing for lists
     """
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="mean",
         parcel_names=["Schaefer2018_100Parcels7Networks"],
     )
@@ -172,7 +172,7 @@ def test_atlas_aggregation_nibabel_works_with_multiple_atlases(sample_nifti_imag
     Contract: T056 - Multiple atlas support with nibabel input
     """
     analysis = ParcelAggregation(
-        source="mask_img",
+        source="maskimg",
         aggregation="percent",
         parcel_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
     )
@@ -199,7 +199,7 @@ def test_atlas_aggregation_nibabel_different_aggregations(sample_nifti_image):
     """
     for aggregation in ["mean", "sum", "percent", "volume"]:
         analysis = ParcelAggregation(
-            source="mask_img",
+            source="maskimg",
             aggregation=aggregation,
             parcel_names=["Schaefer2018_100Parcels7Networks"],
         )

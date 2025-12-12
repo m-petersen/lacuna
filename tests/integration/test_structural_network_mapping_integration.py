@@ -10,7 +10,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import StructuralNetworkMapping
 from lacuna.utils.mrtrix import MRtrixError, check_mrtrix_available
 
@@ -78,13 +78,13 @@ class TestStructuralNetworkMappingIntegration:
         )
 
         # Load lesion
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
 
         # Run analysis
         result = analysis.run(lesion)
 
         # Verify results
-        assert isinstance(result, MaskData)
+        assert isinstance(result, SubjectData)
         assert result.disconnection_map is not None
         assert result.disconnection_map.shape == lesion.mask_img.shape
 
@@ -104,7 +104,7 @@ class TestStructuralNetworkMappingIntegration:
         )
 
         # Load lesion
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
 
         # Run analysis
         result = analysis.run(lesion)
@@ -149,7 +149,7 @@ class TestStructuralNetworkMappingIntegration:
         )
 
         # Load lesion
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
 
         # Run analysis
         result = analysis.run(lesion)
@@ -179,7 +179,7 @@ class TestStructuralNetworkMappingIntegration:
             verbose=False,
         )
 
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
         result = analysis.run(lesion)
 
         # All matrices should be symmetric
@@ -202,7 +202,7 @@ class TestStructuralNetworkMappingIntegration:
             verbose=False,
         )
 
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
         result = analysis.run(lesion)
 
         # No negative values allowed
@@ -229,7 +229,7 @@ class TestStructuralNetworkMappingIntegration:
         if len(lesion_files) < 2:
             pytest.skip("Need at least 2 lesions for caching test")
 
-        lesions = [MaskData.from_file(f) for f in lesion_files]
+        lesions = [SubjectData.from_file(f) for f in lesion_files]
 
         # Run on first lesion
         result1 = analysis.run(lesions[0])
@@ -256,7 +256,7 @@ class TestStructuralNetworkMappingIntegration:
             verbose=False,
         )
 
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
         result = analysis.run(lesion)
 
         stats = result.metadata["matrix_statistics"]
@@ -302,7 +302,7 @@ class TestEdgeCases:
         tiny_lesion[center] = 1  # Single voxel lesion
         tiny_mask_img = nib.Nifti1Image(tiny_lesion, template.affine, template.header)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=tiny_mask_img,
             metadata={"subject_id": "tiny_test", "n_voxels": 1},
         )
@@ -335,7 +335,7 @@ class TestEdgeCases:
             verbose=False,
         )
 
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
         result = analysis.run(lesion)
 
         disconn_pct = result.metadata["disconnectivity_percent"]
@@ -369,7 +369,7 @@ class TestDifferentAtlases:
             verbose=False,
         )
 
-        lesion = MaskData.from_file(test_data_paths["lesion"])
+        lesion = SubjectData.from_file(test_data_paths["lesion"])
         result = analysis.run(lesion)
 
         # Verify matrix dimensions match atlas

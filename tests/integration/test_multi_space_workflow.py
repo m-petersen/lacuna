@@ -16,8 +16,8 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.core.mask_data import MaskData
 from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
+from lacuna.core.subject_data import SubjectData
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def lesion_nlin6_2mm():
 
     img = nib.Nifti1Image(data, affine)
 
-    return MaskData(
+    return SubjectData(
         mask_img=img,
         metadata={
             "subject_id": "test-001",
@@ -96,7 +96,7 @@ def lesion_nlin2009c_2mm():
 
     img = nib.Nifti1Image(data, affine)
 
-    return MaskData(
+    return SubjectData(
         mask_img=img,
         metadata={
             "subject_id": "test-002",

@@ -227,7 +227,7 @@ class TestAtlasTransformation:
     @pytest.mark.requires_templateflow
     def test_regional_damage_with_space_mismatch(self):
         """RegionalDamage should handle lesion/atlas in different spaces."""
-        from lacuna import MaskData
+        from lacuna import SubjectData
         from lacuna.analysis import RegionalDamage
 
         # Create lesion in NLin6Asym space
@@ -236,7 +236,7 @@ class TestAtlasTransformation:
         affine[:3, :3] = np.diag([-1, 1, 1])
         mask_img = nib.Nifti1Image(mask_data.astype(np.uint8), affine)
 
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 1.0}
         )
 

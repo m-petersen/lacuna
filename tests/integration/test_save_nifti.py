@@ -1,21 +1,21 @@
 """
 Integration tests for NIfTI export functionality.
 
-Tests the complete workflow of saving MaskData objects to NIfTI files,
+Tests the complete workflow of saving SubjectData objects to NIfTI files,
 including round-trip testing (save → load → verify).
 """
 
 import nibabel as nib
 import numpy as np
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.io import save_nifti
 
 
 def test_save_and_reload_lesion(tmp_path, synthetic_mask_img):
     """Test full save-load cycle for lesion data."""
     # Create lesion data
-    original_data = MaskData(
+    original_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={
             "subject_id": "sub-test001",
@@ -30,7 +30,7 @@ def test_save_and_reload_lesion(tmp_path, synthetic_mask_img):
     save_nifti(original_data, output_path)
 
     # Reload and verify
-    reloaded = MaskData.from_nifti(
+    reloaded = SubjectData.from_nifti(
         str(output_path),
         metadata={"subject_id": "sub-test001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -43,7 +43,7 @@ def test_save_and_reload_lesion(tmp_path, synthetic_mask_img):
 def test_save_lesion_with_results(tmp_path, synthetic_mask_img):
     """Test saving lesion data with analysis results."""
     # Create lesion with results
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test002", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -65,10 +65,10 @@ def test_save_lesion_with_results(tmp_path, synthetic_mask_img):
 def test_save_lesion_and_anatomical(tmp_path, synthetic_mask_img):
     """Test saving lesion mask image.
 
-    Note: anatomical_img parameter was removed from MaskData.
+    Note: anatomical_img parameter was removed from SubjectData.
     This test now verifies basic lesion saving functionality.
     """
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test003", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -90,7 +90,7 @@ def test_save_multiple_subjects(tmp_path, synthetic_mask_img):
     saved_files = []
 
     for subject_id in subjects:
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={"subject_id": subject_id, "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -124,7 +124,7 @@ def test_save_preserves_affine_matrix(tmp_path):
     data = np.random.randint(0, 2, size=(91, 109, 91), dtype=np.uint8)
     img = nib.Nifti1Image(data, custom_affine)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=img,
         metadata={"subject_id": "sub-test004", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -141,7 +141,7 @@ def test_save_preserves_affine_matrix(tmp_path):
 
 def test_save_with_compression(tmp_path, synthetic_mask_img):
     """Test that .nii.gz files are properly compressed."""
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test005", "space": "MNI152NLin6Asym", "resolution": 2},
     )

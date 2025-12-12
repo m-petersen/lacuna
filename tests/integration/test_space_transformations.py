@@ -13,12 +13,12 @@ import pytest
 @pytest.mark.slow
 def test_transformation_logging_messages(synthetic_mask_img, capsys):
     """T036: Test that transformations log informative messages."""
-    from lacuna.core.mask_data import MaskData
     from lacuna.core.spaces import CoordinateSpace
+    from lacuna.core.subject_data import SubjectData
     from lacuna.spatial.transform import transform_image
 
     # Create mask data in one space
-    mask_data = MaskData(
+    mask_data = SubjectData(
         synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )

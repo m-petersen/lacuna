@@ -29,7 +29,7 @@ def temp_cache(tmp_path):
 @pytest.fixture
 def synthetic_lesion_batch():
     """Create batch of synthetic lesions for cache testing."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     lesions = []
     source_affine = REFERENCE_AFFINES[("MNI152NLin6Asym", 2)]
@@ -52,7 +52,7 @@ def synthetic_lesion_batch():
         ] = 1.0
 
         img = nib.Nifti1Image(data, source_affine)
-        lesion = MaskData(
+        lesion = SubjectData(
             mask_img=img,
             metadata={
                 "subject_id": f"sub-{i:03d}",

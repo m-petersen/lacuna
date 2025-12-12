@@ -8,7 +8,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis import ParcelAggregation
 from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import (
@@ -18,6 +18,7 @@ from lacuna.assets.parcellations.registry import (
     register_parcellations_from_directory,
     unregister_parcellation,
 )
+from lacuna.core.keys import build_result_key
 
 
 class TestAtlasRegistryBasics:
@@ -98,13 +99,13 @@ class TestAtlasRegistryWithAnalysis:
 
         img = nib.Nifti1Image(data, affine)
 
-        return MaskData(mask_img=img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        return SubjectData(mask_img=img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
     def test_atlas_aggregation_with_bundled_atlas(self, synthetic_lesion):
         """Test atlas aggregation using bundled atlas from registry."""
         # Use Schaefer100 atlas (1mm resolution, same space as lesion)
         analysis = ParcelAggregation(
-            source="mask_img", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="maskimg", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
         )
 
         result = analysis.run(synthetic_lesion)
@@ -114,7 +115,7 @@ class TestAtlasRegistryWithAnalysis:
         aggregation_results = result.results["ParcelAggregation"]
 
         # Should have ParcelData for Schaefer100 (BIDS-style key format)
-        expected_key = "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
+        expected_key = build_result_key("Schaefer2018_100Parcels7Networks", "SubjectData")
         assert expected_key in aggregation_results
         roi_result = aggregation_results[expected_key]
         region_data = roi_result.get_data()
@@ -130,7 +131,7 @@ class TestAtlasRegistryWithAnalysis:
     def test_atlas_aggregation_with_multiple_atlases(self, synthetic_lesion):
         """Test atlas aggregation with multiple atlases simultaneously."""
         analysis = ParcelAggregation(
-            source="mask_img",
+            source="maskimg",
             aggregation="percent",
             parcel_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
         )
@@ -140,8 +141,8 @@ class TestAtlasRegistryWithAnalysis:
         aggregation_results = result.results["ParcelAggregation"]
 
         # Should have results from both atlases (BIDS-style key format)
-        schaefer100_key = "parc-Schaefer2018_100Parcels7Networks_source-MaskData_desc-mask_img"
-        schaefer200_key = "parc-Schaefer2018_200Parcels7Networks_source-MaskData_desc-mask_img"
+        schaefer100_key = build_result_key("Schaefer2018_100Parcels7Networks", "SubjectData")
+        schaefer200_key = build_result_key("Schaefer2018_200Parcels7Networks", "SubjectData")
         assert schaefer100_key in aggregation_results
         assert schaefer200_key in aggregation_results
 
@@ -156,7 +157,7 @@ class TestAtlasRegistryWithAnalysis:
         """Test that atlas aggregation uses all compatible atlases when none specified."""
         # Use only MNI152NLin6Asym atlases (filter out HCP which is in different space)
         analysis = ParcelAggregation(
-            source="mask_img",
+            source="maskimg",
             aggregation="mean",
             parcel_names=[
                 "Schaefer2018_100Parcels7Networks",
@@ -256,14 +257,14 @@ class TestCustomAtlasRegistration:
         try:
             # Use in analysis
             analysis = ParcelAggregation(
-                source="mask_img", aggregation="mean", parcel_names=["CustomAnalysisAtlas"]
+                source="maskimg", aggregation="mean", parcel_names=["CustomAnalysisAtlas"]
             )
 
             result = analysis.run(synthetic_lesion)
 
             # Check results (BIDS-style key format)
             aggregation_results = result.results["ParcelAggregation"]
-            expected_key = "parc-CustomAnalysisAtlas_source-MaskData_desc-mask_img"
+            expected_key = build_result_key("CustomAnalysisAtlas", "SubjectData")
             assert expected_key in aggregation_results
 
             custom_data = aggregation_results[expected_key].get_data()
