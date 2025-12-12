@@ -3,12 +3,12 @@ Integration tests for loading BIDS datasets.
 
 NOTE: The original comprehensive tests were removed because the load_bids_dataset
 function was designed for an API that no longer exists:
-- MaskData.from_nifti() was deprecated
-- anatomical_img attribute was removed from MaskData
+- SubjectData.from_nifti() was deprecated
+- anatomical_img attribute was removed from SubjectData
 - The function used non-standard BIDS naming conventions
 
 The BIDS loading functionality needs to be reimplemented to work with the
-current MaskData API which requires:
+current SubjectData API which requires:
 - mask_img: nib.Nifti1Image (loaded image, not path)
 - space: str (required - e.g., 'MNI152NLin6Asym')
 - resolution: float (required)
@@ -17,7 +17,7 @@ current MaskData API which requires:
 TODO: Reimplement load_bids_dataset to:
 1. Load NIfTI files with nibabel
 2. Extract space from BIDS entities or sidecar
-3. Create MaskData with new constructor
+3. Create SubjectData with new constructor
 4. Add comprehensive tests
 
 For now, this file contains placeholder tests that pass.
@@ -26,7 +26,7 @@ For now, this file contains placeholder tests that pass.
 import pytest
 
 
-@pytest.mark.skip(reason="BIDS loading needs reimplementation for new MaskData API")
+@pytest.mark.skip(reason="BIDS loading needs reimplementation for new SubjectData API")
 def test_load_bids_dataset_needs_rewrite():
     """Placeholder: BIDS dataset loading needs to be reimplemented."""
     pass

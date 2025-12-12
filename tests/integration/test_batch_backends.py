@@ -24,7 +24,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from lacuna import MaskData, batch_process
+from lacuna import SubjectData, batch_process
 from lacuna.analysis import RegionalDamage
 from lacuna.assets.parcellations import load_parcellation
 from lacuna.batch.strategies import ParallelStrategy
@@ -43,7 +43,7 @@ def synthetic_lesions():
         affine = np.eye(4)
         img = nib.Nifti1Image(data, affine)
 
-        lesion = MaskData(
+        lesion = SubjectData(
             img,
             metadata={"subject_id": f"sub-{i:03d}", "space": "MNI152NLin6Asym", "resolution": 2},
         )
@@ -116,7 +116,7 @@ def mni_synthetic_lesions():
         data[cx - 5 + offset : cx + 5 + offset, cy - 5 : cy + 5, cz - 5 : cz + 5] = 1
 
         img = nib.Nifti1Image(data, affine)
-        lesion = MaskData(
+        lesion = SubjectData(
             img,
             metadata={"subject_id": f"sub-{i:03d}", "space": "MNI152NLin6Asym", "resolution": 1},
         )
@@ -151,7 +151,7 @@ class TestThreadingBackend:
         )
 
         assert len(results) == len(synthetic_lesions)
-        assert all(isinstance(r, MaskData) for r in results)
+        assert all(isinstance(r, SubjectData) for r in results)
 
     def test_threading_backend_adds_results(self, synthetic_lesions, regional_damage_analysis):
         """Threading backend should add analysis results to lesion data."""
@@ -214,7 +214,7 @@ class TestLokyBackend:
         )
 
         assert len(results) == len(mni_synthetic_lesions)
-        assert all(isinstance(r, MaskData) for r in results)
+        assert all(isinstance(r, SubjectData) for r in results)
 
     def test_loky_backend_adds_results(self, mni_synthetic_lesions, bundled_atlas_analysis):
         """Loky backend should add analysis results to lesion data."""
@@ -257,7 +257,7 @@ class TestMultiprocessingBackend:
         )
 
         assert len(results) == len(synthetic_lesions)
-        assert all(isinstance(r, MaskData) for r in results)
+        assert all(isinstance(r, SubjectData) for r in results)
 
 
 class TestBackendComparison:

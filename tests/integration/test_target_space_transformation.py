@@ -9,7 +9,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 from lacuna.analysis.base import BaseAnalysis
 
 
@@ -32,7 +32,7 @@ def lesion_mni152_2mm(tmp_path):
 
     img = nib.Nifti1Image(data, affine)
 
-    return MaskData(mask_img=img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    return SubjectData(mask_img=img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def lesion_mni152_1mm(tmp_path):
 
     img = nib.Nifti1Image(data, affine)
 
-    return MaskData(mask_img=img, metadata={"space": "MNI152NLin6Asym", "resolution": 1})
+    return SubjectData(mask_img=img, metadata={"space": "MNI152NLin6Asym", "resolution": 1})
 
 
 class TestAnalysis2mm(BaseAnalysis):
@@ -237,16 +237,16 @@ def test_error_when_lesion_missing_space_metadata():
 
     img = nib.Nifti1Image(data, affine)
 
-    # This should raise error during MaskData creation
+    # This should raise error during SubjectData creation
     # Error message now mentions 'space' parameter requirement
     with pytest.raises(ValueError, match="space"):
-        MaskData(mask_img=img)
+        SubjectData(mask_img=img)
 
 
 def test_provenance_records_target_space():
     """Test that transformation to target space is recorded in provenance."""
     analysis = TestAnalysis2mm()
-    lesion = MaskData(
+    lesion = SubjectData(
         mask_img=nib.Nifti1Image(
             np.zeros((91, 109, 91)),
             np.array(
