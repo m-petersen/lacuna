@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..core.exceptions import LacunaError
-from ..core.mask_data import MaskData
+from ..core.keys import format_bids_export_filename
+from ..core.subject_data import SubjectData
 
 if TYPE_CHECKING:
     from ..core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
@@ -31,7 +32,7 @@ def load_bids_dataset(
     sessions: list[str] | None = None,
     derivatives: bool = False,
     validate_bids: bool = True,
-) -> dict[str, MaskData]:
+) -> dict[str, SubjectData]:
     """
     Load lesion masks from a BIDS dataset.
 
@@ -52,8 +53,8 @@ def load_bids_dataset(
 
     Returns
     -------
-    dict of str -> MaskData
-        Dictionary mapping subject IDs to MaskData objects.
+    dict of str -> SubjectData
+        Dictionary mapping subject IDs to SubjectData objects.
         For multi-session data, keys are 'sub-XXX_ses-YYY'.
 
     Raises
@@ -174,7 +175,7 @@ def load_bids_dataset(
         if session_id:
             metadata["session_id"] = f"ses-{session_id}"
 
-        mask_data = MaskData.from_nifti(
+        mask_data = SubjectData.from_nifti(
             lesion_path=lesion_file.path, anatomical_path=anatomical_path, metadata=metadata
         )
 
@@ -188,7 +189,7 @@ def _load_bids_manual(
     subjects: list[str] | None = None,
     sessions: list[str] | None = None,
     derivatives: bool = False,
-) -> dict[str, MaskData]:
+) -> dict[str, SubjectData]:
     """
     Load BIDS dataset without pybids (manual parsing).
 
@@ -265,7 +266,7 @@ def _load_bids_manual(
                                 stacklevel=2,
                             )
 
-                        # Create MaskData
+                        # Create SubjectData
                         subject_key = f"{subject_id}_{session_id}"
                         metadata = {
                             "subject_id": subject_id,
@@ -281,7 +282,7 @@ def _load_bids_manual(
                             sidecar_data.get("Resolution") or sidecar_data.get("resolution")
                         )
 
-                        mask_data_dict[subject_key] = MaskData.from_nifti(
+                        mask_data_dict[subject_key] = SubjectData.from_nifti(
                             lesion_path=lesion_path,
                             anatomical_path=anatomical_path,
                             metadata=metadata,
@@ -317,7 +318,7 @@ def _load_bids_manual(
                             stacklevel=2,
                         )
 
-                    # Create MaskData
+                    # Create SubjectData
                     metadata = {
                         "subject_id": subject_id,
                         "bids_root": str(bids_root),
@@ -331,7 +332,7 @@ def _load_bids_manual(
                         sidecar_data.get("Resolution") or sidecar_data.get("resolution")
                     )
 
-                    mask_data_dict[subject_id] = MaskData.from_nifti(
+                    mask_data_dict[subject_id] = SubjectData.from_nifti(
                         lesion_path=lesion_path,
                         metadata=metadata,
                         space=space,
@@ -448,11 +449,12 @@ def export_voxelmap(
     output_dir : str or Path
         Output directory for the file
     subject_id : str
-        Subject identifier (e.g., 'sub-001')
+        SubjectData identifier (e.g., 'sub-001')
     session_id : str, optional
         Session identifier (e.g., 'ses-01')
     desc : str, default='map'
-        Description label for BIDS filename
+        BIDS-formatted key with entities and suffix (e.g.,
+        'parc-Schaefer100_source-fnm_correlationmap_map')
     space : str, optional
         Override space from voxelmap.space
     overwrite : bool, default=False
@@ -468,12 +470,12 @@ def export_voxelmap(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build BIDS filename
+    # Build BIDS filename - desc already contains full formatted key with suffix
     space = space or voxelmap.space
     if session_id:
-        base_name = f"{subject_id}_{session_id}_space-{space}_desc-{desc}"
+        base_name = f"{subject_id}_{session_id}_space-{space}_{desc}"
     else:
-        base_name = f"{subject_id}_space-{space}_desc-{desc}"
+        base_name = f"{subject_id}_space-{space}_{desc}"
 
     nifti_path = output_dir / f"{base_name}.nii.gz"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -517,11 +519,12 @@ def export_parcel_data(
     output_dir : str or Path
         Output directory for the file
     subject_id : str
-        Subject identifier (e.g., 'sub-001')
+        SubjectData identifier (e.g., 'sub-001')
     session_id : str, optional
         Session identifier (e.g., 'ses-01')
     desc : str, default='parcels'
-        Description label for BIDS filename
+        BIDS-formatted key with entities and suffix (e.g.,
+        'parc-Schaefer100_source-maskimg_maskimg_values')
     overwrite : bool, default=False
         Overwrite existing files
 
@@ -535,11 +538,11 @@ def export_parcel_data(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build BIDS filename
+    # Build BIDS filename - desc already contains full formatted key with suffix
     if session_id:
-        base_name = f"{subject_id}_{session_id}_desc-{desc}_parcels"
+        base_name = f"{subject_id}_{session_id}_{desc}"
     else:
-        base_name = f"{subject_id}_desc-{desc}_parcels"
+        base_name = f"{subject_id}_{desc}"
 
     tsv_path = output_dir / f"{base_name}.tsv"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -587,11 +590,12 @@ def export_connectivity_matrix(
     output_dir : str or Path
         Output directory for the file
     subject_id : str
-        Subject identifier (e.g., 'sub-001')
+        SubjectData identifier (e.g., 'sub-001')
     session_id : str, optional
         Session identifier (e.g., 'ses-01')
     desc : str, default='connectivity'
-        Description label for BIDS filename
+        BIDS-formatted key with entities and suffix (e.g.,
+        'parc-Schaefer100_source-snm_connectome_connmatrix')
     overwrite : bool, default=False
         Overwrite existing files
 
@@ -605,11 +609,11 @@ def export_connectivity_matrix(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build BIDS filename
+    # Build BIDS filename - desc already contains full formatted key with suffix
     if session_id:
-        base_name = f"{subject_id}_{session_id}_desc-{desc}_connmatrix"
+        base_name = f"{subject_id}_{session_id}_{desc}"
     else:
-        base_name = f"{subject_id}_desc-{desc}_connmatrix"
+        base_name = f"{subject_id}_{desc}"
 
     tsv_path = output_dir / f"{base_name}.tsv"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -655,12 +659,12 @@ def export_bids_derivatives_batch(
     overwrite: bool = False,
 ) -> Path:
     """
-    Export multiple MaskData results to BIDS derivatives format.
+    Export multiple SubjectData results to BIDS derivatives format.
 
     Parameters
     ----------
-    results : list[MaskData]
-        List of processed MaskData objects
+    results : list[SubjectData]
+        List of processed SubjectData objects
     output_dir : str or Path
         Root directory for derivatives
     export_lesion_mask : bool, default=True
@@ -723,7 +727,7 @@ def export_bids_derivatives_batch(
 
 
 def export_bids_derivatives(
-    mask_data: MaskData,
+    mask_data: SubjectData,
     output_dir: str | Path,
     export_lesion_mask: bool = True,
     export_voxelmaps: bool = True,
@@ -734,9 +738,9 @@ def export_bids_derivatives(
     overwrite: bool = False,
 ) -> Path:
     """
-    Export MaskData and all its analysis results to BIDS derivatives format.
+    Export SubjectData and all its analysis results to BIDS derivatives format.
 
-    Exports the full spectrum of results stored in a MaskData object:
+    Exports the full spectrum of results stored in a SubjectData object:
     - Lesion mask as NIfTI
     - VoxelMaps (correlation maps, disconnection maps, etc.) as NIfTI
     - ParcelData (regional values) as TSV
@@ -746,7 +750,7 @@ def export_bids_derivatives(
 
     Parameters
     ----------
-    mask_data : MaskData
+    mask_data : SubjectData
         Processed lesion data with analysis results.
     output_dir : str or Path
         Root directory for derivatives (e.g., 'derivatives/lacuna-v0.1.0').
@@ -812,7 +816,7 @@ def export_bids_derivatives(
 
     # Validate metadata
     if "subject_id" not in mask_data.metadata:
-        raise ValueError("MaskData metadata must contain 'subject_id' for BIDS export")
+        raise ValueError("SubjectData metadata must contain 'subject_id' for BIDS export")
 
     subject_id = mask_data.metadata["subject_id"]
     session_id = mask_data.metadata.get("session_id")
@@ -868,41 +872,44 @@ def export_bids_derivatives(
 
     # Save analysis results
     if mask_data.results:
-        for namespace, results_data in mask_data.results.items():
+        for _namespace, results_data in mask_data.results.items():
             if not isinstance(results_data, dict):
                 continue
 
             for key, value in results_data.items():
                 # VoxelMap -> NIfTI (goes to anat/ for spatial data)
                 if isinstance(value, VoxelMap) and export_voxelmaps:
+                    bids_key = format_bids_export_filename(key, "map")
                     export_voxelmap(
                         value,
                         anat_dir,
                         subject_id=subject_id,
                         session_id=session_id,
-                        desc=f"{namespace.lower()}_{key}",
+                        desc=bids_key,
                         overwrite=overwrite,
                     )
 
                 # ParcelData -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ParcelDataType) and export_parcel_data:
+                    bids_key = format_bids_export_filename(key, "values")
                     _export_parcel_data(
                         value,
                         anat_dir,
                         subject_id=subject_id,
                         session_id=session_id,
-                        desc=f"{namespace.lower()}_{key}",
+                        desc=bids_key,
                         overwrite=overwrite,
                     )
 
                 # ConnectivityMatrix -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ConnectivityMatrix) and export_connectivity:
+                    bids_key = format_bids_export_filename(key, "connmatrix")
                     export_connectivity_matrix(
                         value,
                         anat_dir,
                         subject_id=subject_id,
                         session_id=session_id,
-                        desc=f"{namespace.lower()}_{key}",
+                        desc=bids_key,
                         overwrite=overwrite,
                     )
 
@@ -914,7 +921,8 @@ def export_bids_derivatives(
                         data_to_save = value
 
                     try:
-                        results_filename = f"{base_name}_desc-{namespace.lower()}_{key}.json"
+                        bids_key = format_bids_export_filename(key, "metrics")
+                        results_filename = f"{base_name}_{bids_key}.json"
                         results_path = anat_dir / results_filename
 
                         if results_path.exists() and not overwrite:
@@ -956,13 +964,15 @@ def export_bids_derivatives(
 _export_parcel_data = export_parcel_data
 
 
-def save_nifti(mask_data: MaskData, output_path: str | Path, save_anatomical: bool = False) -> None:
+def save_nifti(
+    mask_data: SubjectData, output_path: str | Path, save_anatomical: bool = False
+) -> None:
     """
     Save lesion mask to NIfTI file.
 
     Parameters
     ----------
-    mask_data : MaskData
+    mask_data : SubjectData
         Lesion data to save.
     output_path : str or Path
         Path for output NIfTI file (e.g., 'lesion.nii.gz').
@@ -1005,7 +1015,7 @@ def validate_bids_derivatives(
 
     Checks that a derivatives directory follows BIDS specifications:
     - Has dataset_description.json
-    - Subject directories follow naming conventions
+    - SubjectData directories follow naming conventions
     - Files follow BIDS naming patterns
     - Required metadata is present
 
@@ -1050,7 +1060,7 @@ def validate_bids_derivatives(
     Validation checks:
     - dataset_description.json exists and is valid JSON
     - Contains required fields: Name, BIDSVersion, GeneratedBy
-    - Subject directories match pattern: sub-<label>[/ses-<label>]
+    - SubjectData directories match pattern: sub-<label>[/ses-<label>]
     - File naming follows BIDS conventions
     - No unexpected files in root directory
     """
@@ -1133,7 +1143,7 @@ def validate_bids_derivatives(
 
             if not has_subdirs:
                 warnings_list.append(
-                    f"Subject '{subj_name}' has no standard BIDS subdirectories "
+                    f"SubjectData '{subj_name}' has no standard BIDS subdirectories "
                     f"(anat, func, dwi)"
                 )
 

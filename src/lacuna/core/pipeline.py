@@ -10,9 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from lacuna.core.subject_data import SubjectData
+
 if TYPE_CHECKING:
     from lacuna.analysis.base import BaseAnalysis
-    from lacuna.core.mask_data import MaskData
 
 
 @dataclass
@@ -110,22 +111,33 @@ class Pipeline:
         self._steps.append(step)
         return self
 
-    def run(self, data: MaskData, log_level: int = 1) -> MaskData:
+    def run(self, data: SubjectData, log_level: int = 1) -> SubjectData:
         """
         Run the pipeline on a single subject.
 
         Parameters
         ----------
-        data : MaskData
+        data : SubjectData
             Input data to process
         log_level : int, default=1
             Logging verbosity (0=silent, 1=standard, 2=verbose)
 
         Returns
         -------
-        MaskData
+        SubjectData
             Processed data with all analysis results
+
+        Raises
+        ------
+        TypeError
+            If data is not a SubjectData instance
         """
+        # Validate input type
+        if not isinstance(data, SubjectData):
+            raise TypeError(
+                f"Unsupported input type: {type(data).__name__}\n" "Supported types: SubjectData"
+            )
+
         result = data
 
         for step in self._steps:
@@ -139,17 +151,17 @@ class Pipeline:
 
     def run_batch(
         self,
-        data_list: list[MaskData],
+        data_list: list[SubjectData],
         n_jobs: int = -1,
         show_progress: bool = True,
         parallel: bool = True,
-    ) -> list[MaskData]:
+    ) -> list[SubjectData]:
         """
         Run the pipeline on multiple subjects.
 
         Parameters
         ----------
-        data_list : list of MaskData
+        data_list : list of SubjectData
             List of subjects to process
         n_jobs : int, default=-1
             Number of parallel jobs (-1 uses all CPUs)
@@ -160,7 +172,7 @@ class Pipeline:
 
         Returns
         -------
-        list of MaskData
+        list of SubjectData
             Processed data for each subject
         """
         if not parallel or n_jobs == 1:
@@ -241,11 +253,12 @@ class Pipeline:
 
 
 def analyze(
-    data: MaskData | list[MaskData],
+    data: SubjectData | list[SubjectData],
     *,
     functional_connectome: str | None = None,
     structural_connectome: str | None = None,
-) -> MaskData | list[MaskData]:
+    log_level: int = 1,
+) -> SubjectData | list[SubjectData]:
     """
     Convenience function for common analysis workflows.
 
@@ -256,7 +269,7 @@ def analyze(
 
     Parameters
     ----------
-    data : MaskData or list of MaskData
+    data : SubjectData or list of SubjectData
         Input data to analyze
     functional_connectome : str, optional
         Name of a registered functional connectome to enable functional
@@ -266,17 +279,19 @@ def analyze(
         Name of a registered structural connectome to enable structural
         lesion network mapping (sLNM). Use `list_structural_connectomes()`
         to see available connectomes.
+    log_level : int, default=1
+        Logging verbosity (0=silent, 1=standard, 2=verbose)
 
     Returns
     -------
-    MaskData or list of MaskData
+    SubjectData or list of SubjectData
         Analyzed data with results
 
     Examples
     --------
     Basic usage (parcel aggregation only):
 
-    >>> from lacuna import analyze, MaskData
+    >>> from lacuna import analyze, SubjectData
     >>> result = analyze(mask_data)
     >>> print(result.results.keys())
 
@@ -305,13 +320,17 @@ def analyze(
     from lacuna.batch.api import batch_process
 
     # Build pipeline of analyses
-    analyses: list = [RegionalDamage()]
+    analyses: list = [RegionalDamage(log_level=log_level)]
 
     if functional_connectome:
-        analyses.append(FunctionalNetworkMapping(connectome_name=functional_connectome))
+        analyses.append(
+            FunctionalNetworkMapping(connectome_name=functional_connectome, log_level=log_level)
+        )
 
     if structural_connectome:
-        analyses.append(StructuralNetworkMapping(connectome_name=structural_connectome))
+        analyses.append(
+            StructuralNetworkMapping(connectome_name=structural_connectome, log_level=log_level)
+        )
 
     # Single analysis: run directly
     if len(analyses) == 1:
@@ -325,6 +344,6 @@ def analyze(
         pipeline.add(analysis)
 
     if isinstance(data, list):
-        return [pipeline.run(d) for d in data]
+        return [pipeline.run(d, log_level=log_level) for d in data]
 
-    return pipeline.run(data)
+    return pipeline.run(data, log_level=log_level)

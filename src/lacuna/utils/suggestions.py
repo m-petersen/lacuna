@@ -8,7 +8,7 @@ messages with "Did you mean?" suggestions.
 Examples
 --------
 >>> from lacuna.utils.suggestions import suggest_similar
->>> available = ["correlation_map", "z_score_map", "damage_score"]
+>>> available = ["correlationmap", "zscoremap", "damagescore"]
 >>> suggestions = suggest_similar("correlation", available, max_suggestions=2)
 >>> suggestions
 ['correlation_map']
@@ -51,7 +51,7 @@ def suggest_similar(
 
     Examples
     --------
-    >>> available = ["correlation_map", "z_score_map", "damage_score"]
+    >>> available = ["correlationmap", "zscoremap", "damagescore"]
     >>> suggest_similar("correltion_map", available)
     ['correlation_map']
 
@@ -101,10 +101,10 @@ def format_suggestions(suggestions: list[str]) -> str:
 
     Examples
     --------
-    >>> format_suggestions(["correlation_map"])
+    >>> format_suggestions(["correlationmap"])
     "Did you mean 'correlation_map'?"
 
-    >>> format_suggestions(["correlation_map", "z_score_map"])
+    >>> format_suggestions(["correlationmap", "zscoremap"])
     "Did you mean one of: 'correlation_map', 'z_score_map'?"
 
     >>> format_suggestions([])

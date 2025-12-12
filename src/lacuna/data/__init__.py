@@ -23,7 +23,7 @@ PosixPath('/path/to/ldk/data/atlases')
 >>> analysis = RegionalDamage()  # Automatically uses bundled atlases!
 >>>
 >>> # Get specific atlas files
->>> img_path, labels_path = get_bundled_atlas('aal3')
+>>> img_path, labels_path = get_bundled_atlas('schaefer2018-100parcels-7networks')
 """
 
 from pathlib import Path
@@ -73,7 +73,7 @@ def list_bundled_atlases() -> list[str]:
     >>> from lacuna.data import list_bundled_atlases
     >>> atlases = list_bundled_atlases()
     >>> print(atlases)
-    ['aal3', 'harvard-oxford-cortical', 'schaefer2018-100parcels-7networks']
+    ['harvard-oxford-cortical', 'schaefer2018-100parcels-7networks']
     >>> print(len(atlases))
     3
     """
@@ -113,9 +113,9 @@ def get_bundled_atlas(name: str) -> tuple[Path, Path]:
     Examples
     --------
     >>> from lacuna.data import get_bundled_atlas
-    >>> img, labels = get_bundled_atlas('aal3')
+    >>> img, labels = get_bundled_atlas('schaefer2018-100parcels-7networks')
     >>> print(img.name, labels.name)
-    aal3.nii.gz aal3_labels.txt
+    schaefer2018-100parcels-7networks.nii.gz schaefer2018-100parcels-7networks_labels.txt
     >>>
     >>> # Check files exist
     >>> print(img.exists(), labels.exists())

@@ -39,7 +39,7 @@ class DataContainer(ABC):
     Attributes
     ----------
     name : str
-        Name/identifier for this data container (e.g., "correlation_map", "z_map")
+        Name/identifier for this data container (e.g., "correlationmap", "zmap")
     metadata : dict
         Additional metadata about the data
     data_type : str
