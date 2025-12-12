@@ -1,11 +1,11 @@
 """
 from __future__ import annotations
 
-Core MaskData class - the central API contract for the toolkit.
+Core data class - the central API contract for the toolkit.
 
-This class encapsulates a single subject's lesion data with metadata, provenance
-tracking, and analysis results. It serves as the stable interface between all
-pipeline modules.
+This class encapsulates a single research participant's lesion data with metadata,
+provenance tracking, and analysis results. It serves as the stable interface between
+all pipeline modules.
 """
 
 import copy
@@ -33,38 +33,42 @@ class ImmutableDict(dict):
 
     def __setitem__(self, key, value):
         raise TypeError(
-            f"Cannot modify MaskData.{self._attribute_name} - it is immutable.\n"
-            f"To update {self._attribute_name}, create a new MaskData instance instead."
+            f"Cannot modify SubjectData.{self._attribute_name} - it is immutable.\n"
+            f"To update {self._attribute_name}, create a new SubjectData instance instead."
         )
 
     def __delitem__(self, key):
         raise TypeError(
-            f"Cannot delete from MaskData.{self._attribute_name} - it is immutable.\n"
-            f"To modify {self._attribute_name}, create a new MaskData instance instead."
+            f"Cannot delete from SubjectData.{self._attribute_name} - it is immutable.\n"
+            f"To modify {self._attribute_name}, create a new SubjectData instance instead."
         )
 
     def update(self, *args, **kwargs):
         raise TypeError(
-            f"Cannot update MaskData.{self._attribute_name} - it is immutable.\n"
-            f"To update {self._attribute_name}, create a new MaskData instance instead."
+            f"Cannot update SubjectData.{self._attribute_name} - it is immutable.\n"
+            f"To update {self._attribute_name}, create a new SubjectData instance instead."
         )
 
     def pop(self, *args, **kwargs):
-        raise TypeError(f"Cannot pop from MaskData.{self._attribute_name} - it is immutable.")
+        raise TypeError(f"Cannot pop from SubjectData.{self._attribute_name} - it is immutable.")
 
     def popitem(self):
-        raise TypeError(f"Cannot popitem from MaskData.{self._attribute_name} - it is immutable.")
+        raise TypeError(
+            f"Cannot popitem from SubjectData.{self._attribute_name} - it is immutable."
+        )
 
     def clear(self):
-        raise TypeError(f"Cannot clear MaskData.{self._attribute_name} - it is immutable.")
+        raise TypeError(f"Cannot clear SubjectData.{self._attribute_name} - it is immutable.")
 
     def setdefault(self, *args, **kwargs):
-        raise TypeError(f"Cannot setdefault on MaskData.{self._attribute_name} - it is immutable.")
+        raise TypeError(
+            f"Cannot setdefault on SubjectData.{self._attribute_name} - it is immutable."
+        )
 
 
-class MaskData:
+class SubjectData:
     """
-    Central data container for a single subject's mask-based analysis.
+    Central data container for a single research participant's mask-based analysis.
 
     This class encapsulates binary mask image data, spatial metadata, subject
     identifiers, processing provenance, and analysis results. It enforces
@@ -107,7 +111,7 @@ class MaskData:
     resolution : float
         Spatial resolution in millimeters.
     metadata : ImmutableDict
-        Subject and session metadata (read-only view).
+        SubjectData and session metadata (read-only view).
     provenance : list
         Processing history (read-only view).
     results : dict
@@ -119,7 +123,7 @@ class MaskData:
     >>> mask_img = nib.load("mask.nii.gz")
 
     # Preferred: Direct kwargs
-    >>> mask_data = MaskData(
+    >>> mask_data = SubjectData(
     ...     mask_img,
     ...     space="MNI152NLin6Asym",
     ...     resolution=2,
@@ -127,7 +131,7 @@ class MaskData:
     ... )
 
     # Also supported: Via metadata dict (backward compatible)
-    >>> mask_data = MaskData(
+    >>> mask_data = SubjectData(
     ...     mask_img,
     ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     ... )
@@ -156,7 +160,7 @@ class MaskData:
             raise ValueError(
                 "mask_img must be a binary mask with only 0 and 1 values.\n"
                 f"Found unique values: {unique_values}\n"
-                "Please binarize your lesion mask before creating MaskData."
+                "Please binarize your lesion mask before creating SubjectDataData."
             )
 
         # Store image
@@ -189,7 +193,7 @@ class MaskData:
                 "Coordinate space must be specified via 'space' parameter.\n"
                 "This is required for spatial validation in analysis modules.\n"
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
-                "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
+                "Example: SubjectDataData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         # Validate space is in supported list
@@ -202,7 +206,7 @@ class MaskData:
                 f"Invalid space '{self._space}'. "
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
                 "Note: 'native' space is not supported. Use the actual template space instead.\n"
-                "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
+                "Example: SubjectDataData(img, space='MNI152NLin6Asym', resolution=2)"
             )
             if hint:
                 msg = f"{msg}\n{hint}"
@@ -218,7 +222,7 @@ class MaskData:
                 "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
                 "This is required for spatial validation and template matching.\n"
                 "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
-                "Example: MaskData(img, space='MNI152NLin6Asym', resolution=2)"
+                "Example: SubjectDataData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         self._metadata = metadata.copy()
@@ -273,7 +277,7 @@ class MaskData:
         space: str | None = None,
         resolution: float | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> "MaskData":
+    ) -> "SubjectData":
         """
         Load mask data from NIfTI file.
 
@@ -293,7 +297,7 @@ class MaskData:
 
         Returns
         -------
-        MaskData
+        SubjectData
             Loaded mask data object.
 
         Raises
@@ -307,12 +311,12 @@ class MaskData:
 
         Examples
         --------
-        >>> mask_data = MaskData.from_nifti(
+        >>> mask_data = SubjectData.from_nifti(
         ...     "mask.nii.gz",
         ...     space="MNI152NLin6Asym",
         ...     resolution=2.0
         ... )
-        >>> mask_data = MaskData.from_nifti(
+        >>> mask_data = SubjectData.from_nifti(
         ...     "mask.nii.gz",
         ...     space="MNI152NLin6Asym",
         ...     resolution=2.0,
@@ -426,13 +430,13 @@ class MaskData:
 
         return True
 
-    def copy(self) -> "MaskData":
+    def copy(self) -> "SubjectData":
         """
-        Create a deep copy of this MaskData instance.
+        Create a deep copy of this SubjectData instance.
 
         Returns
         -------
-        MaskData
+        SubjectData
             Independent copy with same data.
 
         Examples
@@ -441,7 +445,7 @@ class MaskData:
         >>> mask_copy is mask_data
         False
         """
-        return MaskData(
+        return SubjectData(
             mask_img=self._mask_img,
             space=self._space,
             resolution=self._resolution,
@@ -513,7 +517,7 @@ class MaskData:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> "MaskData":
+    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> "SubjectData":
         """
         Deserialize from dictionary + NIfTI image.
 
@@ -526,14 +530,14 @@ class MaskData:
 
         Returns
         -------
-        MaskData
+        SubjectData
             Reconstructed object.
 
         Examples
         --------
         >>> data = mask_data.to_dict()
         >>> mask_img = nib.load("mask.nii.gz")
-        >>> mask_restored = MaskData.from_dict(data, mask_img)
+        >>> mask_restored = SubjectData.from_dict(data, mask_img)
         """
         return cls(
             mask_img=mask_img,
@@ -542,9 +546,9 @@ class MaskData:
             results=data.get("results"),
         )
 
-    def add_result(self, namespace: str, results: dict[str, Any]) -> "MaskData":
+    def add_result(self, namespace: str, results: dict[str, Any]) -> "SubjectData":
         """
-        Create new MaskData with additional analysis results.
+        Create new SubjectData with additional analysis results.
 
         This method follows immutability-by-convention: it returns a new instance
         with the updated results rather than modifying the current instance.
@@ -561,7 +565,7 @@ class MaskData:
 
         Returns
         -------
-        MaskData
+        SubjectData
             New instance with added results.
 
         Raises
@@ -586,7 +590,7 @@ class MaskData:
         if namespace in self._results:
             raise ValueError(
                 f"Result namespace '{namespace}' already exists. "
-                f"Use a different namespace or create a new MaskData instance."
+                f"Use a different namespace or create a new SubjectData instance."
             )
 
         # Create new results dict with added namespace
@@ -594,7 +598,7 @@ class MaskData:
         new_results[namespace] = copy.deepcopy(results)
 
         # Return new instance
-        return MaskData(
+        return SubjectData(
             mask_img=self._mask_img,
             space=self._space,
             resolution=self._resolution,
@@ -603,9 +607,9 @@ class MaskData:
             results=new_results,
         )
 
-    def add_provenance(self, record: dict[str, Any]) -> "MaskData":
+    def add_provenance(self, record: dict[str, Any]) -> "SubjectData":
         """
-        Create new MaskData with additional provenance record.
+        Create new SubjectData with additional provenance record.
 
         This method follows immutability-by-convention: it returns a new instance
         with the updated provenance history rather than modifying the current instance.
@@ -618,7 +622,7 @@ class MaskData:
 
         Returns
         -------
-        MaskData
+        SubjectData
             New instance with appended provenance.
 
         Raises
@@ -652,7 +656,7 @@ class MaskData:
         new_provenance.append(copy.deepcopy(record))
 
         # Return new instance
-        return MaskData(
+        return SubjectData(
             mask_img=self._mask_img,
             space=self._space,
             resolution=self._resolution,
@@ -686,10 +690,10 @@ class MaskData:
     @property
     def metadata(self) -> ImmutableDict:
         """
-        Subject and session metadata (read-only view).
+        SubjectData and session metadata (read-only view).
 
         Returns an immutable dictionary that prevents modifications with clear
-        error messages. To update metadata, create a new MaskData instance
+        error messages. To update metadata, create a new SubjectData instance
         with the desired metadata.
 
         Returns
@@ -704,8 +708,8 @@ class MaskData:
         >>> mask_data.metadata["new_key"] = "value"  # Raises TypeError
         Traceback (most recent call last):
             ...
-        TypeError: Cannot modify MaskData.metadata - it is immutable.
-        To update metadata, create a new MaskData instance instead.
+        TypeError: Cannot modify SubjectData.metadata - it is immutable.
+        To update metadata, create a new SubjectData instance instead.
         """
         return ImmutableDict(self._metadata, "metadata")
 
@@ -807,28 +811,25 @@ class MaskData:
     def get_result(
         self,
         analysis: str,
-        parc: str | None = None,
-        source: str | None = None,
-        desc: str | None = None,
+        pattern: str | None = None,
         unwrap: bool = False,
     ) -> Any:
         """
-        Get result by analysis name and optional BIDS-style key components.
+        Get result by analysis name with optional glob pattern filtering.
 
         This method provides a convenient way to access results using
-        BIDS-style key components (parc, source, desc). Any combination
-        of filters can be provided - not all components are required.
+        glob patterns for flexible filtering.
 
         Parameters
         ----------
         analysis : str
             Analysis namespace (e.g., "ParcelAggregation", "FunctionalNetworkMapping").
-        parc : str, optional
-            Parcellation name filter (e.g., "Schaefer100").
-        source : str, optional
-            Source abbreviation filter (e.g., "fnm", "mask").
-        desc : str, optional
-            Description filter (e.g., "correlation_map", "z_map").
+        pattern : str, optional
+            Glob pattern to match result keys (e.g., "*correlationmap*",
+            "atlas-Schaefer*"). Supports fnmatch-style wildcards:
+            - ``*`` matches any sequence of characters
+            - ``?`` matches any single character
+            - ``[seq]`` matches any character in seq
         unwrap : bool, default=False
             If True, call `.get_data()` on result objects to return raw data
             (e.g., numpy arrays, nibabel images) instead of wrapper objects.
@@ -836,7 +837,7 @@ class MaskData:
         Returns
         -------
         Any
-            - If no filters: dict of all results for the analysis
+            - If no pattern: dict of all results for the analysis
             - If single match: the result value directly
             - If multiple matches: dict of matching results
             - If unwrap=True: raw data via `.get_data()` instead of wrappers
@@ -844,19 +845,19 @@ class MaskData:
         Raises
         ------
         KeyError
-            If analysis namespace not found, or if no results match filters.
+            If analysis namespace not found, or if no results match pattern.
 
         Examples
         --------
         >>> # Get all ParcelAggregation results
-        >>> results = mask_data.get_result("ParcelAggregation")
+        >>> results = subject.get_result("ParcelAggregation")
 
-        >>> # Get by desc only (for results without parcellation)
-        >>> z_map = mask_data.get_result("FunctionalNetworkMapping", desc="z_map")
+        >>> # Get by glob pattern
+        >>> z_map = subject.get_result("FunctionalNetworkMapping", pattern="*zmap*")
 
         >>> # Get unwrapped data directly (nibabel image instead of VoxelMap)
-        >>> corr_img = mask_data.get_result(
-        ...     "FunctionalNetworkMapping", desc="correlation_map", unwrap=True
+        >>> corr_img = subject.get_result(
+        ...     "FunctionalNetworkMapping", pattern="*correlationmap*", unwrap=True
         ... )
         >>> corr_img.shape  # Access numpy array directly
         (91, 109, 91)
@@ -867,7 +868,8 @@ class MaskData:
         lacuna.core.keys.build_result_key : Build key from components.
         lacuna.core.keys.parse_result_key : Parse key into components.
         """
-        from lacuna.core.keys import parse_result_key
+        from fnmatch import fnmatch
+
         from lacuna.utils.suggestions import format_suggestions, suggest_similar
 
         if analysis not in self._results:
@@ -900,44 +902,24 @@ class MaskData:
             """Unwrap all values in a dict."""
             return {k: _unwrap_value(v) for k, v in d.items()}
 
-        # If no filters, return all results for this analysis
-        if parc is None and source is None and desc is None:
+        # If no pattern, return all results for this analysis
+        if pattern is None:
             if unwrap:
                 return _unwrap_dict(analysis_results)
             return analysis_results
 
-        # Filter results by provided components
-        # Not all keys have all components (e.g., FNM results may not have parc-)
+        # Filter results by glob pattern
         matching = {}
         for key, value in analysis_results.items():
-            # Try to parse the key - some keys may be simple strings
-            try:
-                parsed = parse_result_key(key)
-            except ValueError:
-                # Key doesn't follow BIDS format - check if desc matches directly
-                if desc is not None and key == desc:
-                    matching[key] = value
-                continue
-
-            # Check each filter if provided
-            if parc is not None and parsed.get("parc") != parc:
-                continue
-            if source is not None and parsed.get("source") != source:
-                continue
-            if desc is not None and parsed.get("desc") != desc:
-                continue
-
-            matching[key] = value
+            if fnmatch(key, pattern):
+                matching[key] = value
 
         if len(matching) == 0:
             # No matches found - provide suggestions
             available_keys = list(analysis_results.keys())
-            suggestions = suggest_similar(desc or parc or source or "", available_keys)
+            suggestions = suggest_similar(pattern, available_keys)
             hint = format_suggestions(suggestions)
-            filter_desc = ", ".join(
-                f"{k}={v!r}" for k, v in [("parc", parc), ("source", source), ("desc", desc)] if v
-            )
-            msg = f"No results found in {analysis} matching {filter_desc}."
+            msg = f"No results found in {analysis} matching pattern={pattern!r}."
             if hint:
                 msg = f"{msg} {hint}"
             raise KeyError(msg)

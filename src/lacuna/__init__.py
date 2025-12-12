@@ -15,13 +15,13 @@ except ImportError:
 # Bundled data access (convenience imports)
 from . import data
 from .batch import batch_process
-from .core.mask_data import MaskData
 from .core.pipeline import Pipeline, analyze
+from .core.subject_data import SubjectData
 
 # Exports
 __all__ = [
     "__version__",
-    "MaskData",
+    "SubjectData",
     "Pipeline",
     "analyze",
     "data",

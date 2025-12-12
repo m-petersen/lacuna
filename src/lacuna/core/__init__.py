@@ -27,13 +27,13 @@ from .keys import (
     get_source_abbreviation,
     parse_result_key,
 )
-from .mask_data import MaskData
 from .pipeline import Pipeline, analyze
 from .provenance import (
     create_provenance_record,
     merge_provenance,
     validate_provenance_record,
 )
+from .subject_data import SubjectData
 from .validation import (
     check_spatial_match,
     ensure_ras_plus,
@@ -52,7 +52,7 @@ __all__ = [
     "NiftiLoadError",
     "AnalysisError",
     # Core data
-    "MaskData",
+    "SubjectData",
     # Pipeline
     "Pipeline",
     "analyze",
