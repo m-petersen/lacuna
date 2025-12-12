@@ -24,18 +24,18 @@ def test_io_module_imports():
 
 def test_load_bids_dataset_simple(simple_bids_dataset):
     """Test loading a simple BIDS dataset with manual parser."""
-    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("SubjectData now requires 'space' in metadata - BIDS loader needs update")
     pass
 
 
 def test_load_bids_dataset_multisession(multisession_bids_dataset):
     """Test loading a multi-session BIDS dataset."""
-    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("SubjectData now requires 'space' in metadata - BIDS loader needs update")
 
 
 def test_load_bids_dataset_filter_subjects(simple_bids_dataset):
     """Test loading specific subjects only."""
-    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("SubjectData now requires 'space' in metadata - BIDS loader needs update")
 
 
 def test_load_bids_dataset_nonexistent_path():
@@ -83,16 +83,16 @@ def test_load_bids_dataset_no_lesion_masks(tmp_path):
 
 def test_load_bids_dataset_warns_missing_anatomical(simple_bids_dataset):
     """Test that missing anatomical images trigger warnings."""
-    pytest.skip("MaskData now requires 'space' in metadata - BIDS loader needs update")
+    pytest.skip("SubjectData now requires 'space' in metadata - BIDS loader needs update")
 
 
 def test_save_nifti_basic(tmp_path, synthetic_mask_img):
-    """Test saving MaskData to NIfTI file."""
-    from lacuna import MaskData
+    """Test saving SubjectData to NIfTI file."""
+    from lacuna import SubjectData
     from lacuna.io import save_nifti
 
-    # Create MaskData
-    mask_data = MaskData(
+    # Create SubjectData
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -112,10 +112,10 @@ def test_save_nifti_basic(tmp_path, synthetic_mask_img):
 
 def test_save_nifti_invalid_extension(tmp_path, synthetic_mask_img):
     """Test that invalid file extension raises ValueError."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.io import save_nifti
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-test", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -126,11 +126,11 @@ def test_save_nifti_invalid_extension(tmp_path, synthetic_mask_img):
 
 
 def test_export_bids_derivatives_basic(tmp_path, synthetic_mask_img):
-    """Test exporting MaskData to BIDS derivatives format."""
-    from lacuna import MaskData
+    """Test exporting SubjectData to BIDS derivatives format."""
+    from lacuna import SubjectData
     from lacuna.io import export_bids_derivatives
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -149,12 +149,12 @@ def test_export_bids_derivatives_basic(tmp_path, synthetic_mask_img):
 
 
 def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
-    """Test exporting MaskData with analysis results."""
-    from lacuna import MaskData
+    """Test exporting SubjectData with analysis results."""
+    from lacuna import SubjectData
     from lacuna.core.provenance import create_provenance_record
     from lacuna.io import export_bids_derivatives
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -176,8 +176,8 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
     anat_dir = subject_dir / "anat"
     assert anat_dir.exists()
 
-    # Each scalar result is saved as individual JSON file
-    results_files = list(anat_dir.glob("*_desc-volumeanalysis_*.json"))
+    # Each scalar result is saved as individual JSON file (e.g., desc-volumemm3_stats.json)
+    results_files = list(anat_dir.glob("*_stats.json"))
     assert (
         len(results_files) >= 1
     ), f"Expected scalar result files, got: {list(anat_dir.glob('*.json'))}"
@@ -188,10 +188,10 @@ def test_export_bids_derivatives_with_results(tmp_path, synthetic_mask_img):
 
 def test_export_bids_derivatives_session(tmp_path, synthetic_mask_img):
     """Test exporting multi-session data."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.io import export_bids_derivatives
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={
             "subject_id": "sub-001",
@@ -211,11 +211,11 @@ def test_export_bids_derivatives_session(tmp_path, synthetic_mask_img):
 
 def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_mask_img):
     """Test that export without subject_id raises ValueError."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.io import export_bids_derivatives
 
-    # Create MaskData without subject_id (should not be possible via __init__, but test anyway)
-    mask_data = MaskData(
+    # Create SubjectData without subject_id (should not be possible via __init__, but test anyway)
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -229,10 +229,10 @@ def test_export_bids_derivatives_no_subject_id(tmp_path, synthetic_mask_img):
 
 def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_mask_img):
     """Test that overwrite=False prevents file overwriting."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.io import export_bids_derivatives
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -249,10 +249,10 @@ def test_export_bids_derivatives_overwrite_protection(tmp_path, synthetic_mask_i
 
 def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_mask_img):
     """Test that overwrite=True allows file overwriting."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.io import export_bids_derivatives
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -269,10 +269,10 @@ def test_export_bids_derivatives_overwrite_allowed(tmp_path, synthetic_mask_img)
 
 def test_export_bids_derivatives_selective_outputs(tmp_path, synthetic_mask_img):
     """Test selective output options with new explicit parameters."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.io import export_bids_derivatives
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )

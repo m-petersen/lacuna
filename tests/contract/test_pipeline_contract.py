@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData, Pipeline
+from lacuna import Pipeline, SubjectData
 from lacuna.analysis import RegionalDamage
 
 
@@ -13,7 +13,7 @@ class TestPipelineContract:
 
     @pytest.fixture
     def sample_mask_data(self, tmp_path):
-        """Create a minimal MaskData for testing with a registered local atlas."""
+        """Create a minimal SubjectData for testing with a registered local atlas."""
         from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
         # Create test atlas to avoid TemplateFlow
@@ -30,7 +30,7 @@ class TestPipelineContract:
         affine = np.eye(4)
         affine[:3, :3] *= 2.0
         img = nib.Nifti1Image(data, affine)
-        return MaskData(
+        return SubjectData(
             mask_img=img,
             space="MNI152NLin6Asym",
             resolution=2,
@@ -53,11 +53,11 @@ class TestPipelineContract:
         assert len(pipeline) == 2
 
     def test_pipeline_run_returns_mask_data(self, sample_mask_data):
-        """Contract: run() returns MaskData with results."""
+        """Contract: run() returns SubjectData with results."""
         # Use parcel_names to avoid bundled atlases that require TemplateFlow
         pipeline = Pipeline().add(RegionalDamage(parcel_names=["test_pipeline"]))
         result = pipeline.run(sample_mask_data)
-        assert isinstance(result, MaskData)
+        assert isinstance(result, SubjectData)
         assert "RegionalDamage" in result.results
 
     def test_pipeline_describe_returns_string(self):
@@ -83,7 +83,7 @@ class TestAnalyzeFunctionContract:
 
     @pytest.fixture
     def sample_mask_data(self, tmp_path):
-        """Create a minimal MaskData for testing with a registered local atlas.
+        """Create a minimal SubjectData for testing with a registered local atlas.
 
         This fixture temporarily replaces the parcellation registry with only
         a local test atlas to avoid TemplateFlow dependencies in CI.
@@ -116,7 +116,7 @@ class TestAnalyzeFunctionContract:
         img = nib.Nifti1Image(data, affine)
 
         try:
-            yield MaskData(
+            yield SubjectData(
                 mask_img=img,
                 space="MNI152NLin6Asym",
                 resolution=2,
@@ -128,14 +128,14 @@ class TestAnalyzeFunctionContract:
             PARCELLATION_REGISTRY.update(saved_registry)
 
     def test_analyze_single_returns_mask_data(self, sample_mask_data):
-        """Contract: analyze(single) returns MaskData."""
+        """Contract: analyze(single) returns SubjectData."""
         from lacuna import analyze
 
         result = analyze(sample_mask_data)
-        assert isinstance(result, MaskData)
+        assert isinstance(result, SubjectData)
 
     def test_analyze_list_returns_list(self, sample_mask_data):
-        """Contract: analyze(list) returns list of MaskData.
+        """Contract: analyze(list) returns list of SubjectData.
 
         Note: We use batch_process directly with our local atlas instead of
         analyze() because parallel workers don't inherit the modified registry.
@@ -155,4 +155,4 @@ class TestAnalyzeFunctionContract:
         )
         assert isinstance(results, list)
         assert len(results) == 2
-        assert all(isinstance(r, MaskData) for r in results)
+        assert all(isinstance(r, SubjectData) for r in results)

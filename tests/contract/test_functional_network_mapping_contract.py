@@ -218,8 +218,8 @@ def test_functional_network_mapping_validates_connectome_exists():
 
 
 def test_functional_network_mapping_requires_binary_mask(synthetic_mask_img):
-    """Test that MaskData requires binary lesion mask (enforced at construction)."""
-    from lacuna import MaskData
+    """Test that SubjectData requires binary lesion mask (enforced at construction)."""
+    from lacuna import SubjectData
 
     # Create non-binary lesion data
     data = synthetic_mask_img.get_fdata()
@@ -228,13 +228,13 @@ def test_functional_network_mapping_requires_binary_mask(synthetic_mask_img):
 
     non_binary_img = nib.Nifti1Image(data, synthetic_mask_img.affine)
 
-    # Should raise error when creating MaskData with non-binary mask
+    # Should raise error when creating SubjectData with non-binary mask
     with pytest.raises(ValueError, match="mask_img must be a binary mask"):
-        MaskData(mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        SubjectData(mask_img=non_binary_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_functional_network_mapping_returns_mask_data(synthetic_mask_img, tmp_path):
-    """Test that run() returns a MaskData object with namespaced results."""
+    """Test that run() returns a SubjectData object with namespaced results."""
     pytest.skip("Mask indexing shape mismatch - bug in functional_network_mapping.py line 411")
 
 
@@ -291,7 +291,7 @@ def test_functional_network_mapping_accepts_pini_percentile():
 
 
 def test_functional_network_mapping_preserves_input_immutability(synthetic_mask_img, tmp_path):
-    """Test that run() does not modify the input MaskData."""
+    """Test that run() does not modify the input SubjectData."""
     pytest.skip("RuntimeWarning in arctanh with test data - needs proper mock data setup")
 
 

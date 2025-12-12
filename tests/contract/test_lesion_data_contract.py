@@ -1,8 +1,8 @@
 """
-Contract tests for MaskData class.
+Contract tests for SubjectData class.
 
-These tests define the expected behavior of the core MaskData API contract.
-Following TDD - these tests should FAIL until MaskData is implemented.
+These tests define the expected behavior of the core SubjectData API contract.
+Following TDD - these tests should FAIL until SubjectData is implemented.
 """
 
 import nibabel as nib
@@ -11,17 +11,17 @@ import pytest
 
 
 def test_mask_data_import():
-    """Test that MaskData can be imported from lacuna.core."""
-    from lacuna.core.mask_data import MaskData
+    """Test that SubjectData can be imported from lacuna.core."""
+    from lacuna.core.subject_data import SubjectData
 
-    assert MaskData is not None
+    assert SubjectData is not None
 
 
 def test_mask_data_init_with_minimal_args(synthetic_mask_img, lesion_metadata):
-    """Test MaskData initialization with minimal required arguments."""
-    from lacuna.core.mask_data import MaskData
+    """Test SubjectData initialization with minimal required arguments."""
+    from lacuna.core.subject_data import SubjectData
 
-    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
 
     assert lesion is not None
     assert lesion.mask_img is synthetic_mask_img
@@ -35,8 +35,8 @@ def test_mask_data_init_with_minimal_args(synthetic_mask_img, lesion_metadata):
 
 
 def test_mask_data_init_with_metadata(synthetic_mask_img, lesion_metadata):
-    """Test MaskData initialization with custom metadata."""
-    from lacuna.core.mask_data import MaskData
+    """Test SubjectData initialization with custom metadata."""
+    from lacuna.core.subject_data import SubjectData
 
     metadata = {
         "subject_id": "sub-001",
@@ -46,7 +46,7 @@ def test_mask_data_init_with_metadata(synthetic_mask_img, lesion_metadata):
         "resolution": 2,
     }
 
-    lesion = MaskData(synthetic_mask_img, metadata=metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=metadata)
 
     assert lesion.metadata["subject_id"] == "sub-001"
     assert lesion.metadata["session_id"] == "ses-01"
@@ -54,24 +54,26 @@ def test_mask_data_init_with_metadata(synthetic_mask_img, lesion_metadata):
 
 
 def test_mask_data_init_validates_3d_image(synthetic_4d_img):
-    """Test that MaskData rejects 4D images."""
+    """Test that SubjectData rejects 4D images."""
     from lacuna.core.exceptions import ValidationError
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     with pytest.raises(ValidationError, match="3D"):
-        MaskData(synthetic_4d_img)
+        SubjectData(synthetic_4d_img)
 
 
 def test_mask_data_from_nifti(tmp_path, synthetic_mask_img):
-    """Test MaskData.from_nifti classmethod."""
-    from lacuna.core.mask_data import MaskData
+    """Test SubjectData.from_nifti classmethod."""
+    from lacuna.core.subject_data import SubjectData
 
     # Save test image
     filepath = tmp_path / "test_lesion.nii.gz"
     nib.save(synthetic_mask_img, filepath)
 
     # Load via from_nifti (must provide space)
-    lesion = MaskData.from_nifti(filepath, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+    lesion = SubjectData.from_nifti(
+        filepath, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+    )
 
     assert lesion is not None
     assert lesion.mask_img is not None
@@ -80,7 +82,7 @@ def test_mask_data_from_nifti(tmp_path, synthetic_mask_img):
 
 def test_mask_data_from_nifti_with_metadata(tmp_path, synthetic_mask_img):
     """Test from_nifti with custom metadata."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     filepath = tmp_path / "test_lesion.nii.gz"
     nib.save(synthetic_mask_img, filepath)
@@ -91,7 +93,7 @@ def test_mask_data_from_nifti_with_metadata(tmp_path, synthetic_mask_img):
         "space": "MNI152NLin6Asym",
         "resolution": 2,
     }
-    lesion = MaskData.from_nifti(filepath, metadata=metadata)
+    lesion = SubjectData.from_nifti(filepath, metadata=metadata)
 
     assert lesion.metadata["subject_id"] == "sub-test"
     assert lesion.metadata["condition"] == "stroke"
@@ -100,19 +102,19 @@ def test_mask_data_from_nifti_with_metadata(tmp_path, synthetic_mask_img):
 def test_mask_data_from_nifti_nonexistent_file():
     """Test from_nifti with nonexistent file raises error."""
     from lacuna.core.exceptions import NiftiLoadError
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     with pytest.raises((NiftiLoadError, FileNotFoundError)):
-        MaskData.from_nifti(
+        SubjectData.from_nifti(
             "/nonexistent/file.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
 
 def test_mask_data_validate(synthetic_mask_img, lesion_metadata):
-    """Test MaskData.validate method."""
-    from lacuna.core.mask_data import MaskData
+    """Test SubjectData.validate method."""
+    from lacuna.core.subject_data import SubjectData
 
-    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
 
     # Should pass validation
     assert lesion.validate() is True
@@ -120,9 +122,9 @@ def test_mask_data_validate(synthetic_mask_img, lesion_metadata):
 
 def test_mask_data_get_volume_mm3(synthetic_mask_img, lesion_metadata):
     """Test get_volume_mm3 method."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
     volume = lesion.get_volume_mm3()
 
     assert isinstance(volume, float)
@@ -131,9 +133,9 @@ def test_mask_data_get_volume_mm3(synthetic_mask_img, lesion_metadata):
 
 def test_mask_data_get_coordinate_space(synthetic_mask_img, lesion_metadata):
     """Test get_coordinate_space method."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
     space = lesion.get_coordinate_space()
 
     assert isinstance(space, str)
@@ -141,10 +143,10 @@ def test_mask_data_get_coordinate_space(synthetic_mask_img, lesion_metadata):
 
 
 def test_mask_data_copy(synthetic_mask_img, lesion_metadata):
-    """Test MaskData.copy method creates independent copy."""
-    from lacuna.core.mask_data import MaskData
+    """Test SubjectData.copy method creates independent copy."""
+    from lacuna.core.subject_data import SubjectData
 
-    lesion = MaskData(
+    lesion = SubjectData(
         synthetic_mask_img,
         metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2},
     )
@@ -160,10 +162,10 @@ def test_mask_data_copy(synthetic_mask_img, lesion_metadata):
 
 def test_mask_data_to_dict(synthetic_mask_img, lesion_metadata):
     """Test to_dict serialization."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     metadata = {"subject_id": "sub-001", "age": 45, "space": "MNI152NLin6Asym", "resolution": 2}
-    lesion = MaskData(synthetic_mask_img, metadata=metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=metadata)
 
     data_dict = lesion.to_dict()
 
@@ -176,24 +178,24 @@ def test_mask_data_to_dict(synthetic_mask_img, lesion_metadata):
 
 def test_mask_data_from_dict(synthetic_mask_img, lesion_metadata):
     """Test from_dict deserialization."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     # Create original
     metadata = {"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
-    lesion = MaskData(synthetic_mask_img, metadata=metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=metadata)
 
     # Serialize and deserialize
     data_dict = lesion.to_dict()
-    lesion_restored = MaskData.from_dict(data_dict, synthetic_mask_img)
+    lesion_restored = SubjectData.from_dict(data_dict, synthetic_mask_img)
 
     assert lesion_restored.metadata["subject_id"] == "sub-001"
 
 
 def test_mask_data_properties_are_readonly(synthetic_mask_img, lesion_metadata):
     """Test that properties cannot be directly modified."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    lesion = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    lesion = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
 
     # These should raise AttributeError if trying to set
     with pytest.raises(AttributeError):
@@ -247,11 +249,11 @@ def synthetic_4d_img():
 
 # T017-T019: Contract tests for result attribute access
 def test_mask_data_attribute_result_access(synthetic_mask_img, lesion_metadata):
-    """Test that MaskData.AnalysisName returns results['AnalysisName']."""
+    """Test that SubjectData.AnalysisName returns results['AnalysisName']."""
     from lacuna.core.data_types import VoxelMap
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    mask_data = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
 
     # Manually add a result to simulate analysis output
     test_result = VoxelMap(
@@ -277,9 +279,9 @@ def test_mask_data_attribute_result_access(synthetic_mask_img, lesion_metadata):
 def test_mask_data_dictionary_result_access(synthetic_mask_img, lesion_metadata):
     """Test dictionary-based result access works as expected."""
     from lacuna.core.data_types import ParcelData
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    mask_data = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
 
     # Add multiple results with different keys
     result1 = ParcelData(
@@ -308,9 +310,9 @@ def test_mask_data_dictionary_result_access(synthetic_mask_img, lesion_metadata)
 
 def test_mask_data_attribute_error_missing_result(synthetic_mask_img, lesion_metadata):
     """Test AttributeError with helpful message when result doesn't exist."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
-    mask_data = MaskData(synthetic_mask_img, metadata=lesion_metadata)
+    mask_data = SubjectData(synthetic_mask_img, metadata=lesion_metadata)
 
     # T019: Test that accessing non-existent result raises AttributeError
     with pytest.raises(AttributeError) as exc_info:

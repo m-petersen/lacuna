@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna import MaskData
+from lacuna import SubjectData
 
 
 class TestErrorMessageSuggestionsContract:
@@ -19,7 +19,7 @@ class TestErrorMessageSuggestionsContract:
 
         # Typo in space name
         with pytest.raises(ValueError) as exc_info:
-            MaskData(
+            SubjectData(
                 mask_img=img,
                 space="MNI152Lin6Asym",  # Missing 'N'
                 resolution=2,
@@ -38,7 +38,7 @@ class TestErrorMessageSuggestionsContract:
         img = nib.Nifti1Image(data, affine)
 
         with pytest.raises(ValueError) as exc_info:
-            MaskData(
+            SubjectData(
                 mask_img=img,
                 space="invalid_space",
                 resolution=2,
@@ -66,13 +66,13 @@ class TestParcelAggregationErrorSuggestionsContract:
         """Contract: Invalid source name suggests available sources."""
         from lacuna.analysis import ParcelAggregation
 
-        # Create MaskData with results
+        # Create SubjectData with results
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
         affine[:3, :3] *= 2.0
         img = nib.Nifti1Image(data, affine)
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=img,
             space="MNI152NLin6Asym",
             resolution=2,
@@ -80,7 +80,7 @@ class TestParcelAggregationErrorSuggestionsContract:
 
         # Try with invalid source name
         agg = ParcelAggregation(
-            source=["MaskData.correltion_map"],  # Typo
+            source=["SubjectData.correltion_map"],  # Typo
             parcel_names=["Schaefer100"],
         )
 
@@ -93,24 +93,24 @@ class TestParcelAggregationErrorSuggestionsContract:
 
 
 class TestGetResultErrorSuggestionsContract:
-    """Contract tests for MaskData.get_result() error messages."""
+    """Contract tests for SubjectData.get_result() error messages."""
 
     @pytest.fixture
     def mask_data_with_results(self):
-        """Create MaskData with some results for testing."""
+        """Create SubjectData with some results for testing."""
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
         affine[:3, :3] *= 2.0
         img = nib.Nifti1Image(data, affine)
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=img,
             space="MNI152NLin6Asym",
             resolution=2,
         )
         # Add some mock results
         mask_data._results["RegionalDamage"] = {"volume": 100}
-        mask_data._results["FunctionalNetworkMapping"] = {"correlation_map": None}
+        mask_data._results["FunctionalNetworkMapping"] = {"correlationmap": None}
         return mask_data
 
     def test_invalid_analysis_suggests_similar(self, mask_data_with_results):

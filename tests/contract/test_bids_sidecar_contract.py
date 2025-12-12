@@ -90,13 +90,13 @@ class TestBidsSidecarContract:
         return tmp_path
 
     def test_sidecar_space_extracted(self, bids_dataset_with_sidecars):
-        """Contract: JSON sidecar Space field is extracted to MaskData.space."""
+        """Contract: JSON sidecar Space field is extracted to SubjectData.space."""
         result = load_bids_dataset(bids_dataset_with_sidecars, validate_bids=False)
         mask_data = result["sub-001"]
         assert mask_data.space == "MNI152NLin6Asym"
 
     def test_sidecar_resolution_extracted(self, bids_dataset_with_sidecars):
-        """Contract: JSON sidecar Resolution field is extracted to MaskData.resolution."""
+        """Contract: JSON sidecar Resolution field is extracted to SubjectData.resolution."""
         result = load_bids_dataset(bids_dataset_with_sidecars, validate_bids=False)
         mask_data = result["sub-001"]
         assert mask_data.resolution == 2.0
@@ -108,7 +108,7 @@ class TestBidsSidecarContract:
         assert mask_data.resolution == 2.0
 
     def test_sidecar_metadata_preserved(self, bids_dataset_with_sidecars):
-        """Contract: BIDS metadata is preserved in MaskData.metadata."""
+        """Contract: BIDS metadata is preserved in SubjectData.metadata."""
         result = load_bids_dataset(bids_dataset_with_sidecars, validate_bids=False)
         mask_data = result["sub-001"]
         assert mask_data.metadata["subject_id"] == "sub-001"

@@ -13,16 +13,16 @@ import pytest
 
 from lacuna.core.data_types import ParcelData
 from lacuna.core.keys import build_result_key
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 @pytest.fixture
 def batch_results_with_parcel_data():
     """Create batch results dict with multiple subjects."""
-    results: dict[MaskData, dict[str, ParcelData]] = {}
+    results: dict[SubjectData, dict[str, ParcelData]] = {}
 
     for i in range(3):
-        # Create a new MaskData for each subject
+        # Create a new SubjectData for each subject
         shape = (10, 10, 10)
         affine = np.eye(4) * 2
         affine[3, 3] = 1
@@ -31,7 +31,7 @@ def batch_results_with_parcel_data():
         data[4:6, 4:6, 4:6] = 1
         img = nib.Nifti1Image(data, affine)
 
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=img,
             space="MNI152NLin6Asym",
             resolution=2.0,
@@ -40,12 +40,14 @@ def batch_results_with_parcel_data():
 
         # Add ParcelData result with BIDS-style key
         parcel_data = ParcelData(
-            name="parcel_means",
+            name="parcelmeans",
             data={"region_A": 0.5 + i * 0.1, "region_B": 0.3 + i * 0.1, "region_C": 0.8 - i * 0.1},
-            parcel_names=["AAL116"],
+            parcel_names=["Schaefer2018_100Parcels7Networks"],
         )
         # build_result_key(parc, source, desc)
-        parcel_key = build_result_key("AAL116", "ParcelAggregation", "parcel_means")
+        parcel_key = build_result_key(
+            "Schaefer2018_100Parcels7Networks", "ParcelAggregation", "parcelmeans"
+        )
 
         # Create mask_data with results, then add to batch
         mask_data = mask_data.add_result("ParcelAggregation", {parcel_key: parcel_data})
@@ -61,7 +63,9 @@ class TestExtractContract:
         """extract() should return a dict mapping identifiers to results."""
         from lacuna.batch.extract import extract
 
-        extracted = extract(batch_results_with_parcel_data, parc="AAL116")
+        extracted = extract(
+            batch_results_with_parcel_data, pattern="*Schaefer2018_100Parcels7Networks*"
+        )
 
         assert isinstance(extracted, dict)
         assert len(extracted) == 3
@@ -70,18 +74,22 @@ class TestExtractContract:
         """extract() should use subject_id as key."""
         from lacuna.batch.extract import extract
 
-        extracted = extract(batch_results_with_parcel_data, parc="AAL116")
+        extracted = extract(
+            batch_results_with_parcel_data, pattern="*Schaefer2018_100Parcels7Networks*"
+        )
 
         # Should use subject_id from metadata
         assert "sub-000" in extracted
         assert "sub-001" in extracted
         assert "sub-002" in extracted
 
-    def test_extract_filters_by_parc(self, batch_results_with_parcel_data):
-        """extract() should filter results by parcellation."""
+    def test_extract_filters_by_pattern(self, batch_results_with_parcel_data):
+        """extract() should filter results by pattern."""
         from lacuna.batch.extract import extract
 
-        extracted = extract(batch_results_with_parcel_data, parc="AAL116")
+        extracted = extract(
+            batch_results_with_parcel_data, pattern="*Schaefer2018_100Parcels7Networks*"
+        )
 
         # When there's only one matching result per subject, extract returns values directly
         # Values should be ParcelData objects (the actual result)
@@ -90,11 +98,11 @@ class TestExtractContract:
         for value in extracted.values():
             assert isinstance(value, ParcelData)
 
-    def test_extract_filters_by_source(self, batch_results_with_parcel_data):
-        """extract() should filter results by source."""
+    def test_extract_filters_by_source_pattern(self, batch_results_with_parcel_data):
+        """extract() should filter results by source pattern."""
         from lacuna.batch.extract import extract
 
-        extracted = extract(batch_results_with_parcel_data, source="ParcelAggregation")
+        extracted = extract(batch_results_with_parcel_data, pattern="*ParcelAggregation*")
 
         # When there's only one matching result per subject, extract returns values directly
         from lacuna.core.data_types import ParcelData
@@ -106,7 +114,11 @@ class TestExtractContract:
         """extract() with unwrap=True should call get_data() on results."""
         from lacuna.batch.extract import extract
 
-        extracted = extract(batch_results_with_parcel_data, parc="AAL116", unwrap=True)
+        extracted = extract(
+            batch_results_with_parcel_data,
+            pattern="*Schaefer2018_100Parcels7Networks*",
+            unwrap=True,
+        )
 
         # When there's only one matching result per subject, extract returns values directly
         # With unwrap=True, values should be raw data (dicts from ParcelData.get_data())
@@ -118,7 +130,11 @@ class TestExtractContract:
         """extract() with unwrap=False should return wrapper objects."""
         from lacuna.batch.extract import extract
 
-        extracted = extract(batch_results_with_parcel_data, parc="AAL116", unwrap=False)
+        extracted = extract(
+            batch_results_with_parcel_data,
+            pattern="*Schaefer2018_100Parcels7Networks*",
+            unwrap=False,
+        )
 
         # When there's only one matching result per subject, extract returns values directly
         # With unwrap=False, values should be ParcelData objects
@@ -134,14 +150,14 @@ class TestExtractErrorHandling:
         from lacuna.batch.extract import extract
 
         with pytest.raises(ValueError, match="batch_results is empty"):
-            extract({}, parc="AAL116")
+            extract({}, pattern="*Schaefer2018_100Parcels7Networks*")
 
     def test_no_matching_results_raises_error(self, batch_results_with_parcel_data):
         """extract() should raise ValueError when no results match filters."""
         from lacuna.batch.extract import extract
 
         with pytest.raises(ValueError, match="No results found matching filters"):
-            extract(batch_results_with_parcel_data, parc="NonExistentAtlas")
+            extract(batch_results_with_parcel_data, pattern="*NonExistentAtlas*")
 
 
 class TestExtractModuleExports:

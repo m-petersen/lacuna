@@ -11,12 +11,14 @@ import pytest
 
 @pytest.mark.contract
 def test_space_requirement_error(synthetic_mask_img):
-    """T032: Test that MaskData raises error when space is missing."""
-    from lacuna.core.mask_data import MaskData
+    """T032: Test that SubjectData raises error when space is missing."""
+    from lacuna.core.subject_data import SubjectData
 
     # Missing 'space' parameter should raise error
     with pytest.raises(ValueError) as exc_info:
-        MaskData(synthetic_mask_img, metadata={"subject_id": "sub-001"})  # No space or resolution
+        SubjectData(
+            synthetic_mask_img, metadata={"subject_id": "sub-001"}
+        )  # No space or resolution
 
     error_msg = str(exc_info.value)
     assert "space" in error_msg.lower()
@@ -25,12 +27,12 @@ def test_space_requirement_error(synthetic_mask_img):
 
 @pytest.mark.contract
 def test_resolution_requirement_error(synthetic_mask_img):
-    """T033: Test that MaskData raises error when resolution is missing."""
-    from lacuna.core.mask_data import MaskData
+    """T033: Test that SubjectData raises error when resolution is missing."""
+    from lacuna.core.subject_data import SubjectData
 
     # Missing 'resolution' parameter should raise error
     with pytest.raises(ValueError) as exc_info:
-        MaskData(
+        SubjectData(
             synthetic_mask_img,
             space="MNI152NLin6Asym",  # space provided but not resolution
             metadata={"subject_id": "sub-001"},
@@ -65,11 +67,11 @@ def test_separated_space_resolution_attributes():
 @pytest.mark.contract
 def test_supported_spaces_error_message(synthetic_mask_img):
     """T035: Test that error message lists only supported spaces."""
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
     # Use unsupported space
     with pytest.raises(ValueError) as exc_info:
-        MaskData(
+        SubjectData(
             synthetic_mask_img,
             metadata={"subject_id": "sub-001", "space": "UnsupportedSpace", "resolution": 2},
         )

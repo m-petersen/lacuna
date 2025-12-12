@@ -130,33 +130,33 @@ def test_base_analysis_run_method_is_final():
 
 
 def test_base_analysis_run_accepts_mask_data(synthetic_mask_img):
-    """Test that run() accepts MaskData and returns MaskData."""
-    from lacuna import MaskData
+    """Test that run() accepts SubjectData and returns SubjectData."""
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     # Create test analysis
     class TestAnalysis(BaseAnalysis):
         def _validate_inputs(self, mask_data):
-            assert isinstance(mask_data, MaskData)
+            assert isinstance(mask_data, SubjectData)
 
         def _run_analysis(self, mask_data):
             return {"test_result": 42}
 
     analysis = TestAnalysis()
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Run should accept MaskData
+    # Run should accept SubjectData
     result = analysis.run(mask_data)
 
-    # Should return MaskData
-    assert isinstance(result, MaskData)
+    # Should return SubjectData
+    assert isinstance(result, SubjectData)
 
 
 def test_base_analysis_run_validates_inputs(synthetic_mask_img):
     """Test that run() calls _validate_inputs before analysis."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     validation_called = []
@@ -170,7 +170,7 @@ def test_base_analysis_run_validates_inputs(synthetic_mask_img):
             return {}
 
     analysis = TestAnalysis()
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -184,7 +184,7 @@ def test_base_analysis_run_validates_inputs(synthetic_mask_img):
 
 def test_base_analysis_run_namespaces_results(synthetic_mask_img):
     """Test that run() automatically namespaces results under class name."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     class MyTestAnalysis(BaseAnalysis):
@@ -195,7 +195,7 @@ def test_base_analysis_run_namespaces_results(synthetic_mask_img):
             return {"score": 123, "metric": "test"}
 
     analysis = MyTestAnalysis()
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -209,7 +209,7 @@ def test_base_analysis_run_namespaces_results(synthetic_mask_img):
 
 def test_base_analysis_run_preserves_existing_results(synthetic_mask_img):
     """Test that run() preserves results from other analyses."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     class Analysis1(BaseAnalysis):
@@ -226,7 +226,7 @@ def test_base_analysis_run_preserves_existing_results(synthetic_mask_img):
         def _run_analysis(self, mask_data):
             return {"value": 2}
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -245,8 +245,8 @@ def test_base_analysis_run_preserves_existing_results(synthetic_mask_img):
 
 
 def test_base_analysis_run_does_not_modify_input(synthetic_mask_img):
-    """Test that run() does not modify the input MaskData (immutability)."""
-    from lacuna import MaskData
+    """Test that run() does not modify the input SubjectData (immutability)."""
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     class TestAnalysis(BaseAnalysis):
@@ -256,7 +256,7 @@ def test_base_analysis_run_does_not_modify_input(synthetic_mask_img):
         def _run_analysis(self, mask_data):
             return {"result": "new"}
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
     original_results = mask_data.results.copy()
@@ -275,7 +275,7 @@ def test_base_analysis_run_does_not_modify_input(synthetic_mask_img):
 
 def test_base_analysis_run_handles_analysis_errors(synthetic_mask_img):
     """Test that run() properly handles errors from _run_analysis."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     class FailingAnalysis(BaseAnalysis):
@@ -286,7 +286,7 @@ def test_base_analysis_run_handles_analysis_errors(synthetic_mask_img):
             raise RuntimeError("Analysis computation failed!")
 
     analysis = FailingAnalysis()
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
@@ -321,8 +321,8 @@ def test_base_analysis_supports_custom_parameters():
 
 
 def test_base_analysis_chain_multiple_analyses(synthetic_mask_img):
-    """Test that multiple analyses can be chained on the same MaskData."""
-    from lacuna import MaskData
+    """Test that multiple analyses can be chained on the same SubjectData."""
+    from lacuna import SubjectData
     from lacuna.analysis.base import BaseAnalysis
 
     class VolumeAnalysis(BaseAnalysis):
@@ -343,7 +343,7 @@ def test_base_analysis_chain_multiple_analyses(synthetic_mask_img):
             volume = mask_data.results["VolumeAnalysis"]["volume_mm3"]
             return {"network_score": volume * 0.5}
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 

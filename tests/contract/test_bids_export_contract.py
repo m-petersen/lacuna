@@ -13,12 +13,12 @@ import numpy as np
 import pytest
 
 from lacuna.core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 @pytest.fixture
 def sample_mask_data_for_export():
-    """Create MaskData with results for BIDS export testing."""
+    """Create SubjectData with results for BIDS export testing."""
     shape = (10, 10, 10)
     affine = np.eye(4) * 2
     affine[3, 3] = 1
@@ -27,7 +27,7 @@ def sample_mask_data_for_export():
     data[4:6, 4:6, 4:6] = 1
     img = nib.Nifti1Image(data, affine)
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=img,
         space="MNI152NLin6Asym",
         resolution=2.0,
@@ -38,7 +38,7 @@ def sample_mask_data_for_export():
     voxel_data = np.random.rand(*shape).astype(np.float32)
     voxel_img = nib.Nifti1Image(voxel_data, affine)
     voxel_map = VoxelMap(
-        name="correlation_map",
+        name="correlationmap",
         data=voxel_img,
         space="MNI152NLin6Asym",
         resolution=2.0,
@@ -46,7 +46,7 @@ def sample_mask_data_for_export():
 
     # Add ParcelData result
     parcel_data = ParcelData(
-        name="parcel_means",
+        name="parcelmeans",
         data={"region_A": 0.5, "region_B": 0.3, "region_C": 0.8},
         parcel_names=["TestAtlas"],
     )
@@ -54,8 +54,8 @@ def sample_mask_data_for_export():
     # Add results to mask_data
     results = {
         "FunctionalNetworkMapping": {
-            "correlation_map": voxel_map,
-            "parcel_means": parcel_data,
+            "correlationmap": voxel_map,
+            "parcelmeans": parcel_data,
         }
     }
 
@@ -73,7 +73,7 @@ def sample_voxelmap():
     img = nib.Nifti1Image(data, affine)
 
     return VoxelMap(
-        name="z_map",
+        name="zmap",
         data=img,
         space="MNI152NLin6Asym",
         resolution=2.0,
@@ -91,7 +91,7 @@ def sample_parcel_data():
             "Right_Hippocampus": 0.12,
             "Left_Amygdala": 0.78,
         },
-        parcel_names=["AAL"],
+        parcel_names=["TianSubcortex_3TS1"],
         metadata={"subject_id": "sub-003"},
     )
 
@@ -327,7 +327,7 @@ class TestBatchExportContract:
             data[4:6, 4:6, 4:6] = 1
             img = nib.Nifti1Image(data, affine)
 
-            mask_data = MaskData(
+            mask_data = SubjectData(
                 mask_img=img,
                 space="MNI152NLin6Asym",
                 resolution=2.0,

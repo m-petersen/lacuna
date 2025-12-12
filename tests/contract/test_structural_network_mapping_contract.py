@@ -96,7 +96,7 @@ def test_structural_network_mapping_has_run_method(temp_connectome):
 
 
 def test_structural_network_mapping_validates_binary_mask():
-    """Test that MaskData validates binary lesion mask at construction (enforced at MaskData level).
+    """Test that SubjectData validates binary lesion mask at construction (enforced at SubjectData level).
 
     This is a contract test - we verify the validation logic exists,
     not the full pipeline integration (which requires MRtrix and is tested in integration tests).
@@ -104,7 +104,7 @@ def test_structural_network_mapping_validates_binary_mask():
     import nibabel as nib
     import numpy as np
 
-    from lacuna import MaskData
+    from lacuna import SubjectData
 
     # Create a simple lesion with non-binary values
     data = np.zeros((10, 10, 10))
@@ -112,21 +112,21 @@ def test_structural_network_mapping_validates_binary_mask():
 
     mask_img = nib.Nifti1Image(data, np.eye(4))
 
-    # The validation should detect non-binary values at MaskData construction
-    # This is enforced at the MaskData level (T005), not in individual analysis modules
+    # The validation should detect non-binary values at SubjectData construction
+    # This is enforced at the SubjectData level (T005), not in individual analysis modules
     with pytest.raises(ValueError, match="mask_img must be a binary mask"):
-        MaskData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
+        SubjectData(mask_img=mask_img, space="MNI152NLin6Asym", resolution=2)
 
 
 @pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
 @pytest.mark.requires_mrtrix
 def test_structural_network_mapping_returns_mask_data(synthetic_mask_img, temp_connectome):
-    """Test that run() returns a MaskData object with namespaced results."""
-    from lacuna import MaskData
+    """Test that run() returns a SubjectData object with namespaced results."""
+    from lacuna import SubjectData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     # Mark lesion as MNI152 space
-    mask_data = MaskData(mask_img=synthetic_mask_img, space="MNI152NLin6Asym", resolution=2)
+    mask_data = SubjectData(mask_img=synthetic_mask_img, space="MNI152NLin6Asym", resolution=2)
 
     # Note: This test will fail until implementation exists
     # It defines the expected behavior
@@ -174,11 +174,11 @@ def test_structural_network_mapping_accepts_n_jobs(temp_connectome):
 def test_structural_network_mapping_preserves_input_immutability(
     temp_connectome, synthetic_mask_img
 ):
-    """Test that SNM does not modify the input MaskData object."""
-    from lacuna import MaskData
+    """Test that SNM does not modify the input SubjectData object."""
+    from lacuna import SubjectData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    mask_data = MaskData(
+    mask_data = SubjectData(
         mask_img=synthetic_mask_img,
         space="MNI152NLin6Asym",
         resolution=2,
@@ -205,10 +205,10 @@ def test_structural_network_mapping_preserves_input_immutability(
 @pytest.mark.requires_mrtrix
 def test_structural_network_mapping_adds_provenance(temp_connectome, synthetic_mask_img):
     """Test that SNM adds provenance information."""
-    from lacuna import MaskData
+    from lacuna import SubjectData
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    MaskData(
+    SubjectData(
         mask_img=synthetic_mask_img,
         space="MNI152NLin6Asym",
         resolution=2,
