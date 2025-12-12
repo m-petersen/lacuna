@@ -1,27 +1,26 @@
 """Batch result extraction utilities.
 
 This module provides the unified `extract()` function for extracting analysis results
-from batch processing results. The function supports filtering by analysis type,
-parcellation, source, and description.
+from batch processing results. The function supports filtering by analysis type
+and glob patterns.
 """
 
 from __future__ import annotations
 
+from fnmatch import fnmatch
 from typing import TYPE_CHECKING, Any
 
 import nibabel as nib
 
-from lacuna.core.keys import parse_result_key
-
 if TYPE_CHECKING:
     from lacuna.batch.runner import BatchResults
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
 
 __all__ = ["extract"]
 
 
-def _get_identifier(subject: MaskData) -> str:
+def _get_identifier(subject: SubjectData) -> str:
     """Get the identifier of a subject.
 
     Args:
@@ -63,30 +62,26 @@ def extract(
     batch_results: BatchResults | list,
     *,
     analysis: str | None = None,
-    parc: str | None = None,
-    source: str | None = None,
-    desc: str | None = None,
+    pattern: str | None = None,
     unwrap: bool = False,
 ) -> dict[str, Any]:
     """Extract analysis results from batch processing results.
 
     Unified extraction function that replaces the legacy `extract_voxelmaps()`,
     `extract_parcel_table()`, and `extract_scalars()` functions. Provides
-    flexible filtering using BIDS-style key components or analysis namespace.
+    flexible filtering using glob patterns.
 
     Args:
         batch_results: The batch results to extract from. Can be either:
-            - list[MaskData]: Direct output from batch_process()
-            - dict[MaskData, dict]: BatchResults format with {subject: results}
+            - list[SubjectData]: Direct output from batch_process()
+            - dict[SubjectData, dict]: BatchResults format with {subject: results}
         analysis: Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
             "RegionalDamage"). This filters by the top-level namespace in results.
-        parc: Filter by parcellation name (e.g., "AAL116", "Schaefer100").
-            Matches the 'parc' component of BIDS-style result keys.
-        source: Filter by source type (e.g., "ParcelAggregation", "RegionalDamage").
-            Matches the 'source' component of BIDS-style result keys.
-        desc: Filter by description (e.g., "parcel_means", "correlation_map").
-            Matches the 'desc' component of BIDS-style result keys, OR matches
-            plain result keys directly (e.g., "correlation_map").
+        pattern: Glob pattern to match result keys (e.g., "*correlationmap*",
+            "parc-Schaefer*_desc-*"). Supports fnmatch-style wildcards:
+            - ``*`` matches any sequence of characters
+            - ``?`` matches any single character
+            - ``[seq]`` matches any character in seq
         unwrap: If True, call `get_data()` on result objects to return raw values.
             If False (default), return wrapper objects (VoxelMap, ParcelData, etc.).
 
@@ -96,18 +91,15 @@ def extract(
         If multiple keys match, returns {subject: {key: value}}.
 
     Examples:
-        Extract correlation maps from FunctionalNetworkMapping:
+        Extract using glob pattern:
         >>> results = extract(batch_results, analysis="FunctionalNetworkMapping",
-        ...                   desc="correlation_map")
+        ...                   pattern="*correlationmap*")
 
-        Extract atlas damage for AAL116 parcellation:
-        >>> results = extract(batch_results, parc="AAL116")
-
-        Extract all ParcelAggregation results:
-        >>> results = extract(batch_results, source="ParcelAggregation")
+        Extract with pattern matching parcellation:
+        >>> results = extract(batch_results, pattern="*Schaefer*")
 
         Extract with unwrapping (raw values):
-        >>> results = extract(batch_results, parc="AAL116", unwrap=True)
+        >>> results = extract(batch_results, pattern="*Schaefer*", unwrap=True)
 
     Raises:
         ValueError: If batch_results is empty or no results match the filters.
@@ -116,7 +108,7 @@ def extract(
         msg = "batch_results is empty"
         raise ValueError(msg)
 
-    # Handle both list[MaskData] (from batch_process) and dict (BatchResults)
+    # Handle both list[SubjectData] (from batch_process) and dict (BatchResults)
     # Convert list to dict format: {subject: subject.results}
     if isinstance(batch_results, list):
         batch_dict: dict[Any, dict[str, Any]] = {}
@@ -127,15 +119,6 @@ def extract(
                 # Skip items without results
                 continue
         batch_results = batch_dict
-
-    # Build BIDS-style filter criteria
-    bids_filters: dict[str, str] = {}
-    if parc is not None:
-        bids_filters["parc"] = parc
-    if source is not None:
-        bids_filters["source"] = source
-    if desc is not None:
-        bids_filters["desc"] = desc
 
     # Extract matching results for each subject
     extracted: dict[str, dict[str, Any]] = {}
@@ -161,34 +144,8 @@ def extract(
                 continue
 
             for key, value in namespace_results.items():
-                # Try to parse as BIDS-style key
-                try:
-                    components = parse_result_key(key)
-                    is_bids_key = True
-                except ValueError:
-                    # Plain key (e.g., "correlation_map")
-                    is_bids_key = False
-                    components = {}
-
-                # Check if key matches filters
-                matches = True
-
-                if is_bids_key:
-                    # Check BIDS-style filters
-                    for filter_key, filter_value in bids_filters.items():
-                        if components.get(filter_key) != filter_value:
-                            matches = False
-                            break
-                else:
-                    # Plain key - only match on desc filter
-                    # (parc and source don't apply to plain keys)
-                    if desc is not None and key != desc:
-                        matches = False
-                    # If parc or source filters are set, plain keys don't match
-                    if parc is not None or source is not None:
-                        matches = False
-
-                if matches:
+                # Check if key matches pattern (or match all if no pattern)
+                if pattern is None or fnmatch(key, pattern):
                     if unwrap:
                         subject_results[key] = _unwrap_value(value)
                     else:
@@ -201,8 +158,8 @@ def extract(
         filter_parts = []
         if analysis:
             filter_parts.append(f"analysis={analysis}")
-        for k, v in bids_filters.items():
-            filter_parts.append(f"{k}={v}")
+        if pattern:
+            filter_parts.append(f"pattern={pattern!r}")
         filter_desc = ", ".join(filter_parts) if filter_parts else "(no filters)"
         msg = f"No results found matching filters: {filter_desc}"
         raise ValueError(msg)

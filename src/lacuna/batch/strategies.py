@@ -16,12 +16,12 @@ from collections.abc import Callable
 from joblib import Parallel, delayed
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 def _process_one_subject(
-    mask_data: MaskData, idx: int, analysis: BaseAnalysis
-) -> tuple[int, MaskData | None]:
+    mask_data: SubjectData, idx: int, analysis: BaseAnalysis
+) -> tuple[int, SubjectData | None]:
     """
     Process a single subject with error handling.
 
@@ -30,7 +30,7 @@ def _process_one_subject(
 
     Parameters
     ----------
-    mask_data : MaskData
+    mask_data : SubjectData
         The subject data to process
     idx : int
         The subject index in the batch
@@ -39,7 +39,7 @@ def _process_one_subject(
 
     Returns
     -------
-    tuple[int, MaskData | None]
+    tuple[int, SubjectData | None]
         Tuple of (index, result) where result is None if processing failed
     """
     try:
@@ -78,16 +78,16 @@ class BatchStrategy(ABC):
     @abstractmethod
     def execute(
         self,
-        mask_data_list: list[MaskData],
+        mask_data_list: list[SubjectData],
         analysis: BaseAnalysis,
         progress_callback: Callable[[int], None] | None = None,
-    ) -> list[MaskData]:
+    ) -> list[SubjectData]:
         """
         Execute analysis on all lesions using this strategy.
 
         Parameters
         ----------
-        mask_data_list : list[MaskData]
+        mask_data_list : list[SubjectData]
             List of lesions to process
         analysis : BaseAnalysis
             Analysis instance to apply to each lesion
@@ -97,8 +97,8 @@ class BatchStrategy(ABC):
 
         Returns
         -------
-        list[MaskData]
-            List of processed MaskData objects with results added
+        list[SubjectData]
+            List of processed SubjectData objects with results added
 
         Raises
         ------
@@ -171,10 +171,10 @@ class ParallelStrategy(BatchStrategy):
 
     def execute(
         self,
-        mask_data_list: list[MaskData],
+        mask_data_list: list[SubjectData],
         analysis: BaseAnalysis,
         progress_callback: Callable[[int], None] | None = None,
-    ) -> list[MaskData]:
+    ) -> list[SubjectData]:
         """
         Execute parallel batch processing.
 
@@ -184,7 +184,7 @@ class ParallelStrategy(BatchStrategy):
 
         Parameters
         ----------
-        mask_data_list : list[MaskData]
+        mask_data_list : list[SubjectData]
             Subjects to process
         analysis : BaseAnalysis
             Analysis to apply
@@ -193,7 +193,7 @@ class ParallelStrategy(BatchStrategy):
 
         Returns
         -------
-        list[MaskData]
+        list[SubjectData]
             Successfully processed subjects (failures are filtered out)
         """
         # Execute in parallel
@@ -260,7 +260,7 @@ class VectorizedStrategy(BatchStrategy):
     This dramatically reduces overhead and enables efficient BLAS operations.
 
     The analysis class must implement:
-        run_batch(mask_data_list: list[MaskData]) -> list[MaskData]
+        run_batch(mask_data_list: list[SubjectData]) -> list[SubjectData]
 
     Parameters
     ----------
@@ -291,7 +291,7 @@ class VectorizedStrategy(BatchStrategy):
         self,
         n_jobs: int = -1,
         lesion_batch_size: int | None = None,
-        batch_result_callback: Callable[[list[MaskData]], None] | None = None,
+        batch_result_callback: Callable[[list[SubjectData]], None] | None = None,
     ):
         super().__init__(n_jobs)
         self.lesion_batch_size = lesion_batch_size
@@ -299,10 +299,10 @@ class VectorizedStrategy(BatchStrategy):
 
     def execute(
         self,
-        mask_data_list: list[MaskData],
+        mask_data_list: list[SubjectData],
         analysis: BaseAnalysis,
         progress_callback: Callable[[int], None] | None = None,
-    ) -> list[MaskData]:
+    ) -> list[SubjectData]:
         """
         Execute vectorized batch processing.
 
@@ -312,7 +312,7 @@ class VectorizedStrategy(BatchStrategy):
 
         Parameters
         ----------
-        mask_data_list : list[MaskData]
+        mask_data_list : list[SubjectData]
             Subjects to process
         analysis : BaseAnalysis
             Analysis to apply (must implement run_batch method)
@@ -321,7 +321,7 @@ class VectorizedStrategy(BatchStrategy):
 
         Returns
         -------
-        list[MaskData]
+        list[SubjectData]
             Processed subjects
 
         Raises

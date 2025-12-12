@@ -14,7 +14,7 @@ from tqdm import tqdm
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch.selection import select_strategy
 from lacuna.core.data_types import ParcelData, VoxelMap
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 
 def _detect_input_type(inputs: list) -> str:
@@ -43,7 +43,7 @@ def _detect_input_type(inputs: list) -> str:
     has_voxel_map = False
 
     for item in inputs:
-        if isinstance(item, MaskData):
+        if isinstance(item, SubjectData):
             has_mask_data = True
         elif isinstance(item, VoxelMap):
             has_voxel_map = True
@@ -60,7 +60,7 @@ def _detect_input_type(inputs: list) -> str:
 
 
 def batch_process(
-    inputs: list[MaskData | VoxelMap] | None = None,
+    inputs: list[SubjectData | VoxelMap] | None = None,
     analysis: BaseAnalysis | None = None,
     n_jobs: int = -1,
     show_progress: bool = True,
@@ -69,8 +69,8 @@ def batch_process(
     lesion_batch_size: int | None = None,
     batch_result_callback: Callable | None = None,
     *,
-    mask_data_list: list[MaskData] | None = None,  # Deprecated, use inputs
-) -> list[MaskData | ParcelData]:
+    mask_data_list: list[SubjectData] | None = None,  # Deprecated, use inputs
+) -> list[SubjectData | ParcelData]:
     """
     Process multiple subjects through an analysis pipeline with automatic optimization.
 
@@ -80,8 +80,8 @@ def batch_process(
 
     Parameters
     ----------
-    inputs : list[MaskData] or list[VoxelMap]
-        List of MaskData or VoxelMap objects to process.
+    inputs : list[SubjectData] or list[VoxelMap]
+        List of SubjectData or VoxelMap objects to process.
         All items must be of the same type (no mixing).
     analysis : BaseAnalysis
         Analysis instance to apply to each input
@@ -107,7 +107,7 @@ def batch_process(
         Only applies when using vectorized strategy. Ignored for parallel strategy.
     batch_result_callback : callable or None, default=None
         Callback function called after each lesion batch is processed.
-        Signature: callback(batch_results: list[MaskData]) -> None
+        Signature: callback(batch_results: list[SubjectData]) -> None
         Use this to save results immediately and free memory.
         Example: batch_result_callback=lambda batch: [save(r) for r in batch]
         - 'loky': Robust multiprocessing (best for standalone scripts)
@@ -117,8 +117,8 @@ def batch_process(
 
     Returns
     -------
-    list[MaskData]
-        List of processed MaskData objects with results added.
+    list[SubjectData]
+        List of processed SubjectData objects with results added.
         Subjects that failed processing are excluded (warnings are emitted).
 
     Raises
@@ -174,7 +174,7 @@ def batch_process(
     >>> after_regional = batch_process(lesions, regional)
     >>>
     >>> # Second analysis on results
-    >>> aggregation = ParcelAggregation(source="mask_img")
+    >>> aggregation = ParcelAggregation(source="maskimg")
     >>> final = batch_process(after_regional, aggregation)
 
     Notes
@@ -210,7 +210,7 @@ def batch_process(
     if input_type == "mixed":
         raise TypeError(
             "batch_process does not support mixed input types. "
-            "All items must be either MaskData or VoxelMap, not both."
+            "All items must be either SubjectData or VoxelMap, not both."
         )
 
     if not isinstance(analysis, BaseAnalysis):

@@ -22,7 +22,7 @@ except ImportError:
     pass
 
 if TYPE_CHECKING:
-    from lacuna.core.mask_data import MaskData
+    from lacuna.core.subject_data import SubjectData
 
 logger = logging.getLogger(__name__)
 
@@ -559,15 +559,15 @@ def transform_image(
 
 
 def transform_mask_data(
-    mask_data: "MaskData",
+    mask_data: "SubjectData",
     target_space: CoordinateSpace,
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
     log_level: int = 1,
-) -> "MaskData":
+) -> "SubjectData":
     """Transform lesion data to target coordinate space.
 
-    This is the high-level API for transforming MaskData objects between
+    This is the high-level API for transforming SubjectData objects between
     coordinate spaces. It handles:
     - Space detection and validation
     - Transform loading and caching
@@ -575,7 +575,7 @@ def transform_mask_data(
     - Provenance tracking
 
     Args:
-        mask_data: MaskData object to transform
+        mask_data: SubjectData object to transform
         target_space: Target coordinate space
         interpolation: Interpolation method (auto-detected if None).
             Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
@@ -583,24 +583,24 @@ def transform_mask_data(
         log_level: Logging verbosity (0=silent, 1=info, 2=debug)
 
     Returns:
-        New MaskData object in target space
+        New SubjectData object in target space
 
     Raises:
         TransformNotAvailableError: If transformation not supported
         SpaceDetectionError: If source space cannot be determined
 
     Examples:
-        >>> from lacuna.core.mask_data import MaskData
+        >>> from lacuna.core.subject_data import SubjectData
         >>> from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
         >>> # Load lesion in NLin6 space
-        >>> lesion = MaskData.from_nifti("lesion.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
+        >>> lesion = SubjectData.from_nifti("lesion.nii.gz", metadata={"space": "MNI152NLin6Asym", "resolution": 2})
         >>> # Transform to NLin2009c
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
         >>> transformed = transform_mask_data(lesion, target, image_name="lesion_001")
     """
     # Import here to avoid circular imports
-    from lacuna.core.mask_data import MaskData
     from lacuna.core.provenance import TransformationRecord
+    from lacuna.core.subject_data import SubjectData
 
     # Get source space from metadata
     source_identifier = mask_data.space
@@ -664,7 +664,7 @@ def transform_mask_data(
         ),
     )
 
-    # Create new MaskData with transformed image
+    # Create new SubjectData with transformed image
     new_metadata = mask_data.metadata.copy()
     new_metadata["space"] = target_space.identifier
     new_metadata["resolution"] = target_space.resolution
@@ -672,7 +672,7 @@ def transform_mask_data(
     new_provenance = mask_data.provenance.copy()
     new_provenance.append(transform_record.to_dict())
 
-    return MaskData(
+    return SubjectData(
         mask_img=transformed_img,
         metadata=new_metadata,
         provenance=new_provenance,

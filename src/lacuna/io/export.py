@@ -1,7 +1,7 @@
 """
 Export utilities for analysis results.
 
-Provides convenient functions for exporting MaskData analysis results
+Provides convenient functions for exporting SubjectData analysis results
 to various formats (CSV, TSV, JSON) for downstream analysis and visualization.
 """
 
@@ -11,11 +11,11 @@ from typing import Any
 
 import pandas as pd
 
-from ..core.mask_data import MaskData
+from ..core.subject_data import SubjectData
 
 
 def export_results_to_csv(
-    mask_data: MaskData,
+    mask_data: SubjectData,
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
@@ -28,8 +28,8 @@ def export_results_to_csv(
 
     Parameters
     ----------
-    mask_data : MaskData
-        MaskData object with analysis results
+    mask_data : SubjectData
+        SubjectData object with analysis results
     output_path : str or Path
         Output CSV file path
     analysis_name : str, optional
@@ -50,11 +50,11 @@ def export_results_to_csv(
 
     Examples
     --------
-    >>> from lacuna import MaskData
+    >>> from lacuna import SubjectData
     >>> from lacuna.analysis import RegionalDamage
     >>> from lacuna.io import export_results_to_csv
     >>>
-    >>> lesion = MaskData.from_nifti("lesion.nii.gz")
+    >>> lesion = SubjectData.from_nifti("lesion.nii.gz")
     >>> analysis = RegionalDamage()
     >>> result = analysis.run(lesion)
     >>>
@@ -75,7 +75,7 @@ def export_results_to_csv(
     output_path = Path(output_path)
 
     if not mask_data.results:
-        raise ValueError("MaskData has no results to export")
+        raise ValueError("SubjectData has no results to export")
 
     # Filter by analysis name if specified
     if analysis_name:
@@ -120,7 +120,7 @@ def export_results_to_csv(
 
 
 def export_results_to_tsv(
-    mask_data: MaskData,
+    mask_data: SubjectData,
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
@@ -133,8 +133,8 @@ def export_results_to_tsv(
 
     Parameters
     ----------
-    mask_data : MaskData
-        MaskData object with analysis results
+    mask_data : SubjectData
+        SubjectData object with analysis results
     output_path : str or Path
         Output TSV file path
     analysis_name : str, optional
@@ -174,7 +174,7 @@ def export_results_to_tsv(
     output_path = Path(output_path)
 
     if not mask_data.results:
-        raise ValueError("MaskData has no results to export")
+        raise ValueError("SubjectData has no results to export")
 
     # Filter by analysis name if specified
     if analysis_name:
@@ -216,7 +216,7 @@ def export_results_to_tsv(
 
 
 def export_provenance_to_json(
-    mask_data: MaskData,
+    mask_data: SubjectData,
     output_path: str | Path,
     indent: int = 2,
 ) -> Path:
@@ -228,8 +228,8 @@ def export_provenance_to_json(
 
     Parameters
     ----------
-    mask_data : MaskData
-        MaskData object with provenance data
+    mask_data : SubjectData
+        SubjectData object with provenance data
     output_path : str or Path
         Output JSON file path
     indent : int, default=2
@@ -268,7 +268,7 @@ def export_provenance_to_json(
 
     if not mask_data.provenance:
         raise ValueError(
-            "MaskData has no provenance data to export.\n"
+            "SubjectData has no provenance data to export.\n"
             "Provenance is automatically tracked during analysis operations."
         )
 
@@ -283,7 +283,7 @@ def export_provenance_to_json(
 
 
 def export_results_to_json(
-    mask_data: MaskData,
+    mask_data: SubjectData,
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
@@ -299,8 +299,8 @@ def export_results_to_json(
 
     Parameters
     ----------
-    mask_data : MaskData
-        MaskData object with analysis results
+    mask_data : SubjectData
+        SubjectData object with analysis results
     output_path : str or Path
         Output JSON file path
     analysis_name : str, optional
@@ -352,7 +352,7 @@ def export_results_to_json(
     output_path = Path(output_path)
 
     if not mask_data.results:
-        raise ValueError("MaskData has no results to export")
+        raise ValueError("SubjectData has no results to export")
 
     # Build export data structure
     export_data: dict[str, Any] = {}
@@ -388,21 +388,21 @@ def export_results_to_json(
 
 
 def batch_export_to_csv(
-    mask_data_list: list[MaskData],
+    mask_data_list: list[SubjectData],
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
 ) -> Path:
     """
-    Export results from multiple MaskData objects to a single CSV.
+    Export results from multiple SubjectData objects to a single CSV.
 
     Combines results from multiple subjects into one CSV file with each
     row representing one subject. Ideal for group-level statistical analysis.
 
     Parameters
     ----------
-    mask_data_list : list[MaskData]
-        List of MaskData objects (typically from batch processing)
+    mask_data_list : list[SubjectData]
+        List of SubjectData objects (typically from batch processing)
     output_path : str or Path
         Output CSV file path
     analysis_name : str, optional
@@ -494,21 +494,21 @@ def batch_export_to_csv(
 
 
 def batch_export_to_tsv(
-    mask_data_list: list[MaskData],
+    mask_data_list: list[SubjectData],
     output_path: str | Path,
     analysis_name: str | None = None,
     include_metadata: bool = True,
 ) -> Path:
     """
-    Export results from multiple MaskData objects to a single TSV.
+    Export results from multiple SubjectData objects to a single TSV.
 
     Identical to batch_export_to_csv but uses tab delimiter.
     TSV is preferred in neuroimaging for BIDS compatibility.
 
     Parameters
     ----------
-    mask_data_list : list[MaskData]
-        List of MaskData objects
+    mask_data_list : list[SubjectData]
+        List of SubjectData objects
     output_path : str or Path
         Output TSV file path
     analysis_name : str, optional

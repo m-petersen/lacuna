@@ -57,9 +57,6 @@ ATLAS_REGISTRY = pooch.create(
         # Harvard-Oxford Cortical Atlas (48 regions)
         "harvard-oxford-cortical.nii.gz": "sha256:placeholder_hash_ho_cortical",
         "harvard-oxford-cortical_labels.txt": "sha256:placeholder_hash_ho_labels",
-        # AAL3 Atlas (170 regions)
-        "aal3.nii.gz": "sha256:placeholder_hash_aal3",
-        "aal3_labels.txt": "sha256:placeholder_hash_aal3_labels",
         # Schaefer 2018 100 parcels
         "schaefer2018-100parcels-7networks.nii.gz": "sha256:placeholder_hash_schaefer100",
         "schaefer2018-100parcels-7networks_labels.txt": "sha256:placeholder_hash_schaefer100_labels",
@@ -96,7 +93,7 @@ def list_available_atlases() -> list[str]:
     --------
     >>> atlases = list_available_atlases()
     >>> print(atlases)
-    ['harvard-oxford-cortical', 'aal3', 'schaefer2018-100parcels-7networks', ...]
+    ['harvard-oxford-cortical', 'schaefer2018-100parcels-7networks', ...]
     """
     # Extract base names (without .nii.gz extension)
     atlas_files = [f for f in ATLAS_REGISTRY.registry.keys() if f.endswith(".nii.gz")]
@@ -265,7 +262,7 @@ def get_atlas(name_or_path: str) -> tuple[Path, Path]:
     Parameters
     ----------
     name_or_path : str
-        Atlas name (e.g., 'aal3') or path to .nii.gz file
+        Atlas name (e.g., 'schaefer2018-100parcels-7networks') or path to .nii.gz file
 
     Returns
     -------
@@ -280,7 +277,7 @@ def get_atlas(name_or_path: str) -> tuple[Path, Path]:
     Examples
     --------
     >>> # Pre-registered atlas (downloads if needed)
-    >>> img, labels = get_atlas("aal3")
+    >>> img, labels = get_atlas("schaefer2018-100parcels-7networks")
 
     >>> # Custom atlas file
     >>> img, labels = get_atlas("/path/to/custom_atlas.nii.gz")
