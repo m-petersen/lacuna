@@ -12,7 +12,7 @@ Lacuna provides researchers with an end-to-end pipeline for:
 
 ## Features
 
-- **Standardized Data Handling**: Work with a consistent `MaskData` API across all pipeline stages
+- **Standardized Data Handling**: Work with a consistent `SubjectData` API across all pipeline stages
 - **BIDS Compliance**: First-class support for BIDS dataset organization and derivatives export
 - **Provenance Tracking**: Automatic recording of all transformations for reproducibility
 - **Spatial Correctness**: Built on validated neuroimaging libraries (nibabel, nilearn, templateflow)
@@ -58,11 +58,11 @@ pip install -e ".[dev]"
 
 ```python
 import nibabel as nib
-from lacuna import MaskData
+from lacuna import SubjectData
 
 # Load a binary mask (e.g., lesion, ROI)
 mask_img = nib.load("path/to/mask.nii.gz")
-mask = MaskData(
+subject = SubjectData(
     mask_img=mask_img,
     space="MNI152NLin6Asym",
     resolution=2.0,
@@ -70,9 +70,9 @@ mask = MaskData(
 )
 
 # Inspect the data
-print(f"Space: {mask.space}")
-print(f"Resolution: {mask.resolution}mm")
-print(f"Volume: {mask.get_volume_mm3():.1f} mm³")
+print(f"Space: {subject.space}")
+print(f"Resolution: {subject.resolution}mm")
+print(f"Volume: {subject.get_volume_mm3():.1f} mm³")
 ```
 
 ### Load a BIDS Dataset
@@ -197,86 +197,6 @@ export_bids_derivatives(
 
 Full documentation and API reference: See `notebooks/comprehensive_api_test.ipynb` for examples.
 
-## Development
-
-### Running Tests
-
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Run fast tests (unit + contract, ~30s)
-make test-fast
-
-# Run full CI suite (~2 min)
-make ci-native
-
-# Run specific test categories
-make test-unit          # Unit tests only (~15s)
-make test-contract      # Contract tests only (~15s)
-make test-integration   # Integration tests (~1 min)
-
-# Run with coverage
-make test-coverage
-```
-
-### Code Quality
-
-```bash
-# Format code
-make format
-
-# Lint code
-make lint
-
-# Type check
-make typecheck
-
-# Run all checks (format + lint + typecheck)
-make check
-```
-
-## Citation
-
-If you use this toolkit in your research, please cite:
-
-```bibtex
-@software{lacuna,
-  title = {Lacuna},
-  author = {Petersen, M},
-  year = {2025},
-  url = {https://github.com/lacuna/lacuna}
-}
-```
-
 ## License
 
 MIT License - see LICENSE file for details
-
-## Contributing
-
-Contributions are welcome! See [DEVELOPMENT.md](DEVELOPMENT.md) for:
-- Setting up your development environment
-- Running tests locally (native and Docker)
-- Code formatting and linting
-- Versioning and release workflow
-
-Quick start for contributors:
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Run tests before committing
-make test-fast
-
-# Run full CI before pushing
-make ci-native
-
-# Format code
-make format
-```
-
-## Support
-
-- Issue Tracker: https://github.com/m-petersen/lacuna/issues
-- Examples: See `notebooks/comprehensive_api_test.ipynb` and `examples/`
