@@ -7,11 +7,11 @@ damage analysis.
 
 Examples
 --------
->>> from lacuna import MaskData
+>>> from lacuna import SubjectData
 >>> from lacuna.analysis import RegionalDamage
 >>>
 >>> # Load lesion data
->>> lesion = MaskData.from_nifti("lesion.nii.gz")
+>>> lesion = SubjectData.from_nifti("lesion.nii.gz")
 >>>
 >>> # Compute regional damage
 >>> analysis = RegionalDamage(atlas_dir="/data/atlases")
@@ -29,7 +29,7 @@ class RegionalDamage(ParcelAggregation):
     Compute lesion overlap with atlas regions.
 
     This is a convenience wrapper around ParcelAggregation that:
-    - Sets source="mask_img" (analyze the lesion mask)
+    - Sets source="maskimg" (analyze the lesion mask)
     - Sets aggregation="percent" (compute overlap percentages)
 
     This provides a simpler interface for the common use case of computing
@@ -67,10 +67,10 @@ class RegionalDamage(ParcelAggregation):
     Examples
     --------
     >>> # Use all registered atlases
-    >>> from lacuna import MaskData
+    >>> from lacuna import SubjectData
     >>> from lacuna.analysis import RegionalDamage
     >>>
-    >>> lesion = MaskData.from_nifti("lesion.nii.gz")
+    >>> lesion = SubjectData.from_nifti("lesion.nii.gz")
     >>> analysis = RegionalDamage()  # Uses all registered atlases
     >>> result = analysis.run(lesion)
     >>>
@@ -104,7 +104,7 @@ class RegionalDamage(ParcelAggregation):
         Initialize RegionalDamage analysis.
 
         This is equivalent to:
-        ParcelAggregation(source="mask_img",
+        ParcelAggregation(source="maskimg",
                         aggregation="percent", threshold=threshold,
                         parcel_names=parcel_names,
                         log_level=log_level)
@@ -119,7 +119,7 @@ class RegionalDamage(ParcelAggregation):
             Logging verbosity level (0=silent, 1=normal, 2=verbose)
         """
         super().__init__(
-            source="mask_img",
+            source="maskimg",
             aggregation="percent",
             threshold=threshold,
             parcel_names=parcel_names,
@@ -134,7 +134,7 @@ class RegionalDamage(ParcelAggregation):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data to validate
 
         Raises

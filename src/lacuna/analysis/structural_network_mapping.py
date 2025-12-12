@@ -28,7 +28,7 @@ from lacuna.core.data_types import (
     Tractogram,
     VoxelMap,
 )
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 from lacuna.utils.cache import get_tdi_cache_dir
 from lacuna.utils.logging import ConsoleLogger
 from lacuna.utils.mrtrix import (
@@ -111,7 +111,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     --------
     **Register and use structural connectome:**
 
-    >>> from lacuna import MaskData
+    >>> from lacuna import SubjectData
     >>> from lacuna.analysis import StructuralNetworkMapping
     >>> from lacuna.assets.connectomes import (
     ...     list_structural_connectomes,
@@ -133,7 +133,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     >>> list_structural_connectomes()
     >>>
     >>> # Load lesion data
-    >>> lesion = MaskData.from_nifti("lesion.nii.gz")
+    >>> lesion = SubjectData.from_nifti("lesion.nii.gz")
     >>>
     >>> # Interactive analysis (results loaded into memory)
     >>> analysis = StructuralNetworkMapping(
@@ -225,7 +225,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         return_in_lesion_space : bool, default=False
             If True, transform VoxelMap outputs back to the input lesion space.
             If False, outputs remain in the connectome space.
-            Requires input MaskData to have valid space/resolution metadata.
+            Requires input SubjectData to have valid space/resolution metadata.
 
         Raises
         ------
@@ -343,19 +343,19 @@ class StructuralNetworkMapping(BaseAnalysis):
         self._compute_tdi_to_path(cache_path)
         logger.info(f"Cached TDI to: {cache_path}")
 
-    def run(self, mask_data: MaskData) -> MaskData:
+    def run(self, mask_data: SubjectData) -> SubjectData:
         """Run structural network mapping analysis.
 
         Automatically transforms lesion to tractogram space if needed.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data to analyze (can be in any MNI152 space)
 
         Returns
         -------
-        MaskData
+        SubjectData
             Analysis results
 
         Raises
@@ -376,13 +376,13 @@ class StructuralNetworkMapping(BaseAnalysis):
         # The base class will handle space equivalence and transformations
         return super().run(mask_data)
 
-    def _validate_inputs(self, mask_data: MaskData) -> None:
+    def _validate_inputs(self, mask_data: SubjectData) -> None:
         """
         Validate that lesion data meets requirements for structural network mapping.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data to validate
 
         Raises
@@ -539,13 +539,13 @@ class StructuralNetworkMapping(BaseAnalysis):
                 f"Use thresholding or binarization to convert continuous maps."
             )
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "AnalysisResult"]:
+    def _run_analysis(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
         """
         Execute structural network mapping analysis.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Input lesion data
 
         Returns
@@ -568,7 +568,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Get subject ID for informative output
         subject_id = mask_data.metadata.get("subject_id", "unknown")
 
-        # Subject header
+        # SubjectData header
         self.logger.section(f"PROCESSING: {subject_id}")
 
         # Create temporary directory for intermediate files
@@ -668,7 +668,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # MiscResult for summary statistics
             summary_result = ScalarMetric(
-                name="summary_statistics",
+                name="summarystatistics",
                 data={
                     "mean_disconnection": mean_disconnection,
                     "lesion_streamline_count": lesion_streamline_count,
@@ -677,7 +677,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "tractogram": str(self.tractogram_path),
                 },
             )
-            results["summary_statistics"] = summary_result
+            results["summarystatistics"] = summary_result
 
             # Add intermediate results if keep_intermediate=True
             if self.keep_intermediate:
@@ -742,7 +742,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
     def _compute_connectivity_matrices(
         self,
-        mask_data: MaskData,
+        mask_data: SubjectData,
         lesion_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
@@ -751,14 +751,14 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data with mask image
         lesion_tck_path : Path
             Path to lesion-filtered tractogram
         temp_dir_path : Path
             Temporary directory for intermediate files
         subject_id : str
-            Subject identifier for file naming
+            SubjectData identifier for file naming
 
         Returns
         -------
@@ -1043,14 +1043,14 @@ class StructuralNetworkMapping(BaseAnalysis):
             "log_level": self.log_level,
         }
 
-    def _transform_results_to_lesion_space(self, results: dict, mask_data: MaskData) -> dict:
+    def _transform_results_to_lesion_space(self, results: dict, mask_data: SubjectData) -> dict:
         """Transform VoxelMap results back to lesion space.
 
         Parameters
         ----------
         results : dict
             Dictionary of result objects
-        mask_data : MaskData
+        mask_data : SubjectData
             Input mask data with space/resolution metadata
 
         Returns

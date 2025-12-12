@@ -8,8 +8,8 @@ analysis extensibility.
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, final
 
-from lacuna.core.mask_data import MaskData
 from lacuna.core.provenance import create_provenance_record
+from lacuna.core.subject_data import SubjectData
 
 if TYPE_CHECKING:
     from lacuna.core.data_types import DataContainer
@@ -168,30 +168,30 @@ class BaseAnalysis(ABC):
         return "\n".join(lines)
 
     @final
-    def run(self, mask_data: MaskData) -> MaskData:
+    def run(self, mask_data: SubjectData) -> SubjectData:
         """
-        Execute the analysis on a MaskData object.
+        Execute the analysis on a SubjectData object.
 
         This is the ONLY public method users should call. It orchestrates
         the complete analysis workflow:
         1. Validate inputs via _validate_inputs()
         2. Run analysis via _run_analysis()
         3. Namespace results under the analysis class name
-        4. Create new MaskData with updated results
+        4. Create new SubjectData with updated results
         5. Record provenance
-        6. Return new MaskData instance
+        6. Return new SubjectData instance
 
-        The input MaskData is never modified (immutability principle).
+        The input SubjectData is never modified (immutability principle).
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Input data containing lesion mask, metadata, and any prior results.
 
         Returns
         -------
-        MaskData
-            A NEW MaskData instance with analysis results added to the
+        SubjectData
+            A NEW SubjectData instance with analysis results added to the
             .results dictionary under a namespace key (the analysis class name).
 
         Raises
@@ -240,9 +240,9 @@ class BaseAnalysis(ABC):
         updated_results = mask_data.results.copy()
         updated_results[namespace_key] = results_dict
 
-        # Step 4: Create new MaskData with updated results
+        # Step 4: Create new SubjectData with updated results
         # Create a new instance with updated results (manual approach for namespace overwriting)
-        result_mask_data = MaskData(
+        result_mask_data = SubjectData(
             mask_img=mask_data.mask_img,
             space=mask_data.space,
             resolution=mask_data.resolution,
@@ -262,13 +262,13 @@ class BaseAnalysis(ABC):
         return result_mask_data
 
     @abstractmethod
-    def _validate_inputs(self, mask_data: MaskData) -> None:
+    def _validate_inputs(self, mask_data: SubjectData) -> None:
         """
         Validate that mask_data meets the requirements for this analysis.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Input data to validate.
 
         Raises
@@ -289,7 +289,7 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> def _validate_inputs(self, mask_data: MaskData) -> None:
+        >>> def _validate_inputs(self, mask_data: SubjectData) -> None:
         ...     if mask_data.get_coordinate_space() != "MNI152_2mm":
         ...         raise ValueError(
         ...             "LesionNetworkMapping requires data in MNI152 space. "
@@ -303,13 +303,13 @@ class BaseAnalysis(ABC):
         pass
 
     @abstractmethod
-    def _run_analysis(self, mask_data: MaskData) -> list["DataContainer"]:
+    def _run_analysis(self, mask_data: SubjectData) -> list["DataContainer"]:
         """
         Perform the core analysis computation.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Validated input data.
 
         Returns
@@ -329,7 +329,7 @@ class BaseAnalysis(ABC):
         It is called automatically by run() after validation succeeds.
 
         The returned list will be automatically namespaced under
-        self.__class__.__name__ in the output MaskData.results attribute.
+        self.__class__.__name__ in the output SubjectData.results attribute.
 
         Do NOT modify the input mask_data object. Extract what you need,
         perform computations, and return results as a list of DataContainer objects.
@@ -337,13 +337,13 @@ class BaseAnalysis(ABC):
         Examples
         --------
         >>> from lacuna.core.data_types import VoxelMap, ScalarMetric
-        >>> def _run_analysis(self, mask_data: MaskData) -> list[DataContainer]:
+        >>> def _run_analysis(self, mask_data: SubjectData) -> list[DataContainer]:
         ...     lesion_array = mask_data.mask_img.get_fdata()
         ...
         ...     # Create voxel map result
         ...     correlation_img = self._compute_correlation_map(lesion_array)
         ...     voxel_result = VoxelMap(
-        ...         name="correlation_map",
+        ...         name="correlationmap",
         ...         data=correlation_img,
         ...         output_space=self.computation_space,
         ...         lesion_space=mask_data.coordinate_space
@@ -351,7 +351,7 @@ class BaseAnalysis(ABC):
         ...
         ...     # Create summary statistics result
         ...     summary_result = ScalarMetric(
-        ...         name="summary_statistics",
+        ...         name="summarystatistics",
         ...         data={"mean": float(np.mean(lesion_array))}
         ...     )
         ...
@@ -388,7 +388,7 @@ class BaseAnalysis(ABC):
         """
         return {"log_level": self.log_level}
 
-    def _ensure_target_space(self, mask_data: MaskData) -> MaskData:
+    def _ensure_target_space(self, mask_data: SubjectData) -> SubjectData:
         """
         Automatically transform lesion data to TARGET_SPACE if defined.
 
@@ -403,12 +403,12 @@ class BaseAnalysis(ABC):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Input lesion data
 
         Returns
         -------
-        MaskData
+        SubjectData
             Transformed lesion data (or original if no transformation needed)
         """
         # Check if this analysis defines a target space
@@ -499,10 +499,10 @@ class BaseAnalysis(ABC):
 
     def _validate_and_transform_space(
         self,
-        mask_data: MaskData,
+        mask_data: SubjectData,
         required_space: str,
         required_resolution: float | None = None,
-    ) -> MaskData:
+    ) -> SubjectData:
         """Validate coordinate space and auto-transform if needed.
 
         This helper method provides a standard pattern for analysis modules
@@ -511,7 +511,7 @@ class BaseAnalysis(ABC):
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Input lesion data
         required_space : str
             Required coordinate space identifier (e.g., 'MNI152NLin2009cAsym')
@@ -520,7 +520,7 @@ class BaseAnalysis(ABC):
 
         Returns
         -------
-        MaskData
+        SubjectData
             Original data (if already in required space) or transformed data
 
         Raises
@@ -530,7 +530,7 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> def _validate_inputs(self, mask_data: MaskData) -> None:
+        >>> def _validate_inputs(self, mask_data: SubjectData) -> None:
         ...     # Ensure data is in MNI152NLin2009cAsym space at 2mm
         ...     mask_data = self._validate_and_transform_space(
         ...         mask_data,

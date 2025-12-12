@@ -7,13 +7,13 @@ from lesion masks, connectivity maps, or any other spatial maps.
 
 Examples
 --------
->>> from lacuna import MaskData
+>>> from lacuna import SubjectData
 >>> from lacuna.analysis import ParcelAggregation
 >>>
 >>> # Use bundled atlases
->>> lesion = MaskData.from_nifti("lesion.nii.gz")
+>>> lesion = SubjectData.from_nifti("lesion.nii.gz")
 >>> analysis = ParcelAggregation(
-...     source="mask_img",
+...     source="maskimg",
 ...     aggregation="percent"
 ... )
 >>> result = analysis.run(lesion)
@@ -22,7 +22,7 @@ Examples
 >>> # Use custom atlas directory
 >>> analysis = ParcelAggregation(
 ...     atlas_dir="/data/atlases",
-...     source="mask_img",
+...     source="maskimg",
 ...     aggregation="percent"
 ... )
 >>> result = analysis.run(lesion)
@@ -52,7 +52,7 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.core.data_types import ParcelData
 from lacuna.core.keys import build_result_key
-from lacuna.core.mask_data import MaskData
+from lacuna.core.subject_data import SubjectData
 
 if TYPE_CHECKING:
     from lacuna.core.data_types import DataContainer, VoxelMap
@@ -98,23 +98,23 @@ class ParcelAggregation(BaseAnalysis):
 
     Parameters
     ----------
-    source : str or list[str] or dict[str, str | list[str]], default="mask_img"
+    source : str or list[str] or dict[str, str | list[str]], default="maskimg"
         Source of data to aggregate. Accepts multiple formats:
 
         **String format:**
-        - "mask_img": Use the lesion mask directly
+        - "maskimg": Use the lesion mask directly
         - "{AnalysisName}.{result_key}": Use result from previous analysis
           Example: "FunctionalNetworkMapping.correlation_map"
 
         **List format:**
         - List of strings in the above formats for multi-source aggregation
-          Example: ["MaskData.mask_img", "FunctionalNetworkMapping.correlation_map"]
+          Example: ["SubjectData.mask_img", "FunctionalNetworkMapping.correlation_map"]
 
         **Dict format (recommended for multi-source):**
         - Mapping of analysis namespace to result key(s)
-          Example: {"FunctionalNetworkMapping": "correlation_map"}
-          Example: {"FunctionalNetworkMapping": ["correlation_map", "z_map"]}
-          Example: {"MaskData": "mask_img", "FunctionalNetworkMapping": ["correlation_map", "z_map"]}
+          Example: {"FunctionalNetworkMapping": "correlationmap"}
+          Example: {"FunctionalNetworkMapping": ["correlationmap", "zmap"]}
+          Example: {"SubjectData": "maskimg", "FunctionalNetworkMapping": ["correlationmap", "zmap"]}
 
     aggregation : str, default="mean"
         Aggregation method to use. Options:
@@ -153,20 +153,20 @@ class ParcelAggregation(BaseAnalysis):
     - For 3D atlases: regions defined by integer labels (automatically rounded)
     - For 4D atlases: each volume is a binary or probability map for one region
     - 4D probabilistic maps are thresholded at `threshold` parameter (default 0.5)
-    - Results stored in MaskData.results["ParcelAggregation"] as dict
+    - Results stored in SubjectData.results["ParcelAggregation"] as dict
       mapping parcellation_name_region_name -> aggregated_value
 
     Examples
     --------
     >>> # Use all bundled/registered atlases
     >>> analysis = ParcelAggregation(
-    ...     source="mask_img",
+    ...     source="maskimg",
     ...     aggregation="percent"
     ... )
     >>>
     >>> # Use specific registered atlases
     >>> analysis = ParcelAggregation(
-    ...     source="mask_img",
+    ...     source="maskimg",
     ...     aggregation="percent",
     ...     parcel_names=["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
     ... )
@@ -175,7 +175,7 @@ class ParcelAggregation(BaseAnalysis):
     >>> from lacuna.assets.parcellations import register_parcellations_from_directory
     >>> register_parcellationes_from_directory("/data/my_atlases")
     >>> analysis = ParcelAggregation(
-    ...     source="mask_img",
+    ...     source="maskimg",
     ...     aggregation="percent"
     ... )
     >>>
@@ -195,11 +195,11 @@ class ParcelAggregation(BaseAnalysis):
     batch_strategy: str = "parallel"
 
     VALID_AGGREGATIONS = ["mean", "sum", "percent", "volume", "median", "std"]
-    VALID_SOURCES = ["mask_img"]
+    VALID_SOURCES = ["maskimg"]
 
     def __init__(
         self,
-        source: str | list[str] | dict[str, str | list[str]] = "mask_img",
+        source: str | list[str] | dict[str, str | list[str]] = "maskimg",
         aggregation: str = "mean",
         threshold: float = 0.5,
         parcel_names: list[str] | None = None,
@@ -261,11 +261,11 @@ class ParcelAggregation(BaseAnalysis):
         ----------
         source : str or list[str] or dict[str, str | list[str]]
             Source specification in one of these formats:
-            - str: Single source like "mask_img" or "FunctionalNetworkMapping.correlation_map"
+            - str: Single source like "maskimg" or "FunctionalNetworkMapping.correlation_map"
             - list[str]: Multiple sources as strings
             - dict: Mapping of namespace to key(s), e.g.,
-              {"FunctionalNetworkMapping": "correlation_map"} or
-              {"FunctionalNetworkMapping": ["correlation_map", "z_map"]}
+              {"FunctionalNetworkMapping": "correlationmap"} or
+              {"FunctionalNetworkMapping": ["correlationmap", "zmap"]}
 
         Returns
         -------
@@ -281,11 +281,11 @@ class ParcelAggregation(BaseAnalysis):
 
         Examples
         --------
-        >>> agg._normalize_sources("mask_img")
+        >>> agg._normalize_sources("maskimg")
         ['mask_img']
-        >>> agg._normalize_sources({"FunctionalNetworkMapping": "correlation_map"})
+        >>> agg._normalize_sources({"FunctionalNetworkMapping": "correlationmap"})
         ['FunctionalNetworkMapping.correlation_map']
-        >>> agg._normalize_sources({"FunctionalNetworkMapping": ["correlation_map", "z_map"]})
+        >>> agg._normalize_sources({"FunctionalNetworkMapping": ["correlationmap", "zmap"]})
         ['FunctionalNetworkMapping.correlation_map', 'FunctionalNetworkMapping.z_map']
         """
         if isinstance(source, str):
@@ -298,10 +298,10 @@ class ParcelAggregation(BaseAnalysis):
                 if not isinstance(namespace, str):
                     raise TypeError(f"Source namespace must be str, got {type(namespace).__name__}")
                 if isinstance(keys, str):
-                    # Single key: {"FunctionalNetworkMapping": "correlation_map"}
+                    # Single key: {"FunctionalNetworkMapping": "correlationmap"}
                     sources.append(f"{namespace}.{keys}")
                 elif isinstance(keys, list):
-                    # Multiple keys: {"FunctionalNetworkMapping": ["correlation_map", "z_map"]}
+                    # Multiple keys: {"FunctionalNetworkMapping": ["correlationmap", "zmap"]}
                     if not keys:
                         raise ValueError(f"Source keys for '{namespace}' cannot be empty")
                     for key in keys:
@@ -323,29 +323,29 @@ class ParcelAggregation(BaseAnalysis):
             raise TypeError(f"source must be str, list[str], or dict, got {type(source).__name__}")
 
     def run(
-        self, data: "MaskData | nib.Nifti1Image | list[nib.Nifti1Image]"
-    ) -> "MaskData | ParcelData | list[ParcelData]":
+        self, data: "SubjectData | nib.Nifti1Image | list[nib.Nifti1Image]"
+    ) -> "SubjectData | ParcelData | list[ParcelData]":
         """
         Execute atlas aggregation analysis on various input types.
 
         Supports flexible input types with matching return types:
-        - MaskData -> MaskData (with results attached)
+        - SubjectData -> SubjectData (with results attached)
         - nibabel.Nifti1Image -> ParcelData
         - list[nibabel.Nifti1Image] -> list[ParcelData]
 
         Parameters
         ----------
-        data : MaskData or nibabel.Nifti1Image or list[nibabel.Nifti1Image]
+        data : SubjectData or nibabel.Nifti1Image or list[nibabel.Nifti1Image]
             Input data to aggregate:
-            - MaskData: Standard workflow, returns MaskData with results
+            - SubjectData: Standard workflow, returns SubjectData with results
             - nibabel.Nifti1Image: Single image, returns ParcelData
             - list[nibabel.Nifti1Image]: Batch processing, returns list of results
 
         Returns
         -------
-        MaskData or ParcelData or list[ParcelData]
+        SubjectData or ParcelData or list[ParcelData]
             Results matching input type:
-            - MaskData input: New MaskData instance with results in .results dict
+            - SubjectData input: New SubjectData instance with results in .results dict
             - nibabel input: Single ParcelData
             - list input: List of ParcelData objects (one per input image)
 
@@ -359,15 +359,15 @@ class ParcelAggregation(BaseAnalysis):
         Notes
         -----
         This method overrides BaseAnalysis.run() to support flexible input types.
-        The base class run() is designed for MaskData only.
+        The base class run() is designed for SubjectData only.
 
         Examples
         --------
-        >>> # MaskData input
-        >>> mask_data = MaskData(mask_img, metadata={'space': 'MNI152NLin6Asym', 'resolution': 2})
+        >>> # SubjectData input
+        >>> mask_data = SubjectData(mask_img, metadata={'space': 'MNI152NLin6Asym', 'resolution': 2})
         >>> analysis = ParcelAggregation(aggregation='percent')
         >>> result = analysis.run(mask_data)
-        >>> isinstance(result, MaskData)
+        >>> isinstance(data, SubjectData)
         True
 
         >>> # Nibabel image input
@@ -386,12 +386,12 @@ class ParcelAggregation(BaseAnalysis):
         from lacuna.core.data_types import VoxelMap
 
         # Detect input type and delegate to appropriate handler
-        if isinstance(data, MaskData):
-            # Standard MaskData workflow - use base class run()
+        if isinstance(data, SubjectData):
+            # Standard SubjectData workflow - use base class run()
             return super().run(data)
 
         elif isinstance(data, VoxelMap):
-            # VoxelMap - run directly without MaskData wrapper
+            # VoxelMap - run directly without SubjectData wrapper
             return self._run_voxelmap(data)
 
         elif isinstance(data, nib.Nifti1Image):
@@ -420,7 +420,7 @@ class ParcelAggregation(BaseAnalysis):
         else:
             raise TypeError(
                 f"Unsupported input type: {type(data).__name__}\n"
-                "Supported types: MaskData, VoxelMap, nibabel.Nifti1Image, "
+                "Supported types: SubjectData, VoxelMap, nibabel.Nifti1Image, "
                 "list[VoxelMap], list[nibabel.Nifti1Image]"
             )
 
@@ -438,10 +438,10 @@ class ParcelAggregation(BaseAnalysis):
         ParcelData
             Aggregation result
         """
-        # Create temporary MaskData wrapper to use existing infrastructure
+        # Create temporary SubjectData wrapper to use existing infrastructure
         # Extract space and resolution from image if available in header
         # Default to MNI152NLin6Asym@2mm if not specified
-        mask_data = MaskData(
+        mask_data = SubjectData(
             mask_img=img,
             metadata={
                 "space": "MNI152NLin6Asym",  # TODO: Infer from image header if possible
@@ -493,7 +493,7 @@ class ParcelAggregation(BaseAnalysis):
         """
         Run aggregation on a VoxelMap directly.
 
-        This bypasses MaskData validation since VoxelMaps can contain
+        This bypasses SubjectData validation since VoxelMaps can contain
         continuous values (e.g., correlation maps, z-scores).
 
         Parameters
@@ -580,13 +580,13 @@ class ParcelAggregation(BaseAnalysis):
             },
         )
 
-    def _validate_inputs(self, mask_data: MaskData) -> None:
+    def _validate_inputs(self, mask_data: SubjectData) -> None:
         """
         Validate lesion data and load atlases from registry.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data to validate
 
         Raises
@@ -595,7 +595,7 @@ class ParcelAggregation(BaseAnalysis):
             If lesion data is invalid or source data not found
         """
         # Build list of available sources
-        available = ["MaskData.mask_img"]
+        available = ["SubjectData.mask_img"]
         if mask_data.results:
             for analysis_name, analysis_results in mask_data.results.items():
                 for key in analysis_results.keys():
@@ -619,7 +619,7 @@ class ParcelAggregation(BaseAnalysis):
 
             error_msg = (
                 f"Source data not found: {missing_sources}\n"
-                "Check that the source exists in MaskData.\n"
+                "Check that the source exists in SubjectData.\n"
                 f"Available sources: {', '.join(available)}"
             )
             if suggestions:
@@ -806,13 +806,13 @@ class ParcelAggregation(BaseAnalysis):
             log_level=self.log_level,
         )
 
-    def _run_analysis(self, mask_data: MaskData) -> dict[str, "DataContainer"]:
+    def _run_analysis(self, mask_data: SubjectData) -> dict[str, "DataContainer"]:
         """
         Compute ROI-level aggregation for all atlases and sources.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Validated lesion data
 
         Returns
@@ -835,8 +835,8 @@ class ParcelAggregation(BaseAnalysis):
                 # Cross-analysis source: "AnalysisName.result_key"
                 source_class, source_key = source.split(".", 1)
             else:
-                # Direct source: "mask_img" -> from MaskData
-                source_class = "MaskData"
+                # Direct source: "maskimg" -> from SubjectData
+                source_class = "SubjectData"
                 source_key = source
 
             # Get source image for this source
@@ -912,7 +912,7 @@ class ParcelAggregation(BaseAnalysis):
 
                 # Build BIDS-style result key
                 result_key = build_result_key(
-                    parc=parcellation_name,
+                    atlas=parcellation_name,
                     source=source_class,
                     desc=source_key,
                 )
@@ -1193,34 +1193,34 @@ class ParcelAggregation(BaseAnalysis):
             raise ValueError(f"Unknown aggregation method: {self.aggregation}")
 
     def _get_source_image_for_source(
-        self, mask_data: MaskData, source: str
+        self, mask_data: SubjectData, source: str
     ) -> nib.Nifti1Image | None:
         """
-        Get source image from MaskData for a specific source string.
+        Get source image from SubjectData for a specific source string.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data containing source
         source : str
-            Source specification (e.g., "MaskData.mask_img", "FunctionalNetworkMapping.correlation_map")
+            Source specification (e.g., "SubjectData.mask_img", "FunctionalNetworkMapping.correlation_map")
 
         Returns
         -------
         nib.Nifti1Image or None
             Source image, or None if not found
         """
-        # Handle "MaskData.mask_img" or just "mask_img"
-        if source == "mask_img" or source == "MaskData.mask_img":
+        # Handle "SubjectData.mask_img" or just "maskimg"
+        if source == "maskimg" or source == "SubjectData.mask_img":
             return mask_data.mask_img
 
         # Result from previous analysis: "AnalysisName.result_key"
         if "." in source:
             analysis_name, result_key = source.split(".", 1)
 
-            # Handle MaskData prefix
-            if analysis_name == "MaskData":
-                if result_key == "mask_img":
+            # Handle SubjectData prefix
+            if analysis_name == "SubjectData":
+                if result_key == "maskimg":
                     return mask_data.mask_img
                 return None
 
@@ -1248,15 +1248,15 @@ class ParcelAggregation(BaseAnalysis):
 
         return None
 
-    def _get_source_image(self, mask_data: MaskData) -> nib.Nifti1Image | None:
+    def _get_source_image(self, mask_data: SubjectData) -> nib.Nifti1Image | None:
         """
-        Get source image from MaskData based on first source in sources list.
+        Get source image from SubjectData based on first source in sources list.
 
         This is a compatibility method for single-source usage.
 
         Parameters
         ----------
-        mask_data : MaskData
+        mask_data : SubjectData
             Lesion data containing source
 
         Returns
