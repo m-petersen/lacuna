@@ -206,7 +206,7 @@ class SubjectData:
                 f"Invalid space '{self._space}'. "
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
                 "Note: 'native' space is not supported. Use the actual template space instead.\n"
-                "Example: SubjectDataData(img, space='MNI152NLin6Asym', resolution=2)"
+                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
             )
             if hint:
                 msg = f"{msg}\n{hint}"
@@ -222,7 +222,7 @@ class SubjectData:
                 "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
                 "This is required for spatial validation and template matching.\n"
                 "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
-                "Example: SubjectDataData(img, space='MNI152NLin6Asym', resolution=2)"
+                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         self._metadata = metadata.copy()
@@ -242,20 +242,20 @@ class SubjectData:
 
     @staticmethod
     def _normalize_results_format(results: dict[str, Any]) -> dict[str, dict[str, Any]]:
-        """Convert old results format to new nested dict format.
+        """Convert results format to nested dict format.
 
-        Old format: dict[str, list] or dict[str, Any] with non-dict values
-        New format: dict[str, dict[str, Any]]
+        Results format: dict[str, list] or dict[str, Any] with non-dict values
+        Nested dict format: dict[str, dict[str, Any]]
 
         Parameters
         ----------
         results : dict
-            Results in old or new format
+            Results in non-dict values format
 
         Returns
         -------
         dict[str, dict[str, Any]]
-            Results in new nested dict format
+            Results in nested dict format
         """
         normalized = {}
         for namespace, value in results.items():
