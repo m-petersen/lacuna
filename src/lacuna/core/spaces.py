@@ -180,7 +180,7 @@ def validate_space_and_resolution(
 
 # Reference affine matrices for each space/resolution pair
 # These are the canonical transformations from voxel to world coordinates
-# Values verified from actual template files in src/lacuna/data/templates/
+# Values verified from actual template files
 REFERENCE_AFFINES = {
     ("MNI152NLin6Asym", 2): np.array(
         [
