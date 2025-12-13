@@ -556,7 +556,7 @@ class SubjectData:
         Parameters
         ----------
         namespace : str
-            Result namespace (e.g., 'LesionNetworkMapping', 'ParcelAggregation').
+            Result namespace (e.g., 'FunctionalNetworkMapping', 'ParcelAggregation').
             Should match the analysis module name for clarity.
         results : dict[str, Any]
             Analysis results as a dict mapping result names to result objects.
