@@ -193,7 +193,7 @@ class SubjectData:
                 "Coordinate space must be specified via 'space' parameter.\n"
                 "This is required for spatial validation in analysis modules.\n"
                 f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
-                "Example: SubjectDataData(img, space='MNI152NLin6Asym', resolution=2)"
+                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
             )
 
         # Validate space is in supported list
