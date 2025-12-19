@@ -35,6 +35,8 @@ def load_bids_dataset(
     pattern: str = "*",
     suffix: str = "_mask.nii.gz",
     recursive: bool = True,
+    space: str | None = None,
+    resolution: float | None = None,
 ) -> dict[str, SubjectData]:
     """
     Load mask files from a BIDS dataset using pattern matching.
@@ -62,6 +64,14 @@ def load_bids_dataset(
         - ".nii.gz" : Any NIfTI file
     recursive : bool, default=True
         If True, search recursively in subdirectories.
+    space : str or None, default=None
+        Coordinate space for loaded masks. If None, attempts to detect from
+        filename (_space-XXX) or sidecar JSON. If detection fails and space
+        is not provided, a warning is emitted and the file is skipped.
+        Supported spaces: MNI152NLin6Asym, MNI152NLin2009aAsym, MNI152NLin2009cAsym
+    resolution : float or None, default=None
+        Voxel resolution in mm. If None, attempts to detect from filename
+        (_res-X) or sidecar JSON.
 
     Returns
     -------
@@ -108,6 +118,15 @@ def load_bids_dataset(
     >>> dataset = load_bids_dataset(
     ...     '/data/METAVCI_PSCI_BIDS',
     ...     pattern="*WMH*"
+    ... )
+
+    Load masks with explicit space (when not in filename):
+
+    >>> dataset = load_bids_dataset(
+    ...     '/data/METAVCI_PSCI_BIDS',
+    ...     pattern="*CAS005*",
+    ...     space="MNI152NLin6Asym",
+    ...     resolution=2.0
     ... )
     """
     bids_root = Path(bids_root)
@@ -172,12 +191,18 @@ def load_bids_dataset(
         # Parse sidecar JSON if available
         sidecar_data = _parse_sidecar(filepath)
 
-        # Get space from sidecar JSON, or fallback to filename entity
-        space = sidecar_data.get("Space") or sidecar_data.get("space") or metadata.get("space")
+        # Get space: function parameter > sidecar JSON > filename entity
+        file_space = (
+            space  # Function parameter takes precedence
+            or sidecar_data.get("Space")
+            or sidecar_data.get("space")
+            or metadata.get("space")
+        )
 
-        # Get resolution from sidecar JSON, or fallback to filename entity
-        resolution = _parse_resolution(
-            sidecar_data.get("Resolution")
+        # Get resolution: function parameter > sidecar JSON > filename entity
+        file_resolution = _parse_resolution(
+            resolution  # Function parameter takes precedence
+            or sidecar_data.get("Resolution")
             or sidecar_data.get("resolution")
             or metadata.get("resolution")
         )
@@ -186,8 +211,8 @@ def load_bids_dataset(
             mask_data = SubjectData.from_nifti(
                 lesion_path=filepath,
                 metadata=metadata,
-                space=space,
-                resolution=resolution,
+                space=file_space,
+                resolution=file_resolution,
             )
             mask_data_dict[key] = mask_data
         except Exception as e:
