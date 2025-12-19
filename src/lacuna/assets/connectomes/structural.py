@@ -46,7 +46,6 @@ class StructuralConnectome:
 def register_structural_connectome(
     name: str,
     space: str,
-    resolution: float,
     tractogram_path: str | Path,
     tdi_path: str | Path | None = None,
     template_path: str | Path | None = None,
@@ -58,14 +57,17 @@ def register_structural_connectome(
     TDI computation is now done on-demand during analysis, so tdi_path is optional.
     If not provided, TDI will be computed automatically when needed.
 
+    Note: Unlike functional connectomes, structural connectomes (tractograms) don't
+    have an inherent voxel resolution - they exist in continuous 3D space. The output
+    resolution is controlled by the `output_resolution` parameter in
+    StructuralNetworkMapping analysis.
+
     Parameters
     ----------
     name : str
         Unique identifier (e.g., "dTOR985")
     space : str
         Coordinate space (e.g., "MNI152NLin2009bAsym")
-    resolution : float
-        Resolution in mm (typically 1.0 or 2.0)
     tractogram_path : str or Path
         Path to .tck whole-brain streamlines file
     tdi_path : str or Path, optional
@@ -89,21 +91,10 @@ def register_structural_connectome(
     --------
     >>> from lacuna.assets.connectomes import register_structural_connectome
     >>>
-    >>> # With TDI path (pre-computed)
+    >>> # Register tractogram (TDI computed on-demand at specified output_resolution)
     >>> register_structural_connectome(
     ...     name="dTOR985",
     ...     space="MNI152NLin2009cAsym",
-    ...     resolution=1.0,
-    ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
-    ...     tdi_path="/data/dtor/dTOR985_tdi_1mm.nii.gz",
-    ...     description="dTOR 985 tractogram (985 subjects, 1mm)"
-    ... )
-    >>>
-    >>> # Without TDI path (compute on-demand)
-    >>> register_structural_connectome(
-    ...     name="dTOR985",
-    ...     space="MNI152NLin2009cAsym",
-    ...     resolution=2.0,
     ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
     ...     description="dTOR tractogram (TDI computed on-demand)"
     ... )
@@ -132,10 +123,12 @@ def register_structural_connectome(
         raise ValueError(f"Expected .nii/.nii.gz file, got: {tdi_path.suffix}")
 
     # Create metadata
+    # Note: resolution=0.0 as placeholder since tractograms don't have inherent voxel
+    # resolution. Output resolution is controlled by StructuralNetworkMapping.output_resolution
     metadata = StructuralConnectomeMetadata(
         name=name,
         space=space,
-        resolution=resolution,
+        resolution=0.0,  # Tractograms don't have inherent voxel resolution
         description=description or f"Structural connectome: {name}",
         n_subjects=n_subjects or 0,
         tractogram_path=tractogram_path,

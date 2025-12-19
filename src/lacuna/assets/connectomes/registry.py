@@ -20,6 +20,10 @@ class StructuralConnectomeMetadata(SpatialAssetMetadata):
     - Tractogram file (.tck format from MRtrix3)
     - Whole-brain track density image (TDI) as reference connectivity
 
+    Note: Unlike functional connectomes, structural connectomes (tractograms)
+    don't have an inherent voxel resolution - they exist in continuous 3D space.
+    The output resolution is controlled by the StructuralNetworkMapping analysis.
+
     Attributes
     ----------
     name : str
@@ -27,7 +31,7 @@ class StructuralConnectomeMetadata(SpatialAssetMetadata):
     space : str
         Coordinate space (typically "MNI152NLin2009bAsym")
     resolution : float
-        Resolution in mm (typically 1.0 for high-res tractography)
+        Resolution in mm (placeholder value, not used for tractograms)
     description : str
         Human-readable description
     n_subjects : int
@@ -47,6 +51,20 @@ class StructuralConnectomeMetadata(SpatialAssetMetadata):
     tractogram_path: Path | None = None
     tdi_path: Path | None = None
     template_path: Path | None = None
+
+    def validate(self) -> None:
+        """Validate space only (tractograms don't have inherent resolution).
+
+        Raises
+        ------
+        ValueError
+            If space is invalid
+        """
+        from lacuna.core.spaces import SPACE_ALIASES, SUPPORTED_SPACES
+
+        # Check if space is supported (either directly or as alias)
+        if self.space not in SUPPORTED_SPACES and self.space not in SPACE_ALIASES:
+            raise ValueError(f"Unsupported space: {self.space}. Supported: {SUPPORTED_SPACES}")
 
 
 @dataclass(frozen=True)

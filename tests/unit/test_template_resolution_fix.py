@@ -44,7 +44,6 @@ def test_template_resolved_before_tdi_computation(tmp_path):
         register_structural_connectome(
             name="test_template_fix",
             space="MNI152NLin2009cAsym",
-            resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=100,
@@ -153,7 +152,6 @@ def test_cache_directory_uses_unified_location():
         register_structural_connectome(
             name="test_cache_location",
             space="MNI152NLin2009cAsym",
-            resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=100,

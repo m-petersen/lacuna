@@ -254,7 +254,6 @@ class TestStructuralNetworkMappingRepr:
             register_structural_connectome(
                 name="test_struct_repr",
                 space="MNI152NLin2009cAsym",
-                resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
@@ -286,7 +285,6 @@ class TestStructuralNetworkMappingRepr:
             register_structural_connectome(
                 name="test_struct_atlas",
                 space="MNI152NLin2009cAsym",
-                resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
@@ -296,14 +294,14 @@ class TestStructuralNetworkMappingRepr:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_struct_atlas",
                 parcellation_name="schaefer100",
-                compute_lesioned=True,
+                compute_lesioned_matrix=True,
                 check_dependencies=False,
             )
 
             repr_str = repr(analysis)
 
             assert "parcellation_name='schaefer100'" in repr_str
-            assert "compute_lesioned=True" in repr_str
+            assert "compute_lesioned_matrix=True" in repr_str
         finally:
             unregister_structural_connectome("test_struct_atlas")
             tractogram_path.unlink(missing_ok=True)
@@ -320,7 +318,6 @@ class TestStructuralNetworkMappingRepr:
             register_structural_connectome(
                 name="test_struct_str",
                 space="MNI152NLin2009cAsym",
-                resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
@@ -463,7 +460,6 @@ class TestReprConsistency:
             register_structural_connectome(
                 name="test_all_repr_struct",
                 space="MNI152NLin2009cAsym",
-                resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,
@@ -529,7 +525,6 @@ class TestReprConsistency:
             register_structural_connectome(
                 name="test_all_str_struct",
                 space="MNI152NLin2009cAsym",
-                resolution=2.0,
                 tractogram_path=tractogram_path,
                 tdi_path=tdi_path,
                 n_subjects=1000,

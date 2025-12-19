@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from lacuna.core.data_types import ParcelData
 from lacuna.core.subject_data import SubjectData
 
 if TYPE_CHECKING:
@@ -155,7 +156,7 @@ class Pipeline:
         n_jobs: int = -1,
         show_progress: bool = True,
         parallel: bool = True,
-    ) -> list[SubjectData]:
+    ) -> list[SubjectData | ParcelData]:
         """
         Run the pipeline on multiple subjects.
 
@@ -172,12 +173,12 @@ class Pipeline:
 
         Returns
         -------
-        list of SubjectData
+        list of SubjectData or ParcelData
             Processed data for each subject
         """
         if not parallel or n_jobs == 1:
             # Sequential processing
-            results = []
+            results: list[SubjectData | ParcelData] = []
             iterator = data_list
             if show_progress:
                 from tqdm import tqdm
@@ -189,20 +190,20 @@ class Pipeline:
             return results
 
         # Parallel processing - run each step as a batch
-        results = data_list
+        step_results: list[SubjectData | ParcelData] = list(data_list)
 
         for step in self._steps:
             # Use batch_process for this step
             from lacuna.batch.api import batch_process
 
-            results = batch_process(
-                inputs=results,
+            step_results = batch_process(
+                inputs=step_results,  # type: ignore[arg-type]
                 analysis=step.analysis,
                 n_jobs=n_jobs,
                 show_progress=show_progress,
             )
 
-        return results
+        return step_results
 
     def describe(self) -> str:
         """
@@ -255,95 +256,186 @@ class Pipeline:
 def analyze(
     data: SubjectData | list[SubjectData],
     *,
-    functional_connectome: str | None = None,
-    structural_connectome: str | None = None,
+    steps: dict[str, dict | None],
+    n_jobs: int = 1,
+    show_progress: bool = True,
     log_level: int = 1,
 ) -> SubjectData | list[SubjectData]:
     """
-    Convenience function for common analysis workflows.
+    Run an analysis pipeline defined by a steps dictionary.
 
-    This is a simple entry point that runs the standard lesion analysis
-    pipeline. By default, it runs RegionalDamage (parcel-based lesion
-    quantification). Optionally, you can enable functional or structural
-    lesion network mapping by providing registered connectome names.
+    This function provides a flexible interface for running analysis workflows.
+    The `steps` dictionary defines which analyses to run and their parameters.
+    Analyses are executed in the order they appear in the dictionary.
 
     Parameters
     ----------
     data : SubjectData or list of SubjectData
-        Input data to analyze
-    functional_connectome : str, optional
-        Name of a registered functional connectome to enable functional
-        lesion network mapping (fLNM). Use `list_functional_connectomes()`
-        to see available connectomes.
-    structural_connectome : str, optional
-        Name of a registered structural connectome to enable structural
-        lesion network mapping (sLNM). Use `list_structural_connectomes()`
-        to see available connectomes.
+        Input data to analyze. Single subject or batch of subjects.
+    steps : dict[str, dict | None]
+        Analysis steps to run. Keys are analysis class names (must match
+        exactly), values are dicts of kwargs for that analysis, or None
+        for defaults.
+
+        Available analyses (use `list_analyses()` to see all):
+        - "RegionalDamage": Parcel-based lesion quantification
+        - "FunctionalNetworkMapping": Functional lesion network mapping
+        - "StructuralNetworkMapping": Structural lesion network mapping
+        - "ParcelAggregation": Aggregate voxel maps to parcels
+
+        Required parameters vary by analysis:
+        - FunctionalNetworkMapping requires "connectome_name"
+        - StructuralNetworkMapping requires "connectome_name"
+        - Others have sensible defaults
+    n_jobs : int, default=1
+        Number of parallel jobs for batch processing. Use -1 for all CPUs.
+    show_progress : bool, default=True
+        Show tqdm progress bar during batch processing.
     log_level : int, default=1
         Logging verbosity (0=silent, 1=standard, 2=verbose)
 
     Returns
     -------
     SubjectData or list of SubjectData
-        Analyzed data with results
+        Analyzed data with results. If input was a list, returns a list.
+        Results are stored in `subject.results` dict keyed by analysis name.
+
+    Raises
+    ------
+    TypeError
+        If data is not SubjectData or list of SubjectData.
+    KeyError
+        If an analysis name in steps is not recognized.
+    ValueError
+        If required parameters are missing for an analysis.
 
     Examples
     --------
-    Basic usage (parcel aggregation only):
+    Basic usage with RegionalDamage defaults:
 
     >>> from lacuna import analyze, SubjectData
-    >>> result = analyze(mask_data)
-    >>> print(result.results.keys())
+    >>> result = analyze(mask_data, steps={"RegionalDamage": None})
 
-    With functional network mapping:
-
-    >>> result = analyze(mask_data, functional_connectome="GSP1000")
-
-    With structural network mapping:
-
-    >>> result = analyze(mask_data, structural_connectome="dTOR985")
-
-    With both:
+    With functional network mapping (connectome_name is required):
 
     >>> result = analyze(
     ...     mask_data,
-    ...     functional_connectome="GSP1000",
-    ...     structural_connectome="dTOR985"
+    ...     steps={
+    ...         "RegionalDamage": None,
+    ...         "FunctionalNetworkMapping": {"connectome_name": "GSP1000"},
+    ...     }
+    ... )
+
+    With custom parameters:
+
+    >>> result = analyze(
+    ...     mask_data,
+    ...     steps={
+    ...         "RegionalDamage": {"parcel_names": ["Schaefer2018_100Parcels7Networks"]},
+    ...         "FunctionalNetworkMapping": {
+    ...             "connectome_name": "GSP1000",
+    ...             "method": "boes",
+    ...         },
+    ...     }
+    ... )
+
+    Batch processing with parallelization:
+
+    >>> results = analyze(
+    ...     [subject1, subject2, subject3],
+    ...     steps={"FunctionalNetworkMapping": {"connectome_name": "GSP1000"}},
+    ...     n_jobs=-1,
+    ...     show_progress=True,
     ... )
     """
-    # Import here to avoid circular imports
-    from lacuna.analysis import (
-        FunctionalNetworkMapping,
-        RegionalDamage,
-        StructuralNetworkMapping,
-    )
-    from lacuna.batch.api import batch_process
+    from lacuna.analysis import get_analysis, list_analyses
 
-    # Build pipeline of analyses
-    analyses: list = [RegionalDamage(log_level=log_level)]
-
-    if functional_connectome:
-        analyses.append(
-            FunctionalNetworkMapping(connectome_name=functional_connectome, log_level=log_level)
+    # Validate steps is not empty
+    if not steps:
+        raise ValueError(
+            "steps cannot be empty. Provide at least one analysis, e.g., "
+            '{"RegionalDamage": None}'
         )
 
-    if structural_connectome:
-        analyses.append(
-            StructuralNetworkMapping(connectome_name=structural_connectome, log_level=log_level)
-        )
+    # Get available analysis names for validation
+    available_analyses = dict(list_analyses())
 
-    # Single analysis: run directly
-    if len(analyses) == 1:
-        if isinstance(data, list):
-            return batch_process(inputs=data, analysis=analyses[0])
-        return analyses[0].run(data)
+    # Build list of analysis instances
+    analyses: list = []
+    for analysis_name, kwargs in steps.items():
+        # Strict validation: analysis must exist
+        if analysis_name not in available_analyses:
+            available_names = sorted(available_analyses.keys())
+            raise KeyError(
+                f"Unknown analysis: {analysis_name!r}. " f"Available analyses: {available_names}"
+            )
 
-    # Multiple analyses: use pipeline
+        # Get the analysis class
+        analysis_cls = get_analysis(analysis_name)
+
+        # Handle None kwargs (use defaults)
+        if kwargs is None:
+            kwargs = {}
+        else:
+            # Make a copy to avoid mutating the input
+            kwargs = kwargs.copy()
+
+        # Add log_level if not specified
+        if "log_level" not in kwargs:
+            kwargs["log_level"] = log_level
+
+        # Instantiate the analysis
+        try:
+            analysis = analysis_cls(**kwargs)
+        except TypeError as e:
+            raise ValueError(
+                f"Invalid parameters for {analysis_name}: {e}. "
+                f"Check required parameters for this analysis."
+            ) from e
+
+        analyses.append(analysis)
+
+    # Build pipeline
     pipeline = Pipeline(name="analyze")
     for analysis in analyses:
         pipeline.add(analysis)
 
-    if isinstance(data, list):
-        return [pipeline.run(d, log_level=log_level) for d in data]
+    # Helper function to run on single subject
+    def run_single(subject: SubjectData) -> SubjectData:
+        return pipeline.run(subject, log_level=log_level)
 
-    return pipeline.run(data, log_level=log_level)
+    # Handle batch vs single input
+    if isinstance(data, list):
+        if n_jobs == 1:
+            # Sequential processing
+            if show_progress:
+                try:
+                    from tqdm import tqdm
+
+                    return [run_single(d) for d in tqdm(data, desc="Analyzing")]
+                except ImportError:
+                    return [run_single(d) for d in data]
+            else:
+                return [run_single(d) for d in data]
+        else:
+            # Parallel processing with joblib
+            try:
+                from joblib import Parallel, delayed
+
+                if show_progress:
+                    try:
+                        from tqdm import tqdm
+
+                        results = Parallel(n_jobs=n_jobs)(
+                            delayed(run_single)(d) for d in tqdm(data, desc="Analyzing")
+                        )
+                    except ImportError:
+                        results = Parallel(n_jobs=n_jobs)(delayed(run_single)(d) for d in data)
+                else:
+                    results = Parallel(n_jobs=n_jobs)(delayed(run_single)(d) for d in data)
+                return list(results)
+            except ImportError:
+                # Fallback to sequential if joblib not available
+                return [run_single(d) for d in data]
+
+    return run_single(data)
