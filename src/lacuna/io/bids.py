@@ -1,13 +1,17 @@
 """
 BIDS dataset loading and derivative export functionality.
 
-Provides functions to load lesion data from BIDS-compliant datasets and
+Provides functions to load mask data from BIDS-compliant datasets and
 export analysis results in BIDS derivatives format.
+
+No external BIDS validation library (pybids) is required.
 """
 
 from __future__ import annotations
 
+import fnmatch
 import json
+import re
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -28,321 +32,230 @@ class BidsError(LacunaError):
 
 def load_bids_dataset(
     bids_root: str | Path,
-    subjects: list[str] | None = None,
-    sessions: list[str] | None = None,
-    derivatives: bool = False,
-    validate_bids: bool = True,
+    pattern: str = "*",
+    suffix: str = "_mask.nii.gz",
+    recursive: bool = True,
 ) -> dict[str, SubjectData]:
     """
-    Load lesion masks from a BIDS dataset.
+    Load mask files from a BIDS dataset using pattern matching.
+
+    This function finds all files matching the pattern and suffix in the BIDS
+    dataset structure and loads them as SubjectData objects. No external BIDS
+    validation library (pybids) is required.
 
     Parameters
     ----------
     bids_root : str or Path
-        Path to BIDS dataset root directory.
-    subjects : list of str, optional
-        Specific subject IDs to load (e.g., ['sub-001', 'sub-002']).
-        If None, loads all subjects with lesion masks.
-    sessions : list of str, optional
-        Specific session IDs to load (e.g., ['ses-01']).
-        If None, loads all sessions.
-    derivatives : bool, default=False
-        Load from derivatives folder instead of raw data.
-    validate_bids : bool, default=True
-        Validate BIDS structure before loading (requires bids-validator).
+        Path to BIDS dataset root directory (or any directory containing masks).
+    pattern : str, default="*"
+        Glob/fnmatch pattern to filter files. Matched against the full filename
+        (without path). Examples:
+        - "*" : All mask files
+        - "CAS001*" : All masks for subject CAS001
+        - "*ses-01*" : All session 01 masks
+        - "*acuteinfarct*" : All acute infarct masks
+        - "CAS001*ses-01*acuteinfarct" : Specific subject, session, and label
+    suffix : str, default="_mask.nii.gz"
+        File suffix to search for. Common options:
+        - "_mask.nii.gz" : Standard BIDS mask suffix
+        - "_mask.nii" : Uncompressed masks
+        - ".nii.gz" : Any NIfTI file
+    recursive : bool, default=True
+        If True, search recursively in subdirectories.
 
     Returns
     -------
     dict of str -> SubjectData
-        Dictionary mapping subject IDs to SubjectData objects.
-        For multi-session data, keys are 'sub-XXX_ses-YYY'.
+        Dictionary mapping filenames (without suffix) to SubjectData objects.
 
     Raises
     ------
     FileNotFoundError
         If bids_root doesn't exist.
     BidsError
-        If BIDS validation fails or no lesion masks found.
-
-    Warns
-    -----
-    UserWarning
-        If some subjects have lesion masks but no anatomical scans.
+        If no matching files are found.
 
     Examples
     --------
-    >>> dataset = load_bids_dataset('/data/my_bids_dataset')
-    >>> print(f"Loaded {len(dataset)} subjects")
-    >>> lesion = dataset['sub-001']
+    Load all masks in a BIDS dataset:
+
+    >>> dataset = load_bids_dataset('/data/METAVCI_PSCI_BIDS')
+    >>> print(f"Loaded {len(dataset)} masks")
+
+    Load specific subject:
+
+    >>> dataset = load_bids_dataset(
+    ...     '/data/METAVCI_PSCI_BIDS',
+    ...     pattern="CAS001*"
+    ... )
+
+    Load specific session and label:
+
+    >>> dataset = load_bids_dataset(
+    ...     '/data/METAVCI_PSCI_BIDS',
+    ...     pattern="CAS001*ses-01*acuteinfarct"
+    ... )
+
+    Load from a specific subject's anat folder:
+
+    >>> dataset = load_bids_dataset(
+    ...     '/data/METAVCI_PSCI_BIDS/sub-CAS001/ses-01/anat',
+    ...     pattern="*WMH*"
+    ... )
+
+    Load all WMH masks across all subjects:
+
+    >>> dataset = load_bids_dataset(
+    ...     '/data/METAVCI_PSCI_BIDS',
+    ...     pattern="*WMH*"
+    ... )
     """
     bids_root = Path(bids_root)
 
-    # Check if BIDS root exists
+    # Check if path exists
     if not bids_root.exists():
-        raise FileNotFoundError(f"BIDS root directory not found: {bids_root}")
+        raise FileNotFoundError(f"Directory not found: {bids_root}")
 
-    # Check for dataset_description.json
-    desc_file = bids_root / "dataset_description.json"
-    if not desc_file.exists():
-        raise BidsError(
-            f"Missing dataset_description.json in BIDS root: {bids_root}\n"
-            "This doesn't appear to be a valid BIDS dataset."
-        )
-
-    # Optionally validate BIDS structure
-    if validate_bids:
-        try:
-            import bids
-
-            # Use pybids to validate
-            layout = bids.BIDSLayout(str(bids_root), validate=True, derivatives=derivatives)
-        except ImportError:
-            warnings.warn(
-                "pybids not installed. Skipping BIDS validation. Install with: pip install pybids",
-                UserWarning,
-                stacklevel=2,
-            )
-            # Fall back to manual loading
-            return _load_bids_manual(bids_root, subjects, sessions, derivatives)
-        except Exception as e:
-            raise BidsError(f"BIDS validation failed: {e}") from e
+    # Find all matching files
+    if recursive:
+        # Search recursively
+        all_files = list(bids_root.rglob(f"*{suffix}"))
     else:
-        # Manual loading without pybids
-        return _load_bids_manual(bids_root, subjects, sessions, derivatives)
+        # Search only in root
+        all_files = list(bids_root.glob(f"*{suffix}"))
 
-    # Load lesion masks using pybids
+    # Filter by pattern - match pattern anywhere in filename
+    matching_files = []
+    for filepath in all_files:
+        filename = filepath.name
+        # Remove suffix for pattern matching
+        name_without_suffix = filename
+        if filename.endswith(".nii.gz"):
+            name_without_suffix = filename[:-7]
+        elif filename.endswith(".nii"):
+            name_without_suffix = filename[:-4]
+
+        # Match pattern (supports wildcards) - try multiple patterns
+        if (
+            fnmatch.fnmatch(name_without_suffix, f"*{pattern}*")
+            or fnmatch.fnmatch(name_without_suffix, pattern)
+            or fnmatch.fnmatch(name_without_suffix, f"{pattern}*")
+            or fnmatch.fnmatch(name_without_suffix, f"*{pattern}")
+        ):
+            matching_files.append(filepath)
+
+    if not matching_files:
+        raise BidsError(
+            f"No files matching pattern '{pattern}' with suffix '{suffix}' "
+            f"found in: {bids_root}\n"
+            f"Searched {'recursively' if recursive else 'non-recursively'}."
+        )
+
+    # Load each file as SubjectData
     mask_data_dict = {}
 
-    # Get all lesion masks - try multiple approaches for BIDS compatibility
-    # BIDS doesn't have a 'label' entity, so we search for mask/roi suffix
-    # and filter by filename pattern for lesion-related files
-    try:
-        lesion_files = layout.get(
-            suffix=["mask", "roi"],
-            extension=[".nii", ".nii.gz"],
-            subject=subjects,
-            session=sessions,
-        )
-        # Filter to only include lesion-related files
-        lesion_files = [
-            f
-            for f in lesion_files
-            if "lesion" in f.filename.lower() or "desc-lesion" in f.filename.lower()
-        ]
-    except Exception:
-        # Fall back to manual loading if pybids query fails
-        return _load_bids_manual(bids_root, subjects, sessions, derivatives)
-
-    if not lesion_files:
-        raise BidsError(f"No lesion masks found in BIDS dataset: {bids_root}")
-
-    # Load each lesion mask
-    for lesion_file in lesion_files:
-        entities = lesion_file.get_entities()
-        subject_id = entities.get("subject")
-        session_id = entities.get("session")
-
-        # Create subject key
-        if session_id:
-            subject_key = f"sub-{subject_id}_ses-{session_id}"
+    for filepath in sorted(matching_files):
+        # Create key from filename (without suffix)
+        filename = filepath.name
+        if filename.endswith(".nii.gz"):
+            key = filename[:-7]  # Remove .nii.gz
+        elif filename.endswith(".nii"):
+            key = filename[:-4]  # Remove .nii
         else:
-            subject_key = f"sub-{subject_id}"
+            key = filename
 
-        # Look for corresponding anatomical image
-        anat_files = layout.get(
-            subject=subject_id,
-            session=session_id,
-            suffix="T1w",
-            extension=[".nii", ".nii.gz"],
+        # Build metadata from BIDS entities in filename
+        metadata = _parse_bids_entities(filename)
+        metadata["source_path"] = str(filepath)
+        metadata["bids_root"] = str(bids_root)
+
+        # Parse sidecar JSON if available
+        sidecar_data = _parse_sidecar(filepath)
+
+        # Get space from sidecar JSON, or fallback to filename entity
+        space = sidecar_data.get("Space") or sidecar_data.get("space") or metadata.get("space")
+
+        # Get resolution from sidecar JSON, or fallback to filename entity
+        resolution = _parse_resolution(
+            sidecar_data.get("Resolution")
+            or sidecar_data.get("resolution")
+            or metadata.get("resolution")
         )
 
-        anatomical_path = None
-        if anat_files:
-            anatomical_path = anat_files[0].path
-        else:
+        try:
+            mask_data = SubjectData.from_nifti(
+                lesion_path=filepath,
+                metadata=metadata,
+                space=space,
+                resolution=resolution,
+            )
+            mask_data_dict[key] = mask_data
+        except Exception as e:
             warnings.warn(
-                f"No anatomical image found for {subject_key}. Loading lesion mask only.",
+                f"Failed to load {filepath}: {e}",
                 UserWarning,
                 stacklevel=2,
             )
 
-        # Load lesion data
-        metadata = {
-            "subject_id": f"sub-{subject_id}",
-            "bids_root": str(bids_root),
-            "lesion_path": lesion_file.path,
-        }
-        if session_id:
-            metadata["session_id"] = f"ses-{session_id}"
-
-        mask_data = SubjectData.from_nifti(
-            lesion_path=lesion_file.path, anatomical_path=anatomical_path, metadata=metadata
+    if not mask_data_dict:
+        raise BidsError(
+            f"No valid mask files could be loaded from: {bids_root}\n"
+            f"Pattern: '{pattern}', Suffix: '{suffix}'"
         )
 
-        mask_data_dict[subject_key] = mask_data
-
     return mask_data_dict
 
 
-def _load_bids_manual(
-    bids_root: Path,
-    subjects: list[str] | None = None,
-    sessions: list[str] | None = None,
-    derivatives: bool = False,
-) -> dict[str, SubjectData]:
+def _parse_bids_entities(filename: str) -> dict:
     """
-    Load BIDS dataset without pybids (manual parsing).
+    Parse BIDS entities from filename.
 
-    This is a fallback implementation for when pybids is not installed.
+    Extracts subject, session, label, desc, and other BIDS key-value pairs.
+
+    Parameters
+    ----------
+    filename : str
+        BIDS-compliant filename
+
+    Returns
+    -------
+    dict
+        Extracted entities
     """
-    mask_data_dict = {}
+    metadata = {}
 
-    # Get all subject directories
-    subject_dirs = sorted(bids_root.glob("sub-*"))
+    # Remove extension
+    name = filename
+    for ext in [".nii.gz", ".nii", ".json"]:
+        if name.endswith(ext):
+            name = name[: -len(ext)]
+            break
 
-    if derivatives:
-        # Look in derivatives folder
-        deriv_root = bids_root / "derivatives"
-        if deriv_root.exists():
-            subject_dirs = sorted(deriv_root.glob("*/sub-*"))
+    # Parse underscore-separated entities
+    parts = name.split("_")
+    for part in parts:
+        if "-" in part:
+            key, value = part.split("-", 1)
+            # Map BIDS keys to metadata keys
+            if key == "sub":
+                metadata["subject_id"] = f"sub-{value}"
+            elif key == "ses":
+                metadata["session_id"] = f"ses-{value}"
+            elif key == "label":
+                metadata["label"] = value
+            elif key == "desc":
+                metadata["description"] = value
+            elif key == "space":
+                metadata["space"] = value
+            elif key == "res":
+                try:
+                    metadata["resolution"] = float(value)
+                except ValueError:
+                    metadata["resolution_label"] = value
+            else:
+                metadata[key] = value
 
-    # Filter subjects if specified
-    if subjects:
-        subject_ids = [s if s.startswith("sub-") else f"sub-{s}" for s in subjects]
-        subject_dirs = [d for d in subject_dirs if d.name in subject_ids]
-
-    found_any = False
-
-    for subject_dir in subject_dirs:
-        subject_id = subject_dir.name
-
-        # Check for session directories
-        session_dirs = sorted(subject_dir.glob("ses-*"))
-
-        if session_dirs:
-            # Multi-session dataset
-            for session_dir in session_dirs:
-                session_id = session_dir.name
-
-                # Filter sessions if specified
-                if sessions and session_id not in [
-                    s if s.startswith("ses-") else f"ses-{s}" for s in sessions
-                ]:
-                    continue
-
-                # Look for lesion mask in anat folder
-                anat_dir = session_dir / "anat"
-                if anat_dir.exists():
-                    # Look for BIDS-compliant label-lesion pattern (preferred)
-                    lesion_files = list(
-                        anat_dir.glob(f"{subject_id}_{session_id}*label-lesion*mask*.nii*")
-                    )
-                    # Also try desc-lesion pattern (backward compatibility)
-                    if not lesion_files:
-                        lesion_files = list(
-                            anat_dir.glob(f"{subject_id}_{session_id}*desc-lesion*mask*.nii*")
-                        )
-                    # Also try legacy mask-lesion pattern
-                    if not lesion_files:
-                        lesion_files = list(
-                            anat_dir.glob(f"{subject_id}_{session_id}*mask-lesion*.nii*")
-                        )
-                    lesion_files.extend(
-                        anat_dir.glob(f"{subject_id}_{session_id}*roi-lesion*.nii*")
-                    )
-
-                    if lesion_files:
-                        found_any = True
-                        lesion_path = lesion_files[0]
-
-                        # Look for anatomical
-                        anat_files = list(anat_dir.glob(f"{subject_id}_{session_id}*T1w.nii*"))
-                        anatomical_path = anat_files[0] if anat_files else None
-
-                        if anatomical_path is None:
-                            warnings.warn(
-                                f"No anatomical image found for {subject_id}_{session_id}",
-                                UserWarning,
-                                stacklevel=2,
-                            )
-
-                        # Create SubjectData
-                        subject_key = f"{subject_id}_{session_id}"
-                        metadata = {
-                            "subject_id": subject_id,
-                            "session_id": session_id,
-                            "bids_root": str(bids_root),
-                            "lesion_path": str(lesion_path),
-                        }
-
-                        # Parse sidecar for space/resolution
-                        sidecar_data = _parse_sidecar(lesion_path)
-                        space = sidecar_data.get("Space") or sidecar_data.get("space")
-                        resolution = _parse_resolution(
-                            sidecar_data.get("Resolution") or sidecar_data.get("resolution")
-                        )
-
-                        mask_data_dict[subject_key] = SubjectData.from_nifti(
-                            lesion_path=lesion_path,
-                            anatomical_path=anatomical_path,
-                            metadata=metadata,
-                            space=space,
-                            resolution=resolution,
-                        )
-        else:
-            # Single-session dataset
-            anat_dir = subject_dir / "anat"
-            if anat_dir.exists():
-                # Look for BIDS-compliant label-lesion pattern (preferred)
-                lesion_files = list(anat_dir.glob(f"{subject_id}*label-lesion*mask*.nii*"))
-                # Also try desc-lesion pattern (backward compatibility)
-                if not lesion_files:
-                    lesion_files = list(anat_dir.glob(f"{subject_id}*desc-lesion*mask*.nii*"))
-                # Also try legacy mask-lesion pattern
-                if not lesion_files:
-                    lesion_files = list(anat_dir.glob(f"{subject_id}*mask-lesion*.nii*"))
-                lesion_files.extend(anat_dir.glob(f"{subject_id}*roi-lesion*.nii*"))
-
-                if lesion_files:
-                    found_any = True
-                    lesion_path = lesion_files[0]
-
-                    # Look for anatomical
-                    anat_files = list(anat_dir.glob(f"{subject_id}*T1w.nii*"))
-                    anatomical_path = anat_files[0] if anat_files else None
-
-                    if anatomical_path is None:
-                        warnings.warn(
-                            f"No anatomical image found for {subject_id}",
-                            UserWarning,
-                            stacklevel=2,
-                        )
-
-                    # Create SubjectData
-                    metadata = {
-                        "subject_id": subject_id,
-                        "bids_root": str(bids_root),
-                        "lesion_path": str(lesion_path),
-                    }
-
-                    # Parse sidecar for space/resolution
-                    sidecar_data = _parse_sidecar(lesion_path)
-                    space = sidecar_data.get("Space") or sidecar_data.get("space")
-                    resolution = _parse_resolution(
-                        sidecar_data.get("Resolution") or sidecar_data.get("resolution")
-                    )
-
-                    mask_data_dict[subject_id] = SubjectData.from_nifti(
-                        lesion_path=lesion_path,
-                        metadata=metadata,
-                        space=space,
-                        resolution=resolution,
-                    )
-
-    if not found_any:
-        raise BidsError(f"No lesion masks found in BIDS dataset: {bids_root}")
-
-    return mask_data_dict
+    return metadata
 
 
 def _parse_resolution(value: str | float | int | None) -> float | None:
@@ -422,7 +335,6 @@ def _extract_space_from_filename(filename: str) -> str | None:
     str or None
         Space name if found, None otherwise
     """
-    import re
 
     match = re.search(r"space-([a-zA-Z0-9]+)", filename)
     if match:
@@ -710,10 +622,10 @@ def export_bids_derivatives_batch(
             json.dump(dataset_description, f, indent=2)
 
     # Export each subject
-    for mask_data in results:
+    for subject_data in results:
         export_bids_derivatives(
-            mask_data,
-            output_dir,
+            subject_data=subject_data,
+            output_dir=output_dir,
             export_lesion_mask=export_lesion_mask,
             export_voxelmaps=export_voxelmaps,
             export_parcel_data=export_parcel_data,
@@ -727,7 +639,7 @@ def export_bids_derivatives_batch(
 
 
 def export_bids_derivatives(
-    mask_data: SubjectData,
+    subject_data: SubjectData,
     output_dir: str | Path,
     export_lesion_mask: bool = True,
     export_voxelmaps: bool = True,
@@ -750,7 +662,7 @@ def export_bids_derivatives(
 
     Parameters
     ----------
-    mask_data : SubjectData
+    subject_data : SubjectData
         Processed lesion data with analysis results.
     output_dir : str or Path
         Root directory for derivatives (e.g., 'derivatives/lacuna-v0.1.0').
@@ -779,20 +691,20 @@ def export_bids_derivatives(
     FileExistsError
         If output files exist and overwrite=False.
     ValueError
-        If mask_data has no subject_id in metadata.
+        If subject_data has no subject_id in metadata.
 
     Examples
     --------
     >>> # Export all results
     >>> output_path = export_bids_derivatives(
-    ...     mask_data,
+    ...     subject_data,
     ...     'derivatives/lacuna-v0.1.0'
     ... )
     >>> print(f"Derivatives saved to: {output_path}")
     >>>
     >>> # Export only VoxelMaps (NIfTI files)
     >>> export_bids_derivatives(
-    ...     mask_data,
+    ...     subject_data,
     ...     'derivatives/lacuna-v0.1.0',
     ...     export_lesion_mask=False,
     ...     export_parcel_data=False,
@@ -815,11 +727,11 @@ def export_bids_derivatives(
     output_dir = Path(output_dir)
 
     # Validate metadata
-    if "subject_id" not in mask_data.metadata:
+    if "subject_id" not in subject_data.metadata:
         raise ValueError("SubjectData metadata must contain 'subject_id' for BIDS export")
 
-    subject_id = mask_data.metadata["subject_id"]
-    session_id = mask_data.metadata.get("session_id")
+    subject_id = subject_data.metadata["subject_id"]
+    session_id = subject_data.metadata.get("session_id")
 
     # Determine base filename
     if session_id:
@@ -859,7 +771,7 @@ def export_bids_derivatives(
 
     # Save lesion mask - use label entity per BIDS spec
     if export_lesion_mask:
-        coord_space = mask_data.get_coordinate_space()
+        coord_space = subject_data.get_coordinate_space()
         lesion_filename = f"{base_name}_space-{coord_space}_label-lesion_mask.nii.gz"
         lesion_path = anat_dir / lesion_filename
 
@@ -868,11 +780,11 @@ def export_bids_derivatives(
                 f"Lesion mask already exists: {lesion_path}. Use overwrite=True to replace."
             )
 
-        nib.save(mask_data.mask_img, lesion_path)
+        nib.save(subject_data.mask_img, lesion_path)
 
     # Save analysis results
-    if mask_data.results:
-        for _namespace, results_data in mask_data.results.items():
+    if subject_data.results:
+        for _namespace, results_data in subject_data.results.items():
             if not isinstance(results_data, dict):
                 continue
 
@@ -935,7 +847,7 @@ def export_bids_derivatives(
                         pass
 
     # Save provenance (goes to anat/ for BIDS compliance)
-    if export_provenance and mask_data.provenance:
+    if export_provenance and subject_data.provenance:
         prov_filename = f"{base_name}_desc-provenance.json"
         prov_path = anat_dir / prov_filename
 
@@ -946,7 +858,7 @@ def export_bids_derivatives(
 
         # Convert provenance to serializable format
         prov_data = []
-        for step in mask_data.provenance:
+        for step in subject_data.provenance:
             if hasattr(step, "to_dict"):
                 prov_data.append(step.to_dict())
             elif isinstance(step, dict):

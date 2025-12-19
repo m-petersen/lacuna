@@ -27,13 +27,13 @@ class TestBidsSidecarContract:
         anat_dir = tmp_path / "sub-001" / "anat"
         anat_dir.mkdir(parents=True)
 
-        # Create lesion mask NIfTI
+        # Create lesion mask NIfTI - use _mask.nii.gz suffix for new API
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
         affine[:3, :3] *= 2.0  # 2mm resolution
         img = nib.Nifti1Image(data, affine)
-        nib.save(img, anat_dir / "sub-001_mask-lesion.nii.gz")
+        nib.save(img, anat_dir / "sub-001_label-lesion_mask.nii.gz")
 
         # Create T1w anatomical
         anat_data = np.random.rand(10, 10, 10).astype(np.float32)
@@ -46,7 +46,7 @@ class TestBidsSidecarContract:
             "Resolution": 2,  # Numeric value
             "Description": "Lesion mask in standard space",
         }
-        with open(anat_dir / "sub-001_mask-lesion.json", "w") as f:
+        with open(anat_dir / "sub-001_label-lesion_mask.json", "w") as f:
             json.dump(sidecar, f)
 
         return tmp_path
@@ -65,13 +65,13 @@ class TestBidsSidecarContract:
         anat_dir = tmp_path / "sub-003" / "anat"
         anat_dir.mkdir(parents=True)
 
-        # Create lesion mask NIfTI
+        # Create lesion mask NIfTI - use _mask.nii.gz suffix for new API
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
         affine[:3, :3] *= 2.0  # 2mm resolution
         img = nib.Nifti1Image(data, affine)
-        nib.save(img, anat_dir / "sub-003_mask-lesion.nii.gz")
+        nib.save(img, anat_dir / "sub-003_label-lesion_mask.nii.gz")
 
         # Create T1w anatomical
         anat_data = np.random.rand(10, 10, 10).astype(np.float32)
@@ -84,32 +84,33 @@ class TestBidsSidecarContract:
             "Resolution": "2mm",  # String format
             "Description": "Lesion mask in standard space",
         }
-        with open(anat_dir / "sub-003_mask-lesion.json", "w") as f:
+        with open(anat_dir / "sub-003_label-lesion_mask.json", "w") as f:
             json.dump(sidecar, f)
 
         return tmp_path
 
     def test_sidecar_space_extracted(self, bids_dataset_with_sidecars):
         """Contract: JSON sidecar Space field is extracted to SubjectData.space."""
-        result = load_bids_dataset(bids_dataset_with_sidecars, validate_bids=False)
-        mask_data = result["sub-001"]
+        result = load_bids_dataset(bids_dataset_with_sidecars)
+        # New API returns filename-based keys
+        mask_data = list(result.values())[0]
         assert mask_data.space == "MNI152NLin6Asym"
 
     def test_sidecar_resolution_extracted(self, bids_dataset_with_sidecars):
         """Contract: JSON sidecar Resolution field is extracted to SubjectData.resolution."""
-        result = load_bids_dataset(bids_dataset_with_sidecars, validate_bids=False)
-        mask_data = result["sub-001"]
+        result = load_bids_dataset(bids_dataset_with_sidecars)
+        mask_data = list(result.values())[0]
         assert mask_data.resolution == 2.0
 
     def test_sidecar_string_resolution_parsed(self, bids_dataset_with_string_resolution):
         """Contract: String resolution '2mm' is parsed to numeric 2.0."""
-        result = load_bids_dataset(bids_dataset_with_string_resolution, validate_bids=False)
-        mask_data = result["sub-003"]
+        result = load_bids_dataset(bids_dataset_with_string_resolution)
+        mask_data = list(result.values())[0]
         assert mask_data.resolution == 2.0
 
     def test_sidecar_metadata_preserved(self, bids_dataset_with_sidecars):
         """Contract: BIDS metadata is preserved in SubjectData.metadata."""
-        result = load_bids_dataset(bids_dataset_with_sidecars, validate_bids=False)
-        mask_data = result["sub-001"]
+        result = load_bids_dataset(bids_dataset_with_sidecars)
+        mask_data = list(result.values())[0]
         assert mask_data.metadata["subject_id"] == "sub-001"
-        assert "lesion_path" in mask_data.metadata
+        assert "source_path" in mask_data.metadata

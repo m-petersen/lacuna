@@ -235,7 +235,7 @@ DESC_TO_SOURCE_MAPPING = {
 BIDS_SUFFIX_MAPPING = {
     "values": "parcelstats",  # Tabular parcel statistics
     "parcels": "parcelstats",  # Tabular parcel data
-    "map": "stat",  # Statistical map (NIfTI)
+    "map": "",  # VoxelMap NIfTI - no suffix needed (e.g., fnmcorrelationmap.nii.gz)
     "connmatrix": "connmatrix",  # Connectivity matrix (valid BIDS derivative)
     "metrics": "stats",  # Scalar metrics as tabular
 }
@@ -369,7 +369,7 @@ def format_bids_export_filename(
     'atlas-schaefer100_source-fnm_parcelstats'
 
     >>> format_bids_export_filename("correlationmap", "map")
-    'fnmcorrelationmap_stat'
+    'fnmcorrelationmap'
 
     >>> format_bids_export_filename(
     ...     "atlas-HCP1065_thr0p1_source-InputMask",
@@ -378,15 +378,15 @@ def format_bids_export_filename(
     'atlas-hcp1065_desc-thr0p1_source-inputmask_parcelstats'
 
     For FNM/SNM outputs without parcellation (VoxelMaps), the source is
-    prepended to the desc without the desc- prefix:
+    prepended to the desc without the desc- prefix, and no suffix is added:
 
     >>> format_bids_export_filename("correlation_map", "map")
-    'fnmcorrelationmap_stat'
+    'fnmcorrelationmap'
 
     >>> format_bids_export_filename("disconnection_map", "map")
-    'snmdisconnectionmap_stat'
+    'snmdisconnectionmap'
     """
-    # Convert internal suffix to BIDS suffix
+    # Convert internal suffix to BIDS suffix (may be empty for VoxelMaps)
     bids_suffix = BIDS_SUFFIX_MAPPING.get(suffix, suffix)
 
     # Check if this is a BIDS-style key (contains known prefixes)
@@ -405,10 +405,16 @@ def format_bids_export_filename(
             source_prefix = DESC_TO_SOURCE_MAPPING.get(bids_desc, "")
 
         if source_prefix and source_prefix in ("fnm", "snm"):
-            # FNM/SNM VoxelMap outputs: fnmcorrelationmap_stat (no desc- prefix)
-            return f"{source_prefix}{bids_desc}_{bids_suffix}"
+            # FNM/SNM VoxelMap outputs: fnmcorrelationmap (no desc- prefix)
+            if bids_suffix:
+                return f"{source_prefix}{bids_desc}_{bids_suffix}"
+            else:
+                return f"{source_prefix}{bids_desc}"
         else:
-            return f"desc-{bids_desc}_{bids_suffix}"
+            if bids_suffix:
+                return f"desc-{bids_desc}_{bids_suffix}"
+            else:
+                return f"desc-{bids_desc}"
 
     # Parse BIDS-style key
     parsed = parse_result_key(result_key)
@@ -456,7 +462,8 @@ def format_bids_export_filename(
     if "atlas" in parsed and export_source and not any("source-" in p for p in parts):
         parts.append(f"source-{export_source}")
 
-    # Add the BIDS suffix
-    parts.append(bids_suffix)
+    # Add the BIDS suffix (only if non-empty)
+    if bids_suffix:
+        parts.append(bids_suffix)
 
     return "_".join(parts)

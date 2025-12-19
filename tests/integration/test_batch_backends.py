@@ -300,9 +300,7 @@ class TestParallelStrategyBackend:
     def test_parallel_strategy_threading_backend(self, synthetic_lesions, regional_damage_analysis):
         """ParallelStrategy should work with threading backend."""
         strategy = ParallelStrategy(n_jobs=2, backend="threading")
-        results = strategy.execute(
-            mask_data_list=synthetic_lesions, analysis=regional_damage_analysis
-        )
+        results = strategy.execute(inputs=synthetic_lesions, analysis=regional_damage_analysis)
 
         assert len(results) == len(synthetic_lesions)
         assert strategy.backend == "threading"
@@ -313,9 +311,7 @@ class TestParallelStrategyBackend:
         Uses bundled atlas so loky workers can access it.
         """
         strategy = ParallelStrategy(n_jobs=2, backend="loky")
-        results = strategy.execute(
-            mask_data_list=mni_synthetic_lesions, analysis=bundled_atlas_analysis
-        )
+        results = strategy.execute(inputs=mni_synthetic_lesions, analysis=bundled_atlas_analysis)
 
         assert len(results) == len(mni_synthetic_lesions)
         assert strategy.backend == "loky"

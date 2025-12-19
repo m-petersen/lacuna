@@ -1,0 +1,90 @@
+# Docker Compose for Lacuna Development and Testing
+#
+# Usage:
+#   docker compose up test          # Run tests
+#   docker compose run --rm dev     # Interactive development shell
+#   docker compose up -d docs       # Serve documentation
+
+services:
+  # Development container with full tooling
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+      - ~/.cache/templateflow:/root/.cache/templateflow:ro
+    working_dir: /workspace
+    command: bash
+    stdin_open: true
+    tty: true
+
+  # Run tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+      - ./htmlcov:/workspace/htmlcov
+    working_dir: /workspace
+    command: pytest -v --cov=lacuna --cov-report=html -n auto
+
+  # Run fast tests only
+  test-fast:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: pytest -v tests/unit tests/contract --no-cov -n auto
+
+  # Lint and format
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: bash -c "ruff check src tests && black --check src tests"
+
+  # Type checking
+  typecheck:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: mypy src/lacuna
+
+  # Production image build test
+  production:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    volumes:
+      - ./tests/fixtures:/data:ro
+      - ./output:/output
+      - ./work:/work
+    command: /data /output participant --help
+
+  # Example run with BIDS dataset
+  example:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    volumes:
+      - ${BIDS_DIR:-./tests/fixtures/bids}:/data:ro
+      - ${OUTPUT_DIR:-./output}:/output
+      - ${WORK_DIR:-./work}:/work
+      - ${CONNECTOME_DIR:-./connectomes}:/connectomes:ro
+    environment:
+      - TEMPLATEFLOW_HOME=/templateflow
+      - LACUNA_WORK_DIR=/work
+    command: |
+      /data /output participant
+      --work-dir /work
+      -v
