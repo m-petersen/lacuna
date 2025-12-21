@@ -374,6 +374,7 @@ def export_voxelmap(
     session_id: str | None = None,
     desc: str = "map",
     space: str | None = None,
+    label: str | None = None,
     overwrite: bool = False,
 ) -> Path:
     """
@@ -394,6 +395,8 @@ def export_voxelmap(
         'parc-Schaefer100_source-fnm_correlationmap_map')
     space : str, optional
         Override space from voxelmap.space
+    label : str, optional
+        Label entity for disambiguation (e.g., 'WMH', 'acuteinfarct', 'lesion')
     overwrite : bool, default=False
         Overwrite existing files
 
@@ -409,10 +412,11 @@ def export_voxelmap(
 
     # Build BIDS filename - desc already contains full formatted key with suffix
     space = space or voxelmap.space
+    label_part = f"_label-{label}" if label else ""
     if session_id:
-        base_name = f"{subject_id}_{session_id}_space-{space}_{desc}"
+        base_name = f"{subject_id}_{session_id}_space-{space}{label_part}_{desc}"
     else:
-        base_name = f"{subject_id}_space-{space}_{desc}"
+        base_name = f"{subject_id}_space-{space}{label_part}_{desc}"
 
     nifti_path = output_dir / f"{base_name}.nii.gz"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -444,6 +448,7 @@ def export_parcel_data(
     subject_id: str,
     session_id: str | None = None,
     desc: str = "parcels",
+    label: str | None = None,
     overwrite: bool = False,
 ) -> Path:
     """
@@ -462,6 +467,8 @@ def export_parcel_data(
     desc : str, default='parcels'
         BIDS-formatted key with entities and suffix (e.g.,
         'parc-Schaefer100_source-maskimg_maskimg_values')
+    label : str, optional
+        Label entity for disambiguation (e.g., 'WMH', 'acuteinfarct', 'lesion')
     overwrite : bool, default=False
         Overwrite existing files
 
@@ -476,10 +483,11 @@ def export_parcel_data(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build BIDS filename - desc already contains full formatted key with suffix
+    label_part = f"_label-{label}" if label else ""
     if session_id:
-        base_name = f"{subject_id}_{session_id}_{desc}"
+        base_name = f"{subject_id}_{session_id}{label_part}_{desc}"
     else:
-        base_name = f"{subject_id}_{desc}"
+        base_name = f"{subject_id}{label_part}_{desc}"
 
     tsv_path = output_dir / f"{base_name}.tsv"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -515,6 +523,7 @@ def export_connectivity_matrix(
     subject_id: str,
     session_id: str | None = None,
     desc: str = "connectivity",
+    label: str | None = None,
     overwrite: bool = False,
 ) -> Path:
     """
@@ -533,6 +542,8 @@ def export_connectivity_matrix(
     desc : str, default='connectivity'
         BIDS-formatted key with entities and suffix (e.g.,
         'parc-Schaefer100_source-snm_connectome_connmatrix')
+    label : str, optional
+        Label entity for disambiguation (e.g., 'WMH', 'acuteinfarct', 'lesion')
     overwrite : bool, default=False
         Overwrite existing files
 
@@ -547,10 +558,11 @@ def export_connectivity_matrix(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build BIDS filename - desc already contains full formatted key with suffix
+    label_part = f"_label-{label}" if label else ""
     if session_id:
-        base_name = f"{subject_id}_{session_id}_{desc}"
+        base_name = f"{subject_id}_{session_id}{label_part}_{desc}"
     else:
-        base_name = f"{subject_id}_{desc}"
+        base_name = f"{subject_id}{label_part}_{desc}"
 
     tsv_path = output_dir / f"{base_name}.tsv"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -795,9 +807,11 @@ def export_bids_derivatives(
     anat_dir.mkdir(parents=True, exist_ok=True)
 
     # Save lesion mask - use label entity per BIDS spec
+    # Preserve original label from metadata if available (e.g., WMH, acuteinfarct, lacune)
+    label = subject_data.metadata.get("label", "lesion")
     if export_lesion_mask:
         coord_space = subject_data.get_coordinate_space()
-        lesion_filename = f"{base_name}_space-{coord_space}_label-lesion_mask.nii.gz"
+        lesion_filename = f"{base_name}_space-{coord_space}_label-{label}_mask.nii.gz"
         lesion_path = anat_dir / lesion_filename
 
         if lesion_path.exists() and not overwrite:
@@ -823,6 +837,7 @@ def export_bids_derivatives(
                         subject_id=subject_id,
                         session_id=session_id,
                         desc=bids_key,
+                        label=label,
                         overwrite=overwrite,
                     )
 
@@ -835,6 +850,7 @@ def export_bids_derivatives(
                         subject_id=subject_id,
                         session_id=session_id,
                         desc=bids_key,
+                        label=label,
                         overwrite=overwrite,
                     )
 
@@ -847,6 +863,7 @@ def export_bids_derivatives(
                         subject_id=subject_id,
                         session_id=session_id,
                         desc=bids_key,
+                        label=label,
                         overwrite=overwrite,
                     )
 
@@ -859,7 +876,8 @@ def export_bids_derivatives(
 
                     try:
                         bids_key = format_bids_export_filename(key, "metrics")
-                        results_filename = f"{base_name}_{bids_key}.json"
+                        label_part = f"_label-{label}" if label else ""
+                        results_filename = f"{base_name}{label_part}_{bids_key}.json"
                         results_path = anat_dir / results_filename
 
                         if results_path.exists() and not overwrite:
