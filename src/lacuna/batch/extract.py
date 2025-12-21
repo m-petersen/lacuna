@@ -23,18 +23,46 @@ __all__ = ["extract"]
 def _get_identifier(subject: SubjectData) -> str:
     """Get the identifier of a subject.
 
+    Builds a BIDS-style identifier from available metadata entities.
+    Includes subject_id, session_id, and label for proper disambiguation
+    when processing multiple lesion types for the same subject.
+
     Args:
         subject: The subject to get the identifier of.
 
     Returns:
-        The identifier of the subject. Uses subject_id from metadata if present,
-        otherwise falls back to a string representation.
+        The identifier of the subject. Uses BIDS entities from metadata
+        (subject_id, session_id, label) if present, otherwise falls back
+        to a string representation.
+
+    Examples:
+        - "sub-001" (only subject_id)
+        - "sub-001_ses-01" (subject + session)
+        - "sub-001_ses-01_label-WMH" (subject + session + label)
+        - "sub-001_label-acuteinfarct" (subject + label, no session)
     """
-    # Try to get subject_id from metadata
-    if hasattr(subject, "metadata") and subject.metadata:
-        subject_id = subject.metadata.get("subject_id")
-        if subject_id:
-            return str(subject_id)
+    if not hasattr(subject, "metadata") or not subject.metadata:
+        return f"subject_{id(subject)}"
+
+    metadata = subject.metadata
+    parts = []
+
+    # Build identifier from BIDS entities in standard order
+    subject_id = metadata.get("subject_id")
+    if subject_id:
+        parts.append(str(subject_id))
+
+    session_id = metadata.get("session_id")
+    if session_id:
+        parts.append(str(session_id))
+
+    label = metadata.get("label")
+    if label:
+        parts.append(f"label-{label}")
+
+    if parts:
+        return "_".join(parts)
+
     # Fallback to object id
     return f"subject_{id(subject)}"
 
