@@ -62,6 +62,24 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         help='Processing level (only "participant" supported)',
     )
 
+    # Configuration file
+    g_config = parser.add_argument_group("Configuration")
+    g_config.add_argument(
+        "-c",
+        "--config",
+        type=Path,
+        metavar="YAML",
+        help=(
+            "Path to YAML configuration file. Use 'lacuna --generate-config' "
+            "to create a template. Command-line options override config file."
+        ),
+    )
+    g_config.add_argument(
+        "--generate-config",
+        action="store_true",
+        help="Print a template configuration file to stdout and exit",
+    )
+
     # BIDS Filtering Options
     g_bids = parser.add_argument_group("Options for filtering BIDS queries")
     g_bids.add_argument(
@@ -91,46 +109,44 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         help="Skip BIDS dataset validation",
     )
 
-    # Space/Resolution Options (required when not in filename)
-    g_space = parser.add_argument_group("Space and resolution options")
+    # Mask Space Options
+    g_space = parser.add_argument_group("Mask space options")
     g_space.add_argument(
-        "--space",
+        "--mask-space",
         type=str,
         metavar="SPACE",
-        help="Coordinate space (e.g., 'MNI152NLin6Asym'). Required if not in filename.",
-    )
-    g_space.add_argument(
-        "--resolution",
-        type=float,
-        metavar="MM",
-        help="Voxel resolution in mm (e.g., 2.0). Required if not in filename.",
+        help=(
+            "Coordinate space of input masks (e.g., 'MNI152NLin6Asym'). "
+            "Required if not detectable from filename or sidecar JSON. "
+            "Resolution is auto-detected from voxel size."
+        ),
     )
 
     # Analysis Options
     g_analysis = parser.add_argument_group("Analysis options")
     g_analysis.add_argument(
         "--functional-connectome",
-        type=str,
-        metavar="NAME_OR_PATH",
+        type=Path,
+        metavar="PATH",
         help=(
-            "Functional connectome name (from registry) or path to HDF5/directory. "
+            "Path to functional connectome directory or HDF5 file. "
             "Enables FunctionalNetworkMapping analysis."
         ),
     )
     g_analysis.add_argument(
-        "--structural-connectome",
-        type=str,
-        metavar="NAME_OR_PATH",
+        "--structural-tractogram",
+        type=Path,
+        metavar="PATH",
         help=(
-            "Structural connectome name (from registry) or path to tractogram (.tck). "
-            "Enables StructuralNetworkMapping analysis."
+            "Path to whole-brain tractogram (.tck). "
+            "Enables StructuralNetworkMapping analysis. Requires MRtrix3."
         ),
     )
     g_analysis.add_argument(
         "--structural-tdi",
         type=Path,
         metavar="PATH",
-        help="Path to whole-brain TDI NIfTI (required with --structural-connectome path)",
+        help="Path to pre-computed whole-brain TDI NIfTI (optional, speeds up processing)",
     )
     g_analysis.add_argument(
         "--parcel-atlases",
@@ -138,20 +154,14 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         type=str,
         metavar="ATLAS",
         help=(
-            "Atlas names for RegionalDamage analysis (from registry). "
-            "If not specified, uses default atlas."
+            "Atlas names for RegionalDamage analysis. "
+            "Use 'lacuna list-parcellations' to see available atlases."
         ),
     )
     g_analysis.add_argument(
         "--skip-regional-damage",
         action="store_true",
         help="Skip RegionalDamage analysis (enabled by default)",
-    )
-    g_analysis.add_argument(
-        "--atlas-dir",
-        type=Path,
-        metavar="PATH",
-        help="Additional directory containing atlas files",
     )
 
     # Performance Options

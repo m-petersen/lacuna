@@ -6,6 +6,10 @@ CLI arguments and validating them.
 
 Classes:
     CLIConfig: Configuration from CLI arguments.
+
+Functions:
+    load_yaml_config: Load configuration from YAML file.
+    generate_config_template: Generate a template YAML configuration.
 """
 
 from __future__ import annotations
@@ -13,12 +17,91 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from argparse import Namespace
 
 logger = logging.getLogger(__name__)
+
+
+def load_yaml_config(config_path: Path) -> dict[str, Any]:
+    """
+    Load configuration from a YAML file.
+
+    Parameters
+    ----------
+    config_path : Path
+        Path to the YAML configuration file.
+
+    Returns
+    -------
+    dict
+        Parsed configuration dictionary.
+
+    Raises
+    ------
+    FileNotFoundError
+        If config file doesn't exist.
+    ValueError
+        If YAML parsing fails.
+    """
+    try:
+        import yaml
+    except ImportError as e:
+        raise ImportError(
+            "PyYAML is required for config file support. " "Install with: pip install pyyaml"
+        ) from e
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    with open(config_path) as f:
+        try:
+            config = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise ValueError(f"Invalid YAML in config file: {e}") from e
+
+    return config
+
+
+def generate_config_template() -> str:
+    """
+    Generate a template YAML configuration file.
+
+    Returns
+    -------
+    str
+        YAML template content.
+    """
+    template_path = Path(__file__).parent / "default_config.yaml"
+    if template_path.exists():
+        return template_path.read_text()
+
+    # Fallback inline template
+    return """\
+# Lacuna Configuration File
+# See documentation for full options
+
+input: /path/to/bids_dataset
+output: /path/to/output
+mask_space: MNI152NLin6Asym
+
+regional_damage:
+  enabled: true
+  atlases:
+    - Schaefer2018_100Parcels7Networks
+
+functional_network_mapping:
+  enabled: false
+  connectome_path: null
+
+structural_network_mapping:
+  enabled: false
+  tractogram_path: null
+
+n_jobs: 1
+"""
 
 
 @dataclass
@@ -118,39 +201,109 @@ class CLIConfig:
         return max(25 - 5 * self.verbose_count, 10)
 
     @classmethod
-    def from_args(cls, args: Namespace) -> CLIConfig:
+    def from_args(cls, args: Namespace, yaml_config: dict[str, Any] | None = None) -> CLIConfig:
         """
-        Create CLIConfig from parsed arguments.
+        Create CLIConfig from parsed arguments and optional YAML config.
+
+        YAML config values are used as defaults; CLI arguments override them.
 
         Parameters
         ----------
         args : Namespace
             Parsed arguments from argparse.
+        yaml_config : dict, optional
+            Configuration loaded from YAML file.
 
         Returns
         -------
         CLIConfig
             Configuration instance.
         """
+        yaml_config = yaml_config or {}
+
+        # Helper to get value: CLI arg takes precedence over YAML
+        def get_val(cli_name: str, yaml_key: str, default=None, yaml_section: str | None = None):
+            cli_val = getattr(args, cli_name, None)
+            if cli_val is not None:
+                return cli_val
+            if yaml_section:
+                section = yaml_config.get(yaml_section, {}) or {}
+                return section.get(yaml_key, default)
+            return yaml_config.get(yaml_key, default)
+
+        # Extract analysis configs from YAML
+        regional_damage = yaml_config.get("regional_damage", {}) or {}
+        functional_mapping = yaml_config.get("functional_network_mapping", {}) or {}
+        structural_mapping = yaml_config.get("structural_network_mapping", {}) or {}
+
+        # Determine if regional damage is skipped
+        skip_rd = getattr(args, "skip_regional_damage", False)
+        if not skip_rd and regional_damage.get("enabled") is False:
+            skip_rd = True
+
+        # Get parcel atlases from CLI or YAML
+        parcel_atlases = getattr(args, "parcel_atlases", None)
+        if parcel_atlases is None:
+            parcel_atlases = regional_damage.get("atlases")
+
+        # Get connectome paths from CLI or YAML
+        func_conn = getattr(args, "functional_connectome", None)
+        if func_conn is None and functional_mapping.get("enabled"):
+            func_conn = functional_mapping.get("connectome_path")
+        if func_conn:
+            func_conn = str(func_conn)
+
+        struct_conn = getattr(args, "structural_tractogram", None)
+        if struct_conn is None and structural_mapping.get("enabled"):
+            struct_conn = structural_mapping.get("tractogram_path")
+
+        struct_tdi = getattr(args, "structural_tdi", None)
+        if struct_tdi is None:
+            tdi_path = structural_mapping.get("tdi_path")
+            if tdi_path:
+                struct_tdi = Path(tdi_path)
+
+        # Get space from CLI or YAML
+        space = getattr(args, "mask_space", None) or yaml_config.get("mask_space")
+
+        # Get subjects/sessions from CLI or YAML
+        participants = getattr(args, "participant_label", None)
+        if participants is None:
+            participants = yaml_config.get("subjects") or None
+            if participants == []:
+                participants = None
+
+        sessions = getattr(args, "session_id", None)
+        if sessions is None:
+            sessions = yaml_config.get("sessions") or None
+            if sessions == []:
+                sessions = None
+
+        # Get work_dir from CLI or YAML
+        work_dir = args.work_dir
+        if yaml_config.get("work_dir"):
+            work_dir = Path(yaml_config["work_dir"])
+
         return cls(
             bids_dir=args.bids_dir,
             output_dir=args.output_dir,
             analysis_level=args.analysis_level,
-            participant_label=args.participant_label,
-            session_id=getattr(args, "session_id", None),
-            pattern=getattr(args, "pattern", None),
-            skip_bids_validation=args.skip_bids_validation,
-            space=getattr(args, "space", None),
-            resolution=getattr(args, "resolution", None),
-            functional_connectome=getattr(args, "functional_connectome", None),
-            structural_connectome=getattr(args, "structural_connectome", None),
-            structural_tdi=getattr(args, "structural_tdi", None),
-            parcel_atlases=args.parcel_atlases,
-            skip_regional_damage=getattr(args, "skip_regional_damage", False),
+            participant_label=participants,
+            session_id=sessions,
+            pattern=getattr(args, "pattern", None) or yaml_config.get("pattern"),
+            skip_bids_validation=getattr(args, "skip_bids_validation", False)
+            or yaml_config.get("skip_bids_validation", False),
+            space=space,
+            resolution=None,  # Resolution is auto-detected from image affine
+            functional_connectome=func_conn,
+            structural_connectome=struct_conn,
+            structural_tdi=struct_tdi,
+            parcel_atlases=parcel_atlases,
+            skip_regional_damage=skip_rd,
             atlas_dir=getattr(args, "atlas_dir", None),
-            n_procs=args.nprocs,
-            work_dir=args.work_dir,
-            verbose_count=args.verbose_count,
+            n_procs=getattr(args, "nprocs", None) or yaml_config.get("n_jobs", 1),
+            work_dir=work_dir,
+            verbose_count=getattr(args, "verbose_count", 0) or yaml_config.get("verbosity", 0),
         )
 
     def validate(self) -> None:
@@ -177,38 +330,25 @@ class CLIConfig:
                 "Only 'participant' is supported."
             )
 
-        # For single file input, space and resolution are required
+        # For single file input, space is required (resolution is auto-detected from affine)
         if self.is_single_file:
             if not self.space:
                 raise ValueError(
-                    "--space is required when processing a single NIfTI file"
-                )
-            if not self.resolution:
-                raise ValueError(
-                    "--resolution is required when processing a single NIfTI file"
+                    "--mask-space is required when processing a single NIfTI file "
+                    "(cannot be inferred from BIDS filename)"
                 )
 
-        # Structural connectome validation (path vs name)
+        # Structural connectome validation
         if self.structural_connectome:
             connectome_path = Path(self.structural_connectome)
-            if connectome_path.exists():
-                # It's a path, TDI is required
-                if not self.structural_tdi:
-                    raise ValueError(
-                        "--structural-tdi required when --structural-connectome is a file path"
-                    )
-                if not self.structural_tdi.exists():
-                    raise ValueError(f"Structural TDI not found: {self.structural_tdi}")
+            if not connectome_path.exists():
+                raise ValueError(f"Structural tractogram not found: {self.structural_connectome}")
 
-        # Functional connectome path validation (if it's a path)
+        # Functional connectome path validation
         if self.functional_connectome:
             connectome_path = Path(self.functional_connectome)
-            if connectome_path.exists() or "/" in self.functional_connectome:
-                # Looks like a path, validate it exists
-                if not connectome_path.exists():
-                    raise ValueError(
-                        f"Functional connectome not found: {self.functional_connectome}"
-                    )
+            if not connectome_path.exists():
+                raise ValueError(f"Functional connectome not found: {self.functional_connectome}")
 
         # Atlas directory must exist if provided
         if self.atlas_dir and not self.atlas_dir.exists():
@@ -216,6 +356,4 @@ class CLIConfig:
 
         # n_procs validation
         if self.n_procs < -1 or self.n_procs == 0:
-            raise ValueError(
-                f"--nprocs must be -1 (all CPUs) or >= 1, got {self.n_procs}"
-            )
+            raise ValueError(f"--nprocs must be -1 (all CPUs) or >= 1, got {self.n_procs}")

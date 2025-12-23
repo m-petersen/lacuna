@@ -77,10 +77,10 @@ class TestBuildParser:
             ]
         )
 
-        assert args.functional_connectome == "/path/to/connectome.h5"
+        assert args.functional_connectome == Path("/path/to/connectome.h5")
 
-    def test_parser_accepts_structural_connectome(self):
-        """Test that parser accepts --structural-connectome."""
+    def test_parser_accepts_structural_tractogram(self):
+        """Test that parser accepts --structural-tractogram."""
         parser = build_parser()
 
         args = parser.parse_args(
@@ -88,14 +88,14 @@ class TestBuildParser:
                 "/data/bids",
                 "/output",
                 "participant",
-                "--structural-connectome",
+                "--structural-tractogram",
                 "/path/to/tractogram.tck",
                 "--structural-tdi",
                 "/path/to/tdi.nii.gz",
             ]
         )
 
-        assert args.structural_connectome == "/path/to/tractogram.tck"
+        assert args.structural_tractogram == Path("/path/to/tractogram.tck")
         assert args.structural_tdi == Path("/path/to/tdi.nii.gz")
 
     def test_parser_accepts_parcel_atlases(self):
@@ -174,7 +174,7 @@ class TestBuildParser:
         assert args.participant_label is None
         assert args.skip_bids_validation is False
         assert args.functional_connectome is None
-        assert args.structural_connectome is None
+        assert args.structural_tractogram is None
         assert args.parcel_atlases is None
         assert args.nprocs == 1
         assert args.verbose_count == 0
@@ -231,7 +231,7 @@ class TestComplexScenarios:
                 "002",
                 "--functional-connectome",
                 "/connectomes/gsp1000.h5",
-                "--structural-connectome",
+                "--structural-tractogram",
                 "/connectomes/dtor985.tck",
                 "--structural-tdi",
                 "/connectomes/dtor985_tdi.nii.gz",
@@ -251,8 +251,8 @@ class TestComplexScenarios:
         assert args.output_dir == Path("/output")
         assert args.analysis_level == "participant"
         assert args.participant_label == ["001", "002"]
-        assert args.functional_connectome == "/connectomes/gsp1000.h5"
-        assert args.structural_connectome == "/connectomes/dtor985.tck"
+        assert args.functional_connectome == Path("/connectomes/gsp1000.h5")
+        assert args.structural_tractogram == Path("/connectomes/dtor985.tck")
         assert args.structural_tdi == Path("/connectomes/dtor985_tdi.nii.gz")
         assert args.parcel_atlases == ["Schaefer100", "Schaefer200"]
         assert args.nprocs == 4
