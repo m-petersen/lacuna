@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-
     from lacuna.cli.config import CLIConfig
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     """
     Main CLI entry point.
 
-    Parses command-line arguments, loads BIDS data, runs analyses,
-    and writes BIDS-derivatives output.
+    Parses command-line arguments, loads input data (BIDS dataset or single file),
+    runs analyses, and writes BIDS-derivatives output.
 
     Parameters
     ----------
@@ -65,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     _setup_logging(config.log_level)
 
     logger.info("Lacuna CLI starting")
-    logger.info(f"BIDS directory: {config.bids_dir}")
+    logger.info(f"Input: {config.bids_dir}")
     logger.info(f"Output directory: {config.output_dir}")
 
     try:
@@ -93,6 +92,7 @@ def _run_workflow(config: CLIConfig) -> int:
     int
         Exit code.
     """
+    from lacuna import SubjectData
     from lacuna.core.pipeline import analyze
     from lacuna.io import export_bids_derivatives, load_bids_dataset
 
@@ -113,65 +113,89 @@ def _run_workflow(config: CLIConfig) -> int:
     else:
         logger.debug("TEMPLATEFLOW_HOME not set, using default location")
 
-    # Step 1: Load BIDS dataset
-    logger.info("Loading BIDS dataset...")
+    # Step 1: Load input data
+    logger.info("Loading input data...")
     try:
-        subjects_dict = load_bids_dataset(
-            bids_root=config.bids_dir,
-            subjects=config.participant_label,
-            sessions=config.session_id,
-            validate_bids=not config.skip_bids_validation,
-        )
+        if config.is_single_file:
+            # Single NIfTI file mode
+            subject_data = SubjectData.from_nifti(
+                config.bids_dir,
+                space=config.space,
+                resolution=config.resolution,
+                metadata={
+                    "subject_id": f"sub-{config.bids_dir.stem.split('_')[0]}",
+                },
+            )
+            subjects_list = [subject_data]
+            logger.info("Loaded single mask file")
+        else:
+            # BIDS dataset mode
+            subjects_dict = load_bids_dataset(
+                bids_root=config.bids_dir,
+                subjects=config.participant_label,
+                sessions=config.session_id,
+                pattern=config.pattern,
+                space=config.space,
+                resolution=config.resolution,
+                validate_bids=not config.skip_bids_validation,
+            )
+            if not subjects_dict:
+                logger.error("No subjects found in BIDS dataset")
+                return EXIT_BIDS_ERROR
+            subjects_list = list(subjects_dict.values())
+            logger.info(f"Loaded {len(subjects_list)} subject(s)")
     except Exception as e:
-        logger.error(f"Failed to load BIDS dataset: {e}")
+        logger.error(f"Failed to load input data: {e}")
         return EXIT_BIDS_ERROR
-
-    if not subjects_dict:
-        logger.error("No subjects found in BIDS dataset")
-        return EXIT_BIDS_ERROR
-
-    logger.info(f"Loaded {len(subjects_dict)} subject(s)")
 
     # Step 2: Register custom connectomes if paths provided
-    functional_connectome_name = None
-    structural_connectome_name = None
+    functional_connectome_name = _resolve_connectome(
+        config.functional_connectome,
+        connectome_type="functional",
+        space=config.space,
+        resolution=config.resolution,
+    )
+    structural_connectome_name = _resolve_connectome(
+        config.structural_connectome,
+        connectome_type="structural",
+        space=config.space,
+        resolution=config.resolution,
+        tdi_path=config.structural_tdi,
+    )
 
-    if config.functional_connectome:
-        functional_connectome_name = _register_connectome(
-            config.functional_connectome, connectome_type="functional"
-        )
-        if not functional_connectome_name:
-            return EXIT_ANALYSIS_ERROR
+    # Step 3: Build analysis steps
+    steps = _build_analysis_steps(
+        config,
+        functional_connectome_name=functional_connectome_name,
+        structural_connectome_name=structural_connectome_name,
+    )
 
-    if config.structural_connectome:
-        structural_connectome_name = _register_structural_connectome(
-            config.structural_connectome,
-            config.structural_tdi,
-        )
-        if not structural_connectome_name:
-            return EXIT_ANALYSIS_ERROR
+    if not steps:
+        logger.warning("No analyses configured. Only exporting input masks.")
+    else:
+        logger.info(f"Running analyses: {', '.join(steps.keys())}")
 
-    # Step 3: Run analyses
-    logger.info("Running analyses...")
-    subjects_list = list(subjects_dict.values())
-
+    # Step 4: Run analyses
     try:
-        # TODO: Add parcel_atlases support when analyze() is extended
-        results = analyze(
-            data=subjects_list if len(subjects_list) > 1 else subjects_list[0],
-            functional_connectome=functional_connectome_name,
-            structural_connectome=structural_connectome_name,
-            log_level=config.verbose_count,
-        )
+        if steps:
+            results = analyze(
+                data=subjects_list if len(subjects_list) > 1 else subjects_list[0],
+                steps=steps,
+                n_jobs=config.n_procs,
+                show_progress=True,
+                log_level=config.verbose_count,
+            )
+            # Ensure results is a list
+            if not isinstance(results, list):
+                results = [results]
+        else:
+            # No analysis steps, just pass through the input
+            results = subjects_list
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
         return EXIT_ANALYSIS_ERROR
 
-    # Ensure results is a list
-    if not isinstance(results, list):
-        results = [results]
-
-    # Step 4: Export results
+    # Step 5: Export results
     logger.info("Exporting BIDS derivatives...")
     try:
         for result in results:
@@ -189,16 +213,142 @@ def _run_workflow(config: CLIConfig) -> int:
     return EXIT_SUCCESS
 
 
-def _register_connectome(connectome_path: Path, connectome_type: str) -> str | None:
+def _build_analysis_steps(
+    config: CLIConfig,
+    *,
+    functional_connectome_name: str | None,
+    structural_connectome_name: str | None,
+) -> dict[str, dict | None]:
     """
-    Register a custom connectome from a file path.
+    Build analysis steps dictionary from configuration.
+
+    Parameters
+    ----------
+    config : CLIConfig
+        CLI configuration.
+    functional_connectome_name : str, optional
+        Registered functional connectome name.
+    structural_connectome_name : str, optional
+        Registered structural connectome name.
+
+    Returns
+    -------
+    dict
+        Steps dictionary for analyze() function.
+    """
+    steps: dict[str, dict | None] = {}
+
+    # RegionalDamage (enabled by default unless skipped)
+    if not config.skip_regional_damage:
+        rd_kwargs: dict | None = None
+        if config.parcel_atlases:
+            rd_kwargs = {"parcel_names": config.parcel_atlases}
+        steps["RegionalDamage"] = rd_kwargs
+
+    # FunctionalNetworkMapping (if connectome provided)
+    if functional_connectome_name:
+        steps["FunctionalNetworkMapping"] = {
+            "connectome_name": functional_connectome_name,
+        }
+
+    # StructuralNetworkMapping (if connectome provided)
+    if structural_connectome_name:
+        steps["StructuralNetworkMapping"] = {
+            "connectome_name": structural_connectome_name,
+        }
+
+    return steps
+
+
+def _resolve_connectome(
+    connectome_ref: str | None,
+    connectome_type: str,
+    space: str | None = None,
+    resolution: float | None = None,
+    tdi_path: Path | None = None,
+) -> str | None:
+    """
+    Resolve a connectome reference (name or path) to a registered name.
+
+    Parameters
+    ----------
+    connectome_ref : str, optional
+        Connectome name (from registry) or path to file.
+    connectome_type : str
+        Type of connectome ("functional" or "structural").
+    space : str, optional
+        Coordinate space for registration.
+    resolution : float, optional
+        Resolution for registration.
+    tdi_path : Path, optional
+        TDI path for structural connectomes.
+
+    Returns
+    -------
+    str or None
+        Registered connectome name, or None if not provided.
+    """
+    if not connectome_ref:
+        return None
+
+    connectome_path = Path(connectome_ref)
+
+    # Check if it's an existing file/directory (path mode)
+    if connectome_path.exists():
+        return _register_connectome_from_path(
+            connectome_path,
+            connectome_type=connectome_type,
+            space=space or "MNI152NLin6Asym",
+            resolution=resolution or 2.0,
+            tdi_path=tdi_path,
+        )
+
+    # Otherwise treat as a registry name
+    # Validate it exists in registry
+    if connectome_type == "functional":
+        from lacuna.assets.connectomes import list_functional_connectomes
+
+        available = list_functional_connectomes()
+        if connectome_ref not in [c["name"] for c in available]:
+            logger.warning(
+                f"Functional connectome '{connectome_ref}' not found in registry. "
+                "Available: " + ", ".join(c["name"] for c in available)
+            )
+    elif connectome_type == "structural":
+        from lacuna.assets.connectomes import list_structural_connectomes
+
+        available = list_structural_connectomes()
+        if connectome_ref not in [c["name"] for c in available]:
+            logger.warning(
+                f"Structural connectome '{connectome_ref}' not found in registry. "
+                "Available: " + ", ".join(c["name"] for c in available)
+            )
+
+    return connectome_ref
+
+
+def _register_connectome_from_path(
+    connectome_path: Path,
+    connectome_type: str,
+    space: str,
+    resolution: float,
+    tdi_path: Path | None = None,
+) -> str | None:
+    """
+    Register a connectome from a file path.
 
     Parameters
     ----------
     connectome_path : Path
-        Path to connectome file.
+        Path to connectome file/directory.
     connectome_type : str
         Type of connectome ("functional" or "structural").
+    space : str
+        Coordinate space.
+    resolution : float
+        Resolution in mm.
+    tdi_path : Path, optional
+        TDI path for structural connectomes.
 
     Returns
     -------
@@ -206,85 +356,35 @@ def _register_connectome(connectome_path: Path, connectome_type: str) -> str | N
         Registered connectome name, or None if registration failed.
     """
     try:
-        import h5py
-
-        # Read metadata from HDF5 file
-        with h5py.File(connectome_path, "r") as f:
-            space = f.attrs.get("space", "MNI152NLin6Asym")
-            resolution = f.attrs.get("resolution", 2.0)
-
-        # Generate a name from the file
         name = f"_cli_{connectome_path.stem}"
 
-        # Register with the connectome registry
-        from lacuna.assets.connectomes import register_functional_connectome
+        if connectome_type == "functional":
+            from lacuna.assets.connectomes import register_functional_connectome
 
-        register_functional_connectome(
-            name=name,
-            space=space,
-            resolution=float(resolution),
-            data_path=connectome_path,
-        )
+            register_functional_connectome(
+                name=name,
+                space=space,
+                resolution=resolution,
+                data_path=connectome_path,
+            )
+        elif connectome_type == "structural":
+            from lacuna.assets.connectomes import register_structural_connectome
+
+            register_structural_connectome(
+                name=name,
+                space=space,
+                tractogram_path=connectome_path,
+                tdi_path=tdi_path,
+            )
 
         logger.info(
-            f"Registered {connectome_type} connectome: {name} (space={space}, res={resolution}mm)"
+            f"Registered {connectome_type} connectome: {name} "
+            f"(space={space}, res={resolution}mm)"
         )
         return name
 
     except Exception as e:
         logger.error(f"Failed to register {connectome_type} connectome: {e}")
-        return None
-
-
-def _register_structural_connectome(tractogram_path: Path, tdi_path: Path | None) -> str | None:
-    """
-    Register a custom structural connectome from file paths.
-
-    Parameters
-    ----------
-    tractogram_path : Path
-        Path to tractogram (.tck) file.
-    tdi_path : Path
-        Path to TDI NIfTI file.
-
-    Returns
-    -------
-    str or None
-        Registered connectome name, or None if registration failed.
-    """
-    try:
-        # Generate a name from the file
-        name = f"_cli_{tractogram_path.stem}"
-
-        # Read metadata from TDI if available, otherwise use defaults
-        space = "MNI152NLin6Asym"  # Default space
-        resolution = 2.0  # Default resolution
-
-        if tdi_path and tdi_path.exists():
-            import nibabel as nib
-
-            tdi_img = nib.load(tdi_path)
-            # Try to infer resolution from voxel size
-            voxel_sizes = tdi_img.header.get_zooms()[:3]
-            if voxel_sizes:
-                resolution = float(voxel_sizes[0])  # Assume isotropic
-
-        # Register with the structural connectome registry
-        from lacuna.assets.connectomes import register_structural_connectome
-
-        register_structural_connectome(
-            name=name,
-            space=space,
-            resolution=resolution,
-            tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-        )
-
-        logger.info(f"Registered structural connectome: {name} (space={space}, res={resolution}mm)")
-        return name
-
-    except Exception as e:
-        logger.error(f"Failed to register structural connectome: {e}")
         return None
 
 

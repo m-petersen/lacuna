@@ -46,7 +46,10 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     parser.add_argument(
         "bids_dir",
         type=Path,
-        help="Root folder of BIDS dataset (sub-XXXXX folders at top level)",
+        help=(
+            "Root folder of BIDS dataset (sub-XXXXX folders at top level), "
+            "OR path to a single NIfTI mask file for quick analysis"
+        ),
     )
     parser.add_argument(
         "output_dir",
@@ -77,37 +80,72 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         help="Session IDs to process (without ses- prefix)",
     )
     g_bids.add_argument(
+        "--pattern",
+        type=str,
+        metavar="GLOB",
+        help="Glob pattern to filter mask files (e.g., '*label-WMH*')",
+    )
+    g_bids.add_argument(
         "--skip-bids-validation",
         action="store_true",
         help="Skip BIDS dataset validation",
+    )
+
+    # Space/Resolution Options (required when not in filename)
+    g_space = parser.add_argument_group("Space and resolution options")
+    g_space.add_argument(
+        "--space",
+        type=str,
+        metavar="SPACE",
+        help="Coordinate space (e.g., 'MNI152NLin6Asym'). Required if not in filename.",
+    )
+    g_space.add_argument(
+        "--resolution",
+        type=float,
+        metavar="MM",
+        help="Voxel resolution in mm (e.g., 2.0). Required if not in filename.",
     )
 
     # Analysis Options
     g_analysis = parser.add_argument_group("Analysis options")
     g_analysis.add_argument(
         "--functional-connectome",
-        type=Path,
-        metavar="PATH",
-        help="Path to functional connectome HDF5 file for fLNM",
+        type=str,
+        metavar="NAME_OR_PATH",
+        help=(
+            "Functional connectome name (from registry) or path to HDF5/directory. "
+            "Enables FunctionalNetworkMapping analysis."
+        ),
     )
     g_analysis.add_argument(
         "--structural-connectome",
-        type=Path,
-        metavar="PATH",
-        help="Path to structural tractogram (.tck) for sLNM",
+        type=str,
+        metavar="NAME_OR_PATH",
+        help=(
+            "Structural connectome name (from registry) or path to tractogram (.tck). "
+            "Enables StructuralNetworkMapping analysis."
+        ),
     )
     g_analysis.add_argument(
         "--structural-tdi",
         type=Path,
         metavar="PATH",
-        help="Path to whole-brain TDI NIfTI (required with --structural-connectome)",
+        help="Path to whole-brain TDI NIfTI (required with --structural-connectome path)",
     )
     g_analysis.add_argument(
         "--parcel-atlases",
         nargs="+",
         type=str,
         metavar="ATLAS",
-        help="Atlas names for parcel aggregation (from registry)",
+        help=(
+            "Atlas names for RegionalDamage analysis (from registry). "
+            "If not specified, uses default atlas."
+        ),
+    )
+    g_analysis.add_argument(
+        "--skip-regional-damage",
+        action="store_true",
+        help="Skip RegionalDamage analysis (enabled by default)",
     )
     g_analysis.add_argument(
         "--atlas-dir",
@@ -123,7 +161,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         type=int,
         default=1,
         metavar="N",
-        help="Number of parallel processes",
+        help="Number of parallel processes (-1 for all CPUs)",
     )
     g_perf.add_argument(
         "-w",

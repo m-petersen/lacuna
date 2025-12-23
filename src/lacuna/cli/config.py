@@ -32,7 +32,7 @@ class CLIConfig:
     Attributes
     ----------
     bids_dir : Path
-        Input BIDS dataset directory.
+        Input BIDS dataset directory OR path to single NIfTI mask.
     output_dir : Path
         Output derivatives directory.
     analysis_level : str
@@ -41,16 +41,24 @@ class CLIConfig:
         Subject IDs to process.
     session_id : list of str, optional
         Session IDs to process.
+    pattern : str, optional
+        Glob pattern to filter mask files.
     skip_bids_validation : bool
         Whether to skip BIDS dataset validation.
-    functional_connectome : Path, optional
-        Path to functional connectome HDF5 file.
-    structural_connectome : Path, optional
-        Path to structural tractogram (.tck).
+    space : str, optional
+        Coordinate space (required if not in filename).
+    resolution : float, optional
+        Voxel resolution in mm (required if not in filename).
+    functional_connectome : str, optional
+        Functional connectome name or path.
+    structural_connectome : str, optional
+        Structural connectome name or path.
     structural_tdi : Path, optional
         Path to whole-brain TDI NIfTI.
     parcel_atlases : list of str, optional
-        Atlas names for parcel aggregation.
+        Atlas names for RegionalDamage analysis.
+    skip_regional_damage : bool
+        Whether to skip RegionalDamage analysis.
     atlas_dir : Path, optional
         Additional directory containing atlas files.
     n_procs : int
@@ -69,13 +77,19 @@ class CLIConfig:
     # BIDS filtering
     participant_label: list[str] | None = None
     session_id: list[str] | None = None
+    pattern: str | None = None
     skip_bids_validation: bool = False
 
+    # Space/Resolution
+    space: str | None = None
+    resolution: float | None = None
+
     # Analysis options
-    functional_connectome: Path | None = None
-    structural_connectome: Path | None = None
+    functional_connectome: str | None = None
+    structural_connectome: str | None = None
     structural_tdi: Path | None = None
     parcel_atlases: list[str] | None = None
+    skip_regional_damage: bool = False
     atlas_dir: Path | None = None
 
     # Performance options
@@ -84,6 +98,11 @@ class CLIConfig:
 
     # Other options
     verbose_count: int = 0
+
+    @property
+    def is_single_file(self) -> bool:
+        """Check if input is a single NIfTI file rather than BIDS directory."""
+        return self.bids_dir.is_file() and self.bids_dir.suffix in (".nii", ".gz")
 
     @property
     def log_level(self) -> int:
@@ -119,11 +138,15 @@ class CLIConfig:
             analysis_level=args.analysis_level,
             participant_label=args.participant_label,
             session_id=getattr(args, "session_id", None),
+            pattern=getattr(args, "pattern", None),
             skip_bids_validation=args.skip_bids_validation,
-            functional_connectome=args.functional_connectome,
-            structural_connectome=args.structural_connectome,
+            space=getattr(args, "space", None),
+            resolution=getattr(args, "resolution", None),
+            functional_connectome=getattr(args, "functional_connectome", None),
+            structural_connectome=getattr(args, "structural_connectome", None),
             structural_tdi=getattr(args, "structural_tdi", None),
             parcel_atlases=args.parcel_atlases,
+            skip_regional_damage=getattr(args, "skip_regional_damage", False),
             atlas_dir=getattr(args, "atlas_dir", None),
             n_procs=args.nprocs,
             work_dir=args.work_dir,
@@ -139,13 +162,13 @@ class CLIConfig:
         ValueError
             If configuration is invalid.
         """
-        # BIDS directory must exist
+        # Input must exist
         if not self.bids_dir.exists():
-            raise ValueError(f"BIDS directory does not exist: {self.bids_dir}")
+            raise ValueError(f"Input path does not exist: {self.bids_dir}")
 
         # Output directory cannot be same as input
         if self.output_dir.resolve() == self.bids_dir.resolve():
-            raise ValueError("Output directory cannot be same as input BIDS directory")
+            raise ValueError("Output directory cannot be same as input path")
 
         # Analysis level must be 'participant'
         if self.analysis_level != "participant":
@@ -154,23 +177,45 @@ class CLIConfig:
                 "Only 'participant' is supported."
             )
 
-        # Functional connectome path must exist if provided
-        if self.functional_connectome and not self.functional_connectome.exists():
-            raise ValueError(f"Functional connectome not found: {self.functional_connectome}")
+        # For single file input, space and resolution are required
+        if self.is_single_file:
+            if not self.space:
+                raise ValueError(
+                    "--space is required when processing a single NIfTI file"
+                )
+            if not self.resolution:
+                raise ValueError(
+                    "--resolution is required when processing a single NIfTI file"
+                )
 
-        # Structural connectome validation
+        # Structural connectome validation (path vs name)
         if self.structural_connectome:
-            if not self.structural_connectome.exists():
-                raise ValueError(f"Structural connectome not found: {self.structural_connectome}")
-            if not self.structural_tdi:
-                raise ValueError("--structural-tdi required when using --structural-connectome")
-            if not self.structural_tdi.exists():
-                raise ValueError(f"Structural TDI not found: {self.structural_tdi}")
+            connectome_path = Path(self.structural_connectome)
+            if connectome_path.exists():
+                # It's a path, TDI is required
+                if not self.structural_tdi:
+                    raise ValueError(
+                        "--structural-tdi required when --structural-connectome is a file path"
+                    )
+                if not self.structural_tdi.exists():
+                    raise ValueError(f"Structural TDI not found: {self.structural_tdi}")
+
+        # Functional connectome path validation (if it's a path)
+        if self.functional_connectome:
+            connectome_path = Path(self.functional_connectome)
+            if connectome_path.exists() or "/" in self.functional_connectome:
+                # Looks like a path, validate it exists
+                if not connectome_path.exists():
+                    raise ValueError(
+                        f"Functional connectome not found: {self.functional_connectome}"
+                    )
 
         # Atlas directory must exist if provided
         if self.atlas_dir and not self.atlas_dir.exists():
             raise ValueError(f"Atlas directory not found: {self.atlas_dir}")
 
-        # n_procs must be positive
-        if self.n_procs < 1:
-            raise ValueError(f"--nprocs must be at least 1, got {self.n_procs}")
+        # n_procs validation
+        if self.n_procs < -1 or self.n_procs == 0:
+            raise ValueError(
+                f"--nprocs must be -1 (all CPUs) or >= 1, got {self.n_procs}"
+            )

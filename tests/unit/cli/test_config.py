@@ -139,7 +139,7 @@ class TestCLIConfigValidation:
             analysis_level="participant",
         )
 
-        with pytest.raises(ValueError, match="BIDS directory does not exist"):
+        with pytest.raises(ValueError, match="Input path does not exist"):
             config.validate()
 
     def test_validate_fails_if_output_equals_bids(self, tmp_path):
@@ -165,7 +165,7 @@ class TestCLIConfigValidation:
             bids_dir=bids_dir,
             output_dir=tmp_path / "output",
             analysis_level="participant",
-            functional_connectome=tmp_path / "nonexistent.h5",
+            functional_connectome=str(tmp_path / "nonexistent.h5"),  # String path
         )
 
         with pytest.raises(ValueError, match="Functional connectome not found"):
@@ -182,7 +182,7 @@ class TestCLIConfigValidation:
             bids_dir=bids_dir,
             output_dir=tmp_path / "output",
             analysis_level="participant",
-            structural_connectome=connectome,
+            structural_connectome=str(connectome),  # String path
             structural_tdi=None,  # Missing TDI
         )
 
@@ -200,7 +200,7 @@ class TestCLIConfigValidation:
             bids_dir=bids_dir,
             output_dir=tmp_path / "output",
             analysis_level="participant",
-            structural_connectome=connectome,
+            structural_connectome=str(connectome),  # String path
             structural_tdi=tmp_path / "nonexistent.nii.gz",
         )
 
@@ -219,7 +219,7 @@ class TestCLIConfigValidation:
             n_procs=0,
         )
 
-        with pytest.raises(ValueError, match="--nprocs must be at least 1"):
+        with pytest.raises(ValueError, match="--nprocs must be -1 .* or >= 1"):
             config.validate()
 
     def test_validate_passes_with_functional_connectome(self, tmp_path):
@@ -233,7 +233,7 @@ class TestCLIConfigValidation:
             bids_dir=bids_dir,
             output_dir=tmp_path / "output",
             analysis_level="participant",
-            functional_connectome=connectome,
+            functional_connectome=str(connectome),  # String path
         )
 
         # Should not raise
@@ -252,7 +252,7 @@ class TestCLIConfigValidation:
             bids_dir=bids_dir,
             output_dir=tmp_path / "output",
             analysis_level="participant",
-            structural_connectome=connectome,
+            structural_connectome=str(connectome),  # String path
             structural_tdi=tdi,
         )
 
