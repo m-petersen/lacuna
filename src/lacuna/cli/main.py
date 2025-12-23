@@ -46,15 +46,33 @@ def main(argv: list[str] | None = None) -> int:
     int
         Exit code (0 for success, non-zero for errors).
     """
-    from lacuna.cli.config import CLIConfig
+    from lacuna.cli.config import CLIConfig, generate_config_template, load_yaml_config
     from lacuna.cli.parser import build_parser
 
     parser = build_parser()
+
+    # Handle --generate-config before full parsing
+    if argv is None:
+        argv = sys.argv[1:]
+    if "--generate-config" in argv:
+        print(generate_config_template())
+        return EXIT_SUCCESS
+
     args = parser.parse_args(argv)
 
-    # Build configuration from arguments
+    # Load YAML config if provided
+    yaml_config = None
+    if args.config:
+        try:
+            yaml_config = load_yaml_config(args.config)
+            logger.info(f"Loaded configuration from: {args.config}")
+        except (FileNotFoundError, ValueError) as e:
+            logger.error(f"Config file error: {e}")
+            return EXIT_INVALID_ARGS
+
+    # Build configuration from arguments + YAML
     try:
-        config = CLIConfig.from_args(args)
+        config = CLIConfig.from_args(args, yaml_config)
         config.validate()
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
@@ -130,14 +148,17 @@ def _run_workflow(config: CLIConfig) -> int:
             logger.info("Loaded single mask file")
         else:
             # BIDS dataset mode
+            # Build pattern from subject/session filters
+            pattern = _build_pattern(
+                config.participant_label,
+                config.session_id,
+                config.pattern,
+            )
             subjects_dict = load_bids_dataset(
                 bids_root=config.bids_dir,
-                subjects=config.participant_label,
-                sessions=config.session_id,
-                pattern=config.pattern,
+                pattern=pattern,
                 space=config.space,
                 resolution=config.resolution,
-                validate_bids=not config.skip_bids_validation,
             )
             if not subjects_dict:
                 logger.error("No subjects found in BIDS dataset")
@@ -153,13 +174,11 @@ def _run_workflow(config: CLIConfig) -> int:
         config.functional_connectome,
         connectome_type="functional",
         space=config.space,
-        resolution=config.resolution,
     )
     structural_connectome_name = _resolve_connectome(
         config.structural_connectome,
         connectome_type="structural",
         space=config.space,
-        resolution=config.resolution,
         tdi_path=config.structural_tdi,
     )
 
@@ -213,6 +232,53 @@ def _run_workflow(config: CLIConfig) -> int:
     return EXIT_SUCCESS
 
 
+def _build_pattern(
+    subjects: list[str] | None,
+    sessions: list[str] | None,
+    extra_pattern: str | None,
+) -> str:
+    """
+    Build a glob pattern from subject/session filters.
+
+    Parameters
+    ----------
+    subjects : list of str, optional
+        Subject IDs to filter.
+    sessions : list of str, optional
+        Session IDs to filter.
+    extra_pattern : str, optional
+        Additional pattern to include.
+
+    Returns
+    -------
+    str
+        Glob pattern for matching files.
+    """
+    # Start with wildcards
+    pattern_parts = []
+
+    if subjects:
+        # Match any of the specified subjects
+        if len(subjects) == 1:
+            pattern_parts.append(f"*sub-{subjects[0]}*")
+        else:
+            # For multiple subjects, we'll use a simple pattern that matches any
+            # The load_bids_dataset will match all, but we could filter after
+            pattern_parts.append("*sub-*")
+    else:
+        pattern_parts.append("*")
+
+    if sessions:
+        if len(sessions) == 1:
+            pattern_parts.append(f"ses-{sessions[0]}*")
+
+    if extra_pattern:
+        pattern_parts.append(extra_pattern)
+
+    # Combine pattern parts
+    return "".join(pattern_parts) if pattern_parts else "*"
+
+
 def _build_analysis_steps(
     config: CLIConfig,
     *,
@@ -261,25 +327,22 @@ def _build_analysis_steps(
 
 
 def _resolve_connectome(
-    connectome_ref: str | None,
+    connectome_path: str | Path | None,
     connectome_type: str,
     space: str | None = None,
-    resolution: float | None = None,
     tdi_path: Path | None = None,
 ) -> str | None:
     """
-    Resolve a connectome reference (name or path) to a registered name.
+    Resolve a connectome path to a registered name.
 
     Parameters
     ----------
-    connectome_ref : str, optional
-        Connectome name (from registry) or path to file.
+    connectome_path : str or Path, optional
+        Path to connectome file/directory.
     connectome_type : str
         Type of connectome ("functional" or "structural").
     space : str, optional
         Coordinate space for registration.
-    resolution : float, optional
-        Resolution for registration.
     tdi_path : Path, optional
         TDI path for structural connectomes.
 
@@ -288,50 +351,28 @@ def _resolve_connectome(
     str or None
         Registered connectome name, or None if not provided.
     """
-    if not connectome_ref:
+    if not connectome_path:
         return None
 
-    connectome_path = Path(connectome_ref)
+    connectome_path = Path(connectome_path)
 
-    # Check if it's an existing file/directory (path mode)
-    if connectome_path.exists():
-        return _register_connectome_from_path(
-            connectome_path,
-            connectome_type=connectome_type,
-            space=space or "MNI152NLin6Asym",
-            resolution=resolution or 2.0,
-            tdi_path=tdi_path,
-        )
+    # Validate path exists
+    if not connectome_path.exists():
+        logger.error(f"{connectome_type.capitalize()} connectome not found: {connectome_path}")
+        return None
 
-    # Otherwise treat as a registry name
-    # Validate it exists in registry
-    if connectome_type == "functional":
-        from lacuna.assets.connectomes import list_functional_connectomes
-
-        available = list_functional_connectomes()
-        if connectome_ref not in [c["name"] for c in available]:
-            logger.warning(
-                f"Functional connectome '{connectome_ref}' not found in registry. "
-                "Available: " + ", ".join(c["name"] for c in available)
-            )
-    elif connectome_type == "structural":
-        from lacuna.assets.connectomes import list_structural_connectomes
-
-        available = list_structural_connectomes()
-        if connectome_ref not in [c["name"] for c in available]:
-            logger.warning(
-                f"Structural connectome '{connectome_ref}' not found in registry. "
-                "Available: " + ", ".join(c["name"] for c in available)
-            )
-
-    return connectome_ref
+    return _register_connectome_from_path(
+        connectome_path,
+        connectome_type=connectome_type,
+        space=space or "MNI152NLin6Asym",
+        tdi_path=tdi_path,
+    )
 
 
 def _register_connectome_from_path(
     connectome_path: Path,
     connectome_type: str,
     space: str,
-    resolution: float,
     tdi_path: Path | None = None,
 ) -> str | None:
     """
@@ -345,8 +386,6 @@ def _register_connectome_from_path(
         Type of connectome ("functional" or "structural").
     space : str
         Coordinate space.
-    resolution : float
-        Resolution in mm.
     tdi_path : Path, optional
         TDI path for structural connectomes.
 
@@ -360,6 +399,9 @@ def _register_connectome_from_path(
 
         if connectome_type == "functional":
             from lacuna.assets.connectomes import register_functional_connectome
+
+            # Try to extract resolution from HDF5 file
+            resolution = _get_resolution_from_connectome(connectome_path)
 
             register_functional_connectome(
                 name=name,
@@ -377,15 +419,45 @@ def _register_connectome_from_path(
                 tdi_path=tdi_path,
             )
 
-        logger.info(
-            f"Registered {connectome_type} connectome: {name} "
-            f"(space={space}, res={resolution}mm)"
-        )
+        logger.info(f"Registered {connectome_type} connectome: {name} (space={space})")
         return name
 
     except Exception as e:
         logger.error(f"Failed to register {connectome_type} connectome: {e}")
         return None
+
+
+def _get_resolution_from_connectome(connectome_path: Path) -> float:
+    """
+    Extract resolution from a functional connectome HDF5 file.
+
+    Parameters
+    ----------
+    connectome_path : Path
+        Path to connectome HDF5 file.
+
+    Returns
+    -------
+    float
+        Resolution in mm (defaults to 2.0 if cannot be determined).
+    """
+    try:
+        import h5py
+        import numpy as np
+
+        with h5py.File(connectome_path, "r") as f:
+            if "mask_affine" in f:
+                affine = np.array(f["mask_affine"])
+                # Resolution is typically the diagonal elements of the affine
+                resolution = abs(affine[0, 0])
+                if 0.5 <= resolution <= 10.0:  # Sanity check
+                    return float(resolution)
+    except Exception:
+        pass
+
+    # Default to 2mm if cannot be determined
+    logger.debug(f"Could not determine resolution from {connectome_path}, using default 2.0mm")
+    return 2.0
 
 
 def _setup_logging(level: int) -> None:

@@ -171,8 +171,24 @@ class TestCLIConfigValidation:
         with pytest.raises(ValueError, match="Functional connectome not found"):
             config.validate()
 
-    def test_validate_fails_if_structural_without_tdi(self, tmp_path):
-        """Test that validation fails if structural connectome without TDI."""
+    def test_validate_fails_if_structural_connectome_missing(self, tmp_path):
+        """Test that validation fails if structural tractogram doesn't exist."""
+        bids_dir = tmp_path / "bids"
+        bids_dir.mkdir()
+
+        config = CLIConfig(
+            bids_dir=bids_dir,
+            output_dir=tmp_path / "output",
+            analysis_level="participant",
+            structural_connectome=str(tmp_path / "nonexistent.tck"),  # Non-existent path
+            structural_tdi=None,
+        )
+
+        with pytest.raises(ValueError, match="Structural tractogram not found"):
+            config.validate()
+
+    def test_validate_succeeds_with_valid_structural_connectome(self, tmp_path):
+        """Test that validation succeeds with valid structural connectome."""
         bids_dir = tmp_path / "bids"
         bids_dir.mkdir()
         connectome = tmp_path / "connectome.tck"
@@ -183,29 +199,11 @@ class TestCLIConfigValidation:
             output_dir=tmp_path / "output",
             analysis_level="participant",
             structural_connectome=str(connectome),  # String path
-            structural_tdi=None,  # Missing TDI
+            structural_tdi=None,  # TDI is optional
         )
 
-        with pytest.raises(ValueError, match="--structural-tdi required"):
-            config.validate()
-
-    def test_validate_fails_if_structural_tdi_missing(self, tmp_path):
-        """Test that validation fails if structural TDI doesn't exist."""
-        bids_dir = tmp_path / "bids"
-        bids_dir.mkdir()
-        connectome = tmp_path / "connectome.tck"
-        connectome.touch()
-
-        config = CLIConfig(
-            bids_dir=bids_dir,
-            output_dir=tmp_path / "output",
-            analysis_level="participant",
-            structural_connectome=str(connectome),  # String path
-            structural_tdi=tmp_path / "nonexistent.nii.gz",
-        )
-
-        with pytest.raises(ValueError, match="Structural TDI not found"):
-            config.validate()
+        # Should not raise - TDI is optional
+        config.validate()
 
     def test_validate_fails_with_invalid_nprocs(self, tmp_path):
         """Test that validation fails with n_procs < 1."""

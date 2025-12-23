@@ -1,0 +1,119 @@
+# Lacuna Configuration File
+# ========================
+# Copy this file and modify for your analysis.
+# Pass to lacuna with: lacuna --config my_config.yaml
+#
+# All paths can be absolute or relative to the config file location.
+
+# =============================================================================
+# INPUT/OUTPUT
+# =============================================================================
+
+# Input: BIDS dataset directory OR single NIfTI mask file
+input: /path/to/bids_dataset
+
+# Output: Directory for BIDS derivatives
+output: /path/to/output
+
+# Working directory for intermediate files (optional)
+# Default: ./work or $LACUNA_WORK_DIR
+work_dir: null
+
+# =============================================================================
+# MASK SPACE CONFIGURATION
+# =============================================================================
+# The coordinate space of your input mask images.
+# This is REQUIRED if not detectable from filename (e.g., _space-MNI152NLin6Asym_)
+# or sidecar JSON.
+#
+# Common spaces:
+#   - MNI152NLin6Asym (FSL's MNI template)
+#   - MNI152NLin2009cAsym (fMRIPrep default)
+#   - MNI152NLin2009bAsym
+#
+# Resolution is automatically detected from image voxel size.
+
+mask_space: MNI152NLin6Asym
+
+# =============================================================================
+# SUBJECT FILTERING (for BIDS datasets)
+# =============================================================================
+
+# Subject IDs to process (without 'sub-' prefix)
+# Leave empty to process all subjects
+subjects: []
+  # - "001"
+  # - "002"
+
+# Session IDs to process (without 'ses-' prefix)
+# Leave empty to process all sessions
+sessions: []
+  # - "01"
+  # - "baseline"
+
+# Glob pattern to filter mask files
+# Examples: "*label-WMH*", "*label-lesion*", "*acuteinfarct*"
+pattern: null
+
+# Skip BIDS validation (faster but less safe)
+skip_bids_validation: false
+
+# =============================================================================
+# ANALYSES
+# =============================================================================
+# Each analysis can be enabled/disabled and configured.
+# Set to null or remove to disable an analysis.
+
+# Regional Damage Analysis
+# ------------------------
+# Quantifies lesion overlap with brain parcellations.
+regional_damage:
+  enabled: true
+  # Parcellation atlases to use (from TemplateFlow registry)
+  # See: lacuna list-parcellations
+  atlases:
+    - Schaefer2018_100Parcels7Networks
+    # - Schaefer2018_200Parcels7Networks
+    # - AAL3
+
+# Functional Network Mapping (fLNM)
+# ---------------------------------
+# Maps lesion to functionally connected brain regions using resting-state
+# functional connectivity data.
+functional_network_mapping:
+  enabled: false
+  # Path to functional connectome data directory or HDF5 file
+  # Must contain connectivity matrices for the same space as your masks
+  connectome_path: /path/to/functional_connectome
+  # Mapping method: "boes" (default) or "fox"
+  method: boes
+
+# Structural Network Mapping (sLNM)
+# ---------------------------------
+# Maps lesion to structurally connected brain regions using diffusion
+# tractography data. Requires MRtrix3 installed.
+structural_network_mapping:
+  enabled: false
+  # Path to whole-brain tractogram (.tck file)
+  tractogram_path: /path/to/tractogram.tck
+  # Path to pre-computed whole-brain TDI (optional, speeds up processing)
+  # Will be computed if not provided
+  tdi_path: null
+  # Parcellation for connectivity matrix (optional)
+  parcellation: null
+
+# =============================================================================
+# PERFORMANCE
+# =============================================================================
+
+# Number of parallel processes
+# -1 = use all available CPUs
+# 1 = single-threaded (default, safest)
+n_jobs: 1
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+
+# Verbosity level: 0 = quiet, 1 = standard, 2 = verbose/debug
+verbosity: 1

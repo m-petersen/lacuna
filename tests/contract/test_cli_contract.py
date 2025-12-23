@@ -91,7 +91,7 @@ class TestCLIContract:
         assert result.returncode == 0
         # Check for analysis options
         assert "--functional-connectome" in result.stdout
-        assert "--structural-connectome" in result.stdout
+        assert "--structural-tractogram" in result.stdout
         assert "--parcel-atlases" in result.stdout
 
     def test_cli_help_shows_performance_options(self):
