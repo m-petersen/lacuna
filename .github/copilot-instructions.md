@@ -5,6 +5,8 @@
 - File-based (NIfTI images, HDF5 connectomes, .tck tractograms), no database (003-package-optimization)
 - Python 3.10+ (existing project constraint) + nibabel, nilearn, numpy, scipy, pandas, templateflow, tqdm, joblib, h5py, nitransforms (005-package-consolidation)
 - File-based (NIfTI images, HDF5 connectomes, .tck tractograms) - no database (005-package-consolidation)
+- Python 3.10+ (project requirement from pyproject.toml) + pooch (download management, already a dependency), requests (HTTP, transitive via pooch), cloudscraper (Figshare Cloudflare bypass, NEW), tqdm (progress, already a dependency), h5py (HDF5, already a dependency), nibabel (tractogram conversion, already a dependency) (006-connectome-fetching)
+- File-based (NIfTI → HDF5 batches, TRK → TCK), cached in `~/.cache/lacuna/` (006-connectome-fetching)
 
 - Python 3.10+ (existing project constraint)
 
@@ -139,5 +141,6 @@ Version automatically derived from git tags via setuptools-scm:
 See `DEVELOPMENT.md` for detailed workflow documentation.
 
 ## Recent Changes
+- 006-connectome-fetching: Added Python 3.10+ (project requirement from pyproject.toml) + pooch (download management, already a dependency), requests (HTTP, transitive via pooch), cloudscraper (Figshare Cloudflare bypass, NEW), tqdm (progress, already a dependency), h5py (HDF5, already a dependency), nibabel (tractogram conversion, already a dependency)
 - 005-package-consolidation: Added Python 3.10+ (existing project constraint) + nibabel, nilearn, numpy, scipy, pandas, templateflow, tqdm, joblib, h5py, nitransforms
 - 003-package-optimization: Added Python 3.10+ (project constraint from existing implementation) + nibabel, nilearn, numpy, scipy, pandas, templateflow, pytest, pytest-xdist, ruff, black, mypy
