@@ -49,11 +49,18 @@ def main(argv: list[str] | None = None) -> int:
     from lacuna.cli.config import CLIConfig, generate_config_template, load_yaml_config
     from lacuna.cli.parser import build_parser
 
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if this is a subcommand (fetch, etc.) or legacy BIDS workflow
+    subcommands = {"fetch", "run"}
+    if argv and argv[0] in subcommands:
+        return _handle_subcommand(argv)
+
+    # Legacy BIDS-Apps workflow (backward compatible)
     parser = build_parser()
 
     # Handle --generate-config before full parsing
-    if argv is None:
-        argv = sys.argv[1:]
     if "--generate-config" in argv:
         print(generate_config_template())
         return EXIT_SUCCESS
@@ -94,6 +101,57 @@ def main(argv: list[str] | None = None) -> int:
 
             traceback.print_exc()
         return EXIT_GENERAL_ERROR
+
+
+def _handle_subcommand(argv: list[str]) -> int:
+    """
+    Handle subcommands (fetch, run, etc.).
+
+    Parameters
+    ----------
+    argv : list of str
+        Command-line arguments starting with subcommand.
+
+    Returns
+    -------
+    int
+        Exit code.
+    """
+    from lacuna.cli.parser import build_main_parser
+
+    parser = build_main_parser()
+    args = parser.parse_args(argv)
+
+    if args.command == "fetch":
+        from lacuna.cli.fetch_cmd import handle_fetch_command
+
+        return handle_fetch_command(args)
+
+    elif args.command == "run":
+        # The 'run' subcommand uses the same workflow as the legacy CLI
+        from lacuna.cli.config import CLIConfig, load_yaml_config
+
+        yaml_config = None
+        if hasattr(args, "config") and args.config:
+            try:
+                yaml_config = load_yaml_config(args.config)
+            except (FileNotFoundError, ValueError) as e:
+                logger.error(f"Config file error: {e}")
+                return EXIT_INVALID_ARGS
+
+        try:
+            config = CLIConfig.from_args(args, yaml_config)
+            config.validate()
+        except ValueError as e:
+            logger.error(f"Configuration error: {e}")
+            return EXIT_INVALID_ARGS
+
+        _setup_logging(config.log_level)
+        return _run_workflow(config)
+
+    else:
+        parser.print_help()
+        return EXIT_SUCCESS
 
 
 def _run_workflow(config: CLIConfig) -> int:

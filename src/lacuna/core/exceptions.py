@@ -129,3 +129,60 @@ class TransformDownloadError(LacunaError):
             f"Check network connection or download manually from TemplateFlow."
         )
         super().__init__(message)
+
+
+# Fetch/download exceptions
+
+
+class FetchError(LacunaError):
+    """Base exception for all fetch/download errors."""
+
+    pass
+
+
+class AuthenticationError(FetchError):
+    """Raised when authentication fails (missing or invalid API key)."""
+
+    def __init__(self, source: str, reason: str | None = None):
+        self.source = source
+        self.reason = reason
+        message = f"Authentication failed for '{source}'"
+        if reason:
+            message += f": {reason}"
+        super().__init__(message)
+
+
+class DownloadError(FetchError):
+    """Raised when download fails after retries."""
+
+    def __init__(self, url: str, reason: str, retries: int = 0):
+        self.url = url
+        self.reason = reason
+        self.retries = retries
+        message = f"Download failed for '{url}': {reason}"
+        if retries > 0:
+            message += f" (after {retries} retries)"
+        super().__init__(message)
+
+
+class ProcessingError(FetchError):
+    """Raised when post-download processing fails."""
+
+    def __init__(self, operation: str, reason: str):
+        self.operation = operation
+        self.reason = reason
+        message = f"Processing failed during '{operation}': {reason}"
+        super().__init__(message)
+
+
+class ChecksumError(FetchError):
+    """Raised when file checksum verification fails."""
+
+    def __init__(self, filepath: str, expected: str, actual: str):
+        self.filepath = filepath
+        self.expected = expected
+        self.actual = actual
+        message = (
+            f"Checksum mismatch for '{filepath}': expected {expected[:16]}..., got {actual[:16]}..."
+        )
+        super().__init__(message)
