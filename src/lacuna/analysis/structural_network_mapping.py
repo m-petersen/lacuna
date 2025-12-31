@@ -7,7 +7,6 @@ white matter connectivity.
 """
 
 import hashlib
-import logging
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -43,8 +42,6 @@ from lacuna.utils.mrtrix import (
 if TYPE_CHECKING:
     from lacuna.core.data_types import AnalysisResult
 
-logger = logging.getLogger(__name__)
-
 
 class StructuralNetworkMapping(BaseAnalysis):
     """
@@ -77,13 +74,13 @@ class StructuralNetworkMapping(BaseAnalysis):
     Parameters
     ----------
     connectome_name : str
-        Name of registered structural connectome (e.g., "HCP842_dTOR").
+        Name of registered structural connectome (e.g., "dTOR985").
         Use list_structural_connectomes() to see available connectomes.
         The connectome must be pre-registered via register_structural_connectome().
     parcellation_name : str, optional
         Name of registered atlas for parcellated connectivity matrices.
         Use list_parcellations() to see available atlases.
-    compute_lesioned : bool, default=False
+    compute_lesioned_matrix : bool, default=False
         If True and parcellation_name provided, compute lesioned connectivity matrix.
     output_resolution : {1, 2}, default=2
         Output resolution in mm (must match connectome resolution).
@@ -187,7 +184,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self,
         connectome_name: str,
         parcellation_name: str | None = None,
-        compute_lesioned: bool = False,
+        compute_lesioned_matrix: bool = False,
         output_resolution: Literal[1, 2] = 2,
         cache_tdi: bool = True,
         n_jobs: int = 1,
@@ -195,7 +192,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         load_to_memory: bool = True,
         check_dependencies: bool = True,
         log_level: int = 1,
-        return_in_lesion_space: bool = False,
+        return_in_lesion_space: bool = True,
     ):
         """Initialize StructuralNetworkMapping analysis.
 
@@ -206,7 +203,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             Use list_structural_connectomes() to see available options.
         parcellation_name : str, optional
             Name of registered atlas for parcellated connectivity matrices.
-        compute_lesioned : bool, default=False
+        compute_lesioned_matrix : bool, default=False
             If True and parcellation_name provided, compute lesioned connectivity.
         output_resolution : {1, 2}, default=2
             Output resolution in mm (must match connectome resolution).
@@ -222,7 +219,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             If True, checks for MRtrix3 availability.
         log_level : int, default=1
             Logging verbosity (0=silent, 1=standard, 2=verbose).
-        return_in_lesion_space : bool, default=False
+        return_in_lesion_space : bool, default=True
             If True, transform VoxelMap outputs back to the input lesion space.
             If False, outputs remain in the connectome space.
             Requires input SubjectData to have valid space/resolution metadata.
@@ -261,7 +258,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Store analysis parameters
         self.parcellation_name = parcellation_name
-        self.compute_lesioned = compute_lesioned
+        self.compute_lesioned_matrix = compute_lesioned_matrix
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
         self.n_jobs = n_jobs
@@ -341,7 +338,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             Cache file path from _get_tdi_cache_path()
         """
         self._compute_tdi_to_path(cache_path)
-        logger.info(f"Cached TDI to: {cache_path}")
+        self.logger.info(f"Cached TDI to: {cache_path}", verbose=True)
 
     def run(self, mask_data: SubjectData) -> SubjectData:
         """Run structural network mapping analysis.
@@ -418,18 +415,22 @@ class StructuralNetworkMapping(BaseAnalysis):
             tdi_cache_path = self._get_tdi_cache_path()
             if tdi_cache_path.exists():
                 self.whole_brain_tdi = tdi_cache_path
-                logger.info(f"Using cached TDI: {tdi_cache_path}")
+                self.logger.info(f"Using cached TDI: {tdi_cache_path}", verbose=True)
             else:
                 # Compute TDI and cache it
-                logger.info(
-                    f"Computing whole-brain TDI at {self.output_resolution}mm resolution..."
+                self.logger.info(
+                    f"Computing whole-brain TDI at {self.output_resolution}mm resolution...",
+                    verbose=True,
                 )
                 self._compute_and_cache_tdi(tdi_cache_path)
                 self.whole_brain_tdi = tdi_cache_path
         else:
             # Compute TDI without caching (temporary file)
             temp_tdi = Path(tempfile.mkdtemp()) / "whole_brain_tdi.nii.gz"
-            logger.info(f"Computing whole-brain TDI at {self.output_resolution}mm resolution...")
+            self.logger.info(
+                f"Computing whole-brain TDI at {self.output_resolution}mm resolution...",
+                verbose=True,
+            )
             self._compute_tdi_to_path(temp_tdi)
             self.whole_brain_tdi = temp_tdi
 
@@ -453,9 +454,10 @@ class StructuralNetworkMapping(BaseAnalysis):
                 atlas_resolution = atlas.metadata.resolution
 
                 if atlas_space != self.tractogram_space:
-                    logger.info(
-                        f"Atlas space ({atlas_space}) differs from tractogram space ({self.tractogram_space}). "
-                        f"Transforming atlas to {self.tractogram_space}..."
+                    self.logger.info(
+                        f"Atlas space ({atlas_space}) differs from tractogram space "
+                        f"({self.tractogram_space}). Transforming atlas...",
+                        verbose=True,
                     )
 
                     # Transform atlas to tractogram space
@@ -502,7 +504,10 @@ class StructuralNetworkMapping(BaseAnalysis):
                     self._parcellation_resolved = transformed_atlas_path
                     self._atlas_image = transformed_atlas_img
 
-                    logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
+                    self.logger.info(
+                        f"Atlas transformed and cached to: {transformed_atlas_path}",
+                        verbose=True,
+                    )
                 else:
                     # No transformation needed - use original atlas file
                     from lacuna.assets.parcellations.loader import BUNDLED_PARCELLATIONS_DIR
@@ -767,7 +772,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             - 'lesion_connectivity_matrix': ConnectivityMatrixResult
             - 'disconnectivity_percent': ConnectivityMatrixResult
             - 'full_connectivity_matrix': ConnectivityMatrixResult
-            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_lesioned=True)
+            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_lesioned_matrix=True)
             - 'matrix_statistics': MiscResult
         """
 
@@ -802,7 +807,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Step 4: Optional - compute lesioned (intact) connectivity
         lesioned_matrix = None
-        if self.compute_lesioned:
+        if self.compute_lesioned_matrix:
             self.logger.info("Computing lesioned (intact) connectivity matrix", indent_level=1)
 
             # Save lesion mask temporarily for tckedit -exclude
@@ -1034,7 +1039,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         return {
             "connectome_name": self.connectome_name,
             "parcellation_name": str(self.parcellation_name) if self.parcellation_name else None,
-            "compute_lesioned": self.compute_lesioned,
+            "compute_lesioned_matrix": self.compute_lesioned_matrix,
             "output_resolution": self.output_resolution,
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,

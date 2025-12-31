@@ -41,7 +41,6 @@ def test_register_structural_connectome_with_valid_files(tmp_path):
     register_structural_connectome(
         name="test_structural",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -67,7 +66,6 @@ def test_register_structural_connectome_missing_tractogram(tmp_path):
         register_structural_connectome(
             name="test_missing_tractogram",
             space="MNI152NLin2009cAsym",
-            resolution=1.0,
             tractogram_path=tmp_path / "missing.tck",
             tdi_path=tdi,
             n_subjects=100,
@@ -86,7 +84,6 @@ def test_register_structural_connectome_missing_tdi(tmp_path):
         register_structural_connectome(
             name="test_missing_tdi",
             space="MNI152NLin2009cAsym",
-            resolution=1.0,
             tractogram_path=tractogram,
             tdi_path=tmp_path / "missing.nii.gz",
             n_subjects=100,
@@ -107,7 +104,6 @@ def test_register_structural_connectome_invalid_tractogram_extension(tmp_path):
         register_structural_connectome(
             name="test_wrong_ext",
             space="MNI152NLin2009cAsym",
-            resolution=1.0,
             tractogram_path=tractogram,
             tdi_path=tdi,
             n_subjects=100,
@@ -130,7 +126,6 @@ def test_register_structural_connectome_with_template(tmp_path):
     register_structural_connectome(
         name="test_with_template",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -169,7 +164,6 @@ def test_list_structural_connectomes_filter_by_space(tmp_path):
     register_structural_connectome(
         name="test_space_nlin6",
         space="MNI152NLin6Asym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -178,7 +172,6 @@ def test_list_structural_connectomes_filter_by_space(tmp_path):
     register_structural_connectome(
         name="test_space_nlin2009",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -205,7 +198,6 @@ def test_load_structural_connectome_returns_correct_type(tmp_path):
     register_structural_connectome(
         name="test_load",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -232,7 +224,6 @@ def test_load_structural_connectome_has_correct_paths(tmp_path):
     register_structural_connectome(
         name="test_paths",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -272,7 +263,6 @@ def test_unregister_structural_connectome(tmp_path):
     register_structural_connectome(
         name="test_unregister",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -308,7 +298,6 @@ def test_structural_connectome_metadata_has_required_fields(tmp_path):
     register_structural_connectome(
         name="test_metadata",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
         tractogram_path=tractogram,
         tdi_path=tdi,
         n_subjects=100,
@@ -331,7 +320,10 @@ def test_structural_connectome_metadata_has_required_fields(tmp_path):
     # Check values
     assert metadata.name == "test_metadata"
     assert metadata.space == "MNI152NLin2009cAsym"
-    assert metadata.resolution == 1.0
+    # Note: Structural connectomes (tractograms) don't have inherent voxel resolution
+    # The resolution is set to 0.0 as a placeholder; output resolution is controlled
+    # by StructuralNetworkMapping.output_resolution parameter
+    assert metadata.resolution == 0.0
     assert metadata.n_subjects == 100
     assert metadata.tractogram_path == tractogram
     assert metadata.tdi_path == tdi

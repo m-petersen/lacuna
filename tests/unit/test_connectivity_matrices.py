@@ -33,7 +33,6 @@ class TestConnectivityMatrixComputation:
         register_structural_connectome(
             name="test_mock_connectome",
             space="MNI152NLin2009cAsym",
-            resolution=2.0,
             tractogram_path=tractogram_path,
             tdi_path=tdi_path,
             n_subjects=1000,
@@ -342,7 +341,6 @@ class TestMatrixDimensions:
                 register_structural_connectome(
                     name="test_matrix_dims",
                     space="MNI152NLin2009cAsym",
-                    resolution=2.0,
                     tractogram_path=tractogram_path,
                     tdi_path=tdi_path,
                     n_subjects=100,

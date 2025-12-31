@@ -26,14 +26,23 @@ def test_space_requirement_error(synthetic_mask_img):
 
 
 @pytest.mark.contract
-def test_resolution_requirement_error(synthetic_mask_img):
-    """T033: Test that SubjectData raises error when resolution is missing."""
+def test_resolution_requirement_error_anisotropic():
+    """T033: Test that SubjectData raises error when resolution is missing and can't be auto-detected."""
     from lacuna.core.subject_data import SubjectData
 
-    # Missing 'resolution' parameter should raise error
+    # Create image with anisotropic voxels (can't be auto-detected)
+    shape = (64, 64, 64)
+    data = np.zeros(shape, dtype=np.uint8)
+    data[32, 32, 32] = 1  # Single voxel lesion
+
+    # Anisotropic affine - 1mm x 2mm x 3mm voxels
+    anisotropic_affine = np.diag([1.0, 2.0, 3.0, 1.0])
+    mask_img = nib.Nifti1Image(data, anisotropic_affine)
+
+    # Missing 'resolution' parameter should raise error for anisotropic images
     with pytest.raises(ValueError) as exc_info:
         SubjectData(
-            synthetic_mask_img,
+            mask_img,
             space="MNI152NLin6Asym",  # space provided but not resolution
             metadata={"subject_id": "sub-001"},
         )

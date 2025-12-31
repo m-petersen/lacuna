@@ -259,22 +259,22 @@ class TestFormatBidsExportFilename:
     def test_simple_fnm_key_no_desc_prefix(self):
         """FNM simple keys use fnm prefix without desc- entity."""
         result = format_bids_export_filename("correlationmap", "map")
-        assert result == "fnmcorrelationmap_stat"  # No desc- prefix
+        assert result == "fnmcorrelationmap"  # No desc- prefix, no _stat suffix
 
     def test_simple_fnm_key_with_underscore_converted(self):
         """FNM keys with underscores are converted to lowercase with fnm prefix."""
         result = format_bids_export_filename("correlation_map", "map")
-        assert result == "fnmcorrelationmap_stat"  # underscore removed, fnm prefix
+        assert result == "fnmcorrelationmap"  # underscore removed, fnm prefix, no _stat suffix
 
     def test_simple_snm_key_no_desc_prefix(self):
         """SNM simple keys use snm prefix without desc- entity."""
         result = format_bids_export_filename("disconnectionmap", "map")
-        assert result == "snmdisconnectionmap_stat"  # No desc- prefix
+        assert result == "snmdisconnectionmap"  # No desc- prefix, no _stat suffix
 
     def test_simple_key_desc_prefix_for_unknown(self):
         """Unknown simple keys use desc- prefix."""
         result = format_bids_export_filename("customoutput", "map")
-        assert result == "desc-customoutput_stat"  # desc- prefix for unknown
+        assert result == "desc-customoutput"  # desc- prefix for unknown, no _stat suffix
 
     def test_bids_key_with_redundant_desc_omitted(self):
         """Redundant desc (when it matches source) is omitted."""
@@ -329,10 +329,12 @@ class TestFormatBidsExportFilename:
         result = format_bids_export_filename("test", "values")
         assert result.endswith("_parcelstats")
 
-    def test_suffix_mapping_map_to_stat(self):
-        """Internal 'map' suffix maps to BIDS 'stat'."""
+    def test_suffix_mapping_map_to_empty(self):
+        """Internal 'map' suffix maps to no suffix for VoxelMaps."""
         result = format_bids_export_filename("test", "map")
-        assert result.endswith("_stat")
+        # VoxelMaps don't have _stat suffix
+        assert not result.endswith("_stat")
+        assert result == "desc-test"
 
     def test_suffix_mapping_connmatrix_unchanged(self):
         """Connmatrix suffix is unchanged (valid BIDS derivative)."""
@@ -342,15 +344,14 @@ class TestFormatBidsExportFilename:
     def test_underscores_only_separate_key_value_pairs(self):
         """Verify underscores only appear between BIDS key-value pairs."""
         test_cases = [
-            ("atlas-Schaefer2018_100Parcels7Networks_source-InputMask", "values"),
-            ("atlas-Tian_S4_3T_source-FunctionalNetworkMapping_desc-zmap", "map"),
-            ("atlas-HCP1065_source-RegionalDamage_desc-damage_score", "values"),
+            ("atlas-Schaefer2018_100Parcels7Networks_source-InputMask", "values", "parcelstats"),
+            ("atlas-HCP1065_source-RegionalDamage_desc-damage_score", "values", "parcelstats"),
         ]
 
         # BIDS entity pattern: key-value where key is lowercase letters, value is alphanumeric
         bids_entity_pattern = re.compile(r"^[a-z]+-[a-z0-9]+$")
 
-        for result_key, suffix in test_cases:
+        for result_key, suffix, expected_suffix in test_cases:
             filename = format_bids_export_filename(result_key, suffix)
 
             # Split by underscore
@@ -364,7 +365,6 @@ class TestFormatBidsExportFilename:
                 )
 
             # Last part should be the BIDS suffix
-            expected_suffix = {"values": "parcelstats", "map": "stat"}.get(suffix, suffix)
             assert parts[-1] == expected_suffix, f"Last part should be suffix '{expected_suffix}'"
 
     def test_source_abbreviations_applied(self):

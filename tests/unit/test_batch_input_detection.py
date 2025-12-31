@@ -91,10 +91,10 @@ class TestDetectInputType:
     """Unit tests for _detect_input_type function."""
 
     def test_detects_mask_data_only(self, sample_mask_data):
-        """Should return 'mask_data' for list containing only SubjectData."""
+        """Should return 'subject_data' for list containing only SubjectData."""
         inputs = [sample_mask_data] * 3
         result = _detect_input_type(inputs)
-        assert result == "mask_data"
+        assert result == "subject_data"
 
     def test_detects_voxelmap_only(self, sample_voxelmap):
         """Should return 'voxel_map' for list containing only VoxelMap."""
@@ -103,16 +103,16 @@ class TestDetectInputType:
         assert result == "voxel_map"
 
     def test_detects_mixed_types(self, sample_mask_data, sample_voxelmap):
-        """Should return 'mixed' for list containing both types."""
+        """Should raise TypeError for list containing both types."""
         inputs = [sample_mask_data, sample_voxelmap]
-        result = _detect_input_type(inputs)
-        assert result == "mixed"
+        with pytest.raises(TypeError, match="does not support mixed input types"):
+            _detect_input_type(inputs)
 
     def test_detects_mixed_types_interleaved(self, sample_mask_data, sample_voxelmap):
-        """Should return 'mixed' even with interleaved types."""
+        """Should raise TypeError even with interleaved types."""
         inputs = [sample_mask_data, sample_voxelmap, sample_mask_data, sample_voxelmap]
-        result = _detect_input_type(inputs)
-        assert result == "mixed"
+        with pytest.raises(TypeError, match="does not support mixed input types"):
+            _detect_input_type(inputs)
 
     def test_empty_list_raises_value_error(self):
         """Should raise ValueError for empty list."""
@@ -122,21 +122,18 @@ class TestDetectInputType:
     def test_single_mask_data(self, sample_mask_data):
         """Should correctly identify single SubjectData."""
         result = _detect_input_type([sample_mask_data])
-        assert result == "mask_data"
+        assert result == "subject_data"
 
     def test_single_voxelmap(self, sample_voxelmap):
         """Should correctly identify single VoxelMap."""
         result = _detect_input_type([sample_voxelmap])
         assert result == "voxel_map"
 
-    def test_unknown_types_default_to_mask_data(self):
-        """Unknown types should default to mask_data behavior."""
-        # If we pass something else, it shouldn't crash
-        # and should default to mask_data since nothing else was found
+    def test_unknown_types_raise_type_error(self):
+        """Unknown types should raise TypeError with informative message."""
         inputs = ["not_a_valid_type", 123, None]
-        result = _detect_input_type(inputs)
-        # No VoxelMap or SubjectData found, defaults to mask_data
-        assert result == "mask_data"
+        with pytest.raises(TypeError, match="requires all inputs to be SubjectData or VoxelMap"):
+            _detect_input_type(inputs)
 
 
 class TestBatchProcessMixedTypeError:
@@ -174,53 +171,4 @@ class TestBatchProcessMixedTypeError:
 
         error_message = str(exc_info.value).lower()
         assert "mixed" in error_message
-        assert "maskdata" in error_message or "voxelmap" in error_message
-
-
-class TestDeprecatedSubjectListParameter:
-    """Unit tests for the deprecated mask_data_list parameter."""
-
-    def test_mask_data_list_parameter_still_works(self, sample_mask_data, local_test_atlas):
-        """mask_data_list parameter should still work for backward compat."""
-        import warnings
-
-        from lacuna.analysis import ParcelAggregation
-        from lacuna.batch import batch_process
-
-        analysis = ParcelAggregation(
-            source="maskimg", aggregation="mean", parcel_names=[local_test_atlas]
-        )
-
-        # Should emit deprecation warning but work
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            batch_process(mask_data_list=[sample_mask_data], analysis=analysis, show_progress=False)
-            # Filter for deprecation warnings only
-            deprecation_warnings = [
-                warn for warn in w if issubclass(warn.category, DeprecationWarning)
-            ]
-            assert len(deprecation_warnings) == 1
-            assert "mask_data_list" in str(deprecation_warnings[0].message)
-
-    def test_cannot_specify_both_inputs_and_mask_data_list(
-        self, sample_mask_data, local_test_atlas
-    ):
-        """Should raise ValueError if both inputs and mask_data_list provided."""
-        import warnings
-
-        from lacuna.analysis import ParcelAggregation
-        from lacuna.batch import batch_process
-
-        analysis = ParcelAggregation(
-            source="maskimg", aggregation="mean", parcel_names=[local_test_atlas]
-        )
-
-        with pytest.raises(ValueError, match="Cannot specify both"):
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")  # Suppress deprecation warning
-                batch_process(
-                    inputs=[sample_mask_data],
-                    mask_data_list=[sample_mask_data],
-                    analysis=analysis,
-                    show_progress=False,
-                )
+        assert "subjectdata" in error_message or "voxelmap" in error_message

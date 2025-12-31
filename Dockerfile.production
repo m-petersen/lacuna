@@ -1,0 +1,95 @@
+# Lacuna Production Docker Image
+# Multi-stage build with MRtrix3 and TemplateFlow support
+#
+# Build: docker build -t lacuna:latest .
+# Run: docker run --rm -it -v /data:/data:ro -v /output:/output lacuna:latest /data /output participant
+
+# =============================================================================
+# Stage 1: Build MRtrix3
+# =============================================================================
+FROM python:3.10-slim AS mrtrix-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    libeigen3-dev \
+    zlib1g-dev \
+    libfftw3-dev \
+    libpng-dev \
+    libtiff5-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone and build MRtrix3 (without GUI support)
+WORKDIR /opt
+RUN git clone --depth 1 --branch 3.0.4 https://github.com/MRtrix3/mrtrix3.git \
+    && cd mrtrix3 \
+    && ./configure -nogui \
+    && ./build -j$(nproc) \
+    && rm -rf tmp .git
+
+# =============================================================================
+# Stage 2: Fetch TemplateFlow templates
+# =============================================================================
+FROM python:3.10-slim AS templateflow-fetcher
+
+ENV TEMPLATEFLOW_HOME="/templateflow"
+
+RUN pip install --no-cache-dir templateflow
+
+# Fetch required templates for offline use
+RUN python -c "import templateflow.api as tf; \
+    tf.get('MNI152NLin6Asym', resolution=2, desc=None, suffix='T1w'); \
+    tf.get('MNI152NLin6Asym', resolution=2, desc='brain', suffix='mask'); \
+    tf.get('MNI152NLin2009cAsym', resolution=2, desc=None, suffix='T1w'); \
+    tf.get('MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')"
+
+# =============================================================================
+# Stage 3: Production image
+# =============================================================================
+FROM python:3.10-slim AS production
+
+LABEL org.opencontainers.image.title="Lacuna"
+LABEL org.opencontainers.image.description="Lesion Network Mapping Analysis"
+LABEL org.opencontainers.image.source="https://github.com/lacuna/lacuna"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfftw3-3 \
+    libpng16-16 \
+    libtiff5 \
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy MRtrix3 from builder
+COPY --from=mrtrix-builder /opt/mrtrix3/bin /opt/mrtrix3/bin
+COPY --from=mrtrix-builder /opt/mrtrix3/lib /opt/mrtrix3/lib
+ENV PATH="/opt/mrtrix3/bin:${PATH}"
+
+# Copy TemplateFlow cache
+COPY --from=templateflow-fetcher /templateflow /templateflow
+ENV TEMPLATEFLOW_HOME="/templateflow"
+
+# Create non-root user for security
+RUN useradd -m -s /bin/bash -u 1000 lacuna \
+    && mkdir -p /data /output /work /scratch /connectomes \
+    && chmod a+rwx /data /output /work /scratch /connectomes
+
+# Set environment variables
+ENV HOME="/home/lacuna"
+ENV LACUNA_WORK_DIR="/work"
+
+# Install lacuna
+WORKDIR /app
+COPY pyproject.toml ./
+COPY src ./src
+
+RUN pip install --no-cache-dir .
+
+# Switch to non-root user
+USER lacuna
+WORKDIR /home/lacuna
+
+# Entry point
+ENTRYPOINT ["lacuna"]
+CMD ["--help"]

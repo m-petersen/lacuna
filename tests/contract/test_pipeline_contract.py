@@ -131,7 +131,7 @@ class TestAnalyzeFunctionContract:
         """Contract: analyze(single) returns SubjectData."""
         from lacuna import analyze
 
-        result = analyze(sample_mask_data)
+        result = analyze(sample_mask_data, steps={"RegionalDamage": None})
         assert isinstance(result, SubjectData)
 
     def test_analyze_list_returns_list(self, sample_mask_data):

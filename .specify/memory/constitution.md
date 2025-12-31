@@ -29,7 +29,7 @@ and community interactions MUST adhere to them.
 ### 1. Pragmatic & Pythonic Code Quality
 
 All code MUST be clear, readable, and maintainable. The project adopts a pragmatic
-hybrid of Object-Oriented and Functional paradigms: stateful "nouns" (e.g., `LesionData`)
+hybrid of Object-Oriented and Functional paradigms: stateful "nouns" (e.g., `SubjectData`)
 MUST be modeled as classes; stateless, transformational operations MUST be implemented
 as functions. Code MUST follow PEP 8 conventions (automated via linters like `ruff`),
 and contributors MUST provide type hints where they materially improve readability
@@ -54,7 +54,7 @@ programmatically.
 
 ### 3. Consistent and Predictable User Experience (API Contract)
 
-The `lacuna.core.LesionData` object is the canonical API contract for pipeline stages.
+The `lacuna.core.SubjectData` object is the canonical API contract for pipeline stages.
 All publicly exported functions and classes MUST document their inputs, outputs,
 side-effects, and required metadata in docstrings (preferably using NumPy or Google
 docstring style). The project MUST maintain a well-structured `pyproject.toml` with
@@ -82,9 +82,9 @@ attention to performance prevents technical debt that would hinder adoption.
 ### 5. Data Immutability & Pipeline Traceability
 
 Pipeline functions MUST favor immutability: processing functions SHOULD return new
-`LesionData` objects rather than modifying existing ones in-place (exceptions
+`SubjectData` objects rather than modifying existing ones in-place (exceptions
 allowed for performance-critical operations with explicit documentation). Every
-`LesionData` object MUST track its provenance: the sequence of transformations
+`SubjectData` object MUST track its provenance: the sequence of transformations
 applied (function names, parameters, timestamps). This processing history MUST be
 accessible via a standardized interface and SHOULD be preserved when objects are
 serialized.
@@ -97,7 +97,7 @@ reproducibility and allows researchers to audit and reconstruct analysis workflo
 
 The I/O subsystem MUST support BIDS-compliant dataset structures as a first-class
 input format. Loading functions MUST parse BIDS metadata automatically and populate
-`LesionData` objects with subject IDs, session information, and relevant sidecar
+`SubjectData` objects with subject IDs, session information, and relevant sidecar
 metadata. Output data SHOULD be saved in BIDS-derivative format when applicable.
 The package MUST provide clear documentation on BIDS expectations and examples of
 compliant datasets.
@@ -110,7 +110,7 @@ friction, and promotes adoption of best practices.
 
 All spatial operations (registration, resampling, coordinate transformations) MUST
 be implemented using well-validated libraries (primarily `nilearn`, with `nibabel`
-for low-level operations). The `LesionData` object MUST always store images in a
+for low-level operations). The `SubjectData` object MUST always store images in a
 clearly documented coordinate space (native or standard template) with the correct
 affine matrix. Functions that perform spatial transformations MUST return new
 objects with updated affines and MUST document their coordinate space assumptions.
@@ -138,27 +138,27 @@ extensibility, and maintainability.
 
 ### Module Boundaries & Separation of Concerns
 
-- **`lacuna.core`**: Defines the `LesionData` class and core abstractions. MUST NOT
+- **`lacuna.core`**: Defines the `SubjectData` class and core abstractions. MUST NOT
 	depend on analysis-specific logic from other subpackages.
 - **`lacuna.io`**: Handles all file I/O (NIfTI, BIDS). MUST return fully-formed
-	`LesionData` objects; analysis modules MUST NOT perform direct file operations.
+	`SubjectData` objects; analysis modules MUST NOT perform direct file operations.
 - **`lacuna.preprocess`**: Preprocessing and spatial operations. Functions MUST accept
-	and return `LesionData` objects.
+	and return `SubjectData` objects.
 - **`lacuna.analysis`**: Domain-specific analyses (lesion network mapping,
 	transcriptomics, etc.). Each module MUST be independently usable and MUST
-	append results to `LesionData.results` without side effects on other modules.
+	append results to `SubjectData.results` without side effects on other modules.
 - **`lacuna.modeling`** and **`lacuna.reporting`**: Post-analysis tasks (modeling, reporting). MUST depend
-	only on the structure of `LesionData.results`, not on internal analysis
+	only on the structure of `SubjectData.results`, not on internal analysis
 	implementation details.
-- **`lacuna.utils`** and **`lacuna.viz`**: Auxiliary functionality. MUST be stateless
+- **`lacuna.utils`**: Auxiliary functionality. MUST be stateless
 	and have no circular dependencies with core modules.
 
 ### Extensibility Requirements (Dependency Inversion)
 
-New analysis modules MUST depend only on the `LesionData` abstraction, not on
+New analysis modules MUST depend only on the `SubjectData` abstraction, not on
 concrete I/O implementations or other analysis modules. This enables "plug-and-play"
 extensibility: contributors can add new analyses by writing functions that conform
-to the `LesionData` contract without modifying existing pipeline code. Breaking
+to the `SubjectData` contract without modifying existing pipeline code. Breaking
 this principle (e.g., tight coupling between analysis modules) requires explicit
 justification and maintainer approval.
 
