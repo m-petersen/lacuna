@@ -1,12 +1,11 @@
-"""
-from __future__ import annotations
-
-Core data class - the central API contract for the toolkit.
+"""Core data class - the central API contract for the toolkit.
 
 This class encapsulates a single research participant's lesion data with metadata,
 provenance tracking, and analysis results. It serves as the stable interface between
 all pipeline modules.
 """
+
+from __future__ import annotations
 
 import copy
 from pathlib import Path
@@ -350,7 +349,7 @@ class SubjectData:
         space: str | None = None,
         resolution: float | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> "SubjectData":
+    ) -> SubjectData:
         """
         Load mask data from NIfTI file.
 
@@ -503,7 +502,7 @@ class SubjectData:
 
         return True
 
-    def copy(self) -> "SubjectData":
+    def copy(self) -> SubjectData:
         """
         Create a deep copy of this SubjectData instance.
 
@@ -590,7 +589,7 @@ class SubjectData:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> "SubjectData":
+    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> SubjectData:
         """
         Deserialize from dictionary + NIfTI image.
 
@@ -619,7 +618,7 @@ class SubjectData:
             results=data.get("results"),
         )
 
-    def add_result(self, namespace: str, results: dict[str, Any]) -> "SubjectData":
+    def add_result(self, namespace: str, results: dict[str, Any]) -> SubjectData:
         """
         Create new SubjectData with additional analysis results.
 
@@ -680,7 +679,7 @@ class SubjectData:
             results=new_results,
         )
 
-    def add_provenance(self, record: dict[str, Any]) -> "SubjectData":
+    def add_provenance(self, record: dict[str, Any]) -> SubjectData:
         """
         Create new SubjectData with additional provenance record.
 

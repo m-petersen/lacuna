@@ -1,11 +1,10 @@
-"""
-from __future__ import annotations
-
-Base exception hierarchy for the lesion decoding toolkit.
+"""Base exception hierarchy for the lacuna toolkit.
 
 All custom exceptions inherit from LacunaError to enable precise error handling
 while maintaining compatibility with standard Python exceptions.
 """
+
+from __future__ import annotations
 
 
 class LacunaError(Exception):
@@ -89,7 +88,7 @@ class SpaceMismatchError(ValidationError):
     """Raised when declared space doesn't match detected space."""
 
     def __init__(
-        self, declared_space: str, detected_space: "str | None", filepath, affine_difference: float
+        self, declared_space: str, detected_space: str | None, filepath, affine_difference: float
     ):
         self.declared_space = declared_space
         self.detected_space = detected_space
