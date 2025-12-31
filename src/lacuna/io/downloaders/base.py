@@ -323,7 +323,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         type="functional",
         description=(
             "Brain Genomics Superstruct Project 1000-subject resting-state fMRI dataset. "
-            "Provides functional connectivity templates for lesion network mapping."
+            "Provides functional connectivity templates for functional network mapping."
         ),
         source_type="dataverse",
         persistent_id="doi:10.7910/DVN/ILXIKS",
@@ -335,14 +335,14 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
     ),
     "dtor985": ConnectomeSource(
         name="dtor985",
-        display_name="dTOR985 Structural Tractogram",
+        display_name="dTOR985 Structural Connectome",
         type="structural",
         description=(
-            "Diffusion Tensor Imaging Open Resource 985-subject whole-brain tractogram. "
-            "Provides structural connectivity template for lesion network mapping."
+            "Toronto 985-subject diffusion-weighted MRI connectome. "
+            "Provides structural connectivity template for structural network mapping."
         ),
         source_type="figshare",
-        download_url="https://figshare.com/ndownloader/files/49587541",
+        download_url="https://springernature.figshare.com/ndownloader/files/44515847",
         n_subjects=985,
         space="MNI152NLin6Asym",
         estimated_size_gb=10.0,
