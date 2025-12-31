@@ -1,8 +1,7 @@
-"""
-Atlas aggregation module.
+"""Parcellation aggregation module.
 
 Provides flexible ROI-level aggregation of voxel-level maps across multiple
-atlases. This is the core tool for extracting region-of-interest statistics
+parcellations. This is the core tool for extracting region-of-interest statistics
 from lesion masks, connectivity maps, or any other spatial maps.
 
 Examples
@@ -428,6 +427,10 @@ class ParcelAggregation(BaseAnalysis):
         """
         Run aggregation on a single nibabel image.
 
+        This method auto-detects space and resolution from the image header,
+        then runs aggregation directly without requiring a SubjectData wrapper.
+        This allows processing of continuous-valued images (not just binary masks).
+
         Parameters
         ----------
         img : nibabel.Nifti1Image
@@ -436,37 +439,89 @@ class ParcelAggregation(BaseAnalysis):
         Returns
         -------
         ParcelData
-            Aggregation result
+            Aggregation result combining all atlas aggregations
         """
-        # Create temporary SubjectData wrapper to use existing infrastructure
-        # Extract space and resolution from image if available in header
-        # Default to MNI152NLin6Asym@2mm if not specified
-        mask_data = SubjectData(
-            mask_img=img,
+        # Load atlases using same logic as _run_voxelmap
+        if not hasattr(self, "atlases") or not self.atlases:
+            self.atlases = self._load_parcellations_from_registry()
+
+        # Auto-detect space and resolution from image header
+        input_space = SubjectData._detect_space_from_image(img)
+        input_resolution = SubjectData._detect_resolution_from_image(img)
+
+        # Fallback to defaults if detection fails
+        if input_space is None:
+            input_space = "MNI152NLin6Asym"
+            self.logger.info(
+                "Could not detect space from image header, defaulting to MNI152NLin6Asym",
+                verbose=True,
+            )
+        if input_resolution is None:
+            input_resolution = float(round(abs(img.affine[0, 0])))
+            self.logger.info(
+                f"Could not detect resolution from image header, using voxel size: {input_resolution}mm",
+                verbose=True,
+            )
+
+        # Calculate voxel volume from source data
+        voxel_volume_mm3 = np.abs(np.linalg.det(img.affine[:3, :3]))
+
+        # Collect all ROI results across atlases
+        all_roi_data = {}
+
+        # Process each atlas
+        for atlas_info in self.atlases:
+            parcellation_name = atlas_info["name"]
+            atlas_space = atlas_info.get("space")
+            atlas_resolution = atlas_info.get("resolution")
+
+            # Load atlas image
+            atlas_img = nib.load(atlas_info["atlas_path"])
+
+            # Transform atlas to match input data space if needed
+            atlas_img = self._ensure_atlas_matches_input_space(
+                atlas_img=atlas_img,
+                atlas_space=atlas_space,
+                atlas_resolution=atlas_resolution,
+                input_space=input_space,
+                input_resolution=input_resolution,
+                input_affine=img.affine,
+                parcellation_name=parcellation_name,
+            )
+
+            labels = atlas_info["labels"]
+            atlas_data = atlas_img.get_fdata()
+
+            if atlas_data.ndim == 3:
+                # 3D integer-labeled atlas
+                atlas_results = self._aggregate_3d_atlas(img, atlas_img, labels, voxel_volume_mm3)
+            elif atlas_data.ndim == 4:
+                # 4D probabilistic atlas
+                atlas_results = self._aggregate_4d_atlas(img, atlas_img, labels, voxel_volume_mm3)
+            else:
+                continue
+
+            # Merge results from this atlas
+            all_roi_data.update(atlas_results)
+
+        # Return single ParcelData with all ROI results
+        from lacuna.core.data_types import ParcelData
+
+        return ParcelData(
+            name=f"{self.aggregation}_aggregation",
+            data=all_roi_data,
+            parcel_names=(
+                self.parcel_names if self.parcel_names else [a["name"] for a in self.atlases]
+            ),
+            aggregation_method=self.aggregation,
             metadata={
-                "space": "MNI152NLin6Asym",  # TODO: Infer from image header if possible
-                "resolution": 2.0,  # TODO: Infer from image header if possible
+                "source": "Nifti1Image",
+                "threshold": self.threshold,
+                "n_regions": len(all_roi_data),
+                "space": input_space,
+                "resolution": input_resolution,
             },
         )
-
-        # Run standard analysis
-        result_mask_data = super().run(mask_data)
-
-        # Extract and return just the aggregation results
-        # Combine all atlas results into a single ParcelData
-        atlas_results = result_mask_data.results.get(self.__class__.__name__, {})
-
-        if not atlas_results:
-            raise RuntimeError("No aggregation results generated")
-
-        # If there's only one atlas, return its result directly
-        if len(atlas_results) == 1:
-            return list(atlas_results.values())[0]
-
-        # If there are multiple atlases, we need to combine them somehow
-        # For now, just return the first one
-        # TODO: Consider returning a dict or combined result
-        return list(atlas_results.values())[0]
 
     def _run_batch_images(self, images: list[nib.Nifti1Image]) -> list["ParcelData"]:
         """
