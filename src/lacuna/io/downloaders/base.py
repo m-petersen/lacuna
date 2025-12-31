@@ -331,7 +331,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         default_batches=10,
         n_subjects=1000,
         space="MNI152NLin6Asym",
-        estimated_size_gb=100.0,
+        estimated_size_gb=200.0,
     ),
     "dtor985": ConnectomeSource(
         name="dtor985",
@@ -345,6 +345,6 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         download_url="https://springernature.figshare.com/ndownloader/files/44515847",
         n_subjects=985,
         space="MNI152NLin6Asym",
-        estimated_size_gb=10.0,
+        estimated_size_gb=11.0,
     ),
 }
