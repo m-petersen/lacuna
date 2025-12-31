@@ -3,6 +3,8 @@
 ## Active Technologies
 - Python 3.10+ (project constraint from existing implementation) + nibabel, nilearn, numpy, scipy, pandas, templateflow, pytest, pytest-xdist, ruff, black, mypy (003-package-optimization)
 - File-based (NIfTI images, HDF5 connectomes, .tck tractograms), no database (003-package-optimization)
+- Python 3.10+ (existing project constraint) + nibabel, nilearn, numpy, scipy, pandas, templateflow, tqdm, joblib, h5py, nitransforms (005-package-consolidation)
+- File-based (NIfTI images, HDF5 connectomes, .tck tractograms) - no database (005-package-consolidation)
 
 - Python 3.10+ (existing project constraint)
 
@@ -137,4 +139,5 @@ Version automatically derived from git tags via setuptools-scm:
 See `DEVELOPMENT.md` for detailed workflow documentation.
 
 ## Recent Changes
+- 005-package-consolidation: Added Python 3.10+ (existing project constraint) + nibabel, nilearn, numpy, scipy, pandas, templateflow, tqdm, joblib, h5py, nitransforms
 - 003-package-optimization: Added Python 3.10+ (project constraint from existing implementation) + nibabel, nilearn, numpy, scipy, pandas, templateflow, pytest, pytest-xdist, ruff, black, mypy

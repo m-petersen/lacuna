@@ -105,11 +105,13 @@ class TestSpaceInference:
                 metadata={},  # No space or resolution
             )
 
-    def test_resolution_required_in_metadata(self):
-        """Resolution must be provided as parameter or in metadata."""
+    def test_resolution_required_when_not_auto_detectable(self):
+        """Resolution must be provided when image has non-isotropic voxels."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        # Create anisotropic affine that can't be auto-detected
+        anisotropic_affine = np.diag([1.0, 2.0, 3.0, 1.0])  # Non-isotropic voxels
+        mask_img = nib.Nifti1Image(mask_data, affine=anisotropic_affine)
 
         with pytest.raises(ValueError, match="Spatial resolution must be specified"):
             SubjectData(

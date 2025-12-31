@@ -5,6 +5,9 @@ recursive-include src/lacuna/data *.nii.gz
 recursive-include src/lacuna/data *.txt
 recursive-include src/lacuna/data *.md
 
+# Include CLI configuration templates
+include src/lacuna/cli/default_config.yaml
+
 # Include templates specifically
 include src/lacuna/data/templates/MNI152_T1_1mm.nii.gz
 include src/lacuna/data/templates/MNI152_T1_2mm.nii.gz

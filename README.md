@@ -1,6 +1,12 @@
 # Lacuna
 
+![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A scientific Python package for neuroimaging lesion analysis.
+
+> ⚠️ **Alpha Status**: This package is under active development. APIs may change.
 
 ## Overview
 
@@ -12,13 +18,22 @@ Lacuna provides researchers with an end-to-end pipeline for:
 
 ## Features
 
-- **Standardized Data Handling**: Work with a consistent `SubjectData` API across all pipeline stages
-- **BIDS Compliance**: First-class support for BIDS dataset organization and derivatives export
+**Implemented and Tested:**
+- ✅ **Functional Lesion Network Mapping (fLNM)**: Connectivity-based lesion analysis using normative connectomes
+- ✅ **Structural Lesion Network Mapping (sLNM)**: Tractography-based disconnection analysis (requires MRtrix3)
+- ✅ **Regional Damage Analysis**: Quantify lesion overlap with brain parcellations
+- ✅ **Parcel Aggregation**: Aggregate voxel-wise results to standard atlases
+- ✅ **BIDS Support**: Load BIDS datasets and export BIDS-compliant derivatives
+- ✅ **Docker/Singularity**: Container support for reproducible analysis
+- ✅ **Batch Processing**: Parallel processing with progress tracking
+
+**Architecture:**
+- **Three-Tier API**: `analyze()` for simplicity → `Pipeline` for control → direct chaining for flexibility
+- **Standardized Data Handling**: Consistent `SubjectData` API across all pipeline stages
 - **Provenance Tracking**: Automatic recording of all transformations for reproducibility
 - **Spatial Correctness**: Built on validated neuroimaging libraries (nibabel, nilearn, templateflow)
-- **Modular Architecture**: Easy to extend with new analysis modules
-- **Network Mapping**: Functional and structural connectivity-based lesion network mapping
-- **Registry System**: Pre-configured atlases, parcellations, and connectomes for reproducible analyses
+- **Modular Architecture**: Easy to extend with new analysis modules (auto-discovery)
+- **Registry System**: Pre-configured atlases, parcellations, and connectomes
 
 ## Installation
 
@@ -51,6 +66,37 @@ git clone https://github.com/lacuna/lacuna.git
 cd lacuna
 pip install -e ".[dev]"
 ```
+
+## Docker Quick Start (Recommended)
+
+For reproducible analysis without local installation:
+
+```bash
+# Pull the container
+docker pull ghcr.io/lacuna/lacuna:latest
+
+# Run on a BIDS dataset
+docker run --rm -it \
+    -v /path/to/bids:/data:ro \
+    -v /path/to/output:/output \
+    lacuna:latest \
+    /data /output participant
+
+# With functional network mapping
+docker run --rm -it \
+    -v /path/to/bids:/data:ro \
+    -v /path/to/output:/output \
+    -v /path/to/connectomes:/connectomes:ro \
+    lacuna:latest \
+    /data /output participant \
+    --functional-connectome /connectomes/gsp1000.h5
+
+# For HPC with Singularity
+singularity pull lacuna.sif docker://ghcr.io/lacuna/lacuna:latest
+singularity run lacuna.sif /data /output participant
+```
+
+See [specs/005-package-consolidation/quickstart.md](specs/005-package-consolidation/quickstart.md) for detailed Docker and Singularity examples.
 
 ## Quick Start
 
@@ -175,12 +221,57 @@ from lacuna.io.bids import export_bids_derivatives
 
 # Export single subject results to BIDS derivatives format
 export_bids_derivatives(
-    mask_data=result,
+    subject_data=result,
     output_dir="derivatives/lacuna",
     export_lesion_mask=True,
     export_voxelmaps=True,
     export_parcel_data=True
 )
+```
+
+## Three-Tier API
+
+Lacuna provides three levels of API for different use cases:
+
+### Tier 1: `analyze()` - Simple One-Liner
+
+```python
+from lacuna import analyze
+
+# Single call runs standard analysis pipeline
+result = analyze(
+    subject,
+    functional_connectome="GSP1000",
+    parcel_atlases=["Schaefer100"]
+)
+```
+
+### Tier 2: `Pipeline` - Custom Workflows
+
+```python
+from lacuna import Pipeline
+from lacuna.analysis import RegionalDamage, FunctionalNetworkMapping
+
+# Build custom pipeline with configured analyses
+pipeline = (
+    Pipeline(name="My Analysis")
+    .add(RegionalDamage())
+    .add(FunctionalNetworkMapping(connectome_name="GSP1000"))
+)
+
+result = pipeline.run(subject)
+```
+
+### Tier 3: Direct Chaining - Maximum Control
+
+```python
+from lacuna.analysis import RegionalDamage, FunctionalNetworkMapping
+
+# Chain analyses manually
+analysis1 = RegionalDamage()
+analysis2 = FunctionalNetworkMapping(connectome_name="GSP1000")
+
+result = analysis2.run(analysis1.run(subject))
 ```
 
 ## Requirements
@@ -195,7 +286,9 @@ export_bids_derivatives(
 
 ## Documentation
 
-Full documentation and API reference: See `notebooks/comprehensive_api_test.ipynb` for examples.
+- [Quick Start Guide](specs/005-package-consolidation/quickstart.md) - Docker, Python API, and CLI examples
+- [Developer Guide](docs/developer_guide/creating_analysis_modules.md) - Adding new analysis modules
+- [API Examples](notebooks/comprehensive_api_test.ipynb) - Jupyter notebook with full examples
 
 ## License
 

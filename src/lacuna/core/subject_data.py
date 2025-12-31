@@ -1,12 +1,11 @@
-"""
-from __future__ import annotations
-
-Core data class - the central API contract for the toolkit.
+"""Core data class - the central API contract for the toolkit.
 
 This class encapsulates a single research participant's lesion data with metadata,
 provenance tracking, and analysis results. It serves as the stable interface between
 all pipeline modules.
 """
+
+from __future__ import annotations
 
 import copy
 from pathlib import Path
@@ -173,6 +172,9 @@ class SubjectData:
         # Setup metadata - direct kwargs take priority over metadata dict
         if metadata is None:
             metadata = {}
+        else:
+            # Convert to regular dict in case ImmutableDict was passed
+            metadata = dict(metadata)
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
 
@@ -183,18 +185,23 @@ class SubjectData:
             "MNI152NLin2009cAsym",
         ]
 
-        # Handle space parameter - direct kwarg takes priority, then metadata dict
+        # Handle space parameter - direct kwarg takes priority, then metadata dict, then auto-detect
         if space is not None:
             self._space = space
         elif "space" in metadata:
             self._space = metadata["space"]
         else:
-            raise ValueError(
-                "Coordinate space must be specified via 'space' parameter.\n"
-                "This is required for spatial validation in analysis modules.\n"
-                f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
-                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
-            )
+            # Attempt auto-detection from image header
+            detected_space = self._detect_space_from_image(mask_img)
+            if detected_space is not None:
+                self._space = detected_space
+            else:
+                raise ValueError(
+                    "Coordinate space must be specified via 'space' parameter.\n"
+                    "This is required for spatial validation in analysis modules.\n"
+                    f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
+                    "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
+                )
 
         # Validate space is in supported list
         if self._space not in SUPPORTED_TEMPLATE_SPACES:
@@ -212,18 +219,27 @@ class SubjectData:
                 msg = f"{msg}\n{hint}"
             raise ValueError(msg)
 
-        # Handle resolution parameter - direct kwarg takes priority, then metadata dict
+        # Handle resolution parameter - direct kwarg takes priority, then metadata dict, then auto-detect
         if resolution is not None:
             self._resolution = float(resolution)
         elif "resolution" in metadata:
             self._resolution = float(metadata["resolution"])
         else:
-            raise ValueError(
-                "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
-                "This is required for spatial validation and template matching.\n"
-                "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
-                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
-            )
+            # Attempt auto-detection from image header
+            detected_res = self._detect_resolution_from_image(mask_img)
+            if detected_res is not None:
+                self._resolution = detected_res
+            else:
+                raise ValueError(
+                    "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
+                    "This is required for spatial validation and template matching.\n"
+                    "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
+                    "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
+                )
+
+        # Store space and resolution in metadata for consistency
+        metadata["space"] = self._space
+        metadata["resolution"] = self._resolution
 
         self._metadata = metadata.copy()
 
@@ -239,6 +255,62 @@ class SubjectData:
 
         # Track coordinate space (extracted from metadata or provenance)
         self._coordinate_space = self._infer_coordinate_space()
+
+    @staticmethod
+    def _detect_space_from_image(img: nib.Nifti1Image) -> str | None:
+        """
+        Attempt to detect coordinate space from image header.
+
+        Uses the spaces module to match the image affine against known templates.
+
+        Parameters
+        ----------
+        img : nibabel.Nifti1Image
+            Image to detect space from
+
+        Returns
+        -------
+        str or None
+            Detected space identifier, or None if cannot be determined.
+        """
+        try:
+            from .spaces import get_image_space
+
+            detected = get_image_space(img)
+            if detected is not None:
+                return detected.identifier
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _detect_resolution_from_image(img: nib.Nifti1Image) -> float | None:
+        """
+        Detect resolution from image voxel dimensions.
+
+        Returns the resolution only if the image has isotropic voxels
+        (within 0.1mm tolerance).
+
+        Parameters
+        ----------
+        img : nibabel.Nifti1Image
+            Image to detect resolution from
+
+        Returns
+        -------
+        float or None
+            Resolution in mm (if isotropic), or None if anisotropic.
+        """
+        try:
+            # Get voxel dimensions from affine
+            voxel_dims = np.abs(np.diag(img.affine[:3, :3]))
+
+            # Check if approximately isotropic (within 0.1mm tolerance)
+            if np.allclose(voxel_dims, voxel_dims[0], atol=0.1):
+                return float(round(voxel_dims[0]))
+        except Exception:
+            pass
+        return None
 
     @staticmethod
     def _normalize_results_format(results: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -277,7 +349,7 @@ class SubjectData:
         space: str | None = None,
         resolution: float | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> "SubjectData":
+    ) -> SubjectData:
         """
         Load mask data from NIfTI file.
 
@@ -430,7 +502,7 @@ class SubjectData:
 
         return True
 
-    def copy(self) -> "SubjectData":
+    def copy(self) -> SubjectData:
         """
         Create a deep copy of this SubjectData instance.
 
@@ -517,7 +589,7 @@ class SubjectData:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> "SubjectData":
+    def from_dict(cls, data: dict[str, Any], mask_img: nib.Nifti1Image) -> SubjectData:
         """
         Deserialize from dictionary + NIfTI image.
 
@@ -546,7 +618,7 @@ class SubjectData:
             results=data.get("results"),
         )
 
-    def add_result(self, namespace: str, results: dict[str, Any]) -> "SubjectData":
+    def add_result(self, namespace: str, results: dict[str, Any]) -> SubjectData:
         """
         Create new SubjectData with additional analysis results.
 
@@ -607,7 +679,7 @@ class SubjectData:
             results=new_results,
         )
 
-    def add_provenance(self, record: dict[str, Any]) -> "SubjectData":
+    def add_provenance(self, record: dict[str, Any]) -> SubjectData:
         """
         Create new SubjectData with additional provenance record.
 

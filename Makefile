@@ -63,15 +63,21 @@ ci-native:  ## Run full CI checks natively (use before commit)
 	@$(MAKE) test-coverage
 	@echo "\n✓ All CI checks passed!"
 
-ci-act:  ## Verify CI works in Docker with act (use before push)
-	@echo "=== Verifying CI in Docker ==="
+ci-act:  ## Verify CI works in Docker with act (Python 3.10 only, use before push)
+	@echo "=== Verifying CI in Docker (Python 3.10 only) ==="
+	@echo "Note: Using empty TEMPLATEFLOW_HOME to simulate clean CI environment"
+	@echo "Note: Use ci-act-full to test all Python versions (resource intensive)"
+	act -j test --reuse --env TEMPLATEFLOW_HOME=/tmp/empty_templateflow --matrix python-version:3.10
+
+ci-act-full:  ## Verify CI in Docker with all Python versions (resource intensive)
+	@echo "=== Verifying CI in Docker (all Python versions - RESOURCE INTENSIVE) ==="
 	@echo "Note: Using empty TEMPLATEFLOW_HOME to simulate clean CI environment"
 	act -j test --reuse --env TEMPLATEFLOW_HOME=/tmp/empty_templateflow
 
-ci-act-clean:  ## Run act without reusing containers (clean slate)
+ci-act-clean:  ## Run act without reusing containers (clean slate, Python 3.10 only)
 	@echo "=== Running CI in clean Docker container ==="
 	@echo "Note: Using empty TEMPLATEFLOW_HOME to simulate clean CI environment"
-	act -j test --env TEMPLATEFLOW_HOME=/tmp/empty_templateflow
+	act -j test --env TEMPLATEFLOW_HOME=/tmp/empty_templateflow --matrix python-version:3.10
 
 # === RELEASE ===
 

@@ -5,8 +5,6 @@ These tests define the expected behavior of the I/O API contract for loading
 and saving lesion data, including BIDS dataset loading and export.
 """
 
-import json
-
 import nibabel as nib
 import numpy as np
 import pytest
@@ -43,42 +41,44 @@ def test_load_bids_dataset_nonexistent_path():
     from lacuna.io import load_bids_dataset
 
     with pytest.raises(FileNotFoundError, match="not found"):
-        load_bids_dataset("/nonexistent/path", validate_bids=False)
+        load_bids_dataset("/nonexistent/path")
 
 
-def test_load_bids_dataset_missing_description(tmp_path):
-    """Test that loading dataset without dataset_description.json raises BidsError."""
+def test_load_bids_dataset_empty_directory(tmp_path):
+    """Test that loading empty directory raises BidsError."""
     from lacuna.io import BidsError, load_bids_dataset
 
-    # Create directory without dataset_description.json
-    dataset_dir = tmp_path / "invalid_bids"
+    # Create empty directory - new API doesn't require dataset_description.json
+    dataset_dir = tmp_path / "empty_dir"
     dataset_dir.mkdir()
 
-    with pytest.raises(BidsError, match="dataset_description.json"):
-        load_bids_dataset(dataset_dir, validate_bids=False)
+    with pytest.raises(BidsError, match="No files matching"):
+        load_bids_dataset(dataset_dir)
 
 
-def test_load_bids_dataset_no_lesion_masks(tmp_path):
-    """Test that dataset with no lesion masks raises BidsError."""
+def test_load_bids_dataset_no_matching_files(tmp_path):
+    """Test that dataset with no matching mask files raises BidsError."""
     from lacuna.io import BidsError, load_bids_dataset
 
-    # Create valid structure but no lesion masks
-    dataset_dir = tmp_path / "empty_bids"
+    # Create directory with non-matching files
+    dataset_dir = tmp_path / "no_masks"
     dataset_dir.mkdir()
 
-    desc = {
-        "Name": "Empty Dataset",
-        "BIDSVersion": "1.6.0",
-    }
-    with open(dataset_dir / "dataset_description.json", "w") as f:
-        json.dump(desc, f)
-
-    # Create subject dir but no lesion files
+    # Create subject dir but no mask files
     sub_dir = dataset_dir / "sub-001" / "anat"
     sub_dir.mkdir(parents=True)
 
-    with pytest.raises(BidsError, match="No lesion masks found"):
-        load_bids_dataset(dataset_dir, validate_bids=False)
+    # Create a non-mask NIfTI file
+    import nibabel as nib
+    import numpy as np
+
+    data = np.zeros((10, 10, 10), dtype=np.uint8)
+    affine = np.eye(4)
+    img = nib.Nifti1Image(data, affine)
+    nib.save(img, sub_dir / "sub-001_T1w.nii.gz")
+
+    with pytest.raises(BidsError, match="No files matching"):
+        load_bids_dataset(dataset_dir)  # Default suffix is _mask.nii.gz
 
 
 def test_load_bids_dataset_warns_missing_anatomical(simple_bids_dataset):

@@ -19,7 +19,7 @@ from lacuna.core.subject_data import SubjectData
 
 def _detect_input_type(inputs: list) -> str:
     """
-    Detect the type of inputs in the batch list.
+    Detect and validate the type of inputs in the batch list.
 
     Parameters
     ----------
@@ -29,34 +29,54 @@ def _detect_input_type(inputs: list) -> str:
     Returns
     -------
     str
-        One of 'mask_data', 'voxel_map', or 'mixed'
+        One of 'subject_data' or 'voxel_map'
 
     Raises
     ------
     ValueError
         If inputs list is empty
+    TypeError
+        If inputs contain invalid types or mixed SubjectData/VoxelMap
     """
     if not inputs:
         raise ValueError("inputs cannot be empty")
 
-    has_mask_data = False
+    has_subject_data = False
     has_voxel_map = False
+    invalid_items = []
 
-    for item in inputs:
+    for i, item in enumerate(inputs):
         if isinstance(item, SubjectData):
-            has_mask_data = True
+            has_subject_data = True
         elif isinstance(item, VoxelMap):
             has_voxel_map = True
         else:
-            # Unknown type - could be other compatible types
-            pass
+            invalid_items.append((i, type(item).__name__))
 
-    if has_mask_data and has_voxel_map:
-        return "mixed"
-    elif has_voxel_map:
+    # Check for invalid types first
+    if invalid_items:
+        # Build informative error message
+        if len(invalid_items) <= 3:
+            examples = ", ".join(f"inputs[{i}] is {t}" for i, t in invalid_items)
+        else:
+            examples = ", ".join(f"inputs[{i}] is {t}" for i, t in invalid_items[:3])
+            examples += f", ... and {len(invalid_items) - 3} more"
+        raise TypeError(
+            f"batch_process requires all inputs to be SubjectData or VoxelMap instances. "
+            f"Found invalid types: {examples}"
+        )
+
+    # Check for mixed types
+    if has_subject_data and has_voxel_map:
+        raise TypeError(
+            "batch_process does not support mixed input types. "
+            "All items must be either SubjectData or VoxelMap, not both."
+        )
+
+    if has_voxel_map:
         return "voxel_map"
     else:
-        return "mask_data"
+        return "subject_data"
 
 
 def batch_process(
@@ -68,8 +88,6 @@ def batch_process(
     backend: str = "loky",
     lesion_batch_size: int | None = None,
     batch_result_callback: Callable | None = None,
-    *,
-    mask_data_list: list[SubjectData] | None = None,  # Deprecated, use inputs
 ) -> list[SubjectData | ParcelData]:
     """
     Process multiple subjects through an analysis pipeline with automatic optimization.
@@ -124,7 +142,7 @@ def batch_process(
     Raises
     ------
     ValueError
-        If mask_data_list is empty or analysis is invalid
+        If inputs is empty or analysis is invalid
     RuntimeError
         If strategy selection or execution fails
 
@@ -184,19 +202,6 @@ def batch_process(
     - Individual subject failures emit warnings but don't stop the batch
     - Strategy selection is automatic based on analysis.batch_strategy attribute
     """
-    # Handle deprecated mask_data_list parameter
-    if mask_data_list is not None:
-        import warnings
-
-        warnings.warn(
-            "mask_data_list parameter is deprecated, use 'inputs' instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if inputs is not None:
-            raise ValueError("Cannot specify both 'inputs' and 'mask_data_list'")
-        inputs = mask_data_list
-
     # Validate inputs
     if not inputs:
         raise ValueError("inputs cannot be empty")
@@ -205,13 +210,8 @@ def batch_process(
     if analysis is None:
         raise ValueError("analysis parameter is required")
 
-    # Check for mixed input types
-    input_type = _detect_input_type(inputs)
-    if input_type == "mixed":
-        raise TypeError(
-            "batch_process does not support mixed input types. "
-            "All items must be either SubjectData or VoxelMap, not both."
-        )
+    # Validate input types (raises TypeError for invalid/mixed types)
+    _detect_input_type(inputs)
 
     if not isinstance(analysis, BaseAnalysis):
         raise ValueError(f"analysis must be a BaseAnalysis instance, got {type(analysis)}")
@@ -247,7 +247,7 @@ def batch_process(
     # Execute batch processing
     try:
         results = strategy_instance.execute(
-            mask_data_list=inputs,
+            inputs=inputs,
             analysis=analysis,
             progress_callback=progress_callback,
         )

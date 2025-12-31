@@ -12,19 +12,6 @@ All asset types follow a consistent registry pattern with register/list/load fun
 # Import parcellation management
 from lacuna.assets import parcellations  # noqa: F401
 
-# Keep atlases import for existing code (will be removed in separate commit)
-from lacuna.assets.atlases import (
-    ATLAS_REGISTRY,
-    Atlas,
-    AtlasMetadata,
-    list_atlases,
-    load_atlas,
-    register_atlas,
-    register_atlas_from_files,
-    register_atlases_from_directory,
-    unregister_atlas,
-)
-
 # Base classes
 from lacuna.assets.base import (
     AssetMetadata,
@@ -76,27 +63,22 @@ from lacuna.assets.transforms import (
     load_transform,
 )
 
-# Connectomes
-
-# Templates
-
-# Transforms
-
 __all__ = [
     # Base classes
     "AssetMetadata",
     "SpatialAssetMetadata",
     "AssetRegistry",
-    # Atlases
-    "Atlas",
-    "AtlasMetadata",
-    "ATLAS_REGISTRY",
-    "list_atlases",
-    "load_atlas",
-    "register_atlas",
-    "register_atlas_from_files",
-    "register_atlases_from_directory",
-    "unregister_atlas",
+    # Parcellations
+    "Parcellation",
+    "ParcellationMetadata",
+    "PARCELLATION_REGISTRY",
+    "BUNDLED_PARCELLATIONS_DIR",
+    "list_parcellations",
+    "load_parcellation",
+    "register_parcellation",
+    "register_parcellation_from_files",
+    "register_parcellations_from_directory",
+    "unregister_parcellation",
     # Templates
     "TemplateMetadata",
     "list_templates",
