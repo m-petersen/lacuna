@@ -169,7 +169,18 @@ def _run_workflow(config: CLIConfig) -> int:
         logger.error(f"Failed to load input data: {e}")
         return EXIT_BIDS_ERROR
 
-    # Step 2: Register custom connectomes if paths provided
+    # Step 2: Register connectomes
+    # New format: config.connectomes (dict of named connectomes)
+    # Legacy format: config.functional_connectome, config.structural_connectome
+    registered_connectomes: dict[str, str] = {}
+
+    # Register connectomes from new format
+    for conn_name, conn_config in config.connectomes.items():
+        registered_name = _register_connectome_from_config(conn_name, conn_config)
+        if registered_name:
+            registered_connectomes[conn_name] = registered_name
+
+    # Legacy: register CLI-provided connectomes
     functional_connectome_name = _resolve_connectome(
         config.functional_connectome,
         connectome_type="functional",
@@ -185,6 +196,7 @@ def _run_workflow(config: CLIConfig) -> int:
     # Step 3: Build analysis steps
     steps = _build_analysis_steps(
         config,
+        registered_connectomes=registered_connectomes,
         functional_connectome_name=functional_connectome_name,
         structural_connectome_name=structural_connectome_name,
     )
@@ -282,46 +294,158 @@ def _build_pattern(
 def _build_analysis_steps(
     config: CLIConfig,
     *,
-    functional_connectome_name: str | None,
-    structural_connectome_name: str | None,
+    registered_connectomes: dict[str, str] | None = None,
+    functional_connectome_name: str | None = None,
+    structural_connectome_name: str | None = None,
 ) -> dict[str, dict | None]:
     """
     Build analysis steps dictionary from configuration.
+
+    Uses full analysis configurations from YAML if available, otherwise
+    falls back to CLI arguments. Supports both new format (connectomes section)
+    and legacy format (inline connectome paths).
 
     Parameters
     ----------
     config : CLIConfig
         CLI configuration.
+    registered_connectomes : dict, optional
+        Mapping of YAML connectome names to registered names.
     functional_connectome_name : str, optional
-        Registered functional connectome name.
+        Registered functional connectome name (legacy CLI mode).
     structural_connectome_name : str, optional
-        Registered structural connectome name.
+        Registered structural connectome name (legacy CLI mode).
 
     Returns
     -------
     dict
         Steps dictionary for analyze() function.
     """
+    registered_connectomes = registered_connectomes or {}
     steps: dict[str, dict | None] = {}
 
-    # RegionalDamage (enabled by default unless skipped)
-    if not config.skip_regional_damage:
-        rd_kwargs: dict | None = None
+    def _resolve_connectome_ref(analysis_config: dict) -> str | None:
+        """Resolve a connectome reference in analysis config to registered name."""
+        # Check for 'connectome' key that references a name in connectomes section
+        conn_ref = analysis_config.get("connectome")
+        if conn_ref and conn_ref in registered_connectomes:
+            return registered_connectomes[conn_ref]
+        # Check for already-resolved connectome_name
+        conn_name = analysis_config.get("connectome_name")
+        if conn_name:
+            return str(conn_name)
+        return None
+
+    # Check if we have full YAML analysis configs
+    if config.analyses:
+        # Use YAML-based analysis configurations
+
+        # RegionalDamage
+        if "RegionalDamage" in config.analyses:
+            rd_config = config.analyses["RegionalDamage"].copy()
+            # CLI parcel_atlases override YAML if provided
+            if config.parcel_atlases and not rd_config.get("parcel_names"):
+                rd_config["parcel_names"] = config.parcel_atlases
+            steps["RegionalDamage"] = rd_config if rd_config else None
+
+        # FunctionalNetworkMapping
+        if "FunctionalNetworkMapping" in config.analyses:
+            fnm_config = config.analyses["FunctionalNetworkMapping"].copy()
+            # Remove path keys (already used for registration)
+            fnm_config.pop("connectome_path", None)
+
+            # Resolve connectome reference
+            conn_name = _resolve_connectome_ref(fnm_config)
+            if conn_name is None and functional_connectome_name:
+                conn_name = functional_connectome_name
+            if conn_name:
+                fnm_config.pop("connectome", None)  # Remove reference key
+                fnm_config["connectome_name"] = conn_name
+                steps["FunctionalNetworkMapping"] = fnm_config
+            else:
+                logger.warning("FunctionalNetworkMapping configured but no connectome provided")
+
+        # StructuralNetworkMapping
+        if "StructuralNetworkMapping" in config.analyses:
+            snm_config = config.analyses["StructuralNetworkMapping"].copy()
+            # Remove path keys (already used for registration)
+            snm_config.pop("tractogram_path", None)
+            snm_config.pop("tdi_path", None)
+
+            # Resolve connectome reference
+            conn_name = _resolve_connectome_ref(snm_config)
+            if conn_name is None and structural_connectome_name:
+                conn_name = structural_connectome_name
+            if conn_name:
+                snm_config.pop("connectome", None)  # Remove reference key
+                snm_config["connectome_name"] = conn_name
+                steps["StructuralNetworkMapping"] = snm_config
+            else:
+                logger.warning("StructuralNetworkMapping configured but no connectome provided")
+
+        # ParcelAggregation (explicit YAML config)
+        if "ParcelAggregation" in config.analyses:
+            pa_config = config.analyses["ParcelAggregation"].copy()
+            # Use parcel_atlases from CLI if not in YAML
+            if config.parcel_atlases and not pa_config.get("parcel_names"):
+                pa_config["parcel_names"] = config.parcel_atlases
+            steps["ParcelAggregation"] = pa_config
+
+        # Auto-add ParcelAggregation for FNM/SNM if parcel_atlases specified but no explicit config
+        elif config.parcel_atlases and (
+            "FunctionalNetworkMapping" in steps or "StructuralNetworkMapping" in steps
+        ):
+            sources: dict[str, str | list[str]] = {}
+            if "FunctionalNetworkMapping" in steps:
+                sources["FunctionalNetworkMapping"] = ["correlationmap", "tmap", "zmap"]
+            if "StructuralNetworkMapping" in steps:
+                sources["StructuralNetworkMapping"] = "disconnection_map"
+            if sources:
+                steps["ParcelAggregation"] = {
+                    "source": sources,
+                    "aggregation": "mean",
+                    "parcel_names": config.parcel_atlases,
+                }
+
+    else:
+        # Fallback: CLI-only mode (no YAML analyses config)
+
+        # RegionalDamage (enabled by default unless skipped)
+        if not config.skip_regional_damage:
+            rd_kwargs: dict | None = None
+            if config.parcel_atlases:
+                rd_kwargs = {"parcel_names": config.parcel_atlases}
+            steps["RegionalDamage"] = rd_kwargs
+
+        # FunctionalNetworkMapping (if connectome provided)
+        if functional_connectome_name:
+            steps["FunctionalNetworkMapping"] = {
+                "connectome_name": functional_connectome_name,
+            }
+
+        # StructuralNetworkMapping (if connectome provided)
+        if structural_connectome_name:
+            steps["StructuralNetworkMapping"] = {
+                "connectome_name": structural_connectome_name,
+            }
+
+        # ParcelAggregation for FNM/SNM outputs (if parcel_atlases specified)
         if config.parcel_atlases:
-            rd_kwargs = {"parcel_names": config.parcel_atlases}
-        steps["RegionalDamage"] = rd_kwargs
-
-    # FunctionalNetworkMapping (if connectome provided)
-    if functional_connectome_name:
-        steps["FunctionalNetworkMapping"] = {
-            "connectome_name": functional_connectome_name,
-        }
-
-    # StructuralNetworkMapping (if connectome provided)
-    if structural_connectome_name:
-        steps["StructuralNetworkMapping"] = {
-            "connectome_name": structural_connectome_name,
-        }
+            sources_fallback: dict[str, str | list[str]] = {}
+            if functional_connectome_name:
+                sources_fallback["FunctionalNetworkMapping"] = [
+                    "correlationmap",
+                    "tmap",
+                    "zmap",
+                ]
+            if structural_connectome_name:
+                sources_fallback["StructuralNetworkMapping"] = "disconnection_map"
+            if sources_fallback:
+                steps["ParcelAggregation"] = {
+                    "source": sources_fallback,
+                    "aggregation": "mean",
+                    "parcel_names": config.parcel_atlases,
+                }
 
     return steps
 
@@ -458,6 +582,63 @@ def _get_resolution_from_connectome(connectome_path: Path) -> float:
     # Default to 2mm if cannot be determined
     logger.debug(f"Could not determine resolution from {connectome_path}, using default 2.0mm")
     return 2.0
+
+
+def _register_connectome_from_config(name: str, conn_config) -> str | None:
+    """
+    Register a connectome from a ConnectomeConfig.
+
+    Parameters
+    ----------
+    name : str
+        Name to register the connectome under.
+    conn_config : ConnectomeConfig
+        Connectome configuration from YAML.
+
+    Returns
+    -------
+    str or None
+        Registered connectome name, or None if registration failed.
+    """
+    try:
+        registered_name = f"_yaml_{name}"
+
+        if conn_config.type == "functional":
+            from lacuna.assets.connectomes import register_functional_connectome
+
+            # Use provided resolution or extract from file
+            resolution = conn_config.resolution
+            if resolution is None:
+                resolution = _get_resolution_from_connectome(conn_config.path)
+
+            register_functional_connectome(
+                name=registered_name,
+                space=conn_config.space,
+                resolution=resolution,
+                data_path=conn_config.path,
+            )
+        elif conn_config.type == "structural":
+            from lacuna.assets.connectomes import register_structural_connectome
+
+            register_structural_connectome(
+                name=registered_name,
+                space=conn_config.space,
+                tractogram_path=conn_config.path,
+                tdi_path=conn_config.tdi_path,
+            )
+        else:
+            logger.error(f"Unknown connectome type: {conn_config.type}")
+            return None
+
+        logger.info(
+            f"Registered {conn_config.type} connectome: {registered_name} "
+            f"(space={conn_config.space})"
+        )
+        return registered_name
+
+    except Exception as e:
+        logger.error(f"Failed to register connectome '{name}': {e}")
+        return None
 
 
 def _setup_logging(level: int) -> None:

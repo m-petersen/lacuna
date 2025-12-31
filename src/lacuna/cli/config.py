@@ -6,6 +6,7 @@ CLI arguments and validating them.
 
 Classes:
     CLIConfig: Configuration from CLI arguments.
+    ConnectomeConfig: Configuration for a connectome resource.
 
 Functions:
     load_yaml_config: Load configuration from YAML file.
@@ -23,6 +24,71 @@ if TYPE_CHECKING:
     from argparse import Namespace
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ConnectomeConfig:
+    """
+    Configuration for a connectome resource.
+
+    Attributes
+    ----------
+    path : Path
+        Path to the connectome file (HDF5 for functional, .tck for structural).
+    space : str
+        Coordinate space (e.g., MNI152NLin6Asym).
+    resolution : float, optional
+        Resolution in mm (auto-detected from file if not provided).
+    type : str
+        Connectome type: "functional" or "structural".
+    tdi_path : Path, optional
+        Path to whole-brain TDI NIfTI (for structural connectomes only).
+    """
+
+    path: Path
+    space: str
+    type: str = "functional"
+    resolution: float | None = None
+    tdi_path: Path | None = None
+
+    @classmethod
+    def from_dict(cls, name: str, config: dict[str, Any]) -> ConnectomeConfig:
+        """
+        Create ConnectomeConfig from a dictionary.
+
+        Parameters
+        ----------
+        name : str
+            Name of the connectome (used for inferring type if not specified).
+        config : dict
+            Configuration dictionary with path, space, etc.
+
+        Returns
+        -------
+        ConnectomeConfig
+            Configuration instance.
+        """
+        path = Path(config["path"])
+
+        # Infer type from extension or explicit config
+        conn_type = config.get("type")
+        if conn_type is None:
+            if path.suffix == ".tck" or (path.is_dir() and "tck" in str(path).lower()):
+                conn_type = "structural"
+            else:
+                conn_type = "functional"
+
+        tdi_path = None
+        if config.get("tdi_path"):
+            tdi_path = Path(config["tdi_path"])
+
+        return cls(
+            path=path,
+            space=config.get("space", "MNI152NLin6Asym"),
+            type=conn_type,
+            resolution=config.get("resolution"),
+            tdi_path=tdi_path,
+        )
 
 
 def load_yaml_config(config_path: Path) -> dict[str, Any]:
@@ -133,11 +199,11 @@ class CLIConfig:
     resolution : float, optional
         Voxel resolution in mm (required if not in filename).
     functional_connectome : str, optional
-        Functional connectome name or path.
+        Functional connectome name or path (legacy, prefer connectomes section).
     structural_connectome : str, optional
-        Structural connectome name or path.
+        Structural connectome name or path (legacy, prefer connectomes section).
     structural_tdi : Path, optional
-        Path to whole-brain TDI NIfTI.
+        Path to whole-brain TDI NIfTI (legacy, prefer connectomes section).
     parcel_atlases : list of str, optional
         Atlas names for RegionalDamage analysis.
     skip_regional_damage : bool
@@ -150,6 +216,10 @@ class CLIConfig:
         Working directory for intermediate files.
     verbose_count : int
         Logging verbosity level (0-2).
+    connectomes : dict
+        Connectome resources keyed by name (new extensible format).
+    analyses : dict
+        Full analysis configurations from YAML.
     """
 
     # BIDS-Apps required arguments
@@ -182,6 +252,12 @@ class CLIConfig:
     # Other options
     verbose_count: int = 0
 
+    # Connectome resources keyed by name (new extensible format)
+    connectomes: dict[str, ConnectomeConfig] = field(default_factory=dict)
+
+    # Full analysis configurations from YAML
+    analyses: dict[str, dict[str, Any]] = field(default_factory=dict)
+
     @property
     def is_single_file(self) -> bool:
         """Check if input is a single NIfTI file rather than BIDS directory."""
@@ -206,6 +282,7 @@ class CLIConfig:
         Create CLIConfig from parsed arguments and optional YAML config.
 
         YAML config values are used as defaults; CLI arguments override them.
+        Supports both new format (connectomes + analyses sections) and legacy format.
 
         Parameters
         ----------
@@ -231,22 +308,69 @@ class CLIConfig:
                 return section.get(yaml_key, default)
             return yaml_config.get(yaml_key, default)
 
-        # Extract analysis configs from YAML
-        regional_damage = yaml_config.get("regional_damage", {}) or {}
-        functional_mapping = yaml_config.get("functional_network_mapping", {}) or {}
-        structural_mapping = yaml_config.get("structural_network_mapping", {}) or {}
+        # Parse connectomes section (new extensible format)
+        connectomes: dict[str, ConnectomeConfig] = {}
+        connectomes_config = yaml_config.get("connectomes", {}) or {}
+        for conn_name, conn_dict in connectomes_config.items():
+            if conn_dict and isinstance(conn_dict, dict) and conn_dict.get("path"):
+                connectomes[conn_name] = ConnectomeConfig.from_dict(conn_name, conn_dict)
+
+        # Parse analyses section (new extensible format)
+        analyses: dict[str, dict[str, Any]] = {}
+        analyses_config = yaml_config.get("analyses", {}) or {}
+        for analysis_name, analysis_dict in analyses_config.items():
+            if analysis_dict is None:
+                analyses[analysis_name] = {}
+            elif isinstance(analysis_dict, dict):
+                analyses[analysis_name] = analysis_dict.copy()
+
+        # === BACKWARD COMPATIBILITY: Parse legacy format ===
+        # If no new-format analyses, check for legacy per-analysis sections
+
+        if not analyses:
+            # RegionalDamage config (legacy)
+            regional_damage = yaml_config.get("regional_damage", {}) or {}
+            if regional_damage.get("enabled", True) is not False:
+                rd_config = {k: v for k, v in regional_damage.items() if k != "enabled"}
+                # Rename 'atlases' to 'parcel_names' for consistency with analysis class
+                if "atlases" in rd_config:
+                    rd_config["parcel_names"] = rd_config.pop("atlases")
+                analyses["RegionalDamage"] = rd_config
+
+            # FunctionalNetworkMapping config (legacy)
+            functional_mapping = yaml_config.get("functional_network_mapping", {}) or {}
+            if functional_mapping.get("enabled", False):
+                fnm_config = {k: v for k, v in functional_mapping.items() if k != "enabled"}
+                analyses["FunctionalNetworkMapping"] = fnm_config
+
+            # StructuralNetworkMapping config (legacy)
+            structural_mapping = yaml_config.get("structural_network_mapping", {}) or {}
+            if structural_mapping.get("enabled", False):
+                snm_config = {k: v for k, v in structural_mapping.items() if k != "enabled"}
+                analyses["StructuralNetworkMapping"] = snm_config
+
+            # ParcelAggregation config (legacy)
+            parcel_aggregation = yaml_config.get("parcel_aggregation", {}) or {}
+            if parcel_aggregation.get("enabled", False):
+                pa_config = {k: v for k, v in parcel_aggregation.items() if k != "enabled"}
+                analyses["ParcelAggregation"] = pa_config
+        else:
+            # New format: set legacy sections to empty for skip logic below
+            regional_damage = {}
+            functional_mapping = {}
+            structural_mapping = {}
 
         # Determine if regional damage is skipped
         skip_rd = getattr(args, "skip_regional_damage", False)
         if not skip_rd and regional_damage.get("enabled") is False:
             skip_rd = True
 
-        # Get parcel atlases from CLI or YAML
+        # Get parcel atlases from CLI or YAML (legacy)
         parcel_atlases = getattr(args, "parcel_atlases", None)
         if parcel_atlases is None:
             parcel_atlases = regional_damage.get("atlases")
 
-        # Get connectome paths from CLI or YAML
+        # Get connectome paths from CLI or YAML (legacy, for backward compat)
         func_conn = getattr(args, "functional_connectome", None)
         if func_conn is None and functional_mapping.get("enabled"):
             func_conn = functional_mapping.get("connectome_path")
@@ -304,6 +428,8 @@ class CLIConfig:
             n_procs=getattr(args, "nprocs", None) or yaml_config.get("n_jobs", 1),
             work_dir=work_dir,
             verbose_count=getattr(args, "verbose_count", 0) or yaml_config.get("verbosity", 0),
+            connectomes=connectomes,
+            analyses=analyses,
         )
 
     def validate(self) -> None:
@@ -353,6 +479,13 @@ class CLIConfig:
         # Atlas directory must exist if provided
         if self.atlas_dir and not self.atlas_dir.exists():
             raise ValueError(f"Atlas directory not found: {self.atlas_dir}")
+
+        # Validate connectomes (new format)
+        for conn_name, conn_config in self.connectomes.items():
+            if not conn_config.path.exists():
+                raise ValueError(f"Connectome '{conn_name}' path not found: {conn_config.path}")
+            if conn_config.tdi_path and not conn_config.tdi_path.exists():
+                raise ValueError(f"Connectome '{conn_name}' TDI not found: {conn_config.tdi_path}")
 
         # n_procs validation
         if self.n_procs < -1 or self.n_procs == 0:
