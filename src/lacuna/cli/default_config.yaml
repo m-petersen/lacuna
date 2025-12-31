@@ -1,35 +1,26 @@
 # Lacuna Configuration File
-# ========================
+# =========================
 # Copy this file and modify for your analysis.
 # Pass to lacuna with: lacuna --config my_config.yaml
 #
-# All paths can be absolute or relative to the config file location.
-
-# =============================================================================
-# INPUT/OUTPUT
-# =============================================================================
-
-# Input: BIDS dataset directory OR single NIfTI mask file
-input: /path/to/bids_dataset
-
-# Output: Directory for BIDS derivatives
-output: /path/to/output
-
-# Working directory for intermediate files (optional)
-# Default: ./work or $LACUNA_WORK_DIR
-work_dir: null
+# Generate this template: lacuna --generate-config > my_config.yaml
+#
+# This config uses the NEW EXTENSIBLE FORMAT with:
+#   - connectomes: section for registering connectome resources with explicit space
+#   - analyses: section for configuring any analysis from the registry
+#
+# For the LEGACY FORMAT (still supported), see the comments at the bottom.
 
 # =============================================================================
 # MASK SPACE CONFIGURATION
 # =============================================================================
 # The coordinate space of your input mask images.
-# This is REQUIRED if not detectable from filename (e.g., _space-MNI152NLin6Asym_)
+# Required if not detectable from filename (e.g., _space-MNI152NLin6Asym_)
 # or sidecar JSON.
 #
 # Common spaces:
 #   - MNI152NLin6Asym (FSL's MNI template)
 #   - MNI152NLin2009cAsym (fMRIPrep default)
-#   - MNI152NLin2009bAsym
 #
 # Resolution is automatically detected from image voxel size.
 
@@ -40,13 +31,13 @@ mask_space: MNI152NLin6Asym
 # =============================================================================
 
 # Subject IDs to process (without 'sub-' prefix)
-# Leave empty to process all subjects
+# Empty list = process all subjects
 subjects: []
   # - "001"
   # - "002"
 
 # Session IDs to process (without 'ses-' prefix)
-# Leave empty to process all sessions
+# Empty list = process all sessions
 sessions: []
   # - "01"
   # - "baseline"
@@ -59,61 +50,124 @@ pattern: null
 skip_bids_validation: false
 
 # =============================================================================
-# ANALYSES
+# CONNECTOMES SECTION (New Extensible Format)
 # =============================================================================
-# Each analysis can be enabled/disabled and configured.
-# Set to null or remove to disable an analysis.
+# Register connectome resources with explicit space information.
+# Each connectome can be referenced by name in the analyses section.
+#
+# Supported types:
+#   - functional: HDF5 file or directory with batched files (auto-detected)
+#   - structural: .tck tractogram file (auto-detected from extension)
 
-# Regional Damage Analysis
-# ------------------------
-# Quantifies lesion overlap with brain parcellations.
-regional_damage:
-  enabled: true
-  # Parcellation atlases to use (from TemplateFlow registry)
-  # See: lacuna list-parcellations
-  atlases:
-    - Schaefer2018_100Parcels7Networks
-    # - Schaefer2018_200Parcels7Networks
-    # - AAL3
+connectomes:
+  # Example functional connectome (GSP1000)
+  # functional:
+  #   path: /path/to/gsp1000_connectome.h5
+  #   space: MNI152NLin6Asym
+  #   resolution: 2  # Optional, auto-detected from file if not provided
 
-# Functional Network Mapping (fLNM)
-# ---------------------------------
-# Maps lesion to functionally connected brain regions using resting-state
-# functional connectivity data.
-functional_network_mapping:
-  enabled: false
-  # Path to functional connectome data directory or HDF5 file
-  # Must contain connectivity matrices for the same space as your masks
-  connectome_path: /path/to/functional_connectome
-  # Mapping method: "boes" (default) or "fox"
-  method: boes
-
-# Structural Network Mapping (sLNM)
-# ---------------------------------
-# Maps lesion to structurally connected brain regions using diffusion
-# tractography data. Requires MRtrix3 installed.
-structural_network_mapping:
-  enabled: false
-  # Path to whole-brain tractogram (.tck file)
-  tractogram_path: /path/to/tractogram.tck
-  # Path to pre-computed whole-brain TDI (optional, speeds up processing)
-  # Will be computed if not provided
-  tdi_path: null
-  # Parcellation for connectivity matrix (optional)
-  parcellation: null
+  # Example structural connectome (dTOR)
+  # structural:
+  #   path: /path/to/dTOR.tck
+  #   space: MNI152NLin6Asym
+  #   resolution: 2  # Resolution of the TDI output
+  #   tdi_path: /path/to/precomputed_tdi.nii.gz  # Optional, speeds up processing
 
 # =============================================================================
-# PERFORMANCE
+# ANALYSES SECTION (New Extensible Format)
 # =============================================================================
+# Configure analyses using names from the analysis registry.
+# Any analysis registered with BaseAnalysis can be configured here.
+#
+# Available analyses (use lacuna --list-analyses to see all):
+#   - RegionalDamage: Quantifies lesion overlap with brain parcellations
+#   - FunctionalNetworkMapping: Maps functional connectivity disruption
+#   - StructuralNetworkMapping: Maps white matter disconnection
+#   - ParcelAggregation: Aggregates voxel-wise maps to parcellation ROIs
 
-# Number of parallel processes
-# -1 = use all available CPUs
-# 1 = single-threaded (default, safest)
+analyses:
+  # RegionalDamage: Quantifies lesion overlap with brain parcellations
+  RegionalDamage:
+    parcel_names:
+      - Schaefer2018_100Parcels7Networks
+    # threshold: 0.5  # For binary mask conversion
+
+  # FunctionalNetworkMapping: Maps functional connectivity disruption
+  # Uncomment and provide a connectome reference to enable
+  # FunctionalNetworkMapping:
+  #   connectome: functional  # Reference to connectomes section
+  #   method: boes  # "boes" (mean) or "pini" (PCA-based)
+  #   pini_percentile: 20  # For PINI method only
+  #   compute_t_map: true
+  #   # t_threshold: 3.0  # Optional threshold for binary mask
+  #   return_in_lesion_space: false
+
+  # StructuralNetworkMapping: Maps white matter disconnection
+  # Requires MRtrix3 installation
+  # Uncomment and provide a connectome reference to enable
+  # StructuralNetworkMapping:
+  #   connectome: structural  # Reference to connectomes section
+  #   output_resolution: 2
+  #   cache_tdi: true
+  #   n_jobs: 1
+  #   keep_intermediate: false
+  #   # parcellation_name: Schaefer2018_100Parcels7Networks
+  #   # compute_lesioned_matrix: false
+
+  # ParcelAggregation: Aggregate voxel-wise maps to parcellation ROIs
+  # Uncomment to enable aggregation of network mapping outputs
+  # ParcelAggregation:
+  #   source:
+  #     FunctionalNetworkMapping:
+  #       - correlationmap
+  #       - tmap
+  #       - zmap
+  #     StructuralNetworkMapping: disconnection_map
+  #   aggregation: mean  # mean, sum, percent, volume, median, std
+  #   parcel_names:
+  #     - Schaefer2018_100Parcels7Networks
+  #   # threshold: 0.5  # For probabilistic atlases
+
+# =============================================================================
+# PERFORMANCE OPTIONS
+# =============================================================================
+# Number of parallel processes (-1 = all CPUs)
 n_jobs: 1
+
+# Working directory for intermediate files
+work_dir: null
 
 # =============================================================================
 # LOGGING
 # =============================================================================
-
-# Verbosity level: 0 = quiet, 1 = standard, 2 = verbose/debug
+# Verbosity level: 0 = quiet, 1 = info, 2 = debug
 verbosity: 1
+
+
+# =============================================================================
+# LEGACY FORMAT (Still Supported)
+# =============================================================================
+# The following format is still supported for backward compatibility.
+# Use the new format above for new configurations.
+#
+# regional_damage:
+#   enabled: true
+#   atlases:
+#     - Schaefer2018_100Parcels7Networks
+#
+# functional_network_mapping:
+#   enabled: false
+#   connectome_path: /path/to/connectome
+#   method: boes
+#
+# structural_network_mapping:
+#   enabled: false
+#   tractogram_path: /path/to/tractogram.tck
+#   tdi_path: /path/to/tdi.nii.gz
+#
+# parcel_aggregation:
+#   enabled: false
+#   source:
+#     FunctionalNetworkMapping: [correlationmap, tmap, zmap]
+#   aggregation: mean
+#   parcel_names: [Schaefer2018_100Parcels7Networks]
