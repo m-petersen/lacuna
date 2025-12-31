@@ -379,17 +379,3 @@ class VectorizedStrategy(BatchStrategy):
     @property
     def name(self) -> str:
         return "vectorized"
-
-
-# Future strategies (Phase 5+)
-
-# class StreamingStrategy(BatchStrategy):
-#     """
-#     Streaming batch processing for memory-constrained environments.
-#
-#     Best for: Large connectome analyses with limited RAM
-#     Speedup: None (sequential), but enables processing of datasets
-#              that don't fit in memory
-#     Memory: Low (one subject at a time + immediate disk writes)
-#     """
-#     pass

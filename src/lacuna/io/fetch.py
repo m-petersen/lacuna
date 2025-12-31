@@ -49,33 +49,34 @@ def get_data_dir() -> Path:
 
 
 # Pooch registry for pre-registered atlases
-# TODO: Replace with actual hosting URLs when available
+# NOTE: This registry is NOT FUNCTIONAL - URLs and hashes are placeholders.
+# The actual parcellation files are bundled in lacuna/data/atlases/ and accessed
+# via lacuna.assets.parcellations module. This registry is reserved for future
+# remote hosting capability.
+# TODO: Replace with actual hosting URLs when lacuna-data repository is created
 ATLAS_REGISTRY = pooch.create(
     path=get_data_dir() / "atlases",
-    base_url="https://github.com/lacuna/ldk-data/raw/main/atlases/",
+    base_url="https://github.com/lacuna/data/raw/main/atlases/",  # placeholder
     registry={
-        # Harvard-Oxford Cortical Atlas (48 regions)
-        "harvard-oxford-cortical.nii.gz": "sha256:placeholder_hash_ho_cortical",
-        "harvard-oxford-cortical_labels.txt": "sha256:placeholder_hash_ho_labels",
-        # Schaefer 2018 100 parcels
-        "schaefer2018-100parcels-7networks.nii.gz": "sha256:placeholder_hash_schaefer100",
-        "schaefer2018-100parcels-7networks_labels.txt": "sha256:placeholder_hash_schaefer100_labels",
-        # Schaefer 2018 400 parcels
-        "schaefer2018-400parcels-7networks.nii.gz": "sha256:placeholder_hash_schaefer400",
-        "schaefer2018-400parcels-7networks_labels.txt": "sha256:placeholder_hash_schaefer400_labels",
+        # Placeholder entries - NOT FUNCTIONAL
+        "schaefer2018-100parcels-7networks.nii.gz": "sha256:placeholder",
+        "schaefer2018-100parcels-7networks_labels.txt": "sha256:placeholder",
+        "schaefer2018-400parcels-7networks.nii.gz": "sha256:placeholder",
+        "schaefer2018-400parcels-7networks_labels.txt": "sha256:placeholder",
     },
 )
 
 
 # Pooch registry for pre-registered tractograms
-# TODO: Replace with actual hosting URLs when available
+# NOTE: This registry is NOT FUNCTIONAL - URLs and hashes are placeholders.
+# Tractograms should be registered via lacuna.assets.connectomes module.
+# TODO: Replace with actual hosting URLs when lacuna-data repository is created
 TRACTOGRAM_REGISTRY = pooch.create(
     path=get_data_dir() / "tractograms",
-    base_url="https://github.com/lacuna/ldk-data/raw/main/tractograms/",
+    base_url="https://github.com/lacuna/ldk-data/raw/main/tractograms/",  # placeholder
     registry={
-        # dTOR985 - Default structural connectome (985 subjects)
-        # Distributed in TrackVis .trk format, needs conversion to .tck
-        "dTOR985.trk": "sha256:placeholder_hash_dtor985",
+        # Placeholder entry - NOT FUNCTIONAL
+        "dTOR985.trk": "sha256:placeholder",
     },
 )
 
