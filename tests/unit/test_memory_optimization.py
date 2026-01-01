@@ -98,7 +98,7 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
         analysis = FunctionalNetworkMapping(
             connectome_name="test_streaming_connectome",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=True,
             t_threshold=2.0,
         )
@@ -118,14 +118,14 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
             flnm = result.results["FunctionalNetworkMapping"]
 
             # Check all expected outputs exist
-            assert "correlationmap" in flnm
+            assert "rmap" in flnm
             assert "zmap" in flnm
             assert "tmap" in flnm
             assert "summarystatistics" in flnm
 
             # Check shapes - in nested dict, these are VoxelMap objects
             # VoxelMap.data holds the NIfTI image which has .shape
-            assert flnm["correlationmap"].data.shape == (91, 109, 91)
+            assert flnm["rmap"].data.shape == (91, 109, 91)
             assert flnm["tmap"].data.shape == (91, 109, 91)
 
             # Check aggregated across all subjects
@@ -162,7 +162,7 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
         analysis = FunctionalNetworkMapping(
             connectome_name="test_lesion_batch_connectome",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=True,
         )
 
@@ -212,7 +212,7 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
         analysis = FunctionalNetworkMapping(
             connectome_name="test_float32_connectome",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=False,
         )
 
@@ -227,7 +227,7 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
             # Check data type of nibabel images (get_fdata() converts to float64)
             # So we check the internal data type instead
             # Results are now VoxelMap objects, access .data for the NIfTI image
-            assert flnm["correlationmap"].data.get_data_dtype() == np.float32
+            assert flnm["rmap"].data.get_data_dtype() == np.float32
             assert flnm["zmap"].data.get_data_dtype() == np.float32
     finally:
         unregister_functional_connectome("test_float32_connectome")
@@ -250,7 +250,7 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
         analysis = FunctionalNetworkMapping(
             connectome_name="test_tstat_connectome",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=True,
             t_threshold=2.5,
         )

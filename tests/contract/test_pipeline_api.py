@@ -101,15 +101,15 @@ class TestPipelineRunMethod:
 
         assert "data" in params
 
-    def test_run_accepts_log_level(self):
-        """Test that run accepts log_level parameter."""
+    def test_run_accepts_verbose(self):
+        """Test that run accepts verbose parameter with default False."""
         from lacuna import Pipeline
 
         sig = inspect.signature(Pipeline.run)
         params = sig.parameters
 
-        assert "log_level" in params
-        assert params["log_level"].default == 1
+        assert "verbose" in params
+        assert params["verbose"].default is False
 
 
 class TestPipelineRunBatchMethod:

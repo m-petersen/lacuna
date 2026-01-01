@@ -344,7 +344,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         source_type="figshare",
         download_url="https://springernature.figshare.com/ndownloader/files/44515847",
         n_subjects=985,
-        space="MNI152NLin6Asym",
+        space="MNI152NLin2009bAsym",
         estimated_size_gb=11.0,
     ),
 }

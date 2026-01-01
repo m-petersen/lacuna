@@ -38,7 +38,7 @@ def sample_mask_data_for_export():
     voxel_data = np.random.rand(*shape).astype(np.float32)
     voxel_img = nib.Nifti1Image(voxel_data, affine)
     voxel_map = VoxelMap(
-        name="correlationmap",
+        name="rmap",
         data=voxel_img,
         space="MNI152NLin6Asym",
         resolution=2.0,
@@ -54,7 +54,7 @@ def sample_mask_data_for_export():
     # Add results to mask_data
     results = {
         "FunctionalNetworkMapping": {
-            "correlationmap": voxel_map,
+            "rmap": voxel_map,
             "parcelmeans": parcel_data,
         }
     }

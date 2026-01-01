@@ -37,10 +37,10 @@ def sample_nifti():
 def test_voxel_map_result_initialization(sample_nifti):
     """Test basic VoxelMap initialization with simplified API."""
     result = VoxelMap(
-        name="correlationmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
+        name="rmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
-    assert result.name == "correlationmap"
+    assert result.name == "rmap"
     assert result.data is sample_nifti
     assert result.space == "MNI152NLin6Asym"
     assert result.resolution == 2.0
@@ -87,11 +87,11 @@ def test_voxel_map_metadata_storage(sample_nifti):
 def test_voxel_map_summary(sample_nifti):
     """Test summary string generation."""
     result = VoxelMap(
-        name="correlationmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
+        name="rmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
     )
 
     summary = result.summary()
-    assert "correlationmap" in summary
+    assert "rmap" in summary
     assert "91, 109, 91" in summary
     assert "MNI152NLin6Asym" in summary
     assert "2.0mm" in summary

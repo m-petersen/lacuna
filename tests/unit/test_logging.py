@@ -26,8 +26,8 @@ class TestConsoleLogger:
         assert logger.indent == "    "
 
     def test_logger_verbose_false(self):
-        """Test that log_level=0 suppresses output."""
-        logger = ConsoleLogger(log_level=0)
+        """Test that verbose=False suppresses output."""
+        logger = ConsoleLogger(verbose=False)
 
         output = io.StringIO()
         with redirect_stdout(output):
@@ -204,7 +204,7 @@ class TestConvenienceFunctions:
         """Test log_section convenience function."""
         output = io.StringIO()
         with redirect_stdout(output):
-            log_section("TEST")
+            log_section("TEST", verbose=True)
 
         result = output.getvalue()
         assert "TEST" in result
@@ -214,7 +214,7 @@ class TestConvenienceFunctions:
         """Test log_info convenience function."""
         output = io.StringIO()
         with redirect_stdout(output):
-            log_info("Test message")
+            log_info("Test message", verbose=True)
 
         result = output.getvalue()
         assert MessageType.INFO.value in result
@@ -224,7 +224,7 @@ class TestConvenienceFunctions:
         """Test log_success convenience function."""
         output = io.StringIO()
         with redirect_stdout(output):
-            log_success("Success message", details={"count": 5})
+            log_success("Success message", details={"count": 5}, verbose=True)
 
         result = output.getvalue()
         assert MessageType.SUCCESS.value in result
@@ -235,7 +235,7 @@ class TestConvenienceFunctions:
         """Test log_warning convenience function."""
         output = io.StringIO()
         with redirect_stdout(output):
-            log_warning("Warning message")
+            log_warning("Warning message", verbose=True)
 
         result = output.getvalue()
         assert MessageType.WARNING.value in result
@@ -245,7 +245,7 @@ class TestConvenienceFunctions:
         """Test log_error convenience function."""
         output = io.StringIO()
         with redirect_stdout(output):
-            log_error("Error message")
+            log_error("Error message", verbose=True)
 
         result = output.getvalue()
         assert MessageType.ERROR.value in result
@@ -255,7 +255,7 @@ class TestConvenienceFunctions:
         """Test log_progress convenience function."""
         output = io.StringIO()
         with redirect_stdout(output):
-            log_progress("Processing", current=5, total=10)
+            log_progress("Processing", current=5, total=10, verbose=True)
 
         result = output.getvalue()
         assert MessageType.PROGRESS.value in result

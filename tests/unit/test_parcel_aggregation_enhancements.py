@@ -111,13 +111,13 @@ def sample_mask_data(tmp_path):
 
     # Add a VoxelMap result with snake_case key using add_result (immutable pattern)
     voxel_map = VoxelMap(
-        name="correlationmap",
+        name="rmap",
         data=nib.Nifti1Image(np.random.rand(*shape).astype(np.float32), affine),
         space="MNI152NLin6Asym",
         resolution=2.0,
     )
 
-    return mask_data.add_result("DemoAnalysis", {"correlationmap": voxel_map})
+    return mask_data.add_result("DemoAnalysis", {"rmap": voxel_map})
 
 
 class TestVoxelMapDirectInput:
@@ -231,7 +231,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_list(self, sample_mask_data, local_test_atlas):
         """Test ParcelAggregation with list of sources."""
         analysis = ParcelAggregation(
-            source=["maskimg", "DemoAnalysis.correlationmap"],
+            source=["maskimg", "DemoAnalysis.rmap"],
             parcel_names=[local_test_atlas],
             aggregation="mean",
         )
@@ -249,7 +249,7 @@ class TestMultiSourceAggregation:
     def test_multi_source_naming(self, sample_mask_data, local_test_atlas):
         """Test multi-source results use descriptive BIDS keys."""
         analysis = ParcelAggregation(
-            source=["maskimg", "DemoAnalysis.correlationmap"],
+            source=["maskimg", "DemoAnalysis.rmap"],
             parcel_names=[local_test_atlas],
             aggregation="mean",
         )
@@ -262,7 +262,7 @@ class TestMultiSourceAggregation:
         # Format: atlas-{name}_source-{Source}_desc-{desc} (for other sources)
         keys = list(parcel_results.keys())
         assert any("InputMask" in k for k in keys), f"Expected InputMask in keys: {keys}"
-        assert any("correlationmap" in k for k in keys), f"Expected correlationmap in keys: {keys}"
+        assert any("rmap" in k for k in keys), f"Expected rmap in keys: {keys}"
 
     def test_multi_source_empty_list_raises(self):
         """Test empty source list raises ValueError."""
@@ -278,12 +278,14 @@ class TestMultiSourceAggregation:
 class TestNilearnWarningSuppression:
     """Test nilearn warning suppression (T142, T151)."""
 
-    def test_nilearn_warnings_suppressed_at_low_log_level(self, sample_mask_data, local_test_atlas):
-        """Test nilearn warnings are suppressed when log_level < 2."""
+    def test_nilearn_warnings_suppressed_when_verbose_false(
+        self, sample_mask_data, local_test_atlas
+    ):
+        """Test nilearn warnings are suppressed when verbose=False."""
         analysis = ParcelAggregation(
             parcel_names=[local_test_atlas],
             aggregation="mean",
-            log_level=0,  # Quiet mode
+            verbose=False,  # Quiet mode
         )
 
         # This should not raise any warnings
@@ -294,11 +296,11 @@ class TestNilearnWarningSuppression:
             # Filter for nilearn warnings
             nilearn_warnings = [warn for warn in w if "nilearn" in str(warn.message).lower()]
 
-            # Should have no nilearn warnings at log_level=0
+            # Should have no nilearn warnings when verbose=False
             assert len(nilearn_warnings) == 0
 
-    def test_nilearn_warnings_shown_at_high_log_level(self, sample_mask_data, local_test_atlas):
-        """Test nilearn warnings are shown when log_level >= 2."""
+    def test_nilearn_warnings_shown_when_verbose_true(self, sample_mask_data, local_test_atlas):
+        """Test nilearn warnings are shown when verbose=True."""
         # Create mismatched data to trigger warnings
         shape = (20, 20, 20)  # Different shape from atlas
         # Create binary mask (SubjectData requires binary data)
@@ -317,7 +319,7 @@ class TestNilearnWarningSuppression:
         analysis = ParcelAggregation(
             parcel_names=[local_test_atlas],
             aggregation="mean",
-            log_level=2,  # Verbose mode
+            verbose=True,  # Verbose mode
         )
 
         # This may raise warnings about resampling
@@ -325,7 +327,7 @@ class TestNilearnWarningSuppression:
             warnings.simplefilter("always")
             result = analysis.run(mask_data)
 
-            # At log_level >= 2, warnings should be visible
+            # When verbose=True, warnings should be visible
             # (This is a weaker assertion - we just check it doesn't crash)
             assert result is not None
 
@@ -354,7 +356,7 @@ class TestAtlasResamplingLogging:
         analysis = ParcelAggregation(
             parcel_names=[local_test_atlas],
             aggregation="mean",
-            log_level=3,  # DEBUG mode
+            verbose=True,  # Verbose mode
         )
 
         with caplog.at_level(logging.DEBUG):
@@ -371,7 +373,7 @@ class TestAtlasResamplingLogging:
         analysis = ParcelAggregation(
             parcel_names=[local_test_atlas],
             aggregation="mean",
-            log_level=0,  # Quiet mode
+            verbose=False,  # Quiet mode
         )
 
         with caplog.at_level(logging.INFO):

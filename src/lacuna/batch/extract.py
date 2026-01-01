@@ -105,7 +105,7 @@ def extract(
             - dict[SubjectData, dict]: BatchResults format with {subject: results}
         analysis: Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
             "RegionalDamage"). This filters by the top-level namespace in results.
-        pattern: Glob pattern to match result keys (e.g., "*correlationmap*",
+        pattern: Glob pattern to match result keys (e.g., "*rmap*",
             "parc-Schaefer*_desc-*"). Supports fnmatch-style wildcards:
             - ``*`` matches any sequence of characters
             - ``?`` matches any single character
@@ -121,7 +121,7 @@ def extract(
     Examples:
         Extract using glob pattern:
         >>> results = extract(batch_results, analysis="FunctionalNetworkMapping",
-        ...                   pattern="*correlationmap*")
+        ...                   pattern="*rmap*")
 
         Extract with pattern matching parcellation:
         >>> results = extract(batch_results, pattern="*Schaefer*")

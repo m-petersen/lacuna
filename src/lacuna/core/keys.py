@@ -11,11 +11,11 @@ InputMask source since the mask itself is the primary data).
 Examples
 --------
 >>> from lacuna.core.keys import build_result_key, parse_result_key
->>> key = build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlationmap")
+>>> key = build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap")
 >>> key
-'atlas-Schaefer100_source-FunctionalNetworkMapping_desc-correlationmap'
+'atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap'
 >>> parse_result_key(key)
-{'atlas': 'Schaefer100', 'source': 'FunctionalNetworkMapping', 'desc': 'correlationmap'}
+{'atlas': 'Schaefer100', 'source': 'FunctionalNetworkMapping', 'desc': 'rmap'}
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ def build_result_key(atlas: str, source: str, desc: str | None = None) -> str:
         Source analysis class name (e.g., "SubjectData", "FunctionalNetworkMapping").
         Will be converted to appropriate source abbreviation (e.g., SubjectData -> InputMask).
     desc : str, optional
-        Description/key within the source (e.g., "correlationmap").
+        Description/key within the source (e.g., "rmap").
         Ignored for InputMask source (automatically omitted).
 
     Returns
@@ -60,8 +60,8 @@ def build_result_key(atlas: str, source: str, desc: str | None = None) -> str:
 
     Examples
     --------
-    >>> build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlationmap")
-    'atlas-Schaefer100_source-FunctionalNetworkMapping_desc-correlationmap'
+    >>> build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap")
+    'atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap'
 
     >>> build_result_key("TianSubcortex_3TS1", "SubjectData", "maskimg")
     'atlas-TianSubcortex_3TS1_source-InputMask'
@@ -109,8 +109,8 @@ def parse_result_key(key: str) -> dict[str, str]:
 
     Examples
     --------
-    >>> parse_result_key("atlas-Schaefer100_source-FunctionalNetworkMapping_desc-correlationmap")
-    {'atlas': 'Schaefer100', 'source': 'FunctionalNetworkMapping', 'desc': 'correlationmap'}
+    >>> parse_result_key("atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap")
+    {'atlas': 'Schaefer100', 'source': 'FunctionalNetworkMapping', 'desc': 'rmap'}
 
     >>> parse_result_key("atlas-Tian_S4_source-InputMask")
     {'atlas': 'Tian_S4', 'source': 'InputMask'}
@@ -218,8 +218,9 @@ DESC_TO_SOURCE_MAPPING = {
     "maskimg": "inputmask",  # Legacy
     "mask_img": "inputmask",  # Legacy
     # FNM outputs
-    "correlationmap": "fnm",
-    "correlation_map": "fnm",
+    "rmap": "fnm",
+    "correlationmap": "fnm",  # Legacy alias
+    "correlation_map": "fnm",  # Legacy alias
     "zmap": "fnm",
     "z_map": "fnm",
     "tmap": "fnm",
@@ -235,7 +236,7 @@ DESC_TO_SOURCE_MAPPING = {
 BIDS_SUFFIX_MAPPING = {
     "values": "parcelstats",  # Tabular parcel statistics
     "parcels": "parcelstats",  # Tabular parcel data
-    "map": "",  # VoxelMap NIfTI - no suffix needed (e.g., fnmcorrelationmap.nii.gz)
+    "map": "",  # VoxelMap NIfTI - no suffix needed (e.g., fnmrmap.nii.gz)
     "connmatrix": "connmatrix",  # Connectivity matrix (valid BIDS derivative)
     "metrics": "stats",  # Scalar metrics as tabular
 }
@@ -264,8 +265,8 @@ def to_bids_label(value: str) -> str:
 
     Examples
     --------
-    >>> to_bids_label("correlation_map")
-    'correlationmap'
+    >>> to_bids_label("r_map")
+    'rmap'
 
     >>> to_bids_label("HCP1065")
     'hcp1065'
@@ -336,7 +337,7 @@ def format_bids_export_filename(
     2. Splits atlas names on underscore: ``Schaefer2018_100Parcels7Networks`` becomes
        ``atlas-schaefer2018_desc-100parcels7networks``
     3. Uses proper BIDS suffixes (``stats`` for tabular data, ``stat`` for maps)
-    4. For FNM/SNM VoxelMaps (no parcellation), uses format like ``fnmcorrelationmap_stat``
+    4. For FNM/SNM VoxelMaps (no parcellation), uses format like ``fnmrmap_stat``
 
     Underscores in the output only separate BIDS key-value pairs.
 
@@ -344,7 +345,7 @@ def format_bids_export_filename(
     ----------
     result_key : str
         BIDS-style result key (e.g., ``atlas-Schaefer100_source-InputMask``)
-        or simple key (e.g., ``correlationmap``).
+        or simple key (e.g., ``rmap``).
     suffix : str
         Internal suffix for the file type (e.g., ``values``, ``map``, ``connmatrix``).
         Will be converted to BIDS-compliant suffix.
@@ -363,13 +364,13 @@ def format_bids_export_filename(
     'atlas-schaefer2018_desc-100parcels7networks_source-inputmask_parcelstats'
 
     >>> format_bids_export_filename(
-    ...     "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-correlationmap",
+    ...     "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap",
     ...     "values"
     ... )
     'atlas-schaefer100_source-fnm_parcelstats'
 
-    >>> format_bids_export_filename("correlationmap", "map")
-    'fnmcorrelationmap'
+    >>> format_bids_export_filename("rmap", "map")
+    'fnmrmap'
 
     >>> format_bids_export_filename(
     ...     "atlas-HCP1065_thr0p1_source-InputMask",
@@ -380,8 +381,8 @@ def format_bids_export_filename(
     For FNM/SNM outputs without parcellation (VoxelMaps), the source is
     prepended to the desc without the desc- prefix, and no suffix is added:
 
-    >>> format_bids_export_filename("correlation_map", "map")
-    'fnmcorrelationmap'
+    >>> format_bids_export_filename("rmap", "map")
+    'fnmrmap'
 
     >>> format_bids_export_filename("disconnection_map", "map")
     'snmdisconnectionmap'
@@ -405,7 +406,7 @@ def format_bids_export_filename(
             source_prefix = DESC_TO_SOURCE_MAPPING.get(bids_desc, "")
 
         if source_prefix and source_prefix in ("fnm", "snm"):
-            # FNM/SNM VoxelMap outputs: fnmcorrelationmap (no desc- prefix)
+            # FNM/SNM VoxelMap outputs: fnmrmap (no desc- prefix)
             if bids_suffix:
                 return f"{source_prefix}{bids_desc}_{bids_suffix}"
             else:
@@ -443,7 +444,7 @@ def format_bids_export_filename(
 
         if "atlas" not in parsed and export_source in ("fnm", "snm"):
             # No parcellation - this is a VoxelMap output from FNM/SNM
-            # Use format: fnmcorrelationmap or snmdisconnectionmap (no desc- prefix)
+            # Use format: fnmrmap or snmdisconnectionmap (no desc- prefix)
             parts.append(f"{export_source}{bids_desc}")
         else:
             # For parcellation results, add source first, then desc if not redundant

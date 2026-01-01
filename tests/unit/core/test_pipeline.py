@@ -133,7 +133,7 @@ class TestAnalyzeFunction:
         """Test that analyze runs RegionalDamage."""
         from lacuna import analyze
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
 
         # Should have RegionalDamage results
         assert "RegionalDamage" in result.results
@@ -144,7 +144,7 @@ class TestAnalyzeFunction:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
 
         assert isinstance(result, SubjectData)
         assert not isinstance(result, list)
@@ -154,7 +154,7 @@ class TestAnalyzeFunction:
         """Test that list input returns list output."""
         from lacuna import analyze
 
-        results = analyze([simple_subject], steps={"RegionalDamage": None}, log_level=0)
+        results = analyze([simple_subject], steps={"RegionalDamage": None}, verbose=False)
 
         assert isinstance(results, list)
         assert len(results) == 1
@@ -169,7 +169,7 @@ class TestAnalyzeFunction:
             subjects,
             steps={"RegionalDamage": None},
             n_jobs=1,
-            log_level=0,
+            verbose=False,
             show_progress=False,
         )
 
@@ -182,21 +182,21 @@ class TestAnalyzeFunction:
         from lacuna import analyze
 
         with pytest.raises(TypeError):
-            analyze(simple_subject, log_level=0)
+            analyze(simple_subject, verbose=False)
 
     def test_analyze_empty_steps_raises(self, simple_subject):
         """Test that analyze raises ValueError for empty steps."""
         from lacuna import analyze
 
         with pytest.raises(ValueError, match="steps cannot be empty"):
-            analyze(simple_subject, steps={}, log_level=0)
+            analyze(simple_subject, steps={}, verbose=False)
 
     def test_analyze_invalid_analysis_raises(self, simple_subject):
         """Test that analyze raises KeyError for unknown analysis."""
         from lacuna import analyze
 
         with pytest.raises(KeyError, match="Unknown analysis"):
-            analyze(simple_subject, steps={"NonExistentAnalysis": None}, log_level=0)
+            analyze(simple_subject, steps={"NonExistentAnalysis": None}, verbose=False)
 
 
 class TestAnalyzeStepsParameter:
@@ -235,7 +235,7 @@ class TestAnalyzeStepsParameter:
         result = analyze(
             simple_subject,
             steps={"RegionalDamage": None},
-            log_level=0,
+            verbose=False,
         )
 
         assert "RegionalDamage" in result.results
@@ -247,8 +247,8 @@ class TestAnalyzeStepsParameter:
 
         result = analyze(
             simple_subject,
-            steps={"RegionalDamage": {"log_level": 0}},
-            log_level=0,
+            steps={"RegionalDamage": {"verbose": False}},
+            verbose=False,
         )
 
         assert "RegionalDamage" in result.results
@@ -263,7 +263,7 @@ class TestAnalyzeStepsParameter:
         result = analyze(
             simple_subject,
             steps={"RegionalDamage": None},
-            log_level=0,
+            verbose=False,
         )
 
         assert "RegionalDamage" in result.results
@@ -298,7 +298,7 @@ class TestAnalyzeBatchProcessing:
             steps={"RegionalDamage": None},
             n_jobs=1,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == 2
@@ -313,7 +313,7 @@ class TestAnalyzeBatchProcessing:
             [simple_subject],
             steps={"RegionalDamage": None},
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == 1
@@ -328,7 +328,7 @@ class TestAnalyzeBatchProcessing:
             steps={"RegionalDamage": None},
             n_jobs=2,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == 3
@@ -356,32 +356,32 @@ class TestAnalyzeLogLevel:
         )
 
     @pytest.mark.slow
-    def test_analyze_log_level_silent(self, simple_subject, capsys):
-        """Test analyze with log_level=0 (silent)."""
+    def test_analyze_verbose_silent(self, simple_subject, capsys):
+        """Test analyze with verbose=False (silent)."""
         from lacuna import analyze
 
-        analyze(simple_subject, steps={"RegionalDamage": None}, log_level=0)
+        analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
 
         _ = capsys.readouterr()
         # Silent mode should have minimal output
         # (some internal libs may still print)
 
     @pytest.mark.slow
-    def test_analyze_log_level_standard(self, simple_subject):
-        """Test analyze with log_level=1 (standard)."""
+    def test_analyze_verbose_enabled(self, simple_subject):
+        """Test analyze with verbose=True (default)."""
         from lacuna import analyze
 
         # Should complete without error
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=1)
+        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=True)
         assert result is not None
 
     @pytest.mark.slow
-    def test_analyze_log_level_verbose(self, simple_subject):
-        """Test analyze with log_level=2 (verbose)."""
+    def test_analyze_verbose_is_default(self, simple_subject):
+        """Test analyze with verbose parameter omitted (defaults to True)."""
         from lacuna import analyze
 
         # Should complete without error
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=2)
+        result = analyze(simple_subject, steps={"RegionalDamage": None})
         assert result is not None
 
 

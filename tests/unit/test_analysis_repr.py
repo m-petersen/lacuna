@@ -328,7 +328,7 @@ class TestStructuralNetworkMappingRepr:
                 connectome_name="test_struct_str",
                 parcellation_name="schaefer100",
                 n_jobs=4,
-                log_level=0,
+                verbose=False,
                 check_dependencies=False,
             )
 

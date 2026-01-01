@@ -52,6 +52,15 @@ class StructuralConnectomeMetadata(SpatialAssetMetadata):
     tdi_path: Path | None = None
     template_path: Path | None = None
 
+    def __repr__(self) -> str:
+        """Concise representation showing only essential fields."""
+        return (
+            f"StructuralConnectomeMetadata("
+            f"name={self.name!r}, "
+            f"space={self.space!r}, "
+            f"tractogram_path={self.tractogram_path})"
+        )
+
     def validate(self) -> None:
         """Validate space only (tractograms don't have inherent resolution).
 
@@ -104,6 +113,17 @@ class FunctionalConnectomeMetadata(SpatialAssetMetadata):
     modality: str = "bold"
     data_path: Path | None = None
     is_batched: bool = False
+
+    def __repr__(self) -> str:
+        """Concise representation showing only essential fields."""
+        return (
+            f"FunctionalConnectomeMetadata("
+            f"name={self.name!r}, "
+            f"space={self.space!r}, "
+            f"resolution={self.resolution}, "
+            f"n_subjects={self.n_subjects}, "
+            f"data_path={self.data_path})"
+        )
 
 
 __all__ = [

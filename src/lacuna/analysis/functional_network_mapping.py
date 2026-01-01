@@ -122,7 +122,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
     ...     method="boes"
     ... )
     >>> result = analysis.run(lesion)
-    >>> correlation_map = result.results["FunctionalNetworkMapping"]["correlationmap"]
+    >>> correlation_map = result.results["FunctionalNetworkMapping"]["rmap"]
     >>> z_map = result.results["FunctionalNetworkMapping"]["zmap"]
 
     Notes
@@ -150,7 +150,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         method: str = "boes",
         pini_percentile: int = 20,
         n_jobs: int = 1,
-        log_level: int = 1,
+        verbose: bool = False,
         compute_t_map: bool = True,
         t_threshold: float | None = None,
         return_in_lesion_space: bool = False,
@@ -168,8 +168,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             Percentile threshold for PINI method (0-100).
         n_jobs : int, default=1
             Number of parallel jobs (not yet implemented).
-        log_level : int, default=1
-            Logging verbosity (0=silent, 1=standard, 2=verbose).
+        verbose : bool, default=True
+            If True, print progress messages. If False, run silently.
         compute_t_map : bool, default=True
             If True, compute t-statistic map and standard error.
         t_threshold : float, optional
@@ -186,7 +186,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         KeyError
             If connectome_name not found in registry.
         """
-        super().__init__(log_level=log_level)
+        super().__init__(verbose=verbose)
 
         # Validate method parameter
         if method not in ("boes", "pini"):
@@ -220,7 +220,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.return_in_lesion_space = return_in_lesion_space
 
         # Initialize logger
-        self.logger = ConsoleLogger(log_level=log_level, width=70)
+        self.logger = ConsoleLogger(verbose=verbose, width=70)
 
         # Internal state
         self._batch_files = None
@@ -504,7 +504,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Correlation map (r values)
         correlation_result = VoxelMap(
-            name="correlationmap",
+            name="rmap",
             data=correlation_map_nifti,
             space=self.output_space,
             resolution=self.output_resolution,
@@ -512,10 +512,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "method": self.method,
                 "n_subjects": total_subjects,
                 "n_batches": len(connectome_files),
-                "statistic": "correlation_coefficient",
+                "statistic": "pearson_correlation_coefficient",
             },
         )
-        results["correlationmap"] = correlation_result
+        results["rmap"] = correlation_result
 
         # Z-map (Fisher z-transformed correlations)
         z_result = VoxelMap(
@@ -1274,15 +1274,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Build results dictionary with snake_case keys (matching _run_analysis)
         # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
         results = {
-            "correlationmap": VoxelMap(
-                name="correlationmap",
+            "rmap": VoxelMap(
+                name="rmap",
                 data=correlation_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
                     "method": self.method,
                     "n_subjects": total_subjects,
-                    "statistic": "correlation_coefficient",
+                    "statistic": "pearson_correlation_coefficient",
                 },
             ),
             "zmap": VoxelMap(
@@ -1361,7 +1361,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Add results to lesion data (returns new instance with results)
         batch_results = {
-            "correlationmap": results["correlationmap"],
+            "rmap": results["rmap"],
             "zmap": results["zmap"],
             "summarystatistics": results["summarystatistics"],
         }
@@ -1442,15 +1442,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Build results dictionary
         # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
         results = {
-            "correlationmap": VoxelMap(
-                name="correlationmap",
+            "rmap": VoxelMap(
+                name="rmap",
                 data=correlation_map_nifti,
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
                     "method": self.method,
                     "n_subjects": total_subjects,
-                    "statistic": "correlation_coefficient",
+                    "statistic": "pearson_correlation_coefficient",
                 },
             ),
             "network_map": correlation_map_nifti,  # Alias for backward compat (raw nifti)
@@ -1527,7 +1527,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Add results to lesion data (returns new instance with results)
         # Note: Using individual keys to match _run_analysis() structure
         batch_results = {
-            "correlationmap": results["correlationmap"],
+            "rmap": results["rmap"],
             "zmap": results["zmap"],
             "summarystatistics": results["summarystatistics"],
         }
@@ -1557,7 +1557,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             "compute_t_map": self.compute_t_map,
             "t_threshold": self.t_threshold,
             "return_in_lesion_space": self.return_in_lesion_space,
-            "log_level": self.log_level,
+            "verbose": self.verbose,
         }
 
     def _transform_results_to_lesion_space(self, results: dict, mask_data: SubjectData) -> dict:
@@ -1613,7 +1613,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     target_space=target_space,
                     source_resolution=int(self.output_resolution),
                     interpolation="linear",
-                    log_level=self.log_level,
+                    verbose=self.verbose,
                 )
 
                 # Create new VoxelMap with updated space

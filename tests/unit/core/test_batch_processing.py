@@ -58,7 +58,7 @@ class TestAnalyzeBatchNJobs:
             steps={"RegionalDamage": None},
             n_jobs=1,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == len(batch_subjects)
@@ -75,7 +75,7 @@ class TestAnalyzeBatchNJobs:
             steps={"RegionalDamage": None},
             n_jobs=2,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == len(batch_subjects)
@@ -93,7 +93,7 @@ class TestAnalyzeBatchNJobs:
             steps={"RegionalDamage": None},
             n_jobs=-1,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == 2
@@ -120,7 +120,7 @@ class TestAnalyzeBatchShowProgress:
             batch_subjects[:2],
             steps={"RegionalDamage": None},
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == 2
@@ -134,7 +134,7 @@ class TestAnalyzeBatchShowProgress:
             batch_subjects[:2],
             steps={"RegionalDamage": None},
             show_progress=True,
-            log_level=0,
+            verbose=False,
         )
 
         assert len(results) == 2
@@ -153,7 +153,7 @@ class TestBatchOutputConsistency:
             steps={"RegionalDamage": None},
             n_jobs=1,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         # Verify order by checking subject IDs
@@ -168,7 +168,7 @@ class TestBatchOutputConsistency:
 
         # Process sequentially
         sequential_results = [
-            analyze(s, steps={"RegionalDamage": None}, log_level=0) for s in batch_subjects[:2]
+            analyze(s, steps={"RegionalDamage": None}, verbose=False) for s in batch_subjects[:2]
         ]
 
         # Process as batch
@@ -177,7 +177,7 @@ class TestBatchOutputConsistency:
             steps={"RegionalDamage": None},
             n_jobs=1,
             show_progress=False,
-            log_level=0,
+            verbose=False,
         )
 
         # Verify results match
@@ -189,7 +189,7 @@ class TestBatchOutputConsistency:
         """Test that empty batch returns empty list."""
         from lacuna import analyze
 
-        results = analyze([], steps={"RegionalDamage": None}, log_level=0)
+        results = analyze([], steps={"RegionalDamage": None}, verbose=False)
 
         assert results == []
 
@@ -205,7 +205,7 @@ class TestBatchErrorHandling:
         mixed = [batch_subjects[0], "invalid"]
 
         with pytest.raises(TypeError):
-            analyze(mixed, steps={"RegionalDamage": None}, log_level=0)
+            analyze(mixed, steps={"RegionalDamage": None}, verbose=False)
 
 
 class TestPipelineRunBatch:
@@ -285,7 +285,7 @@ class TestTqdmIntegration:
             steps={"RegionalDamage": None},
             show_progress=True,
             n_jobs=1,
-            log_level=0,
+            verbose=False,
         )
 
         # tqdm writes to stderr - we just verify no error occurred

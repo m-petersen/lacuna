@@ -108,7 +108,7 @@ def test_load_mask_info_returns_tuple(mock_connectome_batch):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_batch_connectome", method="boes", log_level=0
+            connectome_name="test_batch_connectome", method="boes", verbose=False
         )
 
         # Call _load_mask_info()
@@ -147,7 +147,7 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_batch_state", method="boes", log_level=0
+            connectome_name="test_batch_state", method="boes", verbose=False
         )
 
         # Should start as None
@@ -184,7 +184,7 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_batch_sig", method="boes", log_level=0
+            connectome_name="test_batch_sig", method="boes", verbose=False
         )
 
         # Load mask info first (required for _get_lesion_voxel_indices)
@@ -216,7 +216,7 @@ def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152)
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_single",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=False,  # Skip t-map for faster test
         )
 
@@ -250,7 +250,7 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_multi",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=False,
         )
 
@@ -297,7 +297,7 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
         analysis = FunctionalNetworkMapping(
             connectome_name="test_batch_meta",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=False,
         )
 

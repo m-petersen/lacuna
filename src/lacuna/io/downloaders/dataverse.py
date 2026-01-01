@@ -65,6 +65,7 @@ class DataverseDownloader(BaseDownloader):
         self,
         output_path: Path,
         progress_callback: Callable[[FetchProgress], None] | None = None,
+        test_mode: bool = False,
     ) -> list[Path]:
         """
         Download dataset files from Dataverse.
@@ -75,6 +76,9 @@ class DataverseDownloader(BaseDownloader):
             Directory to download files to.
         progress_callback : callable, optional
             Function called with FetchProgress updates.
+        test_mode : bool, default=False
+            If True, downloads only 1 tarball for testing the full pipeline.
+            Metadata files (JSON, TXT, masks) are always downloaded.
 
         Returns
         -------
@@ -93,6 +97,23 @@ class DataverseDownloader(BaseDownloader):
 
         # Get dataset metadata
         files_info = self._get_dataset_files()
+
+        # In test mode: download all metadata files + only 1 tarball
+        if test_mode:
+            metadata_files = []
+            tar_files = []
+            for f in files_info:
+                filename = f.get("filename", "")
+                # Metadata files: JSON, TXT, NIfTI masks - always download
+                if filename.endswith((".json", ".txt", ".nii.gz", ".nii")):
+                    metadata_files.append(f)
+                # Tarballs: limit to 1 in test mode
+                elif filename.endswith(".tar"):
+                    tar_files.append(f)
+
+            # Take only first tarball in test mode
+            files_info = metadata_files + tar_files[:1]
+
         downloaded_files: list[Path] = []
 
         for i, file_info in enumerate(files_info):

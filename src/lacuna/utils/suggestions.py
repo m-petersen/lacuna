@@ -8,10 +8,10 @@ messages with "Did you mean?" suggestions.
 Examples
 --------
 >>> from lacuna.utils.suggestions import suggest_similar
->>> available = ["correlationmap", "zscoremap", "damagescore"]
->>> suggestions = suggest_similar("correlation", available, max_suggestions=2)
+>>> available = ["rmap", "zscoremap", "damagescore"]
+>>> suggestions = suggest_similar("rmp", available, max_suggestions=2)
 >>> suggestions
-['correlation_map']
+['rmap']
 """
 
 from __future__ import annotations
@@ -51,19 +51,19 @@ def suggest_similar(
 
     Examples
     --------
-    >>> available = ["correlationmap", "zscoremap", "damagescore"]
-    >>> suggest_similar("correltion_map", available)
-    ['correlation_map']
+    >>> available = ["rmap", "zscoremap", "damagescore"]
+    >>> suggest_similar("rmp", available)
+    ['rmap']
 
     >>> suggest_similar("score", available)
-    ['z_score_map', 'damage_score']
+    ['zscoremap', 'damagescore']
 
     >>> suggest_similar("xyz", available, min_similarity=0.5)
     []  # No close matches
 
     >>> # Case-insensitive matching
-    >>> suggest_similar("Correlation_Map", available)
-    ['correlation_map']
+    >>> suggest_similar("Rmap", available)
+    ['rmap']
     """
     if not candidates:
         return []
@@ -101,11 +101,11 @@ def format_suggestions(suggestions: list[str]) -> str:
 
     Examples
     --------
-    >>> format_suggestions(["correlationmap"])
-    "Did you mean 'correlation_map'?"
+    >>> format_suggestions(["rmap"])
+    "Did you mean 'rmap'?"
 
-    >>> format_suggestions(["correlationmap", "zscoremap"])
-    "Did you mean one of: 'correlation_map', 'z_score_map'?"
+    >>> format_suggestions(["rmap", "zscoremap"])
+    "Did you mean one of: 'rmap', 'zscoremap'?"
 
     >>> format_suggestions([])
     ''

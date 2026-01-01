@@ -111,9 +111,9 @@ class ParcelAggregation(BaseAnalysis):
 
         **Dict format (recommended for multi-source):**
         - Mapping of analysis namespace to result key(s)
-          Example: {"FunctionalNetworkMapping": "correlationmap"}
-          Example: {"FunctionalNetworkMapping": ["correlationmap", "zmap"]}
-          Example: {"SubjectData": "maskimg", "FunctionalNetworkMapping": ["correlationmap", "zmap"]}
+          Example: {"FunctionalNetworkMapping": "rmap"}
+          Example: {"FunctionalNetworkMapping": ["rmap", "zmap"]}
+          Example: {"SubjectData": "maskimg", "FunctionalNetworkMapping": ["rmap", "zmap"]}
 
     aggregation : str, default="mean"
         Aggregation method to use. Options:
@@ -123,9 +123,9 @@ class ParcelAggregation(BaseAnalysis):
         - "volume": Volume (in mm³) of non-zero voxels in ROI
         - "median": Median value across ROI voxels
         - "std": Standard deviation across ROI voxels
-    threshold : float, default=0.5
+    threshold : float or None, default=None
         For probabilistic atlases: minimum probability to consider a voxel
-        as belonging to a region (0.0-1.0).
+        as belonging to a region (0.0-1.0). If None, no thresholding is applied.
     parcel_names : list of str or None, default=None
         Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
         If None, all registered atlases are processed.
@@ -151,7 +151,7 @@ class ParcelAggregation(BaseAnalysis):
       * Probabilistic: use continuous interpolation for probability values
     - For 3D atlases: regions defined by integer labels (automatically rounded)
     - For 4D atlases: each volume is a binary or probability map for one region
-    - 4D probabilistic maps are thresholded at `threshold` parameter (default 0.5)
+    - 4D probabilistic maps are thresholded at `threshold` parameter if provided
     - Results stored in SubjectData.results["ParcelAggregation"] as dict
       mapping parcellation_name_region_name -> aggregated_value
 
@@ -200,17 +200,17 @@ class ParcelAggregation(BaseAnalysis):
         self,
         source: str | list[str] | dict[str, str | list[str]] = "maskimg",
         aggregation: str = "mean",
-        threshold: float = 0.5,
+        threshold: float | None = None,
         parcel_names: list[str] | None = None,
-        log_level: int = 1,
+        verbose: bool = False,
     ):
         """Initialize ParcelAggregation analysis."""
-        super().__init__(log_level=log_level)
+        super().__init__(verbose=verbose)
 
         # Initialize logger for warnings and info messages
         from lacuna.utils.logging import ConsoleLogger
 
-        self.logger = ConsoleLogger(log_level=log_level)
+        self.logger = ConsoleLogger(verbose=verbose)
 
         # Normalize and validate source parameter
         self.sources = self._normalize_sources(source)
@@ -263,8 +263,8 @@ class ParcelAggregation(BaseAnalysis):
             - str: Single source like "maskimg" or "FunctionalNetworkMapping.correlation_map"
             - list[str]: Multiple sources as strings
             - dict: Mapping of namespace to key(s), e.g.,
-              {"FunctionalNetworkMapping": "correlationmap"} or
-              {"FunctionalNetworkMapping": ["correlationmap", "zmap"]}
+              {"FunctionalNetworkMapping": "rmap"} or
+              {"FunctionalNetworkMapping": ["rmap", "zmap"]}
 
         Returns
         -------
@@ -282,10 +282,10 @@ class ParcelAggregation(BaseAnalysis):
         --------
         >>> agg._normalize_sources("maskimg")
         ['mask_img']
-        >>> agg._normalize_sources({"FunctionalNetworkMapping": "correlationmap"})
-        ['FunctionalNetworkMapping.correlation_map']
-        >>> agg._normalize_sources({"FunctionalNetworkMapping": ["correlationmap", "zmap"]})
-        ['FunctionalNetworkMapping.correlation_map', 'FunctionalNetworkMapping.z_map']
+        >>> agg._normalize_sources({"FunctionalNetworkMapping": "rmap"})
+        ['FunctionalNetworkMapping.rmap']
+        >>> agg._normalize_sources({"FunctionalNetworkMapping": ["rmap", "zmap"]})
+        ['FunctionalNetworkMapping.rmap', 'FunctionalNetworkMapping.zmap']
         """
         if isinstance(source, str):
             return [source]
@@ -297,10 +297,10 @@ class ParcelAggregation(BaseAnalysis):
                 if not isinstance(namespace, str):
                     raise TypeError(f"Source namespace must be str, got {type(namespace).__name__}")
                 if isinstance(keys, str):
-                    # Single key: {"FunctionalNetworkMapping": "correlationmap"}
+                    # Single key: {"FunctionalNetworkMapping": "rmap"}
                     sources.append(f"{namespace}.{keys}")
                 elif isinstance(keys, list):
-                    # Multiple keys: {"FunctionalNetworkMapping": ["correlationmap", "zmap"]}
+                    # Multiple keys: {"FunctionalNetworkMapping": ["rmap", "zmap"]}
                     if not keys:
                         raise ValueError(f"Source keys for '{namespace}' cannot be empty")
                     for key in keys:
@@ -453,14 +453,12 @@ class ParcelAggregation(BaseAnalysis):
         if input_space is None:
             input_space = "MNI152NLin6Asym"
             self.logger.info(
-                "Could not detect space from image header, defaulting to MNI152NLin6Asym",
-                verbose=True,
+                "Could not detect space from image header, defaulting to MNI152NLin6Asym"
             )
         if input_resolution is None:
             input_resolution = float(round(abs(img.affine[0, 0])))
             self.logger.info(
-                f"Could not detect resolution from image header, using voxel size: {input_resolution}mm",
-                verbose=True,
+                f"Could not detect resolution from image header, using voxel size: {input_resolution}mm"
             )
 
         # Calculate voxel volume from source data
@@ -858,7 +856,7 @@ class ParcelAggregation(BaseAnalysis):
             source_resolution=atlas_resolution,
             interpolation="nearest",  # Preserve integer labels
             image_name=f"atlas '{parcellation_name}'" if parcellation_name else "atlas",
-            log_level=self.log_level,
+            verbose=self.verbose,
         )
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, "DataContainer"]:
@@ -929,8 +927,7 @@ class ParcelAggregation(BaseAnalysis):
                 if source_shape != atlas_shape:
                     self.logger.info(
                         f"Resampling parcellation '{parcellation_name}' to match source data "
-                        f"(source: {source_shape}, parcellation: {atlas_shape})",
-                        verbose=True,  # Only show at log_level=2
+                        f"(source: {source_shape}, parcellation: {atlas_shape})"
                     )
 
                 if atlas_data.ndim == 3:
@@ -989,7 +986,7 @@ class ParcelAggregation(BaseAnalysis):
         Uses nilearn's NiftiLabelsMasker for robust extraction with automatic
         resampling, masking, and efficient computation.
 
-        Note: Suppresses nilearn's verbose label removal warnings at log_level < 2.
+        Note: Suppresses nilearn's verbose label removal warnings when verbose is False.
 
         Parameters
         ----------
@@ -1011,7 +1008,7 @@ class ParcelAggregation(BaseAnalysis):
 
         # Suppress nilearn's verbose label removal warnings unless in verbose mode
         # These warnings come from sklearn's set_output and are too verbose for standard use
-        if self.log_level < 2:
+        if not self.verbose:
             warnings.filterwarnings(
                 "ignore",
                 message=".*following labels were removed.*",
@@ -1337,5 +1334,5 @@ class ParcelAggregation(BaseAnalysis):
             "threshold": self.threshold,
             "parcel_names": self.parcel_names,
             "num_atlases": len(self.atlases) if hasattr(self, "atlases") else None,
-            "log_level": self.log_level,
+            "verbose": self.verbose,
         }

@@ -43,7 +43,6 @@ class TestCLIConfigBasic:
 
         assert config.participant_label is None
         assert config.session_id is None
-        assert config.skip_bids_validation is False
         assert config.functional_connectome is None
         assert config.structural_connectome is None
         assert config.parcel_atlases is None
@@ -93,7 +92,6 @@ class TestCLIConfigFromArgs:
             output_dir=output_dir,
             analysis_level="participant",
             participant_label=["001", "002"],
-            skip_bids_validation=True,
             functional_connectome=None,
             structural_connectome=None,
             parcel_atlases=["Schaefer100"],
@@ -107,7 +105,6 @@ class TestCLIConfigFromArgs:
         assert config.bids_dir == bids_dir
         assert config.output_dir == output_dir
         assert config.participant_label == ["001", "002"]
-        assert config.skip_bids_validation is True
         assert config.parcel_atlases == ["Schaefer100"]
         assert config.n_procs == 4
         assert config.verbose_count == 1

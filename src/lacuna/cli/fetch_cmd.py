@@ -94,13 +94,15 @@ def _handle_gsp1000(args: argparse.Namespace) -> int:
     # Get configuration
     api_key = getattr(args, "api_key", None)
     batches = getattr(args, "batches", 10)
-    register = not getattr(args, "no_register", False)
+    test_mode = getattr(args, "test_mode", False)
     force = getattr(args, "force", False)
 
     print("Fetching GSP1000 functional connectome...")
     print(f"  Output: {output_dir}")
-    print(f"  Batches: {batches}")
-    print(f"  Register: {register}")
+    if test_mode:
+        print("  Mode: TEST (1 tarball only)")
+    else:
+        print(f"  Batches: {batches}")
     print()
 
     try:
@@ -108,14 +110,14 @@ def _handle_gsp1000(args: argparse.Namespace) -> int:
             output_dir=output_dir,
             api_key=api_key,
             batches=batches,
-            register=register,
+            test_mode=test_mode,
+            register=False,  # Registration handled by analysis steps
             force=force,
         )
         print("\n✓ GSP1000 fetch complete!")
         print(f"  Files: {len(result.output_files)}")
         print(f"  Duration: {result.duration_seconds:.1f}s")
-        if result.registered:
-            print(f"  Registered as: {result.register_name}")
+        print(f"  Output: {result.output_dir}")
         return 0
 
     except AuthenticationError as e:
@@ -144,27 +146,24 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
 
     # Get configuration
     keep_original = not getattr(args, "no_keep_original", False)
-    register = not getattr(args, "no_register", False)
     force = getattr(args, "force", False)
 
     print("Fetching dTOR985 structural tractogram...")
     print(f"  Output: {output_dir}")
     print(f"  Keep original: {keep_original}")
-    print(f"  Register: {register}")
     print()
 
     try:
         result = fetch_dtor985(
             output_dir=output_dir,
             keep_original=keep_original,
-            register=register,
+            register=False,  # Registration handled by analysis steps
             force=force,
         )
         print("\n✓ dTOR985 fetch complete!")
         print(f"  Files: {len(result.output_files)}")
         print(f"  Duration: {result.duration_seconds:.1f}s")
-        if result.registered:
-            print(f"  Registered as: {result.register_name}")
+        print(f"  Output: {result.output_dir}")
         return 0
 
     except DownloadError as e:

@@ -53,7 +53,7 @@ def test_bug_fix_load_mask_info_returns_tuple(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_load_mask", method="boes", log_level=0
+            connectome_name="test_bug_load_mask", method="boes", verbose=False
         )
 
         # Call the method - should not raise TypeError
@@ -92,7 +92,7 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_voxel_indices", method="boes", log_level=0
+            connectome_name="test_bug_voxel_indices", method="boes", verbose=False
         )
 
         # Load mask info first (required)
@@ -146,7 +146,7 @@ def test_both_fixes_together(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_both_fixes", method="boes", log_level=0, compute_t_map=False
+            connectome_name="test_bug_both_fixes", method="boes", verbose=False, compute_t_map=False
         )
 
         # Create a dummy lesion
@@ -238,7 +238,7 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         analysis = FunctionalNetworkMapping(
             connectome_name="test_bug_aggregate",
             method="boes",
-            log_level=0,
+            verbose=False,
             compute_t_map=True,
             t_threshold=2.0,
         )
@@ -259,7 +259,7 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         flnm_results = result.results["FunctionalNetworkMapping"]
 
         # Verify expected keys are present
-        expected_keys = ["correlationmap", "zmap", "summarystatistics"]
+        expected_keys = ["rmap", "zmap", "summarystatistics"]
         for key in expected_keys:
             assert key in flnm_results, f"Missing expected key: {key}"
 
@@ -267,13 +267,13 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         from lacuna.core.data_types import VoxelMap
 
         assert isinstance(
-            flnm_results["correlationmap"], VoxelMap
+            flnm_results["rmap"], VoxelMap
         ), "correlation_map should be VoxelMap"
         assert isinstance(flnm_results["zmap"], VoxelMap), "z_map should be VoxelMap"
 
         # VoxelMap.data should contain the NIfTI image
         assert isinstance(
-            flnm_results["correlationmap"].data, nib.Nifti1Image
+            flnm_results["rmap"].data, nib.Nifti1Image
         ), "correlation_map.data should be NIfTI image"
 
         # Since compute_t_map=True, these should also be present

@@ -75,25 +75,22 @@ class BaseAnalysis(ABC):
     #: Preferred batch processing strategy (default: parallel)
     batch_strategy: str = "parallel"
 
-    def __init__(self, log_level: int = 1) -> None:
+    def __init__(self, verbose: bool = False) -> None:
         """
         Initialize the analysis module.
 
         Parameters
         ----------
-        log_level : int, default=1
-            Logging verbosity level:
-            - 0: Silent (no output)
-            - 1: Standard (important messages only)
-            - 2: Verbose (detailed progress and debug info)
+        verbose : bool, default=True
+            If True, print progress messages. If False, run silently.
 
         Notes
         -----
         Subclasses should override this to accept analysis-specific parameters
         and store them as instance attributes for provenance tracking.
-        Always call super().__init__(log_level=log_level) when overriding.
+        Always call super().__init__(verbose=verbose) when overriding.
         """
-        self.log_level = log_level
+        self.verbose = verbose
 
     def __repr__(self) -> str:
         """
@@ -293,7 +290,7 @@ class BaseAnalysis(ABC):
         ...     if mask_data.get_coordinate_space() != "MNI152_2mm":
         ...         raise ValueError(
         ...             "LesionNetworkMapping requires data in MNI152 space. "
-        ...             "Use ldk.preprocess.normalize_to_mni() first."
+        ...             "Use lacuna.preprocess.normalize_to_mni() first."
         ...         )
         ...
         ...     data = mask_data.mask_img.get_fdata()
@@ -343,7 +340,7 @@ class BaseAnalysis(ABC):
         ...     # Create voxel map result
         ...     correlation_img = self._compute_correlation_map(lesion_array)
         ...     voxel_result = VoxelMap(
-        ...         name="correlationmap",
+        ...         name="rmap",
         ...         data=correlation_img,
         ...         output_space=self.computation_space,
         ...         lesion_space=mask_data.coordinate_space
@@ -371,14 +368,14 @@ class BaseAnalysis(ABC):
         Notes
         -----
         Override this method if your analysis has parameters that should
-        be recorded in provenance. The base implementation returns log_level.
+        be recorded in provenance. The base implementation returns verbose.
         Subclasses should call super()._get_parameters() and merge with their
         own parameters.
 
         Examples
         --------
         >>> def _get_parameters(self) -> Dict[str, Any]:
-        ...     params = super()._get_parameters()  # Get log_level
+        ...     params = super()._get_parameters()  # Get verbose
         ...     params.update({
         ...         'threshold': self.threshold,
         ...         'method': self.method,
@@ -386,7 +383,7 @@ class BaseAnalysis(ABC):
         ...     })
         ...     return params
         """
-        return {"log_level": self.log_level}
+        return {"verbose": self.verbose}
 
     def _ensure_target_space(self, mask_data: SubjectData) -> SubjectData:
         """
@@ -470,7 +467,7 @@ class BaseAnalysis(ABC):
 
         # Transform (logging handled by transform_mask_data)
         return transform_mask_data(
-            mask_data, target_space_obj, image_name="mask", log_level=self.log_level
+            mask_data, target_space_obj, image_name="mask", verbose=self.verbose
         )
 
     def _get_version(self) -> str:
@@ -576,6 +573,4 @@ class BaseAnalysis(ABC):
         )
 
         # Transform data (logging handled by transform_mask_data)
-        return transform_mask_data(
-            mask_data, target_space, image_name="mask", log_level=self.log_level
-        )
+        return transform_mask_data(mask_data, target_space, image_name="mask", verbose=self.verbose)

@@ -8,7 +8,7 @@ Provides functions for:
 - Saving NIfTI files
 - Exporting analysis results to CSV/TSV/JSON
 - Fetching and caching reference datasets (atlases, templates)
-- Converting connectome data to LDK format
+- Converting connectome data to Lacuna HDF5 format
 - Downloading and registering connectomes (GSP1000, dTOR985)
 """
 
@@ -19,7 +19,7 @@ from .bids import (
     save_nifti,
     validate_bids_derivatives,
 )
-from .convert import gsp1000_to_ldk, trk_to_tck
+from .convert import gsp1000_to_hdf5, trk_to_tck
 from .downloaders import (
     CONNECTOME_SOURCES,
     ConnectomeSource,
@@ -81,6 +81,6 @@ __all__ = [
     "FetchProgress",
     "FetchResult",
     # Convert
-    "gsp1000_to_ldk",
+    "gsp1000_to_hdf5",
     "trk_to_tck",
 ]

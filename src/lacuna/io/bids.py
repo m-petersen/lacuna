@@ -392,7 +392,7 @@ def export_voxelmap(
         Session identifier (e.g., 'ses-01')
     desc : str, default='map'
         BIDS-formatted key with entities and suffix (e.g.,
-        'parc-Schaefer100_source-fnm_correlationmap_map')
+        'parc-Schaefer100_source-fnm_rmap_map')
     space : str, optional
         Override space from voxelmap.space
     label : str, optional

@@ -897,7 +897,7 @@ class SubjectData:
         analysis : str
             Analysis namespace (e.g., "ParcelAggregation", "FunctionalNetworkMapping").
         pattern : str, optional
-            Glob pattern to match result keys (e.g., "*correlationmap*",
+            Glob pattern to match result keys (e.g., "*rmap*",
             "atlas-Schaefer*"). Supports fnmatch-style wildcards:
             - ``*`` matches any sequence of characters
             - ``?`` matches any single character
@@ -929,7 +929,7 @@ class SubjectData:
 
         >>> # Get unwrapped data directly (nibabel image instead of VoxelMap)
         >>> corr_img = subject.get_result(
-        ...     "FunctionalNetworkMapping", pattern="*correlationmap*", unwrap=True
+        ...     "FunctionalNetworkMapping", pattern="*rmap*", unwrap=True
         ... )
         >>> corr_img.shape  # Access numpy array directly
         (91, 109, 91)
