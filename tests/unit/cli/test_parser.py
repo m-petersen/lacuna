@@ -157,14 +157,6 @@ class TestBuildParser:
 
         assert args.verbose_count == 2
 
-    def test_parser_accepts_skip_bids_validation(self):
-        """Test that parser accepts --skip-bids-validation."""
-        parser = build_parser()
-
-        args = parser.parse_args(["/data/bids", "/output", "participant", "--skip-bids-validation"])
-
-        assert args.skip_bids_validation is True
-
     def test_parser_default_values(self):
         """Test parser default values."""
         parser = build_parser()
@@ -172,7 +164,6 @@ class TestBuildParser:
         args = parser.parse_args(["/data/bids", "/output", "participant"])
 
         assert args.participant_label is None
-        assert args.skip_bids_validation is False
         assert args.functional_connectome is None
         assert args.structural_tractogram is None
         assert args.parcel_atlases is None
@@ -242,7 +233,6 @@ class TestComplexScenarios:
                 "4",
                 "--work-dir",
                 "/scratch/work",
-                "--skip-bids-validation",
                 "-vv",
             ]
         )
@@ -257,5 +247,4 @@ class TestComplexScenarios:
         assert args.parcel_atlases == ["Schaefer100", "Schaefer200"]
         assert args.nprocs == 4
         assert args.work_dir == Path("/scratch/work")
-        assert args.skip_bids_validation is True
         assert args.verbose_count == 2

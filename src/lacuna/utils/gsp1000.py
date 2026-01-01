@@ -19,7 +19,7 @@ def create_connectome_batches(
     output_dir: str | Path,
     subjects_per_batch: int = 50,
     pattern: str = "sub-*/func/*bld001_rest_*_finalmask.nii.gz",
-    verbose: bool = True,
+    verbose: bool = False,
 ) -> list[Path]:
     """Create HDF5 batch files from GSP1000 functional data.
 
@@ -171,7 +171,7 @@ def create_connectome_batches(
     return created_files
 
 
-def validate_connectome_batches(batch_dir: str | Path, verbose: bool = True) -> dict:
+def validate_connectome_batches(batch_dir: str | Path, verbose: bool = False) -> dict:
     """Validate integrity of HDF5 connectome batch files.
 
     Parameters

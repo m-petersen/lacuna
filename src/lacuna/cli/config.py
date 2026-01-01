@@ -192,18 +192,16 @@ class CLIConfig:
         Session IDs to process.
     pattern : str, optional
         Glob pattern to filter mask files.
-    skip_bids_validation : bool
-        Whether to skip BIDS dataset validation.
     space : str, optional
         Coordinate space (required if not in filename).
     resolution : float, optional
         Voxel resolution in mm (required if not in filename).
     functional_connectome : str, optional
-        Functional connectome name or path (legacy, prefer connectomes section).
+        Functional connectome name or path (from CLI).
     structural_connectome : str, optional
-        Structural connectome name or path (legacy, prefer connectomes section).
+        Structural connectome name or path (from CLI).
     structural_tdi : Path, optional
-        Path to whole-brain TDI NIfTI (legacy, prefer connectomes section).
+        Path to whole-brain TDI NIfTI (from CLI).
     parcel_atlases : list of str, optional
         Atlas names for RegionalDamage analysis.
     skip_regional_damage : bool
@@ -231,7 +229,6 @@ class CLIConfig:
     participant_label: list[str] | None = None
     session_id: list[str] | None = None
     pattern: str | None = None
-    skip_bids_validation: bool = False
 
     # Space/Resolution
     space: str | None = None
@@ -276,13 +273,24 @@ class CLIConfig:
         # 25 = custom WORKFLOW level, 20 = INFO, 10 = DEBUG
         return max(25 - 5 * self.verbose_count, 10)
 
+    @property
+    def verbose(self) -> bool:
+        """
+        Check if verbose output is enabled for analysis classes.
+
+        Returns
+        -------
+        bool
+            True if verbose_count >= 1, False otherwise.
+        """
+        return self.verbose_count >= 1
+
     @classmethod
     def from_args(cls, args: Namespace, yaml_config: dict[str, Any] | None = None) -> CLIConfig:
         """
         Create CLIConfig from parsed arguments and optional YAML config.
 
         YAML config values are used as defaults; CLI arguments override them.
-        Supports both new format (connectomes + analyses sections) and legacy format.
 
         Parameters
         ----------
@@ -324,68 +332,20 @@ class CLIConfig:
             elif isinstance(analysis_dict, dict):
                 analyses[analysis_name] = analysis_dict.copy()
 
-        # === BACKWARD COMPATIBILITY: Parse legacy format ===
-        # If no new-format analyses, check for legacy per-analysis sections
-
-        if not analyses:
-            # RegionalDamage config (legacy)
-            regional_damage = yaml_config.get("regional_damage", {}) or {}
-            if regional_damage.get("enabled", True) is not False:
-                rd_config = {k: v for k, v in regional_damage.items() if k != "enabled"}
-                # Rename 'atlases' to 'parcel_names' for consistency with analysis class
-                if "atlases" in rd_config:
-                    rd_config["parcel_names"] = rd_config.pop("atlases")
-                analyses["RegionalDamage"] = rd_config
-
-            # FunctionalNetworkMapping config (legacy)
-            functional_mapping = yaml_config.get("functional_network_mapping", {}) or {}
-            if functional_mapping.get("enabled", False):
-                fnm_config = {k: v for k, v in functional_mapping.items() if k != "enabled"}
-                analyses["FunctionalNetworkMapping"] = fnm_config
-
-            # StructuralNetworkMapping config (legacy)
-            structural_mapping = yaml_config.get("structural_network_mapping", {}) or {}
-            if structural_mapping.get("enabled", False):
-                snm_config = {k: v for k, v in structural_mapping.items() if k != "enabled"}
-                analyses["StructuralNetworkMapping"] = snm_config
-
-            # ParcelAggregation config (legacy)
-            parcel_aggregation = yaml_config.get("parcel_aggregation", {}) or {}
-            if parcel_aggregation.get("enabled", False):
-                pa_config = {k: v for k, v in parcel_aggregation.items() if k != "enabled"}
-                analyses["ParcelAggregation"] = pa_config
-        else:
-            # New format: set legacy sections to empty for skip logic below
-            regional_damage = {}
-            functional_mapping = {}
-            structural_mapping = {}
-
         # Determine if regional damage is skipped
         skip_rd = getattr(args, "skip_regional_damage", False)
-        if not skip_rd and regional_damage.get("enabled") is False:
-            skip_rd = True
 
-        # Get parcel atlases from CLI or YAML (legacy)
+        # Get parcel atlases from CLI
         parcel_atlases = getattr(args, "parcel_atlases", None)
-        if parcel_atlases is None:
-            parcel_atlases = regional_damage.get("atlases")
 
-        # Get connectome paths from CLI or YAML (legacy, for backward compat)
+        # Get connectome paths from CLI
         func_conn = getattr(args, "functional_connectome", None)
-        if func_conn is None and functional_mapping.get("enabled"):
-            func_conn = functional_mapping.get("connectome_path")
         if func_conn:
             func_conn = str(func_conn)
 
         struct_conn = getattr(args, "structural_tractogram", None)
-        if struct_conn is None and structural_mapping.get("enabled"):
-            struct_conn = structural_mapping.get("tractogram_path")
 
         struct_tdi = getattr(args, "structural_tdi", None)
-        if struct_tdi is None:
-            tdi_path = structural_mapping.get("tdi_path")
-            if tdi_path:
-                struct_tdi = Path(tdi_path)
 
         # Get space from CLI or YAML
         space = getattr(args, "mask_space", None) or yaml_config.get("mask_space")
@@ -415,8 +375,6 @@ class CLIConfig:
             participant_label=participants,
             session_id=sessions,
             pattern=getattr(args, "pattern", None) or yaml_config.get("pattern"),
-            skip_bids_validation=getattr(args, "skip_bids_validation", False)
-            or yaml_config.get("skip_bids_validation", False),
             space=space,
             resolution=None,  # Resolution is auto-detected from image affine
             functional_connectome=func_conn,

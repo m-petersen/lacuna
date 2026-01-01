@@ -110,7 +110,7 @@ class TestGetResultErrorSuggestionsContract:
         )
         # Add some mock results
         mask_data._results["RegionalDamage"] = {"volume": 100}
-        mask_data._results["FunctionalNetworkMapping"] = {"correlationmap": None}
+        mask_data._results["FunctionalNetworkMapping"] = {"rmap": None}
         return mask_data
 
     def test_invalid_analysis_suggests_similar(self, mask_data_with_results):

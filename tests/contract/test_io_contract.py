@@ -1,5 +1,5 @@
 """
-Contract tests for I/O module (ldk.io).
+Contract tests for I/O module (lacuna.io).
 
 These tests define the expected behavior of the I/O API contract for loading
 and saving lesion data, including BIDS dataset loading and export.

@@ -52,6 +52,19 @@ def load_template(name: str) -> Path:
     >>> print(template.shape)
     (193, 229, 193)
     """
+    # Canonicalize space variant in template name before registry lookup
+    # e.g., "MNI152NLin2009bAsym_res-2" -> "MNI152NLin2009cAsym_res-2"
+    if "_res-" in name:
+        space_part, res_part = name.rsplit("_res-", 1)
+        canonical_space = _canonicalize_space_variant(space_part)
+        canonical_name = f"{canonical_space}_res-{res_part}"
+        if canonical_name != name:
+            logger.info(
+                f"Using space equivalence: {name} → {canonical_name} "
+                f"(anatomically identical spaces)"
+            )
+            name = canonical_name
+
     # Get metadata from registry
     metadata = TEMPLATE_REGISTRY.get(name)
 

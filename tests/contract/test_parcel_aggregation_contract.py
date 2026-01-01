@@ -529,11 +529,11 @@ def test_multi_source_aggregation_contract(synthetic_mask_img, local_test_atlas)
     correlation_map = nib.Nifti1Image(
         np.random.randn(64, 64, 64).astype(np.float32), synthetic_mask_img.affine
     )
-    mask_data._results["FunctionalNetworkMapping"] = {"correlationmap": correlation_map}
+    mask_data._results["FunctionalNetworkMapping"] = {"rmap": correlation_map}
 
     # Run multi-source aggregation
     analysis = ParcelAggregation(
-        source=["SubjectData.maskimg", "FunctionalNetworkMapping.correlationmap"],
+        source=["SubjectData.maskimg", "FunctionalNetworkMapping.rmap"],
         parcel_names=[local_test_atlas],
         aggregation="mean",
     )
@@ -549,7 +549,7 @@ def test_multi_source_aggregation_contract(synthetic_mask_img, local_test_atlas)
 
     # Keys should be BIDS-style with source differentiation
     mask_keys = [k for k in result_keys if "InputMask" in k or "maskimg" in k]
-    fnm_keys = [k for k in result_keys if "FunctionalNetworkMapping" in k or "correlationmap" in k]
+    fnm_keys = [k for k in result_keys if "FunctionalNetworkMapping" in k or "rmap" in k]
 
     assert len(mask_keys) >= 1, f"Expected InputMask key, got keys: {result_keys}"
     assert len(fnm_keys) >= 1, f"Expected FunctionalNetworkMapping key, got keys: {result_keys}"
@@ -579,25 +579,25 @@ def test_multi_source_aggregation_dict_format(synthetic_mask_img, local_test_atl
 
     correlation_img = nib.Nifti1Image(correlation_data, synthetic_mask_img.affine)
     correlation_map = VoxelMap(
-        name="correlationmap", data=correlation_img, space="MNI152NLin6Asym", resolution=2.0
+        name="rmap", data=correlation_img, space="MNI152NLin6Asym", resolution=2.0
     )
     z_map = VoxelMap(name="zmap", data=correlation_img, space="MNI152NLin6Asym", resolution=2.0)
 
     mask_data._results["FunctionalNetworkMapping"] = {
-        "correlationmap": correlation_map,
+        "rmap": correlation_map,
         "zmap": z_map,
     }
 
     # NEW: Dictionary format for sources
     analysis = ParcelAggregation(
-        source={"SubjectData": "maskimg", "FunctionalNetworkMapping": ["correlationmap", "zmap"]},
+        source={"SubjectData": "maskimg", "FunctionalNetworkMapping": ["rmap", "zmap"]},
         parcel_names=[local_test_atlas],
         aggregation="mean",
     )
 
     # Verify sources were normalized correctly
     assert "SubjectData.maskimg" in analysis.sources
-    assert "FunctionalNetworkMapping.correlationmap" in analysis.sources
+    assert "FunctionalNetworkMapping.rmap" in analysis.sources
     assert "FunctionalNetworkMapping.zmap" in analysis.sources
 
     # Run and verify results
@@ -636,12 +636,12 @@ def test_source_dict_format_validation():
         ParcelAggregation(source={"Namespace": ["valid", 123]})
 
     # Valid single key dict should work
-    agg = ParcelAggregation(source={"FunctionalNetworkMapping": "correlationmap"})
-    assert agg.sources == ["FunctionalNetworkMapping.correlationmap"]
+    agg = ParcelAggregation(source={"FunctionalNetworkMapping": "rmap"})
+    assert agg.sources == ["FunctionalNetworkMapping.rmap"]
 
     # Valid list keys dict should work
-    agg = ParcelAggregation(source={"FunctionalNetworkMapping": ["correlationmap", "zmap"]})
+    agg = ParcelAggregation(source={"FunctionalNetworkMapping": ["rmap", "zmap"]})
     assert agg.sources == [
-        "FunctionalNetworkMapping.correlationmap",
+        "FunctionalNetworkMapping.rmap",
         "FunctionalNetworkMapping.zmap",
     ]

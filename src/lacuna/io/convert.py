@@ -2,7 +2,7 @@
 Connectome conversion utilities for preparing user data.
 
 Converts raw connectome data from various sources (GSP1000, HCP, etc.)
-into LDK-compatible HDF5 format.
+into Lacuna-compatible HDF5 format.
 """
 
 import glob
@@ -14,7 +14,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-def gsp1000_to_ldk(
+def gsp1000_to_hdf5(
     gsp_dir: str | Path,
     mask_path: str | Path,
     output_dir: str | Path,
@@ -23,7 +23,7 @@ def gsp1000_to_ldk(
     overwrite: bool = False,
 ) -> list[Path]:
     """
-    Convert GSP1000 functional data to LDK-compatible HDF5 chunks.
+    Convert GSP1000 functional data to Lacuna-compatible HDF5 chunks.
 
     Scans a directory of functional NIfTI files from the GSP1000 dataset,
     extracts time-series from within a brain mask, and saves the data into
@@ -62,7 +62,7 @@ def gsp1000_to_ldk(
 
     Examples
     --------
-    >>> chunk_files = gsp1000_to_ldk(
+    >>> chunk_files = gsp1000_to_hdf5(
     ...     gsp_dir="/data/GSP1000",
     ...     mask_path="/data/templates/MNI152_T1_2mm_Brain_Mask.nii.gz",
     ...     output_dir="/data/connectomes/gsp1000_chunks",
@@ -81,8 +81,6 @@ def gsp1000_to_ldk(
     gsp_dir = Path(gsp_dir)
     mask_path = Path(mask_path)
     output_dir = Path(output_dir)
-
-    print("🚀 Starting GSP1000 to LDK conversion...")
 
     # Validate inputs
     if not gsp_dir.exists():
@@ -187,8 +185,6 @@ def gsp1000_to_ldk(
 
     print("\n✅ Conversion complete!")
     print(f"Created {len(created_files)} chunk files in: {output_dir}")
-    print("\nTo use in analyses, set:")
-    print(f"  export LACUNA_CONNECTOME_DIR={output_dir}")
 
     return created_files
 

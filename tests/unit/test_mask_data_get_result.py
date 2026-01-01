@@ -35,7 +35,7 @@ def mask_data_with_results(sample_mask_img):
     # "atlas-..._source-InputMask" (no desc for InputMask)
     pa_results = {
         build_result_key("Schaefer100", "SubjectData", "maskimg"): {"parcels": [1, 2, 3]},
-        build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlationmap"): {
+        build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap"): {
             "parcels": [4, 5, 6]
         },
         build_result_key("Tian_S4", "SubjectData", "maskimg"): {"parcels": [7, 8, 9]},
@@ -44,7 +44,7 @@ def mask_data_with_results(sample_mask_img):
 
     # Add FunctionalNetworkMapping results
     fnm_results = {
-        "correlationmap": {"data": [1.0, 2.0]},
+        "rmap": {"data": [1.0, 2.0]},
         "zscoremap": {"data": [3.0, 4.0]},
     }
     mask = mask.add_result("FunctionalNetworkMapping", fnm_results)
@@ -65,7 +65,7 @@ class TestGetResultAnalysisLevel:
     def test_get_fnm_results(self, mask_data_with_results):
         """Get FunctionalNetworkMapping results."""
         results = mask_data_with_results.get_result("FunctionalNetworkMapping")
-        assert "correlationmap" in results
+        assert "rmap" in results
         assert "zscoremap" in results
 
     def test_unknown_analysis_raises_keyerror(self, mask_data_with_results):
@@ -86,7 +86,7 @@ class TestGetResultWithPattern:
         """Get specific result using glob pattern."""
         result = mask_data_with_results.get_result(
             "ParcelAggregation",
-            pattern="*Schaefer100*FunctionalNetworkMapping*correlationmap*",
+            pattern="*Schaefer100*FunctionalNetworkMapping*rmap*",
         )
         assert result == {"parcels": [4, 5, 6]}
 

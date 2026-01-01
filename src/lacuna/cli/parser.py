@@ -103,12 +103,6 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         metavar="GLOB",
         help="Glob pattern to filter mask files (e.g., '*label-WMH*')",
     )
-    g_bids.add_argument(
-        "--skip-bids-validation",
-        action="store_true",
-        help="Skip BIDS dataset validation",
-    )
-
     # Mask Space Options
     g_space = parser.add_argument_group("Mask space options")
     g_space.add_argument(
@@ -266,7 +260,15 @@ def build_fetch_parser(subparsers) -> None:
         metavar="N",
         help=(
             "Number of HDF5 batch files to create. More batches = lower RAM usage.\n"
-            "Recommendations: 16GB → 100, 32GB+ → 50"
+            "Recommendations: 16GB → 100, 32GB+ → 50. Ignored in test mode."
+        ),
+    )
+    g_gsp.add_argument(
+        "--test-mode",
+        action="store_true",
+        help=(
+            "Download only 1 tarball (~2GB) to test the full pipeline.\n"
+            "Verifies download, extraction, conversion, and registration work."
         ),
     )
 
@@ -281,14 +283,9 @@ def build_fetch_parser(subparsers) -> None:
     # Common options
     g_common = fetch_parser.add_argument_group("Common options")
     g_common.add_argument(
-        "--no-register",
-        action="store_true",
-        help="Skip automatic registration after processing",
-    )
-    g_common.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing files and registrations",
+        help="Overwrite existing files",
     )
     g_common.add_argument(
         "--interactive",
@@ -425,12 +422,6 @@ def _add_bids_arguments(parser: ArgumentParser) -> None:
         metavar="GLOB",
         help="Glob pattern to filter mask files (e.g., '*label-WMH*')",
     )
-    g_bids.add_argument(
-        "--skip-bids-validation",
-        action="store_true",
-        help="Skip BIDS dataset validation",
-    )
-
     # Mask Space Options
     g_space = parser.add_argument_group("Mask space options")
     g_space.add_argument(

@@ -52,12 +52,12 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    # Check if this is a subcommand (fetch, etc.) or legacy BIDS workflow
+    # Check if this is a subcommand (fetch, etc.) or BIDS workflow
     subcommands = {"fetch", "run"}
     if argv and argv[0] in subcommands:
         return _handle_subcommand(argv)
 
-    # Legacy BIDS-Apps workflow (backward compatible)
+    # BIDS-Apps workflow
     parser = build_parser()
 
     # Handle --generate-config before full parsing
@@ -128,7 +128,7 @@ def _handle_subcommand(argv: list[str]) -> int:
         return handle_fetch_command(args)
 
     elif args.command == "run":
-        # The 'run' subcommand uses the same workflow as the legacy CLI
+        # The 'run' subcommand uses the standard BIDS workflow
         from lacuna.cli.config import CLIConfig, load_yaml_config
 
         yaml_config = None
@@ -228,17 +228,17 @@ def _run_workflow(config: CLIConfig) -> int:
         return EXIT_BIDS_ERROR
 
     # Step 2: Register connectomes
-    # New format: config.connectomes (dict of named connectomes)
-    # Legacy format: config.functional_connectome, config.structural_connectome
+    # New format: config.connectomes (dict of named connectomes from YAML)
+    # CLI-provided: config.functional_connectome, config.structural_connectome
     registered_connectomes: dict[str, str] = {}
 
-    # Register connectomes from new format
+    # Register connectomes from YAML config
     for conn_name, conn_config in config.connectomes.items():
         registered_name = _register_connectome_from_config(conn_name, conn_config)
         if registered_name:
             registered_connectomes[conn_name] = registered_name
 
-    # Legacy: register CLI-provided connectomes
+    # Register CLI-provided connectomes
     functional_connectome_name = _resolve_connectome(
         config.functional_connectome,
         connectome_type="functional",
@@ -272,7 +272,7 @@ def _run_workflow(config: CLIConfig) -> int:
                 steps=steps,
                 n_jobs=config.n_procs,
                 show_progress=True,
-                log_level=config.verbose_count,
+                verbose=config.verbose,
             )
             # Ensure results is a list
             if not isinstance(results, list):
@@ -360,8 +360,7 @@ def _build_analysis_steps(
     Build analysis steps dictionary from configuration.
 
     Uses full analysis configurations from YAML if available, otherwise
-    falls back to CLI arguments. Supports both new format (connectomes section)
-    and legacy format (inline connectome paths).
+    falls back to CLI arguments.
 
     Parameters
     ----------
@@ -370,9 +369,9 @@ def _build_analysis_steps(
     registered_connectomes : dict, optional
         Mapping of YAML connectome names to registered names.
     functional_connectome_name : str, optional
-        Registered functional connectome name (legacy CLI mode).
+        Registered functional connectome name (from CLI).
     structural_connectome_name : str, optional
-        Registered structural connectome name (legacy CLI mode).
+        Registered structural connectome name (from CLI).
 
     Returns
     -------
@@ -455,7 +454,7 @@ def _build_analysis_steps(
         ):
             sources: dict[str, str | list[str]] = {}
             if "FunctionalNetworkMapping" in steps:
-                sources["FunctionalNetworkMapping"] = ["correlationmap", "tmap", "zmap"]
+                sources["FunctionalNetworkMapping"] = ["rmap", "tmap", "zmap"]
             if "StructuralNetworkMapping" in steps:
                 sources["StructuralNetworkMapping"] = "disconnection_map"
             if sources:
@@ -492,7 +491,7 @@ def _build_analysis_steps(
             sources_fallback: dict[str, str | list[str]] = {}
             if functional_connectome_name:
                 sources_fallback["FunctionalNetworkMapping"] = [
-                    "correlationmap",
+                    "rmap",
                     "tmap",
                     "zmap",
                 ]

@@ -23,8 +23,8 @@ class TestBuildResultKey:
 
     def test_simple_key(self):
         """Build a simple result key."""
-        key = build_result_key("Schaefer100", "FunctionalNetworkMapping", "correlationmap")
-        assert key == "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-correlationmap"
+        key = build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap")
+        assert key == "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap"
 
     def test_mask_source_omits_desc(self):
         """Build key with SubjectData source omits desc (InputMask is the data)."""
@@ -71,12 +71,12 @@ class TestParseResultKey:
     def test_parse_simple_key(self):
         """Parse a simple result key."""
         result = parse_result_key(
-            "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-correlationmap"
+            "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap"
         )
         assert result == {
             "atlas": "Schaefer100",
             "source": "FunctionalNetworkMapping",
-            "desc": "correlationmap",
+            "desc": "rmap",
         }
 
     def test_parse_atlas_with_underscore(self):
@@ -120,7 +120,7 @@ class TestParseResultKey:
         """Build then parse should return original components."""
         atlas = "Schaefer200"
         source = "FunctionalNetworkMapping"
-        desc = "correlationmap"
+        desc = "rmap"
 
         key = build_result_key(atlas, source, desc)
         parsed = parse_result_key(key)
@@ -258,8 +258,8 @@ class TestFormatBidsExportFilename:
 
     def test_simple_fnm_key_no_desc_prefix(self):
         """FNM simple keys use fnm prefix without desc- entity."""
-        result = format_bids_export_filename("correlationmap", "map")
-        assert result == "fnmcorrelationmap"  # No desc- prefix, no _stat suffix
+        result = format_bids_export_filename("rmap", "map")
+        assert result == "fnmrmap"  # No desc- prefix, no _stat suffix
 
     def test_simple_fnm_key_with_underscore_converted(self):
         """FNM keys with underscores are converted to lowercase with fnm prefix."""
@@ -319,10 +319,10 @@ class TestFormatBidsExportFilename:
     def test_fnm_correlation_map_redundant(self):
         """FNM correlation_map desc is redundant with fnm source."""
         result = format_bids_export_filename(
-            "atlas-HCP1065_source-FunctionalNetworkMapping_desc-correlationmap", "values"
+            "atlas-HCP1065_source-FunctionalNetworkMapping_desc-rmap", "values"
         )
         assert result == "atlas-hcp1065_source-fnm_parcelstats"
-        assert "correlationmap" not in result
+        assert "rmap" not in result
 
     def test_suffix_mapping_values_to_parcelstats(self):
         """Internal 'values' suffix maps to BIDS 'parcelstats'."""

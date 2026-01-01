@@ -5,11 +5,9 @@
 #
 # Generate this template: lacuna --generate-config > my_config.yaml
 #
-# This config uses the NEW EXTENSIBLE FORMAT with:
+# This config uses the EXTENSIBLE FORMAT with:
 #   - connectomes: section for registering connectome resources with explicit space
 #   - analyses: section for configuring any analysis from the registry
-#
-# For the LEGACY FORMAT (still supported), see the comments at the bottom.
 
 # =============================================================================
 # MASK SPACE CONFIGURATION
@@ -46,20 +44,19 @@ sessions: []
 # Examples: "*label-WMH*", "*label-lesion*", "*acuteinfarct*"
 pattern: null
 
-# Skip BIDS validation (faster but less safe)
-skip_bids_validation: false
-
 # =============================================================================
-# CONNECTOMES SECTION (New Extensible Format)
+# CONNECTOMES SECTION
 # =============================================================================
 # Register connectome resources with explicit space information.
-# Each connectome can be referenced by name in the analyses section.
+# If not downloaded yet see: lacuna fetch --help
 #
 # Supported types:
 #   - functional: HDF5 file or directory with batched files (auto-detected)
 #   - structural: .tck tractogram file (auto-detected from extension)
 
 connectomes:
+
+
   # Example functional connectome (GSP1000)
   # functional:
   #   path: /path/to/gsp1000_connectome.h5
@@ -74,7 +71,7 @@ connectomes:
   #   tdi_path: /path/to/precomputed_tdi.nii.gz  # Optional, speeds up processing
 
 # =============================================================================
-# ANALYSES SECTION (New Extensible Format)
+# ANALYSES SECTION
 # =============================================================================
 # Configure analyses using names from the analysis registry.
 # Any analysis registered with BaseAnalysis can be configured here.
@@ -90,7 +87,7 @@ analyses:
   RegionalDamage:
     parcel_names:
       - Schaefer2018_100Parcels7Networks
-    # threshold: 0.5  # For binary mask conversion
+
 
   # FunctionalNetworkMapping: Maps functional connectivity disruption
   # Uncomment and provide a connectome reference to enable
@@ -119,10 +116,11 @@ analyses:
   # ParcelAggregation:
   #   source:
   #     FunctionalNetworkMapping:
-  #       - correlationmap
+  #       - rmap
   #       - tmap
   #       - zmap
-  #     StructuralNetworkMapping: disconnection_map
+  #     StructuralNetworkMapping: 
+  #       - disconnection_map
   #   aggregation: mean  # mean, sum, percent, volume, median, std
   #   parcel_names:
   #     - Schaefer2018_100Parcels7Networks
@@ -140,34 +138,5 @@ work_dir: null
 # =============================================================================
 # LOGGING
 # =============================================================================
-# Verbosity level: 0 = quiet, 1 = info, 2 = debug
-verbosity: 1
-
-
-# =============================================================================
-# LEGACY FORMAT (Still Supported)
-# =============================================================================
-# The following format is still supported for backward compatibility.
-# Use the new format above for new configurations.
-#
-# regional_damage:
-#   enabled: true
-#   atlases:
-#     - Schaefer2018_100Parcels7Networks
-#
-# functional_network_mapping:
-#   enabled: false
-#   connectome_path: /path/to/connectome
-#   method: boes
-#
-# structural_network_mapping:
-#   enabled: false
-#   tractogram_path: /path/to/tractogram.tck
-#   tdi_path: /path/to/tdi.nii.gz
-#
-# parcel_aggregation:
-#   enabled: false
-#   source:
-#     FunctionalNetworkMapping: [correlationmap, tmap, zmap]
-#   aggregation: mean
-#   parcel_names: [Schaefer2018_100Parcels7Networks]
+# Enable verbose output (true/false)
+verbose: false

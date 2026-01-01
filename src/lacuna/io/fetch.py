@@ -23,7 +23,7 @@ def get_data_dir() -> Path:
 
     Priority:
     1. LACUNA_DATA_DIR environment variable (explicit user choice)
-    2. XDG_CACHE_HOME/ldk (XDG standard)
+    2. XDG_CACHE_HOME/lacuna (XDG standard)
     3. ~/.cache/lacuna (fallback)
 
     Returns
@@ -38,10 +38,10 @@ def get_data_dir() -> Path:
     PosixPath('/home/user/.cache/lacuna')
 
     >>> import os
-    >>> os.environ['LACUNA_DATA_DIR'] = '/mnt/nvme/ldk_data'
+    >>> os.environ['LACUNA_DATA_DIR'] = '/mnt/nvme/lacuna_data'
     >>> data_dir = get_data_dir()
     >>> print(data_dir)
-    PosixPath('/mnt/nvme/ldk_data')
+    PosixPath('/mnt/nvme/lacuna_data')
     """
     if env_dir := os.getenv("LACUNA_DATA_DIR"):
         return Path(env_dir).expanduser().resolve()
@@ -77,7 +77,7 @@ ATLAS_REGISTRY = pooch.create(
 # TODO: Replace with actual hosting URLs when lacuna-data repository is created
 TRACTOGRAM_REGISTRY = pooch.create(
     path=get_data_dir() / "tractograms",
-    base_url="https://github.com/lacuna/ldk-data/raw/main/tractograms/",  # placeholder
+    base_url="https://github.com/lacuna/lacuna-data/raw/main/tractograms/",  # placeholder
     registry={
         # Placeholder entry - NOT FUNCTIONAL
         "dTOR985.trk": "sha256:placeholder",
@@ -376,8 +376,8 @@ def get_connectome_path(name_or_path: str) -> Path:
         "To prepare your connectome:\n\n"
         "1. Download GSP1000 from Harvard Dataverse:\n"
         "   https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/ILXIKS\n\n"
-        "2. Convert to LDK format:\n"
-        "   ldk convert gsp1000 /path/to/raw /output/dir\n\n"
+        "2. Convert to Lacuna format:\n"
+        "   lacuna convert gsp1000 /path/to/raw /output/dir\n\n"
         "3. Set environment variable:\n"
         "   export LACUNA_CONNECTOME_DIR=/output/dir\n\n"
         "Or provide direct path: FunctionalNetworkMapping(connectome_path='/path/to/file.h5')"
@@ -459,7 +459,7 @@ def get_tractogram(name: str = "dTOR985", *, convert_to_tck: bool = True) -> Pat
         print(
             f"\nWARNING: Could not convert to .tck format: {e}\n"
             f"Returning .trk file. You'll need to convert manually:\n"
-            f"  ldk.io.trk_to_tck('{trk_path}', '{tck_path}')"
+            f"  lacuna.io.trk_to_tck('{trk_path}', '{tck_path}')"
         )
         return trk_path
 
@@ -474,10 +474,12 @@ def fetch_gsp1000(
     *,
     api_key: str | None = None,
     batches: int = 10,
+    test_mode: bool = False,
     register: bool = True,
     register_name: str = "GSP1000",
     force: bool = False,
     progress_callback: Callable[[FetchProgress], None] | None = None,
+    verbose: bool = False,
 ) -> FetchResult:
     """
     Download, process, and register the GSP1000 functional connectome.
@@ -496,6 +498,11 @@ def fetch_gsp1000(
     batches : int, default=10
         Number of HDF5 batch files to create. More batches = lower RAM usage.
         Recommendations: 4GB RAM → 100, 8GB → 50, 16GB → 25, 32GB+ → 10.
+        Ignored if test_mode=True (uses 1 batch for test data).
+    test_mode : bool, default=False
+        If True, downloads only 1 tarball (~2GB) to test the full pipeline
+        (download → extract → convert → register). Useful for verifying
+        the setup works before committing to the full ~100GB download.
     register : bool, default=True
         Automatically register connectome after processing.
     register_name : str, default="GSP1000"
@@ -504,6 +511,9 @@ def fetch_gsp1000(
         Overwrite existing files and registrations.
     progress_callback : callable, optional
         Function called with FetchProgress updates during operation.
+    verbose : bool, default=False
+        Print informational messages about operations, including when files
+        already exist and are reused without re-downloading.
 
     Returns
     -------
@@ -544,7 +554,7 @@ def fetch_gsp1000(
     import time
 
     from ..core.exceptions import AuthenticationError, DownloadError, ProcessingError
-    from .convert import gsp1000_to_ldk
+    from .convert import gsp1000_to_hdf5
     from .downloaders import CONNECTOME_SOURCES, FetchProgress, FetchResult
     from .downloaders.dataverse import DataverseDownloader
 
@@ -563,6 +573,57 @@ def fetch_gsp1000(
     processed_dir = output_dir / "processed"
     raw_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check if processed files already exist
+    existing_hdf5 = list(processed_dir.glob("*.h5")) + list(processed_dir.glob("*.hdf5"))
+    if existing_hdf5 and not force:
+        if verbose:
+            print(
+                f"Using existing HDF5 files (skipping download): {processed_dir} "
+                f"({len(existing_hdf5)} files)"
+            )
+        warnings.append(f"Using existing HDF5 files: {processed_dir}")
+
+        # Skip to registration phase
+        registered = False
+        if register:
+            if progress_callback:
+                progress_callback(
+                    FetchProgress(
+                        phase="registration",
+                        current_file="",
+                        files_completed=0,
+                        files_total=1,
+                        message=f"Registering as '{register_name}'...",
+                    )
+                )
+            try:
+                from ..assets.connectomes import register_functional_connectome
+
+                register_functional_connectome(
+                    name=register_name,
+                    space=source.space,
+                    resolution=2.0,
+                    data_path=processed_dir,
+                    n_subjects=source.n_subjects,
+                    description=source.description or "Downloaded via fetch_gsp1000",
+                )
+                registered = True
+            except Exception as e:
+                warnings.append(f"Registration failed: {e}")
+
+        return FetchResult(
+            success=True,
+            connectome_name="gsp1000",
+            output_dir=processed_dir,
+            output_files=existing_hdf5,
+            registered=registered,
+            register_name=register_name if registered else None,
+            duration_seconds=time.time() - start_time,
+            download_time_seconds=0.0,
+            processing_time_seconds=0.0,
+            warnings=warnings,
+        )
 
     try:
         # Phase 1: Download
@@ -583,11 +644,32 @@ def fetch_gsp1000(
         downloader.download(
             output_path=raw_dir,
             progress_callback=progress_callback,
+            test_mode=test_mode,
         )
 
         download_time = time.time() - download_start
 
-        # Phase 2: Processing (convert to HDF5 batches)
+        # Phase 2: Extract tarballs
+        if progress_callback:
+            progress_callback(
+                FetchProgress(
+                    phase="processing",
+                    current_file="",
+                    files_completed=0,
+                    files_total=1,
+                    message="Extracting tarballs...",
+                )
+            )
+
+        # Extract all .tar files
+        import tarfile
+
+        tar_files = list(raw_dir.glob("*.tar"))
+        for tar_path in tar_files:
+            with tarfile.open(tar_path, "r") as tar:
+                tar.extractall(path=raw_dir)
+
+        # Phase 3: Processing (convert to HDF5 batches)
         processing_start = time.time()
 
         if progress_callback:
@@ -602,8 +684,13 @@ def fetch_gsp1000(
             )
 
         # Calculate subjects per batch from batches count
-        # GSP1000 has ~1000 subjects
-        subjects_per_chunk = max(1, 1000 // batches)
+        # GSP1000 has ~1000 subjects, but test_mode has only ~10 subjects
+        if test_mode:
+            # In test mode, use 1 batch for the small amount of test data
+            subjects_per_chunk = 100  # More than enough for 1 tarball
+            warnings.append("Test mode: using 1 tarball with minimal batching")
+        else:
+            subjects_per_chunk = max(1, 1000 // batches)
 
         # Find brain mask (should be included in download or use template)
         mask_candidates = list(raw_dir.glob("*mask*.nii.gz")) + list(
@@ -631,7 +718,7 @@ def fetch_gsp1000(
                 ) from e
 
         # Run conversion
-        output_files = gsp1000_to_ldk(
+        output_files = gsp1000_to_hdf5(
             gsp_dir=raw_dir,
             mask_path=mask_path,
             output_dir=processed_dir,
@@ -654,12 +741,20 @@ def fetch_gsp1000(
                         message=f"Registering as '{register_name}'...",
                     )
                 )
-            # TODO: Implement actual registration with registry
-            # For now, just mark as "would register"
-            registered = True
-            warnings.append(
-                "Registration placeholder: actual registry integration not yet implemented"
-            )
+            try:
+                from ..assets.connectomes import register_functional_connectome
+
+                register_functional_connectome(
+                    name=register_name,
+                    space=source.space,
+                    resolution=2.0,  # GSP1000 is 2mm resolution
+                    data_path=processed_dir,
+                    n_subjects=source.n_subjects,
+                    description=source.description or "Downloaded via fetch_gsp1000",
+                )
+                registered = True
+            except Exception as e:
+                warnings.append(f"Registration failed: {e}")
 
         duration = time.time() - start_time
 
@@ -693,6 +788,7 @@ def fetch_dtor985(
     register_name: str = "dTOR985",
     force: bool = False,
     progress_callback: Callable[[FetchProgress], None] | None = None,
+    verbose: bool = False,
 ) -> FetchResult:
     """
     Download, convert, and register the dTOR985 structural tractogram.
@@ -715,6 +811,9 @@ def fetch_dtor985(
         Overwrite existing files and registrations.
     progress_callback : callable, optional
         Function called with FetchProgress updates during operation.
+    verbose : bool, default=False
+        Print informational messages about operations, including when files
+        already exist and are reused without re-downloading.
 
     Returns
     -------
@@ -755,6 +854,55 @@ def fetch_dtor985(
     warnings: list[str] = []
 
     source = CONNECTOME_SOURCES["dtor985"]
+
+    # Check if .tck already exists (skip download if so, unless force=True)
+    tck_path = output_dir / f"{source.name}.tck"
+    trk_path = output_dir / f"{source.name}.trk"
+
+    if tck_path.exists() and not force:
+        if verbose:
+            print(f"Using existing .tck file (skipping download): {tck_path}")
+        warnings.append(f"Using existing .tck file: {tck_path}")
+
+        # Skip to registration phase
+        registered = False
+        if register:
+            if progress_callback:
+                progress_callback(
+                    FetchProgress(
+                        phase="registration",
+                        current_file="",
+                        files_completed=0,
+                        files_total=1,
+                        message=f"Registering as '{register_name}'...",
+                    )
+                )
+            try:
+                from ..assets.connectomes import register_structural_connectome
+
+                register_structural_connectome(
+                    name=register_name,
+                    space=source.space,
+                    tractogram_path=tck_path,
+                    n_subjects=source.n_subjects,
+                    description=source.description or "Downloaded via fetch_dtor985",
+                )
+                registered = True
+            except Exception as e:
+                warnings.append(f"Registration failed: {e}")
+
+        return FetchResult(
+            success=True,
+            connectome_name="dtor985",
+            output_dir=output_dir,
+            output_files=[tck_path],
+            registered=registered,
+            register_name=register_name if registered else None,
+            duration_seconds=time.time() - start_time,
+            download_time_seconds=0.0,
+            processing_time_seconds=0.0,
+            warnings=warnings,
+        )
 
     try:
         # Phase 1: Download
@@ -803,6 +951,8 @@ def fetch_dtor985(
         tck_path = trk_path.with_suffix(".tck")
 
         if tck_path.exists() and not force:
+            if verbose:
+                print(f"Using existing .tck file (skipping conversion): {tck_path}")
             warnings.append(f"Using existing .tck file: {tck_path}")
         else:
             tck_path = trk_to_tck(trk_path, tck_path)
@@ -826,11 +976,19 @@ def fetch_dtor985(
                         message=f"Registering as '{register_name}'...",
                     )
                 )
-            # TODO: Implement actual registration with registry
-            registered = True
-            warnings.append(
-                "Registration placeholder: actual registry integration not yet implemented"
-            )
+            try:
+                from ..assets.connectomes import register_structural_connectome
+
+                register_structural_connectome(
+                    name=register_name,
+                    space=source.space,
+                    tractogram_path=tck_path,
+                    n_subjects=source.n_subjects,
+                    description=source.description or "Downloaded via fetch_dtor985",
+                )
+                registered = True
+            except Exception as e:
+                warnings.append(f"Registration failed: {e}")
 
         duration = time.time() - start_time
 

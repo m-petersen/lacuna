@@ -16,7 +16,7 @@ Examples
 >>> # Get the bundled atlas directory
 >>> atlas_dir = get_bundled_atlas_dir()
 >>> print(atlas_dir)
-PosixPath('/path/to/ldk/data/atlases')
+PosixPath('/path/to/lacuna/data/atlases')
 >>>
 >>> # Use bundled atlases in analysis (default behavior)
 >>> from lacuna.analysis import RegionalDamage
@@ -54,7 +54,7 @@ def get_bundled_atlas_dir() -> Path:
     >>> from lacuna.data import get_bundled_atlas_dir
     >>> atlas_dir = get_bundled_atlas_dir()
     >>> print(atlas_dir)
-    PosixPath('/home/user/env/lib/python3.10/site-packages/ldk/data/atlases')
+    PosixPath('/home/user/env/lib/python3.10/site-packages/lacuna/data/atlases')
     """
     return Path(__file__).parent / "atlases"
 
@@ -333,7 +333,7 @@ def get_template_path(resolution: Literal[1, 2] = 2) -> Path:
     >>>
     >>> path_2mm = get_template_path(resolution=2)
     >>> print(path_2mm)
-    .../ldk/data/templates/MNI152_T1_2mm.nii.gz
+    .../lacuna/data/templates/MNI152_T1_2mm.nii.gz
     """
     if resolution not in (1, 2):
         raise ValueError(f"Resolution must be 1 or 2 (mm), got: {resolution}")

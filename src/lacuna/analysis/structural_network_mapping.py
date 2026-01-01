@@ -94,8 +94,8 @@ class StructuralNetworkMapping(BaseAnalysis):
         If True, loads results into memory. Set False for batch processing.
     check_dependencies : bool, default=True
         If True, checks for MRtrix3 availability.
-    log_level : int, default=1
-        Logging verbosity (0=silent, 1=standard, 2=verbose).
+    verbose : bool, default=True
+        If True, print progress messages. If False, run silently.
 
     Raises
     ------
@@ -191,7 +191,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         keep_intermediate: bool = False,
         load_to_memory: bool = True,
         check_dependencies: bool = True,
-        log_level: int = 1,
+        verbose: bool = False,
         return_in_lesion_space: bool = True,
     ):
         """Initialize StructuralNetworkMapping analysis.
@@ -217,8 +217,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             If True, loads results into memory.
         check_dependencies : bool, default=True
             If True, checks for MRtrix3 availability.
-        log_level : int, default=1
-            Logging verbosity (0=silent, 1=standard, 2=verbose).
+        verbose : bool, default=True
+            If True, print progress messages. If False, run silently.
         return_in_lesion_space : bool, default=True
             If True, transform VoxelMap outputs back to the input lesion space.
             If False, outputs remain in the connectome space.
@@ -233,7 +233,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         ValueError
             If output_resolution is not 1 or 2.
         """
-        super().__init__(log_level=log_level)
+        super().__init__(verbose=verbose)
 
         # Validate output_resolution
         if output_resolution not in (1, 2):
@@ -270,7 +270,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.TARGET_SPACE = self.tractogram_space
 
         # Initialize logger
-        self.logger = ConsoleLogger(log_level=log_level, width=70)
+        self.logger = ConsoleLogger(verbose=verbose, width=70)
 
         # Internal state
         self.whole_brain_tdi = None  # Will be set during validation
@@ -288,11 +288,6 @@ class StructuralNetworkMapping(BaseAnalysis):
                 raise MRtrixError(
                     f"MRtrix3 is required for StructuralNetworkMapping but is not available.\n{e}"
                 ) from e
-
-    @property
-    def verbose(self) -> bool:
-        """Convert log_level to boolean verbose flag."""
-        return self.log_level >= 2
 
     def _get_tdi_cache_path(self) -> Path:
         """Get deterministic cache path for whole-brain TDI.
@@ -338,7 +333,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             Cache file path from _get_tdi_cache_path()
         """
         self._compute_tdi_to_path(cache_path)
-        self.logger.info(f"Cached TDI to: {cache_path}", verbose=True)
+        self.logger.info(f"Cached TDI to: {cache_path}")
 
     def run(self, mask_data: SubjectData) -> SubjectData:
         """Run structural network mapping analysis.
@@ -415,12 +410,11 @@ class StructuralNetworkMapping(BaseAnalysis):
             tdi_cache_path = self._get_tdi_cache_path()
             if tdi_cache_path.exists():
                 self.whole_brain_tdi = tdi_cache_path
-                self.logger.info(f"Using cached TDI: {tdi_cache_path}", verbose=True)
+                self.logger.info(f"Using cached TDI: {tdi_cache_path}")
             else:
                 # Compute TDI and cache it
                 self.logger.info(
-                    f"Computing whole-brain TDI at {self.output_resolution}mm resolution...",
-                    verbose=True,
+                    f"Computing whole-brain TDI at {self.output_resolution}mm resolution..."
                 )
                 self._compute_and_cache_tdi(tdi_cache_path)
                 self.whole_brain_tdi = tdi_cache_path
@@ -428,8 +422,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             # Compute TDI without caching (temporary file)
             temp_tdi = Path(tempfile.mkdtemp()) / "whole_brain_tdi.nii.gz"
             self.logger.info(
-                f"Computing whole-brain TDI at {self.output_resolution}mm resolution...",
-                verbose=True,
+                f"Computing whole-brain TDI at {self.output_resolution}mm resolution..."
             )
             self._compute_tdi_to_path(temp_tdi)
             self.whole_brain_tdi = temp_tdi
@@ -456,8 +449,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 if atlas_space != self.tractogram_space:
                     self.logger.info(
                         f"Atlas space ({atlas_space}) differs from tractogram space "
-                        f"({self.tractogram_space}). Transforming atlas...",
-                        verbose=True,
+                        f"({self.tractogram_space}). Transforming atlas..."
                     )
 
                     # Transform atlas to tractogram space
@@ -486,7 +478,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                         source_resolution=atlas_resolution,
                         interpolation="nearest",  # Preserve integer labels
                         image_name=f"atlas '{self.parcellation_name}'",
-                        log_level=self.log_level,
+                        verbose=self.verbose,
                     )
 
                     # Save transformed atlas to cache
@@ -504,10 +496,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     self._parcellation_resolved = transformed_atlas_path
                     self._atlas_image = transformed_atlas_img
 
-                    self.logger.info(
-                        f"Atlas transformed and cached to: {transformed_atlas_path}",
-                        verbose=True,
-                    )
+                    self.logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
                 else:
                     # No transformation needed - use original atlas file
                     from lacuna.assets.parcellations.loader import BUNDLED_PARCELLATIONS_DIR
@@ -1045,7 +1034,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,
             "return_in_lesion_space": self.return_in_lesion_space,
-            "log_level": self.log_level,
+            "verbose": self.verbose,
         }
 
     def _transform_results_to_lesion_space(self, results: dict, mask_data: SubjectData) -> dict:
@@ -1103,7 +1092,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     target_space=target_space,
                     source_resolution=int(self.output_resolution),
                     interpolation="linear",
-                    log_level=self.log_level,
+                    verbose=self.verbose,
                 )
 
                 # Create new VoxelMap with updated space

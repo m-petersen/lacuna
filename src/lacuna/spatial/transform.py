@@ -415,7 +415,7 @@ def transform_image(
     source_resolution: int | None = None,
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
-    log_level: int = 1,
+    verbose: bool = False,
 ) -> nib.Nifti1Image:
     """Transform a NIfTI image between coordinate spaces.
 
@@ -431,7 +431,7 @@ def transform_image(
         interpolation: Interpolation method (auto-detected if None).
             Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
         image_name: Name of image/atlas for user-facing log messages (e.g., "SchaeferYeo7Networks")
-        log_level: Logging verbosity (0=silent, 1=info, 2=debug)
+        verbose: If True, print progress messages. If False, run silently.
 
     Returns:
         Transformed NIfTI image in target space
@@ -500,7 +500,7 @@ def transform_image(
     image_desc = f"image '{image_name}'" if image_name else "image"
 
     if direction == "none":
-        if log_level >= 1:
+        if verbose:
             logger.info(
                 f"Source and target spaces match for {image_desc} - no transformation needed"
             )
@@ -508,7 +508,7 @@ def transform_image(
 
     # Handle resolution-only change (same space, different resolution)
     if direction == "resample":
-        if log_level >= 1:
+        if verbose:
             logger.info(
                 f"Resampling {image_desc} from {source_space_obj.resolution}mm to "
                 f"{target_space_obj.resolution}mm in {source_space_obj.identifier}"
@@ -531,7 +531,7 @@ def transform_image(
         ) from e
 
     # Log transformation with image name and space transition
-    if log_level >= 1:
+    if verbose:
         logger.info(
             f"Transforming {image_desc} from {source_space_obj.identifier} "
             f"to {target_space_obj.identifier}"
@@ -563,7 +563,7 @@ def transform_mask_data(
     target_space: CoordinateSpace,
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
-    log_level: int = 1,
+    verbose: bool = False,
 ) -> "SubjectData":
     """Transform lesion data to target coordinate space.
 
@@ -580,7 +580,7 @@ def transform_mask_data(
         interpolation: Interpolation method (auto-detected if None).
             Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
         image_name: Name of mask for user-facing log messages (e.g., "lesion_001")
-        log_level: Logging verbosity (0=silent, 1=info, 2=debug)
+        verbose: If True, print progress messages. If False, run silently.
 
     Returns:
         New SubjectData object in target space
@@ -624,7 +624,7 @@ def transform_mask_data(
         source_resolution=source_resolution,
         interpolation=interpolation,
         image_name=image_name,
-        log_level=log_level,
+        verbose=verbose,
     )
 
     # If image unchanged, no transformation was needed

@@ -60,7 +60,7 @@ def check_mrtrix_available() -> bool:
 
 
 def run_mrtrix_command(
-    command: list[str], check: bool = True, capture_output: bool = False, verbose: bool = True
+    command: list[str], check: bool = True, capture_output: bool = False, verbose: bool = False
 ) -> subprocess.CompletedProcess:
     """
     Execute an MRtrix3 command with proper error handling.
@@ -113,7 +113,7 @@ def filter_tractogram_by_lesion(
     output_path: str | Path | None = None,
     n_jobs: int = 1,
     force: bool = False,
-    verbose: bool = True,
+    verbose: bool = False,
 ) -> Path:
     """
     Filter a whole-brain tractogram to streamlines passing through a lesion mask.
@@ -234,7 +234,7 @@ def compute_tdi_map(
     output_path: str | Path | None = None,
     n_jobs: int = 1,
     force: bool = False,
-    verbose: bool = True,
+    verbose: bool = False,
 ) -> Path:
     """
     Compute Track Density Image (TDI) from a tractogram.
@@ -353,7 +353,7 @@ def compute_disconnection_map(
     whole_brain_tdi: str | Path | nib.Nifti1Image,
     output_path: str | Path | None = None,
     force: bool = False,
-    verbose: bool = True,
+    verbose: bool = False,
 ) -> Path:
     """
     Compute disconnection map as ratio of lesion TDI to whole-brain TDI.

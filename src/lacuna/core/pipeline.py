@@ -112,7 +112,7 @@ class Pipeline:
         self._steps.append(step)
         return self
 
-    def run(self, data: SubjectData, log_level: int = 1) -> SubjectData:
+    def run(self, data: SubjectData, verbose: bool = False) -> SubjectData:
         """
         Run the pipeline on a single subject.
 
@@ -120,8 +120,8 @@ class Pipeline:
         ----------
         data : SubjectData
             Input data to process
-        log_level : int, default=1
-            Logging verbosity (0=silent, 1=standard, 2=verbose)
+        verbose : bool, default=False
+            If True, print progress messages. If False, run silently.
 
         Returns
         -------
@@ -143,7 +143,7 @@ class Pipeline:
 
         for step in self._steps:
             # Run the analysis
-            if log_level >= 2:
+            if verbose:
                 print(f"Running {step.name}...")
 
             result = step.analysis.run(result)
@@ -186,7 +186,7 @@ class Pipeline:
                 iterator = tqdm(data_list, desc=self.name)
 
             for data in iterator:
-                results.append(self.run(data, log_level=0))
+                results.append(self.run(data, verbose=False))
             return results
 
         # Parallel processing - run each step as a batch
@@ -259,7 +259,7 @@ def analyze(
     steps: dict[str, dict | None],
     n_jobs: int = 1,
     show_progress: bool = True,
-    log_level: int = 1,
+    verbose: bool = False,
 ) -> SubjectData | list[SubjectData]:
     """
     Run an analysis pipeline defined by a steps dictionary.
@@ -291,8 +291,8 @@ def analyze(
         Number of parallel jobs for batch processing. Use -1 for all CPUs.
     show_progress : bool, default=True
         Show tqdm progress bar during batch processing.
-    log_level : int, default=1
-        Logging verbosity (0=silent, 1=standard, 2=verbose)
+    verbose : bool, default=True
+        If True, print progress messages. If False, run silently.
 
     Returns
     -------
@@ -380,9 +380,9 @@ def analyze(
             # Make a copy to avoid mutating the input
             kwargs = kwargs.copy()
 
-        # Add log_level if not specified
-        if "log_level" not in kwargs:
-            kwargs["log_level"] = log_level
+        # Add verbose if not specified
+        if "verbose" not in kwargs:
+            kwargs["verbose"] = verbose
 
         # Instantiate the analysis
         try:
@@ -402,7 +402,7 @@ def analyze(
 
     # Helper function to run on single subject
     def run_single(subject: SubjectData) -> SubjectData:
-        return pipeline.run(subject, log_level=log_level)
+        return pipeline.run(subject, verbose=verbose)
 
     # Handle batch vs single input
     if isinstance(data, list):

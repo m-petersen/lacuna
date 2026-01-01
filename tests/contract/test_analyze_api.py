@@ -45,8 +45,8 @@ class TestAnalyzeSignature:
         # steps is keyword-only and required (no default)
         assert params["steps"].kind == inspect.Parameter.KEYWORD_ONLY
 
-    def test_analyze_has_log_level_param(self):
-        """Test that analyze has log_level keyword parameter."""
+    def test_analyze_has_verbose_param(self):
+        """Test that analyze has verbose keyword parameter with default True."""
         import inspect
 
         from lacuna import analyze
@@ -54,7 +54,8 @@ class TestAnalyzeSignature:
         sig = inspect.signature(analyze)
         params = sig.parameters
 
-        assert "log_level" in params
+        assert "verbose" in params
+        assert params["verbose"].default is False
 
 
 class TestAnalyzeContractSteps:
@@ -103,7 +104,7 @@ class TestAnalyzeContractSteps:
         )
 
         # Should accept dict
-        result = analyze(subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(subject, steps={"RegionalDamage": None}, verbose=False)
         assert result is not None
 
     @pytest.mark.slow
@@ -124,7 +125,7 @@ class TestAnalyzeContractSteps:
             resolution=2.0,
         )
 
-        result = analyze(subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(subject, steps={"RegionalDamage": None}, verbose=False)
         assert "RegionalDamage" in result.results
 
 
@@ -156,7 +157,7 @@ class TestAnalyzeBasicBehavior:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
 
         assert isinstance(result, SubjectData)
 
@@ -165,7 +166,7 @@ class TestAnalyzeBasicBehavior:
         """Test that analyze adds results to SubjectData."""
         from lacuna import analyze
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
 
         # Should have at least RegionalDamage results
         assert result.results is not None
@@ -177,7 +178,7 @@ class TestAnalyzeBasicBehavior:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        results = analyze([simple_subject], steps={"RegionalDamage": None}, log_level=0)
+        results = analyze([simple_subject], steps={"RegionalDamage": None}, verbose=False)
 
         assert isinstance(results, list)
         assert len(results) == 1
@@ -211,7 +212,7 @@ class TestAnalyzeReturnType:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, log_level=0)
+        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
 
         assert isinstance(result, SubjectData)
         assert not isinstance(result, list)
@@ -224,7 +225,7 @@ class TestAnalyzeReturnType:
         results = analyze(
             [simple_subject, simple_subject],
             steps={"RegionalDamage": None},
-            log_level=0,
+            verbose=False,
         )
 
         assert isinstance(results, list)
@@ -257,18 +258,18 @@ class TestAnalyzeValidation:
         from lacuna import analyze
 
         with pytest.raises(ValueError, match="steps cannot be empty"):
-            analyze(simple_subject, steps={}, log_level=0)
+            analyze(simple_subject, steps={}, verbose=False)
 
     def test_analyze_unknown_analysis_raises(self, simple_subject):
         """Test that unknown analysis name raises KeyError."""
         from lacuna import analyze
 
         with pytest.raises(KeyError, match="Unknown analysis"):
-            analyze(simple_subject, steps={"FakeAnalysis": None}, log_level=0)
+            analyze(simple_subject, steps={"FakeAnalysis": None}, verbose=False)
 
     def test_analyze_missing_steps_raises(self, simple_subject):
         """Test that missing steps parameter raises TypeError."""
         from lacuna import analyze
 
         with pytest.raises(TypeError):
-            analyze(simple_subject, log_level=0)
+            analyze(simple_subject, verbose=False)

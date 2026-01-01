@@ -216,7 +216,7 @@ class TestFunctionalNetworkMappingOutputs:
 
             # Check for expected result names
             result_names = [r.name for r in voxel_results]
-            assert "correlationmap" in result_names
+            assert "rmap" in result_names
             assert "zmap" in result_names
         finally:
             unregister_functional_connectome("test_func_connectome")
