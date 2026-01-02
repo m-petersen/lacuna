@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Literal
 
 import nibabel as nib
 import numpy as np
-from nitransforms import linear as nitl
+from nitransforms.manip import TransformChain
 
 from lacuna.core.exceptions import TransformNotAvailableError
 from lacuna.core.spaces import CoordinateSpace
@@ -209,7 +209,7 @@ class TransformationStrategy:
         img: nib.Nifti1Image,
         source: CoordinateSpace,
         target: CoordinateSpace,
-        transform: nitl.Affine,
+        transform: TransformChain,
         interpolation: InterpolationMethod | None = None,
     ) -> nib.Nifti1Image:
         """Apply spatial transformation to image data.
@@ -218,7 +218,7 @@ class TransformationStrategy:
             img: Image to transform
             source: Source coordinate space
             target: Target coordinate space
-            transform: Nitransforms affine transformation object
+            transform: Nitransforms TransformChain (composite transform with affine + nonlinear)
             interpolation: Interpolation method (auto-detected if None)
 
         Returns:
@@ -244,43 +244,42 @@ class TransformationStrategy:
         )
 
         # Set reference space for the transform
-        # Create a reference image in target space with appropriate resolution
+        # TemplateFlow's composite transforms (affine + nonlinear warp) are defined at 1mm resolution
+        # We MUST use the 1mm template as the reference, then resample to target resolution if needed
         from lacuna.assets.templates import load_template
 
-        # Try to load reference template
-        template_name = f"{target.identifier}_res-{target.resolution}"
+        # Always load 1mm template for the transform reference
+        template_name_1mm = f"{target.identifier}_res-1"
         try:
-            reference_img = load_template(template_name)
-        except (KeyError, FileNotFoundError):
-            reference_img = None
-
-        if reference_img is not None:
-            # Load reference image
+            reference_img = load_template(template_name_1mm)
             reference_nifti = nib.load(reference_img)
             transform.reference = reference_nifti
-        else:
-            # If no template available, create a reference from target affine
-            # This creates an empty reference with the correct space properties
-
-            # Standard MNI template dimensions based on space and resolution
-            # These dimensions match the actual templates in lacuna/data/templates
-            dimension_map = {
-                ("MNI152NLin6Asym", 1): (182, 218, 182),
-                ("MNI152NLin6Asym", 2): (91, 109, 91),
-                ("MNI152NLin2009cAsym", 1): (193, 229, 193),
-                ("MNI152NLin2009cAsym", 2): (97, 115, 97),
-                ("MNI152NLin2009bAsym", 0.5): (394, 466, 378),
-            }
-
-            shape = dimension_map.get(
-                (target.identifier, target.resolution),
-                # Fallback: estimate from resolution
-                tuple(int(193 // target.resolution) for _ in range(3)),
+            logger.debug(f"Using 1mm template reference: {reference_img}")
+        except (KeyError, FileNotFoundError):
+            # Fallback: create synthetic 1mm reference
+            logger.warning(
+                f"Could not load 1mm template for {target.identifier}, using synthetic reference"
             )
-
+            dimension_map = {
+                "MNI152NLin6Asym": (182, 218, 182),
+                "MNI152NLin2009cAsym": (193, 229, 193),
+                "MNI152NLin2009bAsym": (193, 229, 193),
+                "MNI152NLin2009aAsym": (193, 229, 193),
+            }
+            shape = dimension_map.get(target.identifier, (193, 229, 193))
+            
+            # Create 1mm affine for synthetic reference
+            from lacuna.core.spaces import REFERENCE_AFFINES
+            ref_affine = REFERENCE_AFFINES.get(
+                (target.identifier, 1),
+                target.reference_affine
+            )
             reference_data = np.zeros(shape, dtype=np.uint8)
-            reference_nifti = nib.Nifti1Image(reference_data, target.reference_affine)
+            reference_nifti = nib.Nifti1Image(reference_data, ref_affine)
             transform.reference = reference_nifti
+
+        # Track whether we need to resample output to target resolution
+        needs_resample = target.resolution != 1
 
         # Apply the transform
         # Handle asyncio event loop conflict in Jupyter notebooks
@@ -352,6 +351,22 @@ class TransformationStrategy:
                     f"dtype: {transformed.get_fdata().dtype}"
                 )
 
+                # Resample to target resolution if needed (transform outputs at 1mm)
+                if needs_resample:
+                    logger.info(
+                        f"Resampling 4D from 1mm to {target.resolution}mm resolution"
+                    )
+                    from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
+                    target_at_res = CoordinateSpace(
+                        identifier=target.identifier,
+                        resolution=target.resolution,
+                        reference_affine=REFERENCE_AFFINES.get(
+                            (target.identifier, target.resolution),
+                            target.reference_affine
+                        ),
+                    )
+                    transformed = self.apply_resampling(transformed, target_at_res, interpolation)
+
                 return transformed
         elif img_data.ndim > 4:
             raise ValueError(
@@ -388,6 +403,23 @@ class TransformationStrategy:
             f"Transformation complete. Output shape: {transformed.shape}, "
             f"dtype: {transformed.get_fdata().dtype}"
         )
+
+        # Resample to target resolution if needed (transform outputs at 1mm)
+        if needs_resample:
+            logger.info(
+                f"Resampling from 1mm to {target.resolution}mm resolution"
+            )
+            # Create target space at desired resolution for resampling
+            from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
+            target_at_res = CoordinateSpace(
+                identifier=target.identifier,
+                resolution=target.resolution,
+                reference_affine=REFERENCE_AFFINES.get(
+                    (target.identifier, target.resolution),
+                    target.reference_affine
+                ),
+            )
+            transformed = self.apply_resampling(transformed, target_at_res, interpolation)
 
         return transformed
 
@@ -538,10 +570,11 @@ def transform_image(
         )
 
     # Load transform with nitransforms
+    # Use manip.load for composite transforms (affine + nonlinear warp fields)
     try:
-        from nitransforms import linear as nitl
+        import nitransforms as nt
 
-        transform = nitl.load(transform_path)
+        transform = nt.manip.load(transform_path, fmt="h5")
     except ImportError as e:
         raise ImportError(
             "nitransforms package is required for spatial transformations. "
