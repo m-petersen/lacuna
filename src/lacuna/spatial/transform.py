@@ -399,8 +399,6 @@ class TransformationStrategy:
 
         return transformed
 
-        return transformed
-
     def _get_interpolation_order(self, method: InterpolationMethod) -> int:
         """Map interpolation method to scipy order parameter.
 
