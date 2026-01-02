@@ -2,6 +2,7 @@
 
 import logging
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import nibabel as nib
@@ -147,8 +148,9 @@ class TransformationStrategy:
         if np.allclose(data, np.round(data)):
             return InterpolationMethod.NEAREST
 
-        # Default to linear for continuous data
-        return InterpolationMethod.LINEAR
+        # Default to cubic B-spline (order 3) for continuous data
+        # Provides better interpolation quality than linear for smooth images
+        return InterpolationMethod.CUBIC
 
     def apply_resampling(
         self,
@@ -244,42 +246,49 @@ class TransformationStrategy:
         )
 
         # Set reference space for the transform
-        # TemplateFlow's composite transforms (affine + nonlinear warp) are defined at 1mm resolution
-        # We MUST use the 1mm template as the reference, then resample to target resolution if needed
+        # nitransforms automatically resamples to the reference grid when transform.apply() is called
+        # We use the target resolution template directly - no need for separate resampling step
         from lacuna.assets.templates import load_template
 
-        # Always load 1mm template for the transform reference
-        template_name_1mm = f"{target.identifier}_res-1"
+        # Load template at target resolution for the transform reference
+        template_name = f"{target.identifier}_res-{target.resolution}"
         try:
-            reference_img = load_template(template_name_1mm)
+            reference_img = load_template(template_name)
             reference_nifti = nib.load(reference_img)
             transform.reference = reference_nifti
-            logger.debug(f"Using 1mm template reference: {reference_img}")
+            logger.debug(f"Using template reference: {reference_img}")
         except (KeyError, FileNotFoundError):
-            # Fallback: create synthetic 1mm reference
+            # Fallback: create synthetic reference at target resolution
             logger.warning(
-                f"Could not load 1mm template for {target.identifier}, using synthetic reference"
+                f"Could not load template for {target.identifier}@{target.resolution}mm, "
+                "using synthetic reference"
             )
+            # Standard MNI template dimensions at various resolutions
             dimension_map = {
-                "MNI152NLin6Asym": (182, 218, 182),
-                "MNI152NLin2009cAsym": (193, 229, 193),
-                "MNI152NLin2009bAsym": (193, 229, 193),
-                "MNI152NLin2009aAsym": (193, 229, 193),
+                ("MNI152NLin6Asym", 1): (182, 218, 182),
+                ("MNI152NLin6Asym", 2): (91, 109, 91),
+                ("MNI152NLin2009cAsym", 1): (193, 229, 193),
+                ("MNI152NLin2009cAsym", 2): (97, 115, 97),
+                ("MNI152NLin2009bAsym", 1): (193, 229, 193),
+                ("MNI152NLin2009bAsym", 2): (97, 115, 97),
+                ("MNI152NLin2009aAsym", 1): (193, 229, 193),
+                ("MNI152NLin2009aAsym", 2): (97, 115, 97),
             }
-            shape = dimension_map.get(target.identifier, (193, 229, 193))
+            shape = dimension_map.get(
+                (target.identifier, target.resolution),
+                # Fallback: estimate from 1mm dimensions and resolution
+                tuple(int(193 // target.resolution) for _ in range(3)),
+            )
             
-            # Create 1mm affine for synthetic reference
+            # Create affine at target resolution
             from lacuna.core.spaces import REFERENCE_AFFINES
             ref_affine = REFERENCE_AFFINES.get(
-                (target.identifier, 1),
+                (target.identifier, target.resolution),
                 target.reference_affine
             )
             reference_data = np.zeros(shape, dtype=np.uint8)
             reference_nifti = nib.Nifti1Image(reference_data, ref_affine)
             transform.reference = reference_nifti
-
-        # Track whether we need to resample output to target resolution
-        needs_resample = target.resolution != 1
 
         # Apply the transform
         # Handle asyncio event loop conflict in Jupyter notebooks
@@ -351,22 +360,6 @@ class TransformationStrategy:
                     f"dtype: {transformed.get_fdata().dtype}"
                 )
 
-                # Resample to target resolution if needed (transform outputs at 1mm)
-                if needs_resample:
-                    logger.info(
-                        f"Resampling 4D from 1mm to {target.resolution}mm resolution"
-                    )
-                    from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
-                    target_at_res = CoordinateSpace(
-                        identifier=target.identifier,
-                        resolution=target.resolution,
-                        reference_affine=REFERENCE_AFFINES.get(
-                            (target.identifier, target.resolution),
-                            target.reference_affine
-                        ),
-                    )
-                    transformed = self.apply_resampling(transformed, target_at_res, interpolation)
-
                 return transformed
         elif img_data.ndim > 4:
             raise ValueError(
@@ -404,22 +397,7 @@ class TransformationStrategy:
             f"dtype: {transformed.get_fdata().dtype}"
         )
 
-        # Resample to target resolution if needed (transform outputs at 1mm)
-        if needs_resample:
-            logger.info(
-                f"Resampling from 1mm to {target.resolution}mm resolution"
-            )
-            # Create target space at desired resolution for resampling
-            from lacuna.core.spaces import CoordinateSpace, REFERENCE_AFFINES
-            target_at_res = CoordinateSpace(
-                identifier=target.identifier,
-                resolution=target.resolution,
-                reference_affine=REFERENCE_AFFINES.get(
-                    (target.identifier, target.resolution),
-                    target.reference_affine
-                ),
-            )
-            transformed = self.apply_resampling(transformed, target_at_res, interpolation)
+        return transformed
 
         return transformed
 
@@ -448,6 +426,8 @@ def transform_image(
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
     verbose: bool = False,
+    output_dir: Path | str | None = None,
+    keep_intermediates: bool = False,
 ) -> nib.Nifti1Image:
     """Transform a NIfTI image between coordinate spaces.
 
@@ -461,15 +441,20 @@ def transform_image(
         target_space: Target coordinate space object or identifier string
         source_resolution: Source resolution in mm (default: infer from affine)
         interpolation: Interpolation method (auto-detected if None).
-            Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
+            Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic').
+            Default: 'cubic' for continuous data, 'nearest' for binary/integer data.
         image_name: Name of image/atlas for user-facing log messages (e.g., "SchaeferYeo7Networks")
         verbose: If True, print progress messages. If False, run silently.
+        output_dir: Directory to save intermediate files. Required if keep_intermediates=True.
+        keep_intermediates: If True, save the warped image to output_dir for QC inspection.
+            Useful for verifying transformation quality.
 
     Returns:
         Transformed NIfTI image in target space
 
     Raises:
         TransformNotAvailableError: If transformation not supported
+        ValueError: If keep_intermediates=True but output_dir is not provided
 
     Examples:
         >>> from lacuna.spatial.transform import transform_image
@@ -482,8 +467,18 @@ def transform_image(
         >>> # Transform atlas using nearest neighbor (preserve labels)
         >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target,
         ...                              interpolation='nearest', image_name="MyAtlas")
+        >>> # Save intermediate for QC
+        >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target,
+        ...                              output_dir="/tmp/qc", keep_intermediates=True)
     """
     from lacuna.core.spaces import REFERENCE_AFFINES
+
+    # Validate keep_intermediates requires output_dir
+    if keep_intermediates and output_dir is None:
+        raise ValueError("output_dir is required when keep_intermediates=True")
+
+    if output_dir is not None:
+        output_dir = Path(output_dir)
 
     # Convert string interpolation to enum if needed
     if isinstance(interpolation, str):
@@ -564,9 +559,13 @@ def transform_image(
 
     # Log transformation with image name and space transition
     if verbose:
+        # Select interpolation method for logging
+        interp_method = strategy.select_interpolation(img, interpolation)
         logger.info(
-            f"Transforming {image_desc} from {source_space_obj.identifier} "
-            f"to {target_space_obj.identifier}"
+            f"Transforming {image_desc}: "
+            f"{source_space_obj.identifier}@{source_space_obj.resolution}mm → "
+            f"{target_space_obj.identifier}@{target_space_obj.resolution}mm "
+            f"(interpolation: {interp_method.value})"
         )
 
     # Load transform with nitransforms
@@ -582,13 +581,29 @@ def transform_image(
         ) from e
 
     # Apply transformation
-    return strategy.apply_transformation(
+    transformed = strategy.apply_transformation(
         img,
         source_space_obj,
         target_space_obj,
         transform,
         interpolation,
     )
+
+    # Save intermediate if requested
+    if keep_intermediates and output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # Generate filename based on image_name or use generic
+        base_name = image_name.replace(" ", "_") if image_name else "image"
+        output_filename = (
+            f"{base_name}_space-{target_space_obj.identifier}"
+            f"_res-{target_space_obj.resolution}mm_warped.nii.gz"
+        )
+        output_path = output_dir / output_filename
+        nib.save(transformed, output_path)
+        if verbose:
+            logger.info(f"Saved warped intermediate: {output_path}")
+
+    return transformed
 
 
 def transform_mask_data(
@@ -597,6 +612,8 @@ def transform_mask_data(
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
     verbose: bool = False,
+    output_dir: Path | str | None = None,
+    keep_intermediates: bool = False,
 ) -> "SubjectData":
     """Transform lesion data to target coordinate space.
 
@@ -611,9 +628,12 @@ def transform_mask_data(
         mask_data: SubjectData object to transform
         target_space: Target coordinate space
         interpolation: Interpolation method (auto-detected if None).
-            Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic')
+            Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic').
+            Default: 'nearest' for binary masks (preserves mask integrity).
         image_name: Name of mask for user-facing log messages (e.g., "lesion_001")
         verbose: If True, print progress messages. If False, run silently.
+        output_dir: Directory to save intermediate files. Required if keep_intermediates=True.
+        keep_intermediates: If True, save the warped mask to output_dir for QC inspection.
 
     Returns:
         New SubjectData object in target space
@@ -621,6 +641,7 @@ def transform_mask_data(
     Raises:
         TransformNotAvailableError: If transformation not supported
         SpaceDetectionError: If source space cannot be determined
+        ValueError: If keep_intermediates=True but output_dir is not provided
 
     Examples:
         >>> from lacuna.core.subject_data import SubjectData
@@ -630,6 +651,8 @@ def transform_mask_data(
         >>> # Transform to NLin2009c
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
         >>> transformed = transform_mask_data(lesion, target, image_name="lesion_001")
+        >>> # Save intermediate for QC
+        >>> transformed = transform_mask_data(lesion, target, output_dir="/tmp/qc", keep_intermediates=True)
     """
     # Import here to avoid circular imports
     from lacuna.core.provenance import TransformationRecord
@@ -658,6 +681,8 @@ def transform_mask_data(
         interpolation=interpolation,
         image_name=image_name,
         verbose=verbose,
+        output_dir=output_dir,
+        keep_intermediates=keep_intermediates,
     )
 
     # If image unchanged, no transformation was needed
@@ -813,5 +838,6 @@ __all__ = [
     "can_transform_between",
     "TransformationStrategy",
     "InterpolationMethod",
+    "transform_image",
     "transform_mask_data",
 ]
