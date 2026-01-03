@@ -936,6 +936,31 @@ class ParcelAggregation(BaseAnalysis):
                     parcellation_name=parcellation_name,
                 )
 
+                # Store warped atlas as intermediate if requested
+                if self.keep_intermediate:
+                    from lacuna.core.data_types import VoxelMap
+
+                    # Build unique key for this atlas + source combination
+                    intermediate_key = f"warped_atlas_{parcellation_name}_{source_key}"
+                    warped_atlas = VoxelMap(
+                        name=f"warped_{parcellation_name}",
+                        data=atlas_img,
+                        space=input_space,
+                        resolution=input_resolution,
+                        metadata={
+                            "original_space": atlas_space,
+                            "original_resolution": atlas_resolution,
+                            "parcellation_name": parcellation_name,
+                            "source": source,
+                            "description": (
+                                f"Atlas '{parcellation_name}' transformed from "
+                                f"{atlas_space}@{atlas_resolution}mm to "
+                                f"{input_space}@{input_resolution}mm"
+                            ),
+                        },
+                    )
+                    all_results[intermediate_key] = warped_atlas
+
                 labels = atlas_info["labels"]
                 atlas_data = atlas_img.get_fdata()
 
