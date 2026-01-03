@@ -1,17 +1,17 @@
 """Performance benchmarks for FunctionalNetworkMapping optimization.
 
-This module benchmarks the critical bottleneck: _get_lesion_voxel_indices().
+This module benchmarks the critical bottleneck: _get_mask_voxel_indices().
 
 Current implementation: O(N × M) nested loop
 Optimized implementation: O(N) vectorized lookup
 
 Benchmark scenarios:
-- Small lesion: 100 voxels (typical small stroke)
-- Medium lesion: 1,000 voxels (typical medium stroke)
-- Large lesion: 10,000 voxels (large stroke/multi-focal)
+- Small mask: 100 voxels (typical small stroke)
+- Medium mask: 1,000 voxels (typical medium stroke)
+- Large mask: 10,000 voxels (large stroke/multi-focal)
 
 Expected results:
-- Current: ~200M operations for 1K lesion × 200K brain voxels
+- Current: ~200M operations for 1K mask × 200K brain voxels
 - Optimized: ~1K operations (direct lookup)
 - Speedup: ~200x for coordinate matching
 """
@@ -112,7 +112,7 @@ def create_lesion_mask(mock_connectome_info):
             mask_img=lesion_img,
             space="MNI152NLin6Asym",
             resolution=2.0,
-            metadata={"lesion_size": n_voxels},
+            metadata={"mask_size": n_voxels},
         )
 
         actual_voxels = np.sum(lesion_3d)
@@ -123,8 +123,8 @@ def create_lesion_mask(mock_connectome_info):
     return _create_lesion
 
 
-class TestGetLesionVoxelIndicesPerformance:
-    """Benchmark _get_lesion_voxel_indices() (current vectorized version)."""
+class TestGetMaskVoxelIndicesPerformance:
+    """Benchmark _get_mask_voxel_indices() (current vectorized version)."""
 
     def _setup_analysis(self, mock_connectome_info):
         """Create FNM instance with mocked connectome info."""
@@ -156,7 +156,7 @@ class TestGetLesionVoxelIndicesPerformance:
     def _benchmark_get_indices(self, analysis, mask_data, label: str):
         """Benchmark the index retrieval and print results."""
         # Warm-up run (JIT compilation, cache warming)
-        _ = analysis._get_lesion_voxel_indices(mask_data)
+        _ = analysis._get_mask_voxel_indices(mask_data)
 
         # Timed run
         n_trials = 3
@@ -164,7 +164,7 @@ class TestGetLesionVoxelIndicesPerformance:
 
         for _ in range(n_trials):
             start = time.perf_counter()
-            indices = analysis._get_lesion_voxel_indices(mask_data)
+            indices, _ = analysis._get_mask_voxel_indices(mask_data)
             elapsed = time.perf_counter() - start
             times.append(elapsed)
 
@@ -172,7 +172,7 @@ class TestGetLesionVoxelIndicesPerformance:
         std_time = np.std(times)
 
         print(f"\n{label}:")
-        print(f"  Lesion size: {len(indices):,} voxels")
+        print(f"  Mask size: {len(indices):,} voxels")
         print(f"  Time: {avg_time*1000:.2f} ± {std_time*1000:.2f} ms")
         print(f"  Indices found: {len(indices):,}")
 

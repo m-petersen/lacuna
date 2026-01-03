@@ -35,9 +35,7 @@ def mask_data_with_results(sample_mask_img):
     # "atlas-..._source-InputMask" (no desc for InputMask)
     pa_results = {
         build_result_key("Schaefer100", "SubjectData", "maskimg"): {"parcels": [1, 2, 3]},
-        build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap"): {
-            "parcels": [4, 5, 6]
-        },
+        build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap"): {"parcels": [4, 5, 6]},
         build_result_key("Tian_S4", "SubjectData", "maskimg"): {"parcels": [7, 8, 9]},
     }
     mask = mask.add_result("ParcelAggregation", pa_results)

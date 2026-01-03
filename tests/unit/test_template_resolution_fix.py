@@ -55,7 +55,9 @@ def test_template_resolved_before_tdi_computation(tmp_path):
         # Create dummy lesion
         mask_data = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data[4:6, 4:6, 4:6] = 1.0
-        mask_img = nib.Nifti1Image(mask_data, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine)
         lesion = SubjectData(
             mask_img=mask_img,
             metadata={

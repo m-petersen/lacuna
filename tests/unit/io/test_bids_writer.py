@@ -32,6 +32,7 @@ class TestExportBidsDerivatives:
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
         mask_img = nib.Nifti1Image(mask_array, affine)
 
         # Create SubjectData with required metadata
@@ -52,6 +53,7 @@ class TestExportBidsDerivatives:
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
         mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
@@ -133,7 +135,9 @@ class TestExportBidsDerivatives:
         from lacuna.io.bids import export_bids_derivatives
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         # SubjectData defaults subject_id to "sub-unknown" if not provided
         # We need to explicitly set an empty subject_id by overwriting after creation
@@ -201,6 +205,7 @@ class TestExportBidsDerivativesBatch:
             mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
             mask_array[4:6, 4:6, 4:6] = 1
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
             mask_img = nib.Nifti1Image(mask_array, affine)
 
             subject = SubjectData(
@@ -259,6 +264,7 @@ class TestExportWithResults:
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
         affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
         mask_img = nib.Nifti1Image(mask_array, affine)
 
         subject = SubjectData(
@@ -369,6 +375,7 @@ class TestExportProvenance:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
         mask_img = nib.Nifti1Image(mask_array, affine)
 
         subject = SubjectData(

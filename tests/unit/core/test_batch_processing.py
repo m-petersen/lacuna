@@ -22,7 +22,10 @@ def batch_subjects():
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         # Create slightly different mask for each subject
         mask_array[3 + i % 3 : 6 + i % 3, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        # Create 2mm resolution affine to match declared resolution
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         subjects.append(
             SubjectData(

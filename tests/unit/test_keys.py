@@ -70,9 +70,7 @@ class TestParseResultKey:
 
     def test_parse_simple_key(self):
         """Parse a simple result key."""
-        result = parse_result_key(
-            "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap"
-        )
+        result = parse_result_key("atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap")
         assert result == {
             "atlas": "Schaefer100",
             "source": "FunctionalNetworkMapping",

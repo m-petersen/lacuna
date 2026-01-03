@@ -95,7 +95,9 @@ class TestAnalyzeContractSteps:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         subject = SubjectData(
             mask_img=mask_img,
@@ -117,7 +119,9 @@ class TestAnalyzeContractSteps:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         subject = SubjectData(
             mask_img=mask_img,
@@ -142,7 +146,9 @@ class TestAnalyzeBasicBehavior:
         # Create a simple mask
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -197,7 +203,9 @@ class TestAnalyzeReturnType:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -244,7 +252,9 @@ class TestAnalyzeValidation:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,

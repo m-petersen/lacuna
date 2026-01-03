@@ -154,6 +154,7 @@ class TestAtlasLabelAssignment:
             # Create simple setup
             shape = (50, 50, 50)
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
 
             # Lesion in bottom half (z < 25)
             mask_data = np.zeros(shape, dtype=np.uint8)
@@ -231,6 +232,7 @@ class TestAtlasLabelAssignment:
             # Create setup
             shape = (50, 50, 50)
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
 
             # Lesion in region 2
             mask_data = np.zeros(shape, dtype=np.uint8)

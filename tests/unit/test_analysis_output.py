@@ -36,9 +36,7 @@ def sample_nifti():
 
 def test_voxel_map_result_initialization(sample_nifti):
     """Test basic VoxelMap initialization with simplified API."""
-    result = VoxelMap(
-        name="rmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
-    )
+    result = VoxelMap(name="rmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0)
 
     assert result.name == "rmap"
     assert result.data is sample_nifti
@@ -86,9 +84,7 @@ def test_voxel_map_metadata_storage(sample_nifti):
 
 def test_voxel_map_summary(sample_nifti):
     """Test summary string generation."""
-    result = VoxelMap(
-        name="rmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0
-    )
+    result = VoxelMap(name="rmap", data=sample_nifti, space="MNI152NLin6Asym", resolution=2.0)
 
     summary = result.summary()
     assert "rmap" in summary
