@@ -39,32 +39,51 @@ class TemplateMetadata(SpatialAssetMetadata):
 TEMPLATE_REGISTRY = AssetRegistry[TemplateMetadata]("template")
 
 # Register known TemplateFlow templates
+# Note: MNI152NLin2009[abc]Asym are anatomically equivalent, but we register
+# them separately for explicit template loading. The loader handles canonicalization.
 _KNOWN_TEMPLATES = [
+    # MNI152NLin2009cAsym (canonical form)
     TemplateMetadata(
         name="MNI152NLin2009cAsym_res-1",
         space="MNI152NLin2009cAsym",
-        resolution=1.0,
+        resolution=1,
         description="MNI152 nonlinear 2009c asymmetric template, 1mm",
         modality="T1w",
     ),
     TemplateMetadata(
         name="MNI152NLin2009cAsym_res-2",
         space="MNI152NLin2009cAsym",
-        resolution=2.0,
+        resolution=2,
         description="MNI152 nonlinear 2009c asymmetric template, 2mm",
         modality="T1w",
     ),
+    # MNI152NLin2009bAsym (used by some tractography connectomes like HCP842)
+    TemplateMetadata(
+        name="MNI152NLin2009bAsym_res-1",
+        space="MNI152NLin2009bAsym",
+        resolution=1,
+        description="MNI152 nonlinear 2009b asymmetric template, 1mm",
+        modality="T1w",
+    ),
+    TemplateMetadata(
+        name="MNI152NLin2009bAsym_res-2",
+        space="MNI152NLin2009bAsym",
+        resolution=2,
+        description="MNI152 nonlinear 2009b asymmetric template, 2mm",
+        modality="T1w",
+    ),
+    # MNI152NLin6Asym (FSL standard)
     TemplateMetadata(
         name="MNI152NLin6Asym_res-1",
         space="MNI152NLin6Asym",
-        resolution=1.0,
+        resolution=1,
         description="MNI152 nonlinear 6th generation asymmetric template, 1mm",
         modality="T1w",
     ),
     TemplateMetadata(
         name="MNI152NLin6Asym_res-2",
         space="MNI152NLin6Asym",
-        resolution=2.0,
+        resolution=2,
         description="MNI152 nonlinear 6th generation asymmetric template, 2mm",
         modality="T1w",
     ),
