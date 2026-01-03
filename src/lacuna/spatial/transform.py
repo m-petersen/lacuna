@@ -2,7 +2,6 @@
 
 import logging
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import nibabel as nib
@@ -251,7 +250,8 @@ class TransformationStrategy:
         from lacuna.assets.templates import load_template
 
         # Load template at target resolution for the transform reference
-        template_name = f"{target.identifier}_res-{target.resolution}"
+        # Use integer resolution for template name lookup (registry uses int format)
+        template_name = f"{target.identifier}_res-{int(target.resolution)}"
         try:
             reference_img = load_template(template_name)
             reference_nifti = nib.load(reference_img)
@@ -279,12 +279,12 @@ class TransformationStrategy:
                 # Fallback: estimate from 1mm dimensions and resolution
                 tuple(int(193 // target.resolution) for _ in range(3)),
             )
-            
+
             # Create affine at target resolution
             from lacuna.core.spaces import REFERENCE_AFFINES
+
             ref_affine = REFERENCE_AFFINES.get(
-                (target.identifier, target.resolution),
-                target.reference_affine
+                (target.identifier, target.resolution), target.reference_affine
             )
             reference_data = np.zeros(shape, dtype=np.uint8)
             reference_nifti = nib.Nifti1Image(reference_data, ref_affine)
@@ -424,8 +424,6 @@ def transform_image(
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
     verbose: bool = False,
-    output_dir: Path | str | None = None,
-    keep_intermediates: bool = False,
 ) -> nib.Nifti1Image:
     """Transform a NIfTI image between coordinate spaces.
 
@@ -443,16 +441,17 @@ def transform_image(
             Default: 'cubic' for continuous data, 'nearest' for binary/integer data.
         image_name: Name of image/atlas for user-facing log messages (e.g., "SchaeferYeo7Networks")
         verbose: If True, print progress messages. If False, run silently.
-        output_dir: Directory to save intermediate files. Required if keep_intermediates=True.
-        keep_intermediates: If True, save the warped image to output_dir for QC inspection.
-            Useful for verifying transformation quality.
 
     Returns:
         Transformed NIfTI image in target space
 
     Raises:
         TransformNotAvailableError: If transformation not supported
-        ValueError: If keep_intermediates=True but output_dir is not provided
+
+    Notes:
+        To save intermediate warped images for QC, use analysis classes with
+        keep_intermediate=True. The warped mask will be stored in the results
+        dictionary under the analysis namespace.
 
     Examples:
         >>> from lacuna.spatial.transform import transform_image
@@ -465,18 +464,8 @@ def transform_image(
         >>> # Transform atlas using nearest neighbor (preserve labels)
         >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target,
         ...                              interpolation='nearest', image_name="MyAtlas")
-        >>> # Save intermediate for QC
-        >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target,
-        ...                              output_dir="/tmp/qc", keep_intermediates=True)
     """
     from lacuna.core.spaces import REFERENCE_AFFINES
-
-    # Validate keep_intermediates requires output_dir
-    if keep_intermediates and output_dir is None:
-        raise ValueError("output_dir is required when keep_intermediates=True")
-
-    if output_dir is not None:
-        output_dir = Path(output_dir)
 
     # Convert string interpolation to enum if needed
     if isinstance(interpolation, str):
@@ -587,20 +576,6 @@ def transform_image(
         interpolation,
     )
 
-    # Save intermediate if requested
-    if keep_intermediates and output_dir is not None:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        # Generate filename based on image_name or use generic
-        base_name = image_name.replace(" ", "_") if image_name else "image"
-        output_filename = (
-            f"{base_name}_space-{target_space_obj.identifier}"
-            f"_res-{target_space_obj.resolution}mm_warped.nii.gz"
-        )
-        output_path = output_dir / output_filename
-        nib.save(transformed, output_path)
-        if verbose:
-            logger.info(f"Saved warped intermediate: {output_path}")
-
     return transformed
 
 
@@ -610,8 +585,6 @@ def transform_mask_data(
     interpolation: InterpolationMethod | str | None = None,
     image_name: str | None = None,
     verbose: bool = False,
-    output_dir: Path | str | None = None,
-    keep_intermediates: bool = False,
 ) -> "SubjectData":
     """Transform lesion data to target coordinate space.
 
@@ -630,8 +603,6 @@ def transform_mask_data(
             Default: 'nearest' for binary masks (preserves mask integrity).
         image_name: Name of mask for user-facing log messages (e.g., "lesion_001")
         verbose: If True, print progress messages. If False, run silently.
-        output_dir: Directory to save intermediate files. Required if keep_intermediates=True.
-        keep_intermediates: If True, save the warped mask to output_dir for QC inspection.
 
     Returns:
         New SubjectData object in target space
@@ -639,7 +610,11 @@ def transform_mask_data(
     Raises:
         TransformNotAvailableError: If transformation not supported
         SpaceDetectionError: If source space cannot be determined
-        ValueError: If keep_intermediates=True but output_dir is not provided
+
+    Notes:
+        To save intermediate warped images for QC, use analysis classes with
+        keep_intermediate=True. The warped mask will be stored in the results
+        dictionary under the analysis namespace as 'warped_mask'.
 
     Examples:
         >>> from lacuna.core.subject_data import SubjectData
@@ -649,8 +624,12 @@ def transform_mask_data(
         >>> # Transform to NLin2009c
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
         >>> transformed = transform_mask_data(lesion, target, image_name="lesion_001")
-        >>> # Save intermediate for QC
-        >>> transformed = transform_mask_data(lesion, target, output_dir="/tmp/qc", keep_intermediates=True)
+        >>>
+        >>> # To save warped mask as intermediate, use analysis classes:
+        >>> from lacuna.analysis import RegionalDamage
+        >>> analysis = RegionalDamage(keep_intermediate=True)
+        >>> result = analysis.run(lesion)
+        >>> warped = result.results['RegionalDamage']['warped_mask']  # VoxelMap
     """
     # Import here to avoid circular imports
     from lacuna.core.provenance import TransformationRecord
@@ -679,8 +658,6 @@ def transform_mask_data(
         interpolation=interpolation,
         image_name=image_name,
         verbose=verbose,
-        output_dir=output_dir,
-        keep_intermediates=keep_intermediates,
     )
 
     # If image unchanged, no transformation was needed
