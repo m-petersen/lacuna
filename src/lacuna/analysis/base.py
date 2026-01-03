@@ -75,22 +75,29 @@ class BaseAnalysis(ABC):
     #: Preferred batch processing strategy (default: parallel)
     batch_strategy: str = "parallel"
 
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(
+        self, verbose: bool = False, keep_intermediate: bool = False
+    ) -> None:
         """
         Initialize the analysis module.
 
         Parameters
         ----------
-        verbose : bool, default=True
+        verbose : bool, default=False
             If True, print progress messages. If False, run silently.
+        keep_intermediate : bool, default=False
+            If True, include intermediate results (e.g., warped mask images)
+            in the output. Useful for debugging and quality control.
 
         Notes
         -----
         Subclasses should override this to accept analysis-specific parameters
         and store them as instance attributes for provenance tracking.
-        Always call super().__init__(verbose=verbose) when overriding.
+        Always call super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
+        when overriding.
         """
         self.verbose = verbose
+        self.keep_intermediate = keep_intermediate
 
     def __repr__(self) -> str:
         """
@@ -203,20 +210,26 @@ class BaseAnalysis(ABC):
         This method is marked @final to prevent subclasses from overriding it.
         All customization must happen in the protected abstract methods.
 
+        When keep_intermediate=True, the transformed mask (warped to the
+        analysis target space) is included in results as 'warped_mask'.
+
         Examples
         --------
         >>> analysis = LesionNetworkMapping(connectome='HCP1200')
         >>> result = analysis.run(mask_data)
         >>> print(result.results['LesionNetworkMapping']['network_scores'])
         """
+        # Track original mask for intermediate saving
+        original_mask = mask_data.mask_img
+
         # Step 0: Transform to target space if TARGET_SPACE is defined
-        mask_data = self._ensure_target_space(mask_data)
+        transformed_data = self._ensure_target_space(mask_data)
 
         # Step 1: Validate inputs
-        self._validate_inputs(mask_data)
+        self._validate_inputs(transformed_data)
 
         # Step 2: Run analysis computation
-        analysis_results = self._run_analysis(mask_data)
+        analysis_results = self._run_analysis(transformed_data)
 
         # Step 3: Namespace results under class name
         # Convert list[DataContainer] to dict[str, DataContainer]
@@ -233,18 +246,37 @@ class BaseAnalysis(ABC):
             # New format: already a dict
             results_dict = analysis_results
 
+        # Add warped mask to intermediates if keep_intermediate=True and transformation occurred
+        if self.keep_intermediate and original_mask is not transformed_data.mask_img:
+            from lacuna.core.data_types import VoxelMap
+
+            warped_mask = VoxelMap(
+                name="warped_mask",
+                data=transformed_data.mask_img,
+                space=transformed_data.space,
+                resolution=transformed_data.resolution,
+                metadata={
+                    "description": "Lesion mask transformed to analysis target space",
+                    "original_space": mask_data.space,
+                    "original_resolution": mask_data.resolution,
+                    "target_space": transformed_data.space,
+                    "target_resolution": transformed_data.resolution,
+                },
+            )
+            results_dict["warped_mask"] = warped_mask
+
         namespace_key = self.__class__.__name__
-        updated_results = mask_data.results.copy()
+        updated_results = transformed_data.results.copy()
         updated_results[namespace_key] = results_dict
 
         # Step 4: Create new SubjectData with updated results
         # Create a new instance with updated results (manual approach for namespace overwriting)
         result_mask_data = SubjectData(
-            mask_img=mask_data.mask_img,
-            space=mask_data.space,
-            resolution=mask_data.resolution,
-            metadata=mask_data.metadata,
-            provenance=mask_data.provenance,
+            mask_img=transformed_data.mask_img,
+            space=transformed_data.space,
+            resolution=transformed_data.resolution,
+            metadata=transformed_data.metadata,
+            provenance=transformed_data.provenance,
             results=updated_results,
         )
 

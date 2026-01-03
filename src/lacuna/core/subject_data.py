@@ -179,29 +179,52 @@ class SubjectData:
             metadata["subject_id"] = "sub-unknown"
 
         # Define supported template spaces (MNI152 variants only)
+        # Note: aAsym, bAsym, cAsym are anatomically identical (different preprocessing pipelines)
         SUPPORTED_TEMPLATE_SPACES = [
             "MNI152NLin6Asym",
             "MNI152NLin2009aAsym",
+            "MNI152NLin2009bAsym",  # Equivalent to cAsym
             "MNI152NLin2009cAsym",
         ]
 
+        # Always detect space from image for validation
+        detected_space = self._detect_space_from_image(mask_img)
+
         # Handle space parameter - direct kwarg takes priority, then metadata dict, then auto-detect
         if space is not None:
-            self._space = space
+            declared_space = space
         elif "space" in metadata:
-            self._space = metadata["space"]
+            declared_space = metadata["space"]
         else:
-            # Attempt auto-detection from image header
-            detected_space = self._detect_space_from_image(mask_img)
-            if detected_space is not None:
-                self._space = detected_space
-            else:
+            declared_space = None
+
+        # Validate declared space matches detected space if both available
+        if declared_space is not None and detected_space is not None:
+            # Import spaces module for equivalence check
+            from .spaces import spaces_are_equivalent
+
+            if not spaces_are_equivalent(declared_space, detected_space):
                 raise ValueError(
-                    "Coordinate space must be specified via 'space' parameter.\n"
-                    "This is required for spatial validation in analysis modules.\n"
-                    f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
-                    "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
+                    f"Space mismatch: declared space '{declared_space}' "
+                    f"does not match detected space '{detected_space}' from image affine.\n"
+                    "The space must match the affine transformation in the image header.\n"
+                    f"Either use space='{detected_space}' or verify the image is in the "
+                    f"'{declared_space}' coordinate space."
                 )
+            self._space = declared_space
+        elif declared_space is not None:
+            # Declared but not detected - trust user
+            self._space = declared_space
+        elif detected_space is not None:
+            # Auto-detected from image affine
+            self._space = detected_space
+        else:
+            raise ValueError(
+                "Coordinate space must be specified via 'space' parameter.\n"
+                "This is required for spatial validation in analysis modules.\n"
+                f"Supported spaces: {', '.join(SUPPORTED_TEMPLATE_SPACES)}\n"
+                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
+            )
 
         # Validate space is in supported list
         if self._space not in SUPPORTED_TEMPLATE_SPACES:
@@ -220,22 +243,41 @@ class SubjectData:
             raise ValueError(msg)
 
         # Handle resolution parameter - direct kwarg takes priority, then metadata dict, then auto-detect
+        # Always detect actual resolution from image for validation
+        detected_res = self._detect_resolution_from_image(mask_img)
+
         if resolution is not None:
-            self._resolution = float(resolution)
+            declared_resolution = float(resolution)
         elif "resolution" in metadata:
-            self._resolution = float(metadata["resolution"])
+            declared_resolution = float(metadata["resolution"])
         else:
-            # Attempt auto-detection from image header
-            detected_res = self._detect_resolution_from_image(mask_img)
-            if detected_res is not None:
-                self._resolution = detected_res
-            else:
+            declared_resolution = None
+
+        # Validate declared resolution matches actual resolution if both available
+        if declared_resolution is not None and detected_res is not None:
+            # Allow small tolerance for floating point comparison
+            if abs(declared_resolution - detected_res) > 0.1:
                 raise ValueError(
-                    "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
-                    "This is required for spatial validation and template matching.\n"
-                    "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
-                    "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
+                    f"Resolution mismatch: declared resolution ({declared_resolution}mm) "
+                    f"does not match actual image resolution ({detected_res}mm).\n"
+                    "The resolution must match the voxel dimensions in the image affine.\n"
+                    f"Either use resolution={detected_res} or resample the image to "
+                    f"{declared_resolution}mm resolution first."
                 )
+            self._resolution = declared_resolution
+        elif declared_resolution is not None:
+            # Declared but not detected (anisotropic image) - trust user
+            self._resolution = declared_resolution
+        elif detected_res is not None:
+            # Auto-detected from isotropic image
+            self._resolution = detected_res
+        else:
+            raise ValueError(
+                "Spatial resolution must be specified via 'resolution' parameter (in mm).\n"
+                "This is required for spatial validation and template matching.\n"
+                "Common values: 1, 2 (for 1mm or 2mm resolution)\n"
+                "Example: SubjectData(img, space='MNI152NLin6Asym', resolution=2)"
+            )
 
         # Store space and resolution in metadata for consistency
         metadata["space"] = self._space

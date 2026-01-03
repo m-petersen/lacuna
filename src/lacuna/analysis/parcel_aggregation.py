@@ -203,9 +203,27 @@ class ParcelAggregation(BaseAnalysis):
         threshold: float | None = None,
         parcel_names: list[str] | None = None,
         verbose: bool = False,
+        keep_intermediate: bool = False,
     ):
-        """Initialize ParcelAggregation analysis."""
-        super().__init__(verbose=verbose)
+        """Initialize ParcelAggregation analysis.
+
+        Parameters
+        ----------
+        source : str or list[str] or dict, default="maskimg"
+            Source of data to aggregate.
+        aggregation : str, default="mean"
+            Aggregation method to use.
+        threshold : float or None, default=None
+            For probabilistic atlases: minimum probability to consider.
+        parcel_names : list of str or None, default=None
+            Names of atlases from the registry to process.
+        verbose : bool, default=False
+            If True, print progress messages.
+        keep_intermediate : bool, default=False
+            If True, include intermediate results (e.g., warped mask images)
+            in the output. Useful for debugging and quality control.
+        """
+        super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
 
         # Initialize logger for warnings and info messages
         from lacuna.utils.logging import ConsoleLogger

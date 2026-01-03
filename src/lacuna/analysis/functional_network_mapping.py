@@ -154,6 +154,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         compute_t_map: bool = True,
         t_threshold: float | None = None,
         return_in_lesion_space: bool = False,
+        keep_intermediate: bool = False,
     ):
         """Initialize functional network mapping analysis.
 
@@ -168,7 +169,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             Percentile threshold for PINI method (0-100).
         n_jobs : int, default=1
             Number of parallel jobs (not yet implemented).
-        verbose : bool, default=True
+        verbose : bool, default=False
             If True, print progress messages. If False, run silently.
         compute_t_map : bool, default=True
             If True, compute t-statistic map and standard error.
@@ -178,6 +179,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
             If True, transform VoxelMap outputs back to the input lesion space.
             If False, outputs remain in the connectome space (MNI152NLin6Asym @ 2mm).
             Requires input SubjectData to have valid space/resolution metadata.
+        keep_intermediate : bool, default=False
+            If True, include intermediate results (e.g., warped mask images)
+            in the output. Useful for debugging and quality control.
 
         Raises
         ------
@@ -186,7 +190,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         KeyError
             If connectome_name not found in registry.
         """
-        super().__init__(verbose=verbose)
+        super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
 
         # Validate method parameter
         if method not in ("boes", "pini"):
