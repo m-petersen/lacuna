@@ -6,7 +6,7 @@
 
 A scientific Python package for neuroimaging lesion analysis.
 
-> ⚠️ **Alpha Status**: This package is under active development. APIs may change.
+> ⚠️ **Alpha Status**: This package is under active development. APIs may change. Documentation is coming soon.
 
 ## Overview
 
@@ -24,7 +24,6 @@ Lacuna provides researchers with an end-to-end pipeline for:
 - ✅ **Regional Damage Analysis**: Quantify lesion overlap with brain parcellations
 - ✅ **Parcel Aggregation**: Aggregate voxel-wise results to standard atlases
 - ✅ **BIDS Support**: Load BIDS datasets and export BIDS-compliant derivatives
-- ✅ **Docker/Singularity**: Container support for reproducible analysis
 - ✅ **Batch Processing**: Parallel processing with progress tracking
 
 **Architecture:**
@@ -40,23 +39,7 @@ Lacuna provides researchers with an end-to-end pipeline for:
 ### Basic Installation
 
 ```bash
-pip install lacuna
-```
-
-### With Optional Dependencies
-
-```bash
-# For visualization features
-pip install lacuna[viz]
-
-# For BIDS support
-pip install lacuna[bids]
-
-# For development
-pip install lacuna[dev]
-
-# Install everything
-pip install lacuna[all]
+pip install git+https://github.com/m-petersen/lacuna
 ```
 
 ### From Source
@@ -64,39 +47,11 @@ pip install lacuna[all]
 ```bash
 git clone https://github.com/lacuna/lacuna.git
 cd lacuna
-pip install -e ".[dev]"
+pip install -e .
 ```
 
-## Docker Quick Start (Recommended)
+## Docker & Singularity coming soon
 
-For reproducible analysis without local installation:
-
-```bash
-# Pull the container
-docker pull ghcr.io/lacuna/lacuna:latest
-
-# Run on a BIDS dataset
-docker run --rm -it \
-    -v /path/to/bids:/data:ro \
-    -v /path/to/output:/output \
-    lacuna:latest \
-    /data /output participant
-
-# With functional network mapping
-docker run --rm -it \
-    -v /path/to/bids:/data:ro \
-    -v /path/to/output:/output \
-    -v /path/to/connectomes:/connectomes:ro \
-    lacuna:latest \
-    /data /output participant \
-    --functional-connectome /connectomes/gsp1000.h5
-
-# For HPC with Singularity
-singularity pull lacuna.sif docker://ghcr.io/lacuna/lacuna:latest
-singularity run lacuna.sif /data /output participant
-```
-
-See [specs/005-package-consolidation/quickstart.md](specs/005-package-consolidation/quickstart.md) for detailed Docker and Singularity examples.
 
 ## Quick Start
 
@@ -284,11 +239,7 @@ result = analysis2.run(analysis1.run(subject))
 - pandas >= 2.0
 - templateflow >= 24.0
 
-## Documentation
-
-- [Quick Start Guide](specs/005-package-consolidation/quickstart.md) - Docker, Python API, and CLI examples
-- [Developer Guide](docs/developer_guide/creating_analysis_modules.md) - Adding new analysis modules
-- [API Examples](notebooks/comprehensive_api_test.ipynb) - Jupyter notebook with full examples
+## Documentation coming soon
 
 ## License
 
