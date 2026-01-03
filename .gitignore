@@ -89,7 +89,9 @@ notebooks/dev/
 # Keep example notebooks
 notebooks/
 
-# Specs
+# Development directories (local only, removed from git history)
+scripts/
+docs/
 specs/
 
 # direnv
