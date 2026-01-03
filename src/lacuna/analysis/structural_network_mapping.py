@@ -192,7 +192,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         load_to_memory: bool = True,
         check_dependencies: bool = True,
         verbose: bool = False,
-        return_in_lesion_space: bool = True,
+        return_in_input_space: bool = True,
     ):
         """Initialize StructuralNetworkMapping analysis.
 
@@ -219,8 +219,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             If True, checks for MRtrix3 availability.
         verbose : bool, default=True
             If True, print progress messages. If False, run silently.
-        return_in_lesion_space : bool, default=True
-            If True, transform VoxelMap outputs back to the input lesion space.
+        return_in_input_space : bool, default=True
+            If True, transform VoxelMap outputs back to the original input mask space.
             If False, outputs remain in the connectome space.
             Requires input SubjectData to have valid space/resolution metadata.
 
@@ -264,10 +264,12 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
         self.load_to_memory = load_to_memory
-        self.return_in_lesion_space = return_in_lesion_space
+        self.return_in_input_space = return_in_input_space
 
-        # Target space matches tractogram space
+        # Target space matches tractogram space, resolution from output_resolution
+        # (used by BaseAnalysis._ensure_target_space)
         self.TARGET_SPACE = self.tractogram_space
+        self.TARGET_RESOLUTION = self.output_resolution
 
         # Initialize logger
         self.logger = ConsoleLogger(verbose=verbose, width=70)
@@ -495,10 +497,15 @@ class StructuralNetworkMapping(BaseAnalysis):
                     nib.save(transformed_atlas_img, transformed_atlas_path)
                     self._parcellation_resolved = transformed_atlas_path
                     self._atlas_image = transformed_atlas_img
+                    # Store metadata for intermediate output
+                    self._atlas_was_transformed = True
+                    self._original_atlas_space = atlas_space
+                    self._original_atlas_resolution = atlas_resolution
 
                     self.logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
                 else:
                     # No transformation needed - use original atlas file
+                    self._atlas_was_transformed = False
                     from lacuna.assets.parcellations.loader import BUNDLED_PARCELLATIONS_DIR
 
                     atlas_filename_path = Path(atlas.metadata.parcellation_filename)
@@ -703,6 +710,29 @@ class StructuralNetworkMapping(BaseAnalysis):
                     )
                     results["lesion_tdi"] = lesion_tdi_result
 
+                # Add warped atlas if atlas was transformed
+                if self._parcellation_resolved is not None and getattr(
+                    self, "_atlas_was_transformed", False
+                ):
+                    warped_atlas_result = VoxelMap(
+                        name=f"warped_atlas_{self.parcellation_name}",
+                        data=self._atlas_image,
+                        space=self.tractogram_space,
+                        resolution=self.output_resolution,
+                        metadata={
+                            "description": (
+                                f"Atlas '{self.parcellation_name}' transformed from "
+                                f"{self._original_atlas_space}@{self._original_atlas_resolution}mm "
+                                f"to {self.tractogram_space}@{self.output_resolution}mm"
+                            ),
+                            "original_space": self._original_atlas_space,
+                            "original_resolution": self._original_atlas_resolution,
+                            "parcellation_name": self.parcellation_name,
+                            "cached_path": str(self._parcellation_resolved),
+                        },
+                    )
+                    results["warped_atlas"] = warped_atlas_result
+
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._parcellation_resolved is not None:
                 self.logger.subsection("Computing Connectivity Matrices")
@@ -715,9 +745,9 @@ class StructuralNetworkMapping(BaseAnalysis):
                 # Merge connectivity matrix results into results dict
                 results.update(connectivity_results)
 
-            # Transform VoxelMap results back to lesion space if requested
-            if self.return_in_lesion_space:
-                results = self._transform_results_to_lesion_space(results, mask_data)
+            # Transform VoxelMap results back to input space if requested
+            if self.return_in_input_space:
+                results = self._transform_results_to_input_space(results, mask_data)
 
             return results
 
@@ -1033,19 +1063,21 @@ class StructuralNetworkMapping(BaseAnalysis):
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,
-            "return_in_lesion_space": self.return_in_lesion_space,
+            "return_in_input_space": self.return_in_input_space,
             "verbose": self.verbose,
         }
 
-    def _transform_results_to_lesion_space(self, results: dict, mask_data: SubjectData) -> dict:
-        """Transform VoxelMap results back to lesion space.
+    def _transform_results_to_input_space(self, results: dict, mask_data: SubjectData) -> dict:
+        """Transform VoxelMap results back to original input mask space.
 
         Parameters
         ----------
         results : dict
             Dictionary of result objects
         mask_data : SubjectData
-            Input mask data with space/resolution metadata
+            Input mask data with space/resolution metadata. If the mask was
+            transformed by BaseAnalysis, it will have _original_input_space
+            and _original_input_resolution in metadata.
 
         Returns
         -------
@@ -1060,17 +1092,24 @@ class StructuralNetworkMapping(BaseAnalysis):
         from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
         from lacuna.spatial.transform import transform_image
 
+        # Get original input space from metadata (set by BaseAnalysis before transformation)
+        # Fall back to current mask_data.space if not available (already in input space)
+        original_space = mask_data.metadata.get("_original_input_space", mask_data.space)
+        original_resolution = mask_data.metadata.get(
+            "_original_input_resolution", mask_data.resolution
+        )
+
         # Get reference affine for target space
-        target_key = (mask_data.space, mask_data.resolution)
+        target_key = (original_space, original_resolution)
         if target_key not in REFERENCE_AFFINES:
             raise ValueError(
-                f"No reference affine available for {mask_data.space}@{mask_data.resolution}mm. "
+                f"No reference affine available for {original_space}@{original_resolution}mm. "
                 f"Available spaces: {list(REFERENCE_AFFINES.keys())}"
             )
 
         target_space = CoordinateSpace(
-            identifier=mask_data.space,
-            resolution=mask_data.resolution,
+            identifier=original_space,
+            resolution=original_resolution,
             reference_affine=REFERENCE_AFFINES[target_key],
         )
 
