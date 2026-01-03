@@ -2,7 +2,7 @@
 
 These tests verify the bug fixes for:
 1. _load_mask_info() returning None instead of tuple
-2. _get_lesion_voxel_indices() being called with wrong number of arguments
+2. _get_mask_voxel_indices() being called with wrong number of arguments
 3. _aggregate_results() not capturing add_result() return value (empty results)
 """
 
@@ -73,13 +73,14 @@ def test_bug_fix_load_mask_info_returns_tuple(simple_connectome):
         unregister_functional_connectome("test_bug_load_mask")
 
 
-def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
+def test_bug_fix_get_mask_voxel_indices_signature(simple_connectome):
     """
-    REGRESSION TEST: Verify _get_lesion_voxel_indices() has correct signature.
+    REGRESSION TEST: Verify _get_mask_voxel_indices() has correct signature.
 
     Previously: run_batch() called with 5 arguments (self, img, indices, shape, affine)
     Bug: TypeError: takes 2 positional arguments but 5 were given
     Fix: Method takes only 2 arguments (self, mask_data), uses self._mask_info internally
+    Returns: tuple of (voxel_indices, resampled_mask_image)
     """
     register_functional_connectome(
         name="test_bug_voxel_indices",
@@ -98,7 +99,7 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
         # Load mask info first (required)
         analysis._load_mask_info()
 
-        # Create a dummy lesion
+        # Create a dummy mask
         mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
         mask_data_array[45, 50, 45] = 1
         affine = np.array(
@@ -110,15 +111,17 @@ def test_bug_fix_get_lesion_voxel_indices_signature(simple_connectome):
             ]
         )
         mask_img = nib.Nifti1Image(mask_data_array, affine)
-        lesion = SubjectData(
+        mask = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
         # Call with SubjectData object only - should not raise TypeError
         try:
-            result = analysis._get_lesion_voxel_indices(lesion)
-            # Success - method accepts correct signature
-            assert isinstance(result, np.ndarray), "Expected ndarray return value"
+            result = analysis._get_mask_voxel_indices(mask)
+            # Success - method accepts correct signature and returns tuple
+            assert isinstance(result, tuple), "Expected tuple return value"
+            assert len(result) == 2, "Expected tuple of (indices, resampled_mask)"
+            assert isinstance(result[0], np.ndarray), "First element should be ndarray"
         except TypeError as e:
             if "positional arguments" in str(e):
                 pytest.fail(f"Bug regression: Method signature is wrong - {e}")
@@ -133,7 +136,7 @@ def test_both_fixes_together(simple_connectome):
 
     This simulates what happens when VectorizedStrategy calls run_batch():
     1. run_batch() unpacks _load_mask_info() return value
-    2. run_batch() calls _get_lesion_voxel_indices() with correct arguments
+    2. run_batch() calls _get_mask_voxel_indices() with correct arguments
     """
     register_functional_connectome(
         name="test_bug_both_fixes",
@@ -149,9 +152,9 @@ def test_both_fixes_together(simple_connectome):
             connectome_name="test_bug_both_fixes", method="boes", verbose=False, compute_t_map=False
         )
 
-        # Create a dummy lesion
+        # Create a dummy mask
         mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
-        mask_data_array[40:50, 50:60, 40:50] = 1  # Larger lesion
+        mask_data_array[40:50, 50:60, 40:50] = 1  # Larger mask
         affine = np.array(
             [
                 [-2.0, 0.0, 0.0, 90.0],
@@ -161,14 +164,14 @@ def test_both_fixes_together(simple_connectome):
             ]
         )
         mask_img = nib.Nifti1Image(mask_data_array, affine)
-        lesion = SubjectData(
+        mask = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
 
         # This should work without TypeErrors
         # (May raise ValidationError if no overlap, but that's expected)
         try:
-            results = analysis.run_batch([lesion])
+            results = analysis.run_batch([mask])
             # Success - both fixes working
             assert isinstance(results, list)
         except TypeError as e:
@@ -266,9 +269,7 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         # Verify VoxelMap wrappers are present (with NIfTI images inside)
         from lacuna.core.data_types import VoxelMap
 
-        assert isinstance(
-            flnm_results["rmap"], VoxelMap
-        ), "correlation_map should be VoxelMap"
+        assert isinstance(flnm_results["rmap"], VoxelMap), "correlation_map should be VoxelMap"
         assert isinstance(flnm_results["zmap"], VoxelMap), "z_map should be VoxelMap"
 
         # VoxelMap.data should contain the NIfTI image

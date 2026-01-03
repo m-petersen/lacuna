@@ -35,10 +35,11 @@ class TestSubjectValidation:
             mask_data.validate()
 
     def test_validate_suspicious_voxel_size_no_warning(self):
-        """Test that unusual voxel sizes are allowed.
+        """Test that unusual voxel sizes are allowed with correct resolution declaration.
 
-        Note: Voxel size validation is not implemented. Various voxel sizes
-        (including unusual ones) are allowed.
+        Note: Voxel size validation is not implemented beyond resolution matching.
+        Various voxel sizes (including unusual ones) are allowed if resolution is
+        correctly declared.
         """
         from lacuna import SubjectData
 
@@ -52,13 +53,15 @@ class TestSubjectValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = SubjectData(
-            mask_img=mask_img,
-            metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
-        )
-
-        # Large voxel sizes are allowed - no warning
-        mask_data.validate()  # Should pass without warnings
+        # Resolution must match affine voxel size (10mm, but only 1, 2 are allowed)
+        # This tests that unusual voxel sizes require matching resolution declaration
+        # Since 10mm is not a valid resolution (only 0.5, 1, 2 allowed in spaces.py),
+        # we test that resolution mismatch is caught
+        with pytest.raises(ValueError, match="Resolution mismatch"):
+            SubjectData(
+                mask_img=mask_img,
+                metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
+            )
 
     def test_validate_affine_nan_handled(self):
         """Test that NaN in affine is handled by nibabel.
@@ -186,7 +189,10 @@ class TestSubjectValidation:
         mask_data.validate()
 
     def test_validate_very_small_voxels_no_warning(self):
-        """Test that very small voxel sizes are allowed (no validation implemented)."""
+        """Test that very small voxel sizes require matching resolution.
+
+        Note: Resolution validation ensures declared resolution matches voxel dimensions.
+        """
         from lacuna import SubjectData
 
         shape = (64, 64, 64)
@@ -199,13 +205,12 @@ class TestSubjectValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = SubjectData(
-            mask_img=mask_img,
-            metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
-        )
-
-        # Validation should pass (no voxel size checks currently implemented)
-        assert mask_data.validate() is True
+        # Resolution mismatch (0.1mm actual vs 2mm declared) now raises error
+        with pytest.raises(ValueError, match="Resolution mismatch"):
+            SubjectData(
+                mask_img=mask_img,
+                metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
+            )
 
     def test_validate_anisotropic_voxels_ok(self):
         """Test that anisotropic (but reasonable) voxels are acceptable."""

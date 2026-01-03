@@ -30,65 +30,65 @@ class TestVoxelMapSpaceContract:
         )
 
     def test_functional_mapping_default_uses_connectome_space(self, mask_data_with_space):
-        """When return_in_lesion_space=False, VoxelMap should be in connectome space."""
+        """When return_in_input_space=False, VoxelMap should be in connectome space."""
         # Note: This will fail at runtime without a registered connectome,
         # but we're just testing parameter acceptance here
         try:
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_connectome",
-                return_in_lesion_space=False,
+                return_in_input_space=False,
             )
             # Verify parameter is set
-            assert analysis.return_in_lesion_space is False
+            assert analysis.return_in_input_space is False
         except KeyError:
             # Expected - connectome not registered, but parameter was accepted
             pass
 
-    def test_functional_mapping_can_enable_lesion_space(self, mask_data_with_space):
-        """When return_in_lesion_space=True, parameter should be set."""
+    def test_functional_mapping_can_enable_input_space(self, mask_data_with_space):
+        """When return_in_input_space=True, parameter should be set."""
         try:
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_connectome",
-                return_in_lesion_space=True,
+                return_in_input_space=True,
             )
             # Verify parameter is set
-            assert analysis.return_in_lesion_space is True
+            assert analysis.return_in_input_space is True
         except KeyError:
             # Expected - connectome not registered, but parameter was accepted
             pass
 
     def test_structural_mapping_default_uses_connectome_space(self, mask_data_with_space):
-        """When return_in_lesion_space=False, VoxelMap should be in connectome space."""
+        """When return_in_input_space=False, VoxelMap should be in connectome space."""
         try:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_connectome",
                 parcellation_name="schaefer100",
-                return_in_lesion_space=False,
+                return_in_input_space=False,
                 check_dependencies=False,
             )
             # Verify parameter is set
-            assert analysis.return_in_lesion_space is False
+            assert analysis.return_in_input_space is False
         except KeyError:
             # Expected - connectome not registered, but parameter was accepted
             pass
 
-    def test_structural_mapping_can_enable_lesion_space(self, mask_data_with_space):
-        """When return_in_lesion_space=True, parameter should be set."""
+    def test_structural_mapping_can_enable_input_space(self, mask_data_with_space):
+        """When return_in_input_space=True, parameter should be set."""
         try:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_connectome",
                 parcellation_name="schaefer100",
-                return_in_lesion_space=True,
+                return_in_input_space=True,
                 check_dependencies=False,
             )
             # Verify parameter is set
-            assert analysis.return_in_lesion_space is True
+            assert analysis.return_in_input_space is True
         except KeyError:
             # Expected - connectome not registered, but parameter was accepted
             pass
 
-    def test_voxelmap_space_matches_lesion_after_transformation(self):
-        """After transformation, VoxelMap space should match input lesion space."""
+    def test_voxelmap_space_matches_input_after_transformation(self):
+        """After transformation, VoxelMap space should match input mask space."""
         # Create VoxelMap in connectome space
         data = np.random.rand(50, 60, 50).astype(np.float32)
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
@@ -109,13 +109,13 @@ class TestVoxelMapSpaceContract:
         # the space should change to match the target space
         # (This is tested in integration tests with actual transformation)
 
-    def test_return_in_lesion_space_requires_valid_metadata(self):
-        """Using return_in_lesion_space requires input to have valid space metadata."""
+    def test_return_in_input_space_requires_valid_metadata(self):
+        """Using return_in_input_space requires input to have valid space metadata."""
         # Create SubjectData without space metadata
         data = np.zeros((10, 10, 10), dtype=np.uint8)
         data[4:6, 4:6, 4:6] = 1
         affine = np.diag([2.0, 2.0, 2.0, 1.0])
         nib.Nifti1Image(data, affine)
 
-        # This should work if we don't request lesion space transformation
+        # This should work if we don't request input space transformation
         # (tested in actual run, not in contract test)

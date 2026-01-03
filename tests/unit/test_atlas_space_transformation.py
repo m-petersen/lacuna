@@ -48,7 +48,9 @@ def test_atlas_transformed_when_space_mismatch():
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data_array[4:6, 4:6, 4:6] = 1.0
-        mask_img = nib.Nifti1Image(mask_data_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data_array, affine)
 
         lesion = SubjectData(
             mask_img=mask_img,
@@ -170,7 +172,9 @@ def test_atlas_not_transformed_when_space_matches():
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data_array[4:6, 4:6, 4:6] = 1.0
-        mask_img = nib.Nifti1Image(mask_data_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data_array, affine)
 
         lesion = SubjectData(
             mask_img=mask_img,
@@ -276,7 +280,9 @@ def test_atlas_transformation_uses_correct_resolution():
         # Create dummy lesion
         mask_data_array = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data_array[4:6, 4:6, 4:6] = 1.0
-        mask_img = nib.Nifti1Image(mask_data_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data_array, affine)
 
         lesion = SubjectData(
             mask_img=mask_img,

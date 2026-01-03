@@ -21,7 +21,9 @@ class TestPipeline:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -120,7 +122,9 @@ class TestAnalyzeFunction:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -209,7 +213,9 @@ class TestAnalyzeStepsParameter:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -279,7 +285,9 @@ class TestAnalyzeBatchProcessing:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -346,7 +354,9 @@ class TestAnalyzeLogLevel:
 
         mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
         mask_array[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_array, affine)
 
         return SubjectData(
             mask_img=mask_img,
@@ -397,7 +407,9 @@ class TestPipelineBatchProcessing:
         for i in range(3):
             mask_array = np.zeros((10, 10, 10), dtype=np.uint8)
             mask_array[4:6, 4:6, 4:6] = 1
-            mask_img = nib.Nifti1Image(mask_array, np.eye(4))
+            affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution
+            mask_img = nib.Nifti1Image(mask_array, affine)
 
             subjects.append(
                 SubjectData(

@@ -22,7 +22,9 @@ class TestBinaryMaskValidation:
         # Create binary mask
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         # Should not raise
         result = SubjectData(
@@ -36,7 +38,9 @@ class TestBinaryMaskValidation:
         """Continuous mask (float values) should be rejected."""
         # Create continuous mask
         mask_data = np.random.rand(10, 10, 10)
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         with pytest.raises(ValueError, match="binary mask with only 0 and 1 values"):
             SubjectData(
@@ -49,7 +53,9 @@ class TestBinaryMaskValidation:
         # Create integer mask with labels
         mask_data = np.zeros((10, 10, 10), dtype=np.float32)
         mask_data[3:7, 3:7, 3:7] = 5  # Label 5
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         with pytest.raises(ValueError, match="binary mask with only 0 and 1 values"):
             SubjectData(
@@ -60,7 +66,9 @@ class TestBinaryMaskValidation:
     def test_error_message_suggests_binarization(self):
         """Error message should suggest binarization."""
         mask_data = np.random.rand(10, 10, 10)
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         with pytest.raises(ValueError, match="Please binarize your lesion mask"):
             SubjectData(
@@ -76,7 +84,9 @@ class TestAnatomicalImgRejection:
         """SubjectData should not accept anatomical_img parameter."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         anat_data = np.random.rand(10, 10, 10)
         anat_img = nib.Nifti1Image(anat_data, affine=np.eye(4))
@@ -97,7 +107,9 @@ class TestSpaceInference:
         """Space must be provided as parameter or in metadata."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         with pytest.raises(ValueError, match="Coordinate space must be specified"):
             SubjectData(
@@ -124,7 +136,9 @@ class TestSpaceInference:
         """Unsupported template spaces should be rejected."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         with pytest.raises(ValueError, match="Invalid space"):
             SubjectData(
@@ -136,7 +150,9 @@ class TestSpaceInference:
         """Space should be accessible from metadata."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         mask_data_obj = SubjectData(
             mask_img=mask_img,
@@ -151,7 +167,9 @@ class TestSpaceInference:
         """Error message should list supported spaces."""
         mask_data = np.zeros((10, 10, 10))
         mask_data[3:7, 3:7, 3:7] = 1
-        mask_img = nib.Nifti1Image(mask_data, affine=np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(mask_data, affine=affine)
 
         with pytest.raises(
             ValueError,

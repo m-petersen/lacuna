@@ -27,6 +27,7 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
             mask_data = np.zeros(shape, dtype=np.uint8)
             mask_data[20:30, 20:30, 20:30] = 1
             mask_img = nib.Nifti1Image(mask_data, affine)
@@ -95,6 +96,7 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
             mask_data = np.zeros(shape, dtype=np.uint8)
             mask_data[20:30, 20:30, 20:30] = 1
             mask_img = nib.Nifti1Image(mask_data, affine)
@@ -138,6 +140,7 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
             mask_data = np.zeros(shape, dtype=np.uint8)
             mask_data[20:30, 20:30, 20:30] = 1
             mask_img = nib.Nifti1Image(mask_data, affine)
@@ -193,6 +196,7 @@ class TestAtlasNamesFilter:
             # Create lesion
             shape = (50, 50, 50)
             affine = np.eye(4)
+            affine[:3, :3] *= 2.0  # 2mm resolution to match declared resolution
             mask_data = np.zeros(shape, dtype=np.uint8)
             mask_data[20:30, 20:30, 20:30] = 1
             mask_img = nib.Nifti1Image(mask_data, affine)

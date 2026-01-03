@@ -26,7 +26,9 @@ class TestBIDSStyleResultKeys:
         # Create simple test mask
         data = np.zeros((10, 10, 10))
         data[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(data.astype(np.uint8), affine)
 
         mask_data = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
@@ -66,7 +68,9 @@ class TestBIDSStyleResultKeys:
         # Create simple test mask
         data = np.zeros((10, 10, 10))
         data[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(data.astype(np.uint8), affine)
 
         mask_data = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
@@ -97,7 +101,9 @@ class TestResultKeyComponents:
         # Create simple test mask
         data = np.zeros((10, 10, 10))
         data[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(data.astype(np.uint8), affine)
 
         mask_data = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
@@ -123,7 +129,9 @@ class TestResultKeyComponents:
         # Create simple test mask
         data = np.zeros((10, 10, 10))
         data[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(data.astype(np.uint8), affine)
 
         mask_data = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}
@@ -152,7 +160,9 @@ class TestResultKeyComponents:
         # Create simple test mask
         data = np.zeros((10, 10, 10))
         data[4:6, 4:6, 4:6] = 1
-        mask_img = nib.Nifti1Image(data.astype(np.uint8), np.eye(4))
+        affine = np.eye(4)
+        affine[:3, :3] *= 2.0  # 2mm resolution
+        mask_img = nib.Nifti1Image(data.astype(np.uint8), affine)
 
         mask_data = SubjectData(
             mask_img=mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2.0}

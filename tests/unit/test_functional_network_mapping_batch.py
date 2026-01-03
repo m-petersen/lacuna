@@ -4,7 +4,7 @@ Unit tests for FunctionalNetworkMapping batch processing methods.
 Tests the vectorized batch processing implementation, specifically
 verifying the fixes for:
 1. _load_mask_info() returning a tuple
-2. _get_lesion_voxel_indices() called with correct arguments
+2. _get_mask_voxel_indices() called with correct arguments
 """
 
 import h5py
@@ -171,8 +171,11 @@ def test_load_mask_info_sets_internal_state(mock_connectome_batch):
         unregister_functional_connectome("test_batch_state")
 
 
-def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_mni152):
-    """Test that _get_lesion_voxel_indices() accepts only SubjectData argument."""
+def test_get_mask_voxel_indices_signature(mock_connectome_batch, mock_lesion_mni152):
+    """Test that _get_mask_voxel_indices() accepts only SubjectData argument.
+
+    Returns tuple of (voxel_indices, resampled_mask_image).
+    """
     register_functional_connectome(
         name="test_batch_sig",
         space="MNI152NLin6Asym",
@@ -187,13 +190,16 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
             connectome_name="test_batch_sig", method="boes", verbose=False
         )
 
-        # Load mask info first (required for _get_lesion_voxel_indices)
+        # Load mask info first (required for _get_mask_voxel_indices)
         analysis._load_mask_info()
 
-        # Should accept SubjectData object
-        voxel_indices = analysis._get_lesion_voxel_indices(mock_lesion_mni152)
+        # Should accept SubjectData object and return tuple
+        result = analysis._get_mask_voxel_indices(mock_lesion_mni152)
 
-        # Should return array of indices
+        # Should return tuple of (indices, resampled_mask)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        voxel_indices, resampled_mask = result
         assert isinstance(voxel_indices, np.ndarray)
         assert voxel_indices.ndim == 1
         assert len(voxel_indices) >= 0  # May be zero if no overlap
@@ -201,8 +207,8 @@ def test_get_lesion_voxel_indices_signature(mock_connectome_batch, mock_lesion_m
         unregister_functional_connectome("test_batch_sig")
 
 
-def test_run_batch_with_single_lesion(mock_connectome_batch, mock_lesion_mni152):
-    """Test run_batch() method with a single lesion."""
+def test_run_batch_with_single_mask(mock_connectome_batch, mock_lesion_mni152):
+    """Test run_batch() method with a single mask."""
     register_functional_connectome(
         name="test_batch_single",
         space="MNI152NLin6Asym",
