@@ -31,13 +31,14 @@ class BaseAnalysis(ABC):
     ----------
     TARGET_SPACE : str or None
         Coordinate space where computations are performed (e.g., "MNI152NLin6Asym").
-        Subclasses MUST define this to declare their computation space. Lesion data
-        will be automatically transformed to this space before analysis. Set to None
-        or "atlas" for analyses that adapt to input data spaces.
-    TARGET_RESOLUTION : int or None
+        Can be defined as a class attribute (static) or instance attribute (dynamic).
+        For connectome-based analyses, this is typically set in __init__ based on
+        the registered connectome's space. Set to None or "atlas" for analyses
+        that adapt to input data spaces (e.g., ParcelAggregation).
+    TARGET_RESOLUTION : float or None
         Resolution in mm where computations are performed (e.g., 1 or 2).
-        Subclasses MUST define this together with TARGET_SPACE. Set to None for
-        analyses that adapt to input data resolution.
+        Can be defined as a class attribute or instance attribute.
+        Set to None for analyses that adapt to input data resolution.
     batch_strategy : str
         Preferred batch processing strategy ("parallel", "vectorized", or "streaming").
         Default is "parallel". Subclasses should override this if they benefit from
@@ -75,9 +76,7 @@ class BaseAnalysis(ABC):
     #: Preferred batch processing strategy (default: parallel)
     batch_strategy: str = "parallel"
 
-    def __init__(
-        self, verbose: bool = False, keep_intermediate: bool = False
-    ) -> None:
+    def __init__(self, verbose: bool = False, keep_intermediate: bool = False) -> None:
         """
         Initialize the analysis module.
 
@@ -210,8 +209,9 @@ class BaseAnalysis(ABC):
         This method is marked @final to prevent subclasses from overriding it.
         All customization must happen in the protected abstract methods.
 
-        When keep_intermediate=True, the transformed mask (warped to the
-        analysis target space) is included in results as 'warped_mask'.
+        When keep_intermediate=True, the mask used for analysis is included
+        in results as 'analysis_mask'. This VoxelMap includes metadata
+        indicating whether transformation occurred (was_transformed=True/False).
 
         Examples
         --------
@@ -219,11 +219,27 @@ class BaseAnalysis(ABC):
         >>> result = analysis.run(mask_data)
         >>> print(result.results['LesionNetworkMapping']['network_scores'])
         """
-        # Track original mask for intermediate saving
-        original_mask = mask_data.mask_img
+        # Track original input space info for analyses that need to transform back
+        original_space = mask_data.space
+        original_resolution = mask_data.resolution
 
         # Step 0: Transform to target space if TARGET_SPACE is defined
         transformed_data = self._ensure_target_space(mask_data)
+
+        # Store original input info in metadata for _run_analysis to access
+        # This allows analyses to transform results back to input space if requested
+        if transformed_data is not mask_data:
+            updated_metadata = transformed_data.metadata.copy()
+            updated_metadata["_original_input_space"] = original_space
+            updated_metadata["_original_input_resolution"] = original_resolution
+            transformed_data = SubjectData(
+                mask_img=transformed_data.mask_img,
+                space=transformed_data.space,
+                resolution=transformed_data.resolution,
+                metadata=updated_metadata,
+                provenance=transformed_data.provenance,
+                results=transformed_data.results,
+            )
 
         # Step 1: Validate inputs
         self._validate_inputs(transformed_data)
@@ -246,24 +262,37 @@ class BaseAnalysis(ABC):
             # New format: already a dict
             results_dict = analysis_results
 
-        # Add warped mask to intermediates if keep_intermediate=True and transformation occurred
-        if self.keep_intermediate and original_mask is not transformed_data.mask_img:
+        # Add analysis mask to intermediates if keep_intermediate=True
+        # Note: This is a fallback that stores the space-transformed mask.
+        # Analyses that resample further (e.g., FNM to connectome grid) should
+        # store their own 'analysis_mask' in _run_analysis with the actual
+        # mask used for computation. That will override this default.
+        if self.keep_intermediate and "analysis_mask" not in results_dict:
             from lacuna.core.data_types import VoxelMap
 
-            warped_mask = VoxelMap(
-                name="warped_mask",
+            was_transformed = (
+                original_space != transformed_data.space
+                or original_resolution != transformed_data.resolution
+            )
+            analysis_mask = VoxelMap(
+                name="analysis_mask",
                 data=transformed_data.mask_img,
                 space=transformed_data.space,
                 resolution=transformed_data.resolution,
                 metadata={
-                    "description": "Lesion mask transformed to analysis target space",
-                    "original_space": mask_data.space,
-                    "original_resolution": mask_data.resolution,
-                    "target_space": transformed_data.space,
-                    "target_resolution": transformed_data.resolution,
+                    "description": (
+                        "Mask transformed to analysis target space"
+                        if was_transformed
+                        else "Mask used for analysis (no transformation needed)"
+                    ),
+                    "was_transformed": was_transformed,
+                    "original_space": original_space,
+                    "original_resolution": original_resolution,
+                    "analysis_space": transformed_data.space,
+                    "analysis_resolution": transformed_data.resolution,
                 },
             )
-            results_dict["warped_mask"] = warped_mask
+            results_dict["analysis_mask"] = analysis_mask
 
         namespace_key = self.__class__.__name__
         updated_results = transformed_data.results.copy()
@@ -422,13 +451,17 @@ class BaseAnalysis(ABC):
         Automatically transform lesion data to TARGET_SPACE if defined.
 
         This method is called automatically by run() before validation and analysis.
-        If TARGET_SPACE and TARGET_RESOLUTION are defined as class attributes,
-        the lesion data will be transformed to that space.
+        If TARGET_SPACE and TARGET_RESOLUTION are defined (as class or instance
+        attributes), the lesion data will be transformed to that space.
 
         Special cases:
         - If TARGET_SPACE is None or "atlas", no transformation is performed
           (analysis adapts to input space)
         - If TARGET_RESOLUTION is None, current resolution is preserved
+
+        Note: Instance attributes take precedence over class attributes, allowing
+        analyses like FunctionalNetworkMapping and StructuralNetworkMapping to
+        dynamically set TARGET_SPACE based on connectome metadata.
 
         Parameters
         ----------
@@ -441,8 +474,10 @@ class BaseAnalysis(ABC):
             Transformed lesion data (or original if no transformation needed)
         """
         # Check if this analysis defines a target space
-        target_space = getattr(self.__class__, "TARGET_SPACE", None)
-        target_resolution = getattr(self.__class__, "TARGET_RESOLUTION", None)
+        # Use getattr(self, ...) to pick up instance attributes (e.g., from connectome)
+        # as well as class attributes
+        target_space = getattr(self, "TARGET_SPACE", None)
+        target_resolution = getattr(self, "TARGET_RESOLUTION", None)
 
         # Skip transformation if no target space defined or if set to "atlas" (adaptive)
         if target_space is None or target_space == "atlas":
