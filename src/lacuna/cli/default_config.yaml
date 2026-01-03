@@ -97,7 +97,7 @@ analyses:
   #   pini_percentile: 20  # For PINI method only
   #   compute_t_map: true
   #   # t_threshold: 3.0  # Optional threshold for binary mask
-  #   return_in_lesion_space: false
+  #   return_in_input_space: false
 
   # StructuralNetworkMapping: Maps white matter disconnection
   # Requires MRtrix3 installation
