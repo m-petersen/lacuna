@@ -233,7 +233,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         ValueError
             If output_resolution is not 1 or 2.
         """
-        super().__init__(verbose=verbose)
+        super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
 
         # Validate output_resolution
         if output_resolution not in (1, 2):

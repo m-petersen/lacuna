@@ -99,6 +99,7 @@ class RegionalDamage(ParcelAggregation):
         parcel_names: list[str] | None = None,
         threshold: float | None = None,
         verbose: bool = False,
+        keep_intermediate: bool = False,
     ):
         """
         Initialize RegionalDamage analysis.
@@ -107,16 +108,20 @@ class RegionalDamage(ParcelAggregation):
         ParcelAggregation(source="maskimg",
                         aggregation="percent", threshold=threshold,
                         parcel_names=parcel_names,
-                        verbose=verbose)
+                        verbose=verbose,
+                        keep_intermediate=keep_intermediate)
 
         Parameters
         ----------
-        threshold : float | None, default=None
-            Threshold for binary lesion conversion. If None, no thresholding is applied.
         parcel_names : list[str] | None, optional
             List of specific parcellation names to use. If None, uses all available.
-        verbose : bool, default=True
+        threshold : float | None, default=None
+            Threshold for binary lesion conversion. If None, no thresholding is applied.
+        verbose : bool, default=False
             If True, print progress messages. If False, run silently.
+        keep_intermediate : bool, default=False
+            If True, include intermediate results (e.g., warped mask images)
+            in the output. Useful for debugging and quality control.
         """
         super().__init__(
             source="maskimg",
@@ -124,6 +129,7 @@ class RegionalDamage(ParcelAggregation):
             threshold=threshold,
             parcel_names=parcel_names,
             verbose=verbose,
+            keep_intermediate=keep_intermediate,
         )
 
     def _validate_inputs(self, mask_data) -> None:

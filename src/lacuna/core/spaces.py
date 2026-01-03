@@ -182,6 +182,14 @@ def validate_space_and_resolution(
 # These are the canonical transformations from voxel to world coordinates
 # Values verified from actual template files
 REFERENCE_AFFINES = {
+    ("MNI152NLin6Asym", 1): np.array(
+        [
+            [1.0, 0.0, 0.0, -91.0],
+            [0.0, 1.0, 0.0, -126.0],
+            [0.0, 0.0, 1.0, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    ),
     ("MNI152NLin6Asym", 2): np.array(
         [
             [2.0, 0.0, 0.0, -91.0],
@@ -198,7 +206,6 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
-    # MNI152NLin2009aAsym - anatomically identical to cAsym
     ("MNI152NLin2009aAsym", 1): np.array(
         [
             [1.0, 0.0, 0.0, -96.0],
@@ -215,7 +222,6 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
-    # MNI152NLin2009aAsym 2mm - anatomically identical to cAsym
     ("MNI152NLin2009aAsym", 2): np.array(
         [
             [2.0, 0.0, 0.0, -96.0],
@@ -224,20 +230,11 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
-    # MNI152NLin2009bAsym - anatomically identical to cAsym (dTOR tractogram, 0.5mm)
     ("MNI152NLin2009bAsym", 0.5): np.array(
         [
             [0.5, 0.0, 0.0, -98.0],
             [0.0, 0.5, 0.0, -134.0],
             [0.0, 0.0, 0.5, -72.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ]
-    ),
-    ("MNI152NLin6Asym", 1): np.array(
-        [
-            [1.0, 0.0, 0.0, -91.0],
-            [0.0, 1.0, 0.0, -126.0],
-            [0.0, 0.0, 1.0, -72.0],
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
