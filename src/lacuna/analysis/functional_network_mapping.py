@@ -685,6 +685,27 @@ class FunctionalNetworkMapping(BaseAnalysis):
             summary_dict["pct_significant_fdr"] = float(pct_significant_fdr)
             summary_dict["fdr_alpha"] = self.fdr_alpha
 
+            # Create binary significance mask at FDR threshold
+            fdr_sig_mask = (p_fdr_map_flat < self.fdr_alpha).astype(np.uint8)
+            fdr_sig_map_3d = np.zeros(mask_shape, dtype=np.uint8)
+            fdr_sig_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = fdr_sig_mask
+            fdr_sig_map_nifti = nib.Nifti1Image(fdr_sig_map_3d, mask_affine)
+
+            fdr_threshold_result = VoxelMap(
+                name="pfdrthresholdmap",
+                data=fdr_sig_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "fdr_significant_binary",
+                    "fdr_alpha": self.fdr_alpha,
+                    "n_significant": n_significant_fdr,
+                },
+            )
+            results["pfdrthresholdmap"] = fdr_threshold_result
+
         # Add summary statistics as ScalarMetric
         summary_result = ScalarMetric(
             name="summarystatistics",
@@ -1384,6 +1405,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
         """
         # Compute t-statistics if requested
         t_map_flat = None
+        p_map_flat = None
+        p_fdr_map_flat = None
+        n_significant_fdr = 0
+        pct_significant_fdr = 0.0
+
         if self.compute_t_map:
             if std_z_map is None:
                 raise ValueError("std_z_map required when compute_t_map=True")
@@ -1396,6 +1422,37 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     where=(std_error_map != 0),
                 )
                 t_map_flat = np.nan_to_num(t_map_flat)
+
+            # Compute p-values from t-statistics (two-tailed)
+            if self.compute_p_map:
+                df = total_subjects - 1  # degrees of freedom
+                # Two-tailed p-value: 2 * (1 - CDF(|t|))
+                p_map_flat = 2 * stats.t.sf(np.abs(t_map_flat), df)
+                p_map_flat = np.nan_to_num(p_map_flat, nan=1.0)
+
+                # Compute FDR-corrected p-values if requested
+                if self.fdr_alpha is not None:
+                    # Benjamini-Hochberg FDR correction
+                    n_voxels = len(p_map_flat)
+                    sorted_indices = np.argsort(p_map_flat)
+                    sorted_pvals = p_map_flat[sorted_indices]
+
+                    # Compute FDR-adjusted p-values
+                    # p_adj[i] = min(p[i] * n / (rank[i]), 1.0)
+                    ranks = np.arange(1, n_voxels + 1)
+                    adjusted = sorted_pvals * n_voxels / ranks
+
+                    # Enforce monotonicity (cumulative minimum from the right)
+                    adjusted = np.minimum.accumulate(adjusted[::-1])[::-1]
+                    adjusted = np.clip(adjusted, 0, 1)
+
+                    # Map back to original order
+                    p_fdr_map_flat = np.empty_like(p_map_flat)
+                    p_fdr_map_flat[sorted_indices] = adjusted
+
+                    # Count significant voxels
+                    n_significant_fdr = int(np.sum(p_fdr_map_flat < self.fdr_alpha))
+                    pct_significant_fdr = (n_significant_fdr / n_voxels) * 100
 
         # Create 3D volumes
         correlation_map_3d = np.zeros(mask_shape, dtype=np.float32)
@@ -1490,6 +1547,70 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     np.sum(t_threshold_mask)
                 )
 
+        # Add p-value map if computed
+        if p_map_flat is not None:
+            p_map_3d = np.zeros(mask_shape, dtype=np.float32)
+            p_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = p_map_flat
+            p_map_nifti = nib.Nifti1Image(p_map_3d, mask_affine)
+
+            results["pmap"] = VoxelMap(
+                name="pmap",
+                data=p_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "p_value_two_tailed",
+                    "degrees_of_freedom": total_subjects - 1,
+                },
+            )
+            results["summarystatistics"].data["p_min"] = float(np.min(p_map_flat))
+            results["summarystatistics"].data["p_max"] = float(np.max(p_map_flat))
+
+        # Add FDR-corrected p-value map if computed
+        if p_fdr_map_flat is not None:
+            p_fdr_map_3d = np.zeros(mask_shape, dtype=np.float32)
+            p_fdr_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = p_fdr_map_flat
+            p_fdr_map_nifti = nib.Nifti1Image(p_fdr_map_3d, mask_affine)
+
+            results["pfdrmap"] = VoxelMap(
+                name="pfdrmap",
+                data=p_fdr_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "p_value_fdr_corrected",
+                    "fdr_alpha": self.fdr_alpha,
+                    "correction_method": "benjamini_hochberg",
+                },
+            )
+            results["summarystatistics"].data["n_significant_fdr"] = n_significant_fdr
+            results["summarystatistics"].data["pct_significant_fdr"] = pct_significant_fdr
+            results["summarystatistics"].data["fdr_alpha"] = self.fdr_alpha
+
+            # Create binary significance mask at FDR threshold
+            fdr_sig_mask = (p_fdr_map_flat < self.fdr_alpha).astype(np.uint8)
+            fdr_sig_map_3d = np.zeros(mask_shape, dtype=np.uint8)
+            fdr_sig_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = fdr_sig_mask
+            fdr_sig_map_nifti = nib.Nifti1Image(fdr_sig_map_3d, mask_affine)
+
+            results["pfdrthresholdmap"] = VoxelMap(
+                name="pfdrthresholdmap",
+                data=fdr_sig_map_nifti,
+                space=self.output_space,
+                resolution=self.output_resolution,
+                metadata={
+                    "method": self.method,
+                    "n_subjects": total_subjects,
+                    "statistic": "fdr_significant_binary",
+                    "fdr_alpha": self.fdr_alpha,
+                    "n_significant": n_significant_fdr,
+                },
+            )
+
         # Transform VoxelMap results back to input space if requested
         if self.return_in_input_space:
             results = self._transform_results_to_input_space(results, mask_data)
@@ -1505,6 +1626,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
             batch_results["tmap"] = results["tmap"]
         if "tthresholdmap" in results:
             batch_results["tthresholdmap"] = results["tthresholdmap"]
+        if "pmap" in results:
+            batch_results["pmap"] = results["pmap"]
+        if "pfdrmap" in results:
+            batch_results["pfdrmap"] = results["pfdrmap"]
+        if "pfdrthresholdmap" in results:
+            batch_results["pfdrthresholdmap"] = results["pfdrthresholdmap"]
 
         mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
 

@@ -558,3 +558,309 @@ class TestSummaryStatistics:
 
         finally:
             unregister_functional_connectome("test_summary_pstats")
+
+
+class TestPFdrThresholdMap:
+    """Test the binary FDR significance threshold map output."""
+
+    def test_pfdrthresholdmap_in_results_when_fdr_enabled(self, valid_connectome, valid_mask_img):
+        """Test that pfdrthresholdmap is in results when fdr_alpha is set."""
+        connectome_path, mask_shape, affine = valid_connectome
+
+        register_functional_connectome(
+            name="test_pfdrthresh_output",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=connectome_path,
+            n_subjects=20,
+        )
+        try:
+            fnm = FunctionalNetworkMapping(
+                connectome_name="test_pfdrthresh_output",
+                compute_p_map=True,
+                fdr_alpha=0.05,
+                return_in_input_space=False,
+                verbose=False,
+            )
+
+            subject = SubjectData(
+                mask_img=valid_mask_img,
+                space="MNI152NLin6Asym",
+                resolution=2.0,
+            )
+
+            result = fnm.run(subject)
+
+            # Check pfdrthresholdmap is in results
+            assert "pfdrthresholdmap" in result.results["FunctionalNetworkMapping"]
+            pfdrthresh = result.results["FunctionalNetworkMapping"]["pfdrthresholdmap"]
+
+            # Verify it's a VoxelMap
+            from lacuna.core.data_types import VoxelMap
+
+            assert isinstance(pfdrthresh, VoxelMap)
+
+            # Verify it's a binary mask (only 0 and 1)
+            thresh_data = pfdrthresh.get_data().get_fdata()
+            unique_vals = np.unique(thresh_data)
+            assert np.all(np.isin(unique_vals, [0, 1]))
+
+            # Verify metadata contains FDR info
+            assert pfdrthresh.metadata["fdr_alpha"] == 0.05
+            assert pfdrthresh.metadata["statistic"] == "fdr_significant_binary"
+
+        finally:
+            unregister_functional_connectome("test_pfdrthresh_output")
+
+    def test_pfdrthresholdmap_not_in_results_when_fdr_disabled(
+        self, valid_connectome, valid_mask_img
+    ):
+        """Test that pfdrthresholdmap is not in results when fdr_alpha=None."""
+        connectome_path, mask_shape, affine = valid_connectome
+
+        register_functional_connectome(
+            name="test_pfdrthresh_disabled",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=connectome_path,
+            n_subjects=20,
+        )
+        try:
+            fnm = FunctionalNetworkMapping(
+                connectome_name="test_pfdrthresh_disabled",
+                compute_p_map=True,
+                fdr_alpha=None,
+                return_in_input_space=False,
+                verbose=False,
+            )
+
+            subject = SubjectData(
+                mask_img=valid_mask_img,
+                space="MNI152NLin6Asym",
+                resolution=2.0,
+            )
+
+            result = fnm.run(subject)
+
+            # Check pfdrthresholdmap is NOT in results
+            assert "pfdrthresholdmap" not in result.results["FunctionalNetworkMapping"]
+
+        finally:
+            unregister_functional_connectome("test_pfdrthresh_disabled")
+
+    def test_pfdrthresholdmap_matches_pfdrmap_threshold(self, valid_connectome, valid_mask_img):
+        """Test that pfdrthresholdmap correctly thresholds pfdrmap at fdr_alpha."""
+        connectome_path, mask_shape, affine = valid_connectome
+
+        register_functional_connectome(
+            name="test_pfdrthresh_matches",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=connectome_path,
+            n_subjects=20,
+        )
+        try:
+            fdr_alpha = 0.05
+            fnm = FunctionalNetworkMapping(
+                connectome_name="test_pfdrthresh_matches",
+                compute_p_map=True,
+                fdr_alpha=fdr_alpha,
+                return_in_input_space=False,
+                verbose=False,
+            )
+
+            subject = SubjectData(
+                mask_img=valid_mask_img,
+                space="MNI152NLin6Asym",
+                resolution=2.0,
+            )
+
+            result = fnm.run(subject)
+
+            # Get both maps
+            pfdrmap_data = (
+                result.results["FunctionalNetworkMapping"]["pfdrmap"].get_data().get_fdata()
+            )
+            pfdrthresh_data = (
+                result.results["FunctionalNetworkMapping"]["pfdrthresholdmap"]
+                .get_data()
+                .get_fdata()
+            )
+
+            # Only compare brain voxels (where rmap is non-zero as proxy for brain mask)
+            # Background voxels have pfdrmap=0 (less than alpha) but should NOT be marked significant
+            rmap_data = result.results["FunctionalNetworkMapping"]["rmap"].get_data().get_fdata()
+            brain_mask = rmap_data != 0
+
+            # Within brain voxels, verify threshold map matches where pfdrmap < fdr_alpha
+            pfdr_brain = pfdrmap_data[brain_mask]
+            thresh_brain = pfdrthresh_data[brain_mask]
+            expected_thresh_brain = (pfdr_brain < fdr_alpha).astype(np.float32)
+            np.testing.assert_array_equal(thresh_brain, expected_thresh_brain)
+
+            # Verify background voxels are 0 in threshold map (not marked significant)
+            thresh_background = pfdrthresh_data[~brain_mask]
+            assert np.all(thresh_background == 0)
+
+        finally:
+            unregister_functional_connectome("test_pfdrthresh_matches")
+
+
+class TestBatchModePValueMaps:
+    """Test p-value and FDR maps in vectorized batch mode (run_batch)."""
+
+    def test_batch_mode_includes_pmap(self, valid_connectome, valid_mask_img):
+        """Test that batch mode (run_batch) includes pmap in results."""
+        connectome_path, mask_shape, affine = valid_connectome
+
+        register_functional_connectome(
+            name="test_batch_pmap",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=connectome_path,
+            n_subjects=20,
+        )
+        try:
+            fnm = FunctionalNetworkMapping(
+                connectome_name="test_batch_pmap",
+                compute_p_map=True,
+                fdr_alpha=0.05,
+                return_in_input_space=False,
+                verbose=False,
+            )
+
+            # Create multiple subjects
+            subjects = [
+                SubjectData(
+                    mask_img=valid_mask_img,
+                    space="MNI152NLin6Asym",
+                    resolution=2.0,
+                    metadata={"subject_id": f"sub-{i:03d}"},
+                )
+                for i in range(3)
+            ]
+
+            # Run batch mode
+            results = fnm.run_batch(subjects)
+
+            # Check all results have pmap, pfdrmap, and pfdrthresholdmap
+            for i, result in enumerate(results):
+                assert (
+                    "pmap" in result.results["FunctionalNetworkMapping"]
+                ), f"Subject {i} missing pmap"
+                assert (
+                    "pfdrmap" in result.results["FunctionalNetworkMapping"]
+                ), f"Subject {i} missing pfdrmap"
+                assert (
+                    "pfdrthresholdmap" in result.results["FunctionalNetworkMapping"]
+                ), f"Subject {i} missing pfdrthresholdmap"
+
+                # Verify p-values are valid
+                pmap = result.results["FunctionalNetworkMapping"]["pmap"]
+                pmap_data = pmap.get_data().get_fdata()
+                assert np.all(pmap_data >= 0)
+                assert np.all(pmap_data <= 1)
+
+        finally:
+            unregister_functional_connectome("test_batch_pmap")
+
+    def test_batch_mode_pmap_correctness(self, valid_connectome, valid_mask_img):
+        """Test that batch mode p-values match scipy computation."""
+        connectome_path, mask_shape, affine = valid_connectome
+
+        register_functional_connectome(
+            name="test_batch_pmap_correct",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=connectome_path,
+            n_subjects=20,
+        )
+        try:
+            fnm = FunctionalNetworkMapping(
+                connectome_name="test_batch_pmap_correct",
+                compute_t_map=True,
+                compute_p_map=True,
+                fdr_alpha=None,  # Disable FDR to test p-value only
+                return_in_input_space=False,
+                verbose=False,
+            )
+
+            subjects = [
+                SubjectData(
+                    mask_img=valid_mask_img,
+                    space="MNI152NLin6Asym",
+                    resolution=2.0,
+                    metadata={"subject_id": "sub-001"},
+                )
+            ]
+
+            results = fnm.run_batch(subjects)
+            result = results[0]
+
+            # Get t-map and p-map
+            tmap_data = result.results["FunctionalNetworkMapping"]["tmap"].get_data().get_fdata()
+            pmap_data = result.results["FunctionalNetworkMapping"]["pmap"].get_data().get_fdata()
+
+            # Find non-zero voxels
+            nonzero_mask = tmap_data != 0
+            t_values = tmap_data[nonzero_mask]
+            p_values = pmap_data[nonzero_mask]
+
+            # Compute expected p-values using scipy
+            df = 20 - 1  # n_subjects - 1
+            expected_p = 2 * stats.t.sf(np.abs(t_values), df)
+
+            # Compare (allow small numerical differences)
+            np.testing.assert_allclose(p_values, expected_p, rtol=1e-5)
+
+        finally:
+            unregister_functional_connectome("test_batch_pmap_correct")
+
+    def test_batch_mode_fdr_stats_in_summary(self, valid_connectome, valid_mask_img):
+        """Test that batch mode summary includes FDR statistics."""
+        connectome_path, mask_shape, affine = valid_connectome
+
+        register_functional_connectome(
+            name="test_batch_fdr_summary",
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=connectome_path,
+            n_subjects=20,
+        )
+        try:
+            fnm = FunctionalNetworkMapping(
+                connectome_name="test_batch_fdr_summary",
+                compute_p_map=True,
+                fdr_alpha=0.05,
+                return_in_input_space=False,
+                verbose=False,
+            )
+
+            subjects = [
+                SubjectData(
+                    mask_img=valid_mask_img,
+                    space="MNI152NLin6Asym",
+                    resolution=2.0,
+                    metadata={"subject_id": "sub-001"},
+                )
+            ]
+
+            results = fnm.run_batch(subjects)
+            result = results[0]
+
+            # Get summary statistics
+            summary = result.results["FunctionalNetworkMapping"]["summarystatistics"]
+            summary_data = summary.get_data()
+
+            # Check p-value stats are present
+            assert "p_min" in summary_data
+            assert "p_max" in summary_data
+
+            # Check FDR stats are present
+            assert "n_significant_fdr" in summary_data
+            assert "pct_significant_fdr" in summary_data
+            assert "fdr_alpha" in summary_data
+            assert summary_data["fdr_alpha"] == 0.05
+
+        finally:
+            unregister_functional_connectome("test_batch_fdr_summary")
