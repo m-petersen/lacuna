@@ -95,9 +95,11 @@ analyses:
   #   connectome: functional  # Reference to connectomes section
   #   method: boes  # "boes" (mean) or "pini" (PCA-based)
   #   pini_percentile: 20  # For PINI method only
-  #   compute_t_map: true
+  #   compute_t_map: true  # Compute t-statistic map
+  #   compute_p_map: true  # Compute p-value map (two-tailed)
+  #   fdr_alpha: 0.05  # FDR correction alpha level (null to disable)
   #   # t_threshold: 3.0  # Optional threshold for binary mask
-  #   return_in_input_space: false
+  #   return_in_input_space: true  # Transform outputs to input mask space
 
   # StructuralNetworkMapping: Maps white matter disconnection
   # Requires MRtrix3 installation
@@ -119,6 +121,8 @@ analyses:
   #       - rmap
   #       - tmap
   #       - zmap
+  #       - pmap
+  #       - pfdrmap
   #     StructuralNetworkMapping: 
   #       - disconnection_map
   #   aggregation: mean  # mean, sum, percent, volume, median, std
