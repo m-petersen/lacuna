@@ -102,18 +102,23 @@ class TestTransformationDirectionChoices:
 class TestInterpolationSelection:
     """Test interpolation method selection."""
 
-    def test_select_linear_default(self):
-        """Test that linear is selected by default for continuous data."""
+    def test_select_cubic_default(self):
+        """Test that cubic is selected by default for continuous data."""
+        from lacuna.spatial.transform import InterpolationMethod
+
         data = np.random.rand(91, 109, 91).astype(np.float32)
         img = nib.Nifti1Image(data, np.eye(4))
 
         strategy = TransformationStrategy()
         interp = strategy.select_interpolation(img)
 
-        assert interp == "linear"
+        # Cubic B-spline is now the default for continuous data
+        assert interp == InterpolationMethod.CUBIC
 
     def test_select_nearest_for_binary(self):
         """Test that nearest is selected for binary mask data."""
+        from lacuna.spatial.transform import InterpolationMethod
+
         data = np.zeros((91, 109, 91), dtype=np.uint8)
         data[40:50, 40:50, 40:50] = 1
         img = nib.Nifti1Image(data, np.eye(4))
@@ -121,17 +126,19 @@ class TestInterpolationSelection:
         strategy = TransformationStrategy()
         interp = strategy.select_interpolation(img)
 
-        assert interp == "nearest"
+        assert interp == InterpolationMethod.NEAREST
 
     def test_override_interpolation_method(self):
         """Test that interpolation method can be overridden."""
+        from lacuna.spatial.transform import InterpolationMethod
+
         data = np.random.rand(91, 109, 91).astype(np.float32)
         img = nib.Nifti1Image(data, np.eye(4))
 
         strategy = TransformationStrategy()
-        interp = strategy.select_interpolation(img, method="nearest")
+        interp = strategy.select_interpolation(img, method=InterpolationMethod.NEAREST)
 
-        assert interp == "nearest"
+        assert interp == InterpolationMethod.NEAREST
 
 
 @pytest.mark.slow

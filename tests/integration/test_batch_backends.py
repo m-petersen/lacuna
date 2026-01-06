@@ -40,12 +40,14 @@ def synthetic_lesions():
         data = np.zeros((10, 10, 10), dtype=np.float32)
         data[3:7, 3:7, 3:7] = 1  # Small cube lesion
 
-        affine = np.eye(4)
+        affine = np.eye(4)  # 1mm isotropic
         img = nib.Nifti1Image(data, affine)
 
         lesion = SubjectData(
             img,
-            metadata={"subject_id": f"sub-{i:03d}", "space": "MNI152NLin6Asym", "resolution": 2},
+            space="MNI152NLin6Asym",
+            resolution=1.0,  # Match np.eye(4) affine
+            metadata={"subject_id": f"sub-{i:03d}"},
         )
         lesions.append(lesion)
 
