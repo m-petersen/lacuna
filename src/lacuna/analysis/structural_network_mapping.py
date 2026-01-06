@@ -7,7 +7,6 @@ white matter connectivity.
 """
 
 import hashlib
-import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -28,7 +27,7 @@ from lacuna.core.data_types import (
     VoxelMap,
 )
 from lacuna.core.subject_data import SubjectData
-from lacuna.utils.cache import get_tdi_cache_dir
+from lacuna.utils.cache import get_tdi_cache_dir, get_temp_dir
 from lacuna.utils.logging import ConsoleLogger
 from lacuna.utils.mrtrix import (
     MRtrixError,
@@ -422,7 +421,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 self.whole_brain_tdi = tdi_cache_path
         else:
             # Compute TDI without caching (temporary file)
-            temp_tdi = Path(tempfile.mkdtemp()) / "whole_brain_tdi.nii.gz"
+            temp_tdi = get_temp_dir(prefix="tdi_") / "whole_brain_tdi.nii.gz"
             self.logger.info(
                 f"Computing whole-brain TDI at {self.output_resolution}mm resolution..."
             )
@@ -573,11 +572,10 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.logger.section(f"PROCESSING: {subject_id}")
 
         # Create temporary directory for intermediate files
-        temp_dir = tempfile.mkdtemp(prefix=f"slnm_{subject_id}_")
-        temp_dir_path = Path(temp_dir)
+        temp_dir_path = get_temp_dir(prefix=f"slnm_{subject_id}_")
 
         if self.keep_intermediate:
-            self.logger.info(f"Intermediate files will be saved to: {temp_dir}")
+            self.logger.info(f"Intermediate files will be saved to: {temp_dir_path}")
 
         try:
             # Step 1: Filter tractogram by lesion
@@ -756,9 +754,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             if not self.keep_intermediate:
                 import shutil
 
-                shutil.rmtree(temp_dir, ignore_errors=True)
+                shutil.rmtree(temp_dir_path, ignore_errors=True)
             else:
-                self.logger.success(f"Intermediate files preserved in: {temp_dir}")
+                self.logger.success(f"Intermediate files preserved in: {temp_dir_path}")
                 self.logger.info("Files saved:", indent_level=1)
                 self.logger.info("- lesion_streamlines.tck", indent_level=2)
                 self.logger.info("- lesion_tdi.nii.gz", indent_level=2)
@@ -956,7 +954,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         np.ndarray
             Connectivity matrix (n_parcels x n_parcels)
         """
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=True, mode="w") as tmp_csv:
+        from lacuna.utils.cache import make_temp_file
+
+        with make_temp_file(suffix=".csv", delete=True, mode="w") as tmp_csv:
             output_csv = Path(tmp_csv.name)
 
             command = [

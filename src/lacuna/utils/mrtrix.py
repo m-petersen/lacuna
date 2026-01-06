@@ -8,10 +8,11 @@ for filtering tractograms by lesion masks and computing disconnection maps.
 import os
 import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 import nibabel as nib
+
+from lacuna.utils.cache import make_temp_file
 
 
 class MRtrixError(Exception):
@@ -178,7 +179,7 @@ def filter_tractogram_by_lesion(
             raise FileNotFoundError(f"Lesion mask not found: {lesion_mask_path}")
     elif isinstance(lesion_mask, nib.Nifti1Image):
         # Save to temporary file
-        temp_lesion_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        temp_lesion_file = make_temp_file(suffix=".nii.gz", delete=False)
         lesion_mask_path = Path(temp_lesion_file.name)
         nib.save(lesion_mask, lesion_mask_path)
     else:
@@ -188,7 +189,7 @@ def filter_tractogram_by_lesion(
 
     # Determine output path
     if output_path is None:
-        temp_output = tempfile.NamedTemporaryFile(suffix=".tck", delete=False)
+        temp_output = make_temp_file(suffix=".tck", delete=False)
         output_path = Path(temp_output.name)
     else:
         output_path = Path(output_path)
@@ -298,7 +299,7 @@ def compute_tdi_map(
             raise FileNotFoundError(f"Template not found: {template_path}")
     elif isinstance(template, nib.Nifti1Image):
         # Save to temporary file
-        temp_template_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        temp_template_file = make_temp_file(suffix=".nii.gz", delete=False)
         template_path = Path(temp_template_file.name)
         nib.save(template, template_path)
     else:
@@ -306,7 +307,7 @@ def compute_tdi_map(
 
     # Determine output path
     if output_path is None:
-        temp_output = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        temp_output = make_temp_file(suffix=".nii.gz", delete=False)
         output_path = Path(temp_output.name)
     else:
         output_path = Path(output_path)
@@ -409,7 +410,7 @@ def compute_disconnection_map(
         if not lesion_tdi_path.exists():
             raise FileNotFoundError(f"Lesion TDI not found: {lesion_tdi_path}")
     elif isinstance(lesion_tdi, nib.Nifti1Image):
-        temp_lesion_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        temp_lesion_file = make_temp_file(suffix=".nii.gz", delete=False)
         lesion_tdi_path = Path(temp_lesion_file.name)
         nib.save(lesion_tdi, lesion_tdi_path)
     else:
@@ -426,7 +427,7 @@ def compute_disconnection_map(
         if not wb_tdi_path.exists():
             raise FileNotFoundError(f"Whole-brain TDI not found: {wb_tdi_path}")
     elif isinstance(whole_brain_tdi, nib.Nifti1Image):
-        temp_wb_file = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        temp_wb_file = make_temp_file(suffix=".nii.gz", delete=False)
         wb_tdi_path = Path(temp_wb_file.name)
         nib.save(whole_brain_tdi, wb_tdi_path)
     else:
@@ -436,7 +437,7 @@ def compute_disconnection_map(
 
     # Determine output path
     if output_path is None:
-        temp_output = tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False)
+        temp_output = make_temp_file(suffix=".nii.gz", delete=False)
         output_path = Path(temp_output.name)
     else:
         output_path = Path(output_path)
