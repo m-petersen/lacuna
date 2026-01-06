@@ -223,7 +223,6 @@ def test_run_batch_with_single_mask(mock_connectome_batch, mock_lesion_mni152):
             connectome_name="test_batch_single",
             method="boes",
             verbose=False,
-            compute_t_map=False,  # Skip t-map for faster test
         )
 
         # Call run_batch with single lesion
@@ -257,7 +256,6 @@ def test_run_batch_with_multiple_lesions(mock_connectome_batch, mock_lesion_mni1
             connectome_name="test_batch_multi",
             method="boes",
             verbose=False,
-            compute_t_map=False,
         )
 
         # Create multiple lesions (same lesion with different IDs)
@@ -304,7 +302,6 @@ def test_run_batch_preserves_metadata(mock_connectome_batch, mock_lesion_mni152)
             connectome_name="test_batch_meta",
             method="boes",
             verbose=False,
-            compute_t_map=False,
         )
 
         # Add custom metadata

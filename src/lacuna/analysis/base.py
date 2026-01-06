@@ -150,7 +150,6 @@ class BaseAnalysis(ABC):
         Configuration:
           - method: pearson
           - connectome_path: /path/to/connectome.h5
-          - compute_t_map: True
           - t_threshold: 2.0
         """
         class_name = self.__class__.__name__

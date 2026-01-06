@@ -137,7 +137,6 @@ class TestGetMaskVoxelIndicesPerformance:
         analysis.method = "boes"
         analysis.pini_percentile = 20
         analysis.n_jobs = 1
-        analysis.compute_t_map = True
         analysis.t_threshold = None
         analysis.logger = type(
             "obj",

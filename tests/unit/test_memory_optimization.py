@@ -99,7 +99,6 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
             connectome_name="test_streaming_connectome",
             method="boes",
             verbose=False,
-            compute_t_map=True,
             t_threshold=2.0,
         )
 
@@ -163,7 +162,6 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
             connectome_name="test_lesion_batch_connectome",
             method="boes",
             verbose=False,
-            compute_t_map=True,
         )
 
         # Process with lesion batches of 3
@@ -213,7 +211,6 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
             connectome_name="test_float32_connectome",
             method="boes",
             verbose=False,
-            compute_t_map=False,
         )
 
         results = batch_process(
@@ -251,7 +248,6 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
             connectome_name="test_tstat_connectome",
             method="boes",
             verbose=False,
-            compute_t_map=True,
             t_threshold=2.5,
         )
 

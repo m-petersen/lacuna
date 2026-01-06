@@ -358,7 +358,6 @@ class TestPValueMapCorrectness:
         try:
             fnm = FunctionalNetworkMapping(
                 connectome_name="test_pvalue_correctness",
-                compute_t_map=True,
                 compute_p_map=True,
                 fdr_alpha=None,
                 return_in_input_space=False,
@@ -778,7 +777,6 @@ class TestBatchModePValueMaps:
         try:
             fnm = FunctionalNetworkMapping(
                 connectome_name="test_batch_pmap_correct",
-                compute_t_map=True,
                 compute_p_map=True,
                 fdr_alpha=None,  # Disable FDR to test p-value only
                 return_in_input_space=False,

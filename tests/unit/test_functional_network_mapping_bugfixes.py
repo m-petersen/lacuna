@@ -149,7 +149,7 @@ def test_both_fixes_together(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_both_fixes", method="boes", verbose=False, compute_t_map=False
+            connectome_name="test_bug_both_fixes", method="boes", verbose=False
         )
 
         # Create a dummy mask
@@ -242,7 +242,6 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
             connectome_name="test_bug_aggregate",
             method="boes",
             verbose=False,
-            compute_t_map=True,
             t_threshold=2.0,
         )
 
@@ -277,8 +276,8 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
             flnm_results["rmap"].data, nib.Nifti1Image
         ), "correlation_map.data should be NIfTI image"
 
-        # Since compute_t_map=True, these should also be present
-        assert "tmap" in flnm_results, "t_map should be present when compute_t_map=True"
+        # t_map is always computed
+        assert "tmap" in flnm_results, "t_map should always be present"
         assert isinstance(flnm_results["tmap"], VoxelMap), "t_map should be VoxelMap"
         assert (
             "tthresholdmap" in flnm_results

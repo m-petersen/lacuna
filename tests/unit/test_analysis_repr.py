@@ -93,7 +93,6 @@ class TestFunctionalNetworkMappingRepr:
                 connectome_name="test_repr_all_connectome",
                 method="pini",
                 pini_percentile=30,
-                compute_t_map=True,
                 t_threshold=2.5,
             )
 
@@ -101,7 +100,6 @@ class TestFunctionalNetworkMappingRepr:
 
             assert "method='pini'" in repr_str
             assert "pini_percentile=30" in repr_str
-            assert "compute_t_map=True" in repr_str
             assert "t_threshold=2.5" in repr_str
         finally:
             if registered:
@@ -181,7 +179,6 @@ class TestFunctionalNetworkMappingRepr:
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_str_connectome",
                 method="boes",
-                compute_t_map=True,
                 t_threshold=2.0,
             )
 
@@ -191,7 +188,6 @@ class TestFunctionalNetworkMappingRepr:
             assert "Configuration:" in str_output
             assert "connectome_name: test_str_connectome" in str_output
             assert "method: boes" in str_output
-            assert "compute_t_map: True" in str_output
             assert "t_threshold: 2.0" in str_output
         finally:
             if registered:

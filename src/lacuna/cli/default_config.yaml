@@ -95,7 +95,6 @@ analyses:
   #   connectome: functional  # Reference to connectomes section
   #   method: boes  # "boes" (mean) or "pini" (PCA-based)
   #   pini_percentile: 20  # For PINI method only
-  #   compute_t_map: true  # Compute t-statistic map
   #   compute_p_map: true  # Compute p-value map (two-tailed)
   #   fdr_alpha: 0.05  # FDR correction alpha level (null to disable)
   #   # t_threshold: 9.0  # Optional threshold for binary mask
