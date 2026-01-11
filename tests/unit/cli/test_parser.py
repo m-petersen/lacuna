@@ -33,7 +33,14 @@ class TestBuildParser:
         parser = build_parser()
 
         with pytest.raises(SystemExit):
-            parser.parse_args(["/data/bids", "/output", "group"])
+            parser.parse_args(["/data/bids", "/output", "invalid"])
+
+    def test_parser_accepts_group_analysis_level(self, tmp_path):
+        """Test that parser accepts group analysis level."""
+        parser = build_parser()
+
+        args = parser.parse_args(["/data/bids", "/output", "group"])
+        assert args.analysis_level == "group"
 
     def test_parser_accepts_participant_label(self):
         """Test that parser accepts --participant-label."""
@@ -123,23 +130,23 @@ class TestBuildParser:
 
         assert args.nprocs == 8
 
-    def test_parser_accepts_work_dir(self):
-        """Test that parser accepts --work-dir."""
+    def test_parser_accepts_tmp_dir(self):
+        """Test that parser accepts --tmp-dir."""
         parser = build_parser()
 
         args = parser.parse_args(
-            ["/data/bids", "/output", "participant", "--work-dir", "/scratch/work"]
+            ["/data/bids", "/output", "participant", "--tmp-dir", "/scratch/tmp"]
         )
 
-        assert args.work_dir == Path("/scratch/work")
+        assert args.tmp_dir == Path("/scratch/tmp")
 
-    def test_parser_accepts_short_work_dir(self):
-        """Test that parser accepts -w for work-dir."""
+    def test_parser_accepts_short_tmp_dir(self):
+        """Test that parser accepts -w for tmp-dir."""
         parser = build_parser()
 
-        args = parser.parse_args(["/data/bids", "/output", "participant", "-w", "/scratch/work"])
+        args = parser.parse_args(["/data/bids", "/output", "participant", "-w", "/scratch/tmp"])
 
-        assert args.work_dir == Path("/scratch/work")
+        assert args.tmp_dir == Path("/scratch/tmp")
 
     def test_parser_accepts_verbose(self):
         """Test that parser accepts -v for verbosity."""
@@ -231,8 +238,8 @@ class TestComplexScenarios:
                 "Schaefer200",
                 "--nprocs",
                 "4",
-                "--work-dir",
-                "/scratch/work",
+                "--tmp-dir",
+                "/scratch/tmp",
                 "-vv",
             ]
         )
@@ -246,5 +253,5 @@ class TestComplexScenarios:
         assert args.structural_tdi == Path("/connectomes/dtor985_tdi.nii.gz")
         assert args.parcel_atlases == ["Schaefer100", "Schaefer200"]
         assert args.nprocs == 4
-        assert args.work_dir == Path("/scratch/work")
+        assert args.tmp_dir == Path("/scratch/tmp")
         assert args.verbose_count == 2

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from lacuna.core.data_types import ParcelData
 from lacuna.core.subject_data import SubjectData
+from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
     from lacuna.analysis.base import BaseAnalysis
@@ -141,10 +142,13 @@ class Pipeline:
 
         result = data
 
+        # Create logger for analysis section headers
+        logger = ConsoleLogger(verbose=verbose, width=70)
+
         for step in self._steps:
             # Run the analysis
             if verbose:
-                print(f"Running {step.name}...")
+                logger.section(f"Running {step.name}")
 
             result = step.analysis.run(result)
 

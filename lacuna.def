@@ -1,0 +1,129 @@
+# Lacuna Apptainer/Singularity Definition File
+# =============================================
+# Build a container for HPC environments with MRtrix3 and TemplateFlow
+#
+# Build from Docker (recommended):
+#   apptainer build lacuna.sif docker://lacuna:latest
+#
+# Build directly from this def file:
+#   apptainer build lacuna.sif lacuna.def
+#
+# Run:
+#   apptainer run lacuna.sif /data /output participant
+#   apptainer run --bind /scratch:/scratch lacuna.sif /data /output participant
+
+Bootstrap: docker
+From: continuumio/miniconda3:latest
+
+%labels
+    Author Lacuna Development Team
+    Version 1.0
+    Description Lesion Network Mapping Analysis for HPC
+
+%help
+    Lacuna - Lesion Network Mapping Analysis
+    ========================================
+    
+    This container provides the lacuna package with all dependencies:
+    - MRtrix3 (installed via conda)
+    - TemplateFlow templates and transforms (pre-fetched for offline use)
+    - All Python dependencies
+    
+    Usage:
+        apptainer run lacuna.sif <bids_dir> <output_dir> <analysis_level> [options]
+        
+        # Analyze a BIDS dataset
+        apptainer run lacuna.sif /data /output participant
+        
+        # With custom config
+        apptainer run lacuna.sif /data /output participant --config /config/custom.yaml
+        
+        # With bind mounts for scratch space
+        apptainer run --bind /scratch:/scratch lacuna.sif /data /output participant
+    
+    For more information: https://github.com/lacuna/lacuna
+
+%environment
+    export PATH="/opt/conda/bin:${PATH}"
+    export LD_LIBRARY_PATH="/opt/conda/lib:${LD_LIBRARY_PATH}"
+    export TEMPLATEFLOW_HOME="/templateflow"
+    export LACUNA_TMP_DIR="/tmp"
+    export HOME="/home/lacuna"
+
+%post
+    # Install MRtrix3 via conda
+    conda install -y -c conda-forge -c mrtrix3 mrtrix3 libstdcxx-ng
+    conda clean -afy
+    
+    # Create directories
+    mkdir -p /data /output /work /scratch /connectomes /templateflow
+    chmod a+rwx /data /output /work /scratch /connectomes /templateflow
+    
+    # Install templateflow and fetch templates + transforms
+    pip install --no-cache-dir templateflow
+    
+    export TEMPLATEFLOW_HOME="/templateflow"
+    python -c "
+import templateflow.api as tf
+
+# MNI152NLin6Asym (FSL-compatible) - templates
+tf.get('MNI152NLin6Asym', resolution=1, desc=None, suffix='T1w')
+tf.get('MNI152NLin6Asym', resolution=2, desc=None, suffix='T1w')
+tf.get('MNI152NLin6Asym', resolution=1, desc='brain', suffix='mask')
+tf.get('MNI152NLin6Asym', resolution=2, desc='brain', suffix='mask')
+
+# MNI152NLin2009cAsym (fMRIPrep/QSIPrep default) - templates
+tf.get('MNI152NLin2009cAsym', resolution=1, desc=None, suffix='T1w')
+tf.get('MNI152NLin2009cAsym', resolution=2, desc=None, suffix='T1w')
+tf.get('MNI152NLin2009cAsym', resolution=1, desc='brain', suffix='mask')
+tf.get('MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')
+
+# Transforms between spaces (all modes and resolutions)
+for space in ['MNI152NLin6Asym', 'MNI152NLin2009cAsym']:
+    for mode in ['image', 'ras']:
+        for ext in ['.h5']:
+            try:
+                tf.get(space, mode=mode, suffix='xfm', extension=ext)
+            except Exception:
+                pass  # Some combinations may not exist
+
+# Direct transform fetches
+tf.get('MNI152NLin6Asym', suffix='xfm', extension='.h5')
+tf.get('MNI152NLin2009cAsym', suffix='xfm', extension='.h5')
+
+print('TemplateFlow templates and transforms fetched successfully')
+"
+
+%files
+    # Copy package files during build
+    pyproject.toml /app/pyproject.toml
+    src /app/src
+
+%post
+    # Install lacuna package
+    cd /app
+    pip install --no-cache-dir .
+    
+    # Verify installation
+    lacuna --version
+
+%runscript
+    exec lacuna "$@"
+
+%test
+    # Verify MRtrix3 (conda installation)
+    mrconvert --version
+    tckinfo --version
+    
+    # Verify lacuna
+    lacuna --version
+    
+    # Verify templates and transforms are present
+    python -c "
+import os
+from pathlib import Path
+tf_home = Path('/templateflow')
+assert (tf_home / 'tpl-MNI152NLin6Asym').exists(), 'MNI152NLin6Asym not found'
+assert (tf_home / 'tpl-MNI152NLin2009cAsym').exists(), 'MNI152NLin2009cAsym not found'
+print('All tests passed!')
+"

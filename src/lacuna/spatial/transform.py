@@ -1,6 +1,7 @@
 """Transformation strategies for spatial coordinate space conversions."""
 
 import logging
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
@@ -196,14 +197,21 @@ class TransformationStrategy:
             f"Resampling: {img.shape} @ {current_res}mm -> {target_shape} @ {target_res}mm"
         )
 
-        return resample_img(
-            img,
-            target_affine=target_affine,
-            target_shape=target_shape,
-            interpolation=interp_str,
-            force_resample=True,
-            copy_header=True,
-        )
+        # Suppress "Non-finite values detected" warning from nilearn
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Non-finite values detected",
+                category=UserWarning,
+            )
+            return resample_img(
+                img,
+                target_affine=target_affine,
+                target_shape=target_shape,
+                interpolation=interp_str,
+                force_resample=True,
+                copy_header=True,
+            )
 
     def apply_transformation(
         self,
@@ -322,28 +330,34 @@ class TransformationStrategy:
                     vol_data = img_data[..., vol_idx]
                     vol_img = nib.Nifti1Image(vol_data, img.affine, img.header)
 
-                    # Transform this volume
-                    try:
-                        transformed_vol = transform.apply(
-                            vol_img, order=self._get_interpolation_order(interp_method)
+                    # Transform this volume (suppress non-finite warnings from joblib)
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore",
+                            message="Non-finite values detected",
+                            category=UserWarning,
                         )
-                    except RuntimeError as e:
-                        if "asyncio.run() cannot be called from a running event loop" in str(e):
-                            # We're in Jupyter - use nest_asyncio
-                            try:
-                                import nest_asyncio
+                        try:
+                            transformed_vol = transform.apply(
+                                vol_img, order=self._get_interpolation_order(interp_method)
+                            )
+                        except RuntimeError as e:
+                            if "asyncio.run() cannot be called from a running event loop" in str(e):
+                                # We're in Jupyter - use nest_asyncio
+                                try:
+                                    import nest_asyncio
 
-                                nest_asyncio.apply()
-                                transformed_vol = transform.apply(
-                                    vol_img, order=self._get_interpolation_order(interp_method)
-                                )
-                            except ImportError:
-                                raise RuntimeError(
-                                    "Running spatial transformations in Jupyter notebooks requires nest_asyncio. "
-                                    "Install with: pip install nest-asyncio"
-                                ) from e
-                        else:
-                            raise
+                                    nest_asyncio.apply()
+                                    transformed_vol = transform.apply(
+                                        vol_img, order=self._get_interpolation_order(interp_method)
+                                    )
+                                except ImportError:
+                                    raise RuntimeError(
+                                        "Running spatial transformations in Jupyter notebooks requires nest_asyncio. "
+                                        "Install with: pip install nest-asyncio"
+                                    ) from e
+                            else:
+                                raise
 
                     transformed_volumes.append(transformed_vol.get_fdata())
 
@@ -372,25 +386,34 @@ class TransformationStrategy:
             f"to {target.identifier}@{target.resolution}mm (shape: {img.shape})"
         )
 
-        try:
-            transformed = transform.apply(img, order=self._get_interpolation_order(interp_method))
-        except RuntimeError as e:
-            if "asyncio.run() cannot be called from a running event loop" in str(e):
-                # We're in a Jupyter notebook - use nest_asyncio to allow nested event loops
-                try:
-                    import nest_asyncio
+        # Suppress non-finite values warning from joblib/nilearn
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Non-finite values detected",
+                category=UserWarning,
+            )
+            try:
+                transformed = transform.apply(
+                    img, order=self._get_interpolation_order(interp_method)
+                )
+            except RuntimeError as e:
+                if "asyncio.run() cannot be called from a running event loop" in str(e):
+                    # We're in a Jupyter notebook - use nest_asyncio to allow nested event loops
+                    try:
+                        import nest_asyncio
 
-                    nest_asyncio.apply()
-                    transformed = transform.apply(
-                        img, order=self._get_interpolation_order(interp_method)
-                    )
-                except ImportError:
-                    raise RuntimeError(
-                        "Running spatial transformations in Jupyter notebooks requires nest_asyncio. "
-                        "Install with: pip install nest-asyncio"
-                    ) from e
-            else:
-                raise
+                        nest_asyncio.apply()
+                        transformed = transform.apply(
+                            img, order=self._get_interpolation_order(interp_method)
+                        )
+                    except ImportError:
+                        raise RuntimeError(
+                            "Running spatial transformations in Jupyter notebooks requires nest_asyncio. "
+                            "Install with: pip install nest-asyncio"
+                        ) from e
+                else:
+                    raise
 
         logger.info(
             f"Transformation complete. Output shape: {transformed.shape}, "
@@ -549,7 +572,7 @@ def transform_image(
         # Select interpolation method for logging
         interp_method = strategy.select_interpolation(img, interpolation)
         logger.info(
-            f"Transforming {image_desc}: "
+            f"Warping {image_desc} to reference: "
             f"{source_space_obj.identifier}@{source_space_obj.resolution}mm → "
             f"{target_space_obj.identifier}@{target_space_obj.resolution}mm "
             f"(interpolation: {interp_method.value})"

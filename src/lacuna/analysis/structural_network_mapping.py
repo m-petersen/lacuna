@@ -22,6 +22,7 @@ from lacuna.assets.connectomes import (
 from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.core.data_types import (
     ConnectivityMatrix,
+    ParcelData,
     ScalarMetric,
     Tractogram,
     VoxelMap,
@@ -79,8 +80,9 @@ class StructuralNetworkMapping(BaseAnalysis):
     parcellation_name : str, optional
         Name of registered atlas for parcellated connectivity matrices.
         Use list_parcellations() to see available atlases.
-    compute_lesioned_matrix : bool, default=False
-        If True and parcellation_name provided, compute lesioned connectivity matrix.
+    compute_disconnectivity_matrix : bool, default=False
+        If True and parcellation_name provided, compute disconnectivity matrices
+        including per-ROI disconnection percentages.
     output_resolution : {1, 2}, default=2
         Output resolution in mm (must match connectome resolution).
     cache_tdi : bool, default=True
@@ -95,6 +97,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         If True, checks for MRtrix3 availability.
     verbose : bool, default=True
         If True, print progress messages. If False, run silently.
+    show_mrtrix_output : bool, default=False
+        If True, display MRtrix3 command outputs. If False, suppress verbose
+        MRtrix3 messages for cleaner output.
 
     Raises
     ------
@@ -183,7 +188,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self,
         connectome_name: str,
         parcellation_name: str | None = None,
-        compute_lesioned_matrix: bool = False,
+        compute_disconnectivity_matrix: bool = False,
         output_resolution: Literal[1, 2] = 2,
         cache_tdi: bool = True,
         n_jobs: int = 1,
@@ -191,6 +196,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         load_to_memory: bool = True,
         check_dependencies: bool = True,
         verbose: bool = False,
+        show_mrtrix_output: bool = False,
         return_in_input_space: bool = True,
     ):
         """Initialize StructuralNetworkMapping analysis.
@@ -202,8 +208,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             Use list_structural_connectomes() to see available options.
         parcellation_name : str, optional
             Name of registered atlas for parcellated connectivity matrices.
-        compute_lesioned_matrix : bool, default=False
-            If True and parcellation_name provided, compute lesioned connectivity.
+        compute_disconnectivity_matrix : bool, default=False
+            If True and parcellation_name provided, compute disconnectivity matrices
+            including per-ROI disconnection percentages.
         output_resolution : {1, 2}, default=2
             Output resolution in mm (must match connectome resolution).
         cache_tdi : bool, default=True
@@ -218,6 +225,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             If True, checks for MRtrix3 availability.
         verbose : bool, default=True
             If True, print progress messages. If False, run silently.
+        show_mrtrix_output : bool, default=False
+            If True, display MRtrix3 command outputs. If False, suppress verbose
+            MRtrix3 messages for cleaner output.
         return_in_input_space : bool, default=True
             If True, transform VoxelMap outputs back to the original input mask space.
             If False, outputs remain in the connectome space.
@@ -257,12 +267,13 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Store analysis parameters
         self.parcellation_name = parcellation_name
-        self.compute_lesioned_matrix = compute_lesioned_matrix
+        self.compute_disconnectivity_matrix = compute_disconnectivity_matrix
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
         self.load_to_memory = load_to_memory
+        self.show_mrtrix_output = show_mrtrix_output
         self.return_in_input_space = return_in_input_space
 
         # Target space matches tractogram space, resolution from output_resolution
@@ -322,7 +333,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             template=self.template,
             output_path=output_path,
             n_jobs=self.n_jobs,
-            verbose=self.verbose,
+            verbose=self.show_mrtrix_output,
         )
 
     def _compute_and_cache_tdi(self, cache_path: Path) -> None:
@@ -568,8 +579,8 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Get subject ID for informative output
         subject_id = mask_data.metadata.get("subject_id", "unknown")
 
-        # SubjectData header
-        self.logger.section(f"PROCESSING: {subject_id}")
+        # Log analysis start
+        self.logger.info("Filtering tractogram by mask...")
 
         # Create temporary directory for intermediate files
         temp_dir_path = get_temp_dir(prefix=f"slnm_{subject_id}_")
@@ -586,10 +597,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                 output_path=lesion_tck_path,
                 n_jobs=self.n_jobs,
                 force=True,
-                verbose=self.verbose,
+                verbose=self.show_mrtrix_output,
             )
+            self.logger.success("Tractogram filtered")
 
             # Step 2: Compute TDI from lesion-filtered tractogram
+            self.logger.info("Computing track-density image (TDI)...")
             # Use anatomical template to define output grid
             lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
             compute_tdi_map(
@@ -598,17 +611,18 @@ class StructuralNetworkMapping(BaseAnalysis):
                 output_path=lesion_tdi_path,
                 n_jobs=self.n_jobs,
                 force=True,
-                verbose=self.verbose,
+                verbose=self.show_mrtrix_output,
             )
 
             # Step 3: Compute disconnection map
+            self.logger.info("Computing disconnection map...")
             disconn_map_path = temp_dir_path / "disconnection_map.nii.gz"
             compute_disconnection_map(
                 lesion_tdi=lesion_tdi_path,
                 whole_brain_tdi=self.whole_brain_tdi,
                 output_path=disconn_map_path,
                 force=True,
-                verbose=self.verbose,
+                verbose=self.show_mrtrix_output,
             )
 
             # Load results
@@ -733,7 +747,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # Optional: Compute parcellated connectivity matrices if atlas provided
             if self._parcellation_resolved is not None:
-                self.logger.subsection("Computing Connectivity Matrices")
+                self.logger.info("Computing connectivity matrices...")
                 connectivity_results = self._compute_connectivity_matrices(
                     mask_data=mask_data,
                     lesion_tck_path=lesion_tck_path,
@@ -747,6 +761,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             if self.return_in_input_space:
                 results = self._transform_results_to_input_space(results, mask_data)
 
+            self.logger.success(f"Analysis complete ({len(results)} results)")
             return results
 
         finally:
@@ -789,7 +804,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             - 'lesion_connectivity_matrix': ConnectivityMatrixResult
             - 'disconnectivity_percent': ConnectivityMatrixResult
             - 'full_connectivity_matrix': ConnectivityMatrixResult
-            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_lesioned_matrix=True)
+            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_disconnectivity_matrix=True)
+            - 'roi_disconnection': ParcelData (if compute_disconnectivity_matrix=True)
             - 'matrix_statistics': MiscResult
         """
 
@@ -824,7 +840,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Step 4: Optional - compute lesioned (intact) connectivity
         lesioned_matrix = None
-        if self.compute_lesioned_matrix:
+        if self.compute_disconnectivity_matrix:
             self.logger.info("Computing lesioned (intact) connectivity matrix", indent_level=1)
 
             # Save lesion mask temporarily for tckedit -exclude
@@ -843,7 +859,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 str(self.n_jobs),
                 "-force",
             ]
-            run_mrtrix_command(command, verbose=self.verbose)
+            run_mrtrix_command(command, verbose=self.show_mrtrix_output)
 
             # Compute lesioned connectivity matrix
             lesioned_matrix = self._compute_connectivity_matrix(
@@ -923,6 +939,38 @@ class StructuralNetworkMapping(BaseAnalysis):
             )
             results["lesioned_connectivity_matrix"] = lesioned_result
 
+            # Compute per-ROI disconnection percentage
+            # For each ROI: (streamlines through mask connecting ROI) / (all streamlines connecting ROI)
+            # Sum rows to get total streamlines per ROI (row sum = degree weighted by streamline count)
+            full_roi_streamlines = np.sum(full_matrix, axis=1)
+            lesion_roi_streamlines = np.sum(lesion_matrix, axis=1)
+
+            with np.errstate(divide="ignore", invalid="ignore"):
+                roi_disconnection_pct = (lesion_roi_streamlines / full_roi_streamlines) * 100
+
+            # Handle division by zero
+            roi_disconnection_pct = np.nan_to_num(
+                roi_disconnection_pct, nan=0.0, posinf=0.0, neginf=0.0
+            )
+
+            # Create ParcelData with per-ROI disconnection percentages
+            # Convert array to dict mapping region labels to values
+            roi_disconnection_data = {
+                label: float(roi_disconnection_pct[i]) for i, label in enumerate(atlas_labels)
+            }
+            roi_disconnection_result = ParcelData(
+                name="roi_disconnection",
+                data=roi_disconnection_data,
+                region_labels=atlas_labels,
+                aggregation_method="percent",
+                metadata={
+                    "atlas": self.parcellation_name,
+                    "description": "Percentage of streamlines disconnected per ROI",
+                    "unit": "percent",
+                },
+            )
+            results["roi_disconnection"] = roi_disconnection_result
+
         # MiscResult for matrix statistics
         stats_result = ScalarMetric(
             name="matrix_statistics",
@@ -971,7 +1019,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "-force",
             ]
 
-            run_mrtrix_command(command, verbose=self.verbose)
+            run_mrtrix_command(command, verbose=self.show_mrtrix_output)
 
             # Load matrix
             matrix = np.loadtxt(output_csv, delimiter=",")
@@ -1058,11 +1106,12 @@ class StructuralNetworkMapping(BaseAnalysis):
         return {
             "connectome_name": self.connectome_name,
             "parcellation_name": str(self.parcellation_name) if self.parcellation_name else None,
-            "compute_lesioned_matrix": self.compute_lesioned_matrix,
+            "compute_disconnectivity_matrix": self.compute_disconnectivity_matrix,
             "output_resolution": self.output_resolution,
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
             "load_to_memory": self.load_to_memory,
+            "show_mrtrix_output": self.show_mrtrix_output,
             "return_in_input_space": self.return_in_input_space,
             "verbose": self.verbose,
         }
@@ -1124,13 +1173,20 @@ class StructuralNetworkMapping(BaseAnalysis):
             from lacuna.core.data_types import VoxelMap
 
             if isinstance(result, VoxelMap):
+                # Auto-detect interpolation method based on data type
+                # Use nearest for binary maps (thresholdmaps), linear for continuous
+                data = result.data.get_fdata()
+                unique_vals = np.unique(data[~np.isnan(data)])
+                is_binary = len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1})
+                interpolation = "nearest" if is_binary else "linear"
+
                 # Transform the image
                 transformed_img = transform_image(
                     img=result.data,
                     source_space=self.TARGET_SPACE,
                     target_space=target_space,
                     source_resolution=int(self.output_resolution),
-                    interpolation="linear",
+                    interpolation=interpolation,
                     verbose=self.verbose,
                 )
 

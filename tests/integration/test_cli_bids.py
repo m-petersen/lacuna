@@ -70,11 +70,11 @@ def output_dir(tmp_path):
 
 
 @pytest.fixture
-def work_dir(tmp_path):
-    """Create a work directory."""
-    work = tmp_path / "work"
-    work.mkdir()
-    return work
+def tmp_dir(tmp_path):
+    """Create a tmp directory."""
+    tmp = tmp_path / "tmp"
+    tmp.mkdir()
+    return tmp
 
 
 class TestCLIWorkflow:
@@ -149,7 +149,7 @@ class TestCLIModuleEntry:
 class TestCLIWithMockedAnalysis:
     """Tests for CLI with mocked analysis to avoid heavy computation."""
 
-    def test_cli_creates_output_directory(self, minimal_bids_dataset, output_dir, work_dir):
+    def test_cli_creates_output_directory(self, minimal_bids_dataset, output_dir, tmp_dir):
         """Test that CLI creates output directory."""
         from lacuna.cli import main
 
@@ -160,15 +160,15 @@ class TestCLIWithMockedAnalysis:
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "participant",
-                "--work-dir",
-                str(work_dir),
+                "--tmp-dir",
+                str(tmp_dir),
             ]
         )
 
         # Even if analysis fails, output dir should be created
         assert output_dir.exists()
 
-    def test_cli_respects_participant_label(self, minimal_bids_dataset, output_dir, work_dir):
+    def test_cli_respects_participant_label(self, minimal_bids_dataset, output_dir, tmp_dir):
         """Test that CLI respects --participant-label filtering."""
         from lacuna.cli import main
 
@@ -180,14 +180,14 @@ class TestCLIWithMockedAnalysis:
                 "participant",
                 "--participant-label",
                 "001",
-                "--work-dir",
-                str(work_dir),
+                "--tmp-dir",
+                str(tmp_dir),
             ]
         )
 
         # May fail at analysis stage but args should be parsed
 
-    def test_cli_verbose_flag(self, minimal_bids_dataset, output_dir, work_dir):
+    def test_cli_verbose_flag(self, minimal_bids_dataset, output_dir, tmp_dir):
         """Test that CLI accepts verbosity flags."""
         from lacuna.cli.parser import build_parser
 
@@ -208,7 +208,7 @@ class TestCLIWithMockedAnalysis:
 class TestCLIConfiguration:
     """Tests for CLI configuration from command-line arguments."""
 
-    def test_config_from_args(self, minimal_bids_dataset, output_dir, work_dir):
+    def test_config_from_args(self, minimal_bids_dataset, output_dir, tmp_dir):
         """Test that CLIConfig is created correctly from args."""
         from lacuna.cli.config import CLIConfig
         from lacuna.cli.parser import build_parser
@@ -219,8 +219,8 @@ class TestCLIConfiguration:
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "participant",
-                "--work-dir",
-                str(work_dir),
+                "--tmp-dir",
+                str(tmp_dir),
                 "--nprocs",
                 "4",
             ]
@@ -230,7 +230,7 @@ class TestCLIConfiguration:
 
         assert config.bids_dir == minimal_bids_dataset
         assert config.output_dir == output_dir
-        assert config.work_dir == work_dir
+        assert config.tmp_dir == tmp_dir
         assert config.n_procs == 4
 
     def test_config_validates_paths(self, tmp_path, output_dir):

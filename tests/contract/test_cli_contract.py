@@ -104,7 +104,7 @@ class TestCLIContract:
         assert result.returncode == 0
         # Check for performance options
         assert "--nprocs" in result.stdout
-        assert "--work-dir" in result.stdout
+        assert "--tmp-dir" in result.stdout
 
 
 class TestCLIMainFunction:

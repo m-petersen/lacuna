@@ -96,7 +96,7 @@ class TestCLIConfigFromArgs:
             structural_connectome=None,
             parcel_atlases=["Schaefer100"],
             nprocs=4,
-            work_dir=Path("work"),
+            tmp_dir=Path("tmp"),
             verbose_count=1,
         )
 
@@ -258,24 +258,24 @@ class TestCLIConfigValidation:
 class TestEnvironmentVariables:
     """Tests for environment variable handling."""
 
-    def test_work_dir_from_env_var(self, tmp_path, monkeypatch):
-        """Test that work_dir defaults from LACUNA_WORK_DIR env var."""
+    def test_tmp_dir_from_env_var(self, tmp_path, monkeypatch):
+        """Test that tmp_dir defaults from LACUNA_TMP_DIR env var."""
         from lacuna.cli.parser import build_parser
 
-        work_path = tmp_path / "custom_work"
-        monkeypatch.setenv("LACUNA_WORK_DIR", str(work_path))
+        tmp_dir_path = tmp_path / "custom_tmp"
+        monkeypatch.setenv("LACUNA_TMP_DIR", str(tmp_dir_path))
 
         parser = build_parser()
         args = parser.parse_args([str(tmp_path), str(tmp_path / "out"), "participant"])
 
-        assert args.work_dir == work_path
+        assert args.tmp_dir == tmp_dir_path
 
-    def test_work_dir_cli_overrides_env_var(self, tmp_path, monkeypatch):
-        """Test that --work-dir CLI flag overrides LACUNA_WORK_DIR."""
+    def test_tmp_dir_cli_overrides_env_var(self, tmp_path, monkeypatch):
+        """Test that --tmp-dir CLI flag overrides LACUNA_TMP_DIR."""
         from lacuna.cli.parser import build_parser
 
-        monkeypatch.setenv("LACUNA_WORK_DIR", "/from/env")
-        cli_work = tmp_path / "cli_work"
+        monkeypatch.setenv("LACUNA_TMP_DIR", "/from/env")
+        cli_tmp = tmp_path / "cli_tmp"
 
         parser = build_parser()
         args = parser.parse_args(
@@ -283,21 +283,21 @@ class TestEnvironmentVariables:
                 str(tmp_path),
                 str(tmp_path / "out"),
                 "participant",
-                "--work-dir",
-                str(cli_work),
+                "--tmp-dir",
+                str(cli_tmp),
             ]
         )
 
-        assert args.work_dir == cli_work
+        assert args.tmp_dir == cli_tmp
 
-    def test_work_dir_defaults_to_local_work(self, tmp_path, monkeypatch):
-        """Test that work_dir defaults to './work' when no env var."""
+    def test_tmp_dir_defaults_to_local_tmp(self, tmp_path, monkeypatch):
+        """Test that tmp_dir defaults to './tmp' when no env var."""
         from lacuna.cli.parser import build_parser
 
         # Ensure env var is not set
-        monkeypatch.delenv("LACUNA_WORK_DIR", raising=False)
+        monkeypatch.delenv("LACUNA_TMP_DIR", raising=False)
 
         parser = build_parser()
         args = parser.parse_args([str(tmp_path), str(tmp_path / "out"), "participant"])
 
-        assert args.work_dir == Path("work")
+        assert args.tmp_dir == Path("tmp")

@@ -98,7 +98,7 @@ class TestStructuralNetworkMappingIntegration:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
-            compute_lesioned_matrix=False,
+            compute_disconnectivity_matrix=False,
             n_jobs=2,
             verbose=False,
         )
@@ -134,16 +134,16 @@ class TestStructuralNetworkMappingIntegration:
         assert np.all(disconn_pct >= 0)
         assert np.all(disconn_pct <= 100)
 
-        # Should NOT have lesioned matrix (compute_lesioned_matrix=False)
+        # Should NOT have lesioned matrix (compute_disconnectivity_matrix=False)
         assert result.metadata.get("lesioned_connectivity_matrix") is None
 
     def test_analysis_with_lesioned_computation(self, test_data_paths):
-        """Test analysis with compute_lesioned_matrix=True."""
+        """Test analysis with compute_disconnectivity_matrix=True."""
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
-            compute_lesioned_matrix=True,
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -174,7 +174,7 @@ class TestStructuralNetworkMappingIntegration:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
-            compute_lesioned_matrix=True,
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -197,7 +197,7 @@ class TestStructuralNetworkMappingIntegration:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
-            compute_lesioned_matrix=True,
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )

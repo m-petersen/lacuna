@@ -372,9 +372,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
         n_batches = len(connectome_files)
 
         if n_batches == 1:
-            self.logger.subsection("Processing Connectome")
+            self.logger.info("Processing connectome...")
         else:
-            self.logger.subsection(f"Processing {n_batches} Connectome Batches")
+            self.logger.info(f"Processing {n_batches} connectome batches...")
 
         for batch_idx, batch_file in enumerate(connectome_files, 1):
             self.logger.progress(f"Loading {batch_file.name}", current=batch_idx, total=n_batches)
@@ -731,6 +731,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         if self.return_in_input_space:
             results = self._transform_results_to_input_space(results, mask_data)
 
+        self.logger.success(f"Analysis complete ({len(results)} results)")
         return results
 
     def _load_mask_info(self) -> tuple:
@@ -1046,8 +1047,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         >>> strategy = VectorizedStrategy()
         >>> results = strategy.execute(mask_data_list, analysis)
         """
-        self.logger.section("VECTORIZED BATCH PROCESSING")
-        self.logger.info(f"Processing {len(mask_data_list)} lesions together")
+        self.logger.info(f"Vectorized batch processing: {len(mask_data_list)} lesions together")
 
         # Validate all lesions first
         for mask_data in mask_data_list:
@@ -1090,7 +1090,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             )
 
         # Process through all connectome batches (VECTORIZED)
-        self.logger.subsection("Processing Connectome Batches")
+        self.logger.info("Processing connectome batches...")
 
         # Get number of voxels from first connectome batch
         with h5py.File(connectome_files[0], "r") as hf:
@@ -1175,7 +1175,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         )
 
         # Compute final statistics from aggregated values
-        self.logger.subsection("Aggregating Results")
+        self.logger.info("Aggregating results...")
         results = []
         for i, mask_info in enumerate(mask_batch):
             subject_id = mask_info["mask_data"].metadata.get("subject_id", f"mask_{i}")
@@ -1857,13 +1857,20 @@ class FunctionalNetworkMapping(BaseAnalysis):
         for key, result in results.items():
             # Only transform VoxelMap results
             if isinstance(result, VoxelMap):
+                # Auto-detect interpolation method based on data type
+                # Use nearest for binary maps (thresholdmaps), linear for continuous
+                data = result.data.get_fdata()
+                unique_vals = np.unique(data[~np.isnan(data)])
+                is_binary = len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1})
+                interpolation = "nearest" if is_binary else "linear"
+
                 # Transform the image
                 transformed_img = transform_image(
                     img=result.data,
                     source_space=self.output_space,
                     target_space=target_space,
                     source_resolution=int(self.output_resolution),
-                    interpolation="linear",
+                    interpolation=interpolation,
                     verbose=self.verbose,
                 )
 

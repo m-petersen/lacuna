@@ -88,6 +88,13 @@ def main(argv: list[str] | None = None) -> int:
     # Configure logging
     _setup_logging(config.log_level)
 
+    # Suppress nilearn warnings (they are verbose and not user-actionable)
+    import warnings
+
+    warnings.filterwarnings("ignore", module="nilearn")
+    warnings.filterwarnings("ignore", message=".*Non-finite values.*")
+    warnings.filterwarnings("ignore", message=".*Casting data from.*")
+
     logger.info("Lacuna CLI starting")
     logger.info(f"Input: {config.bids_dir}")
     logger.info(f"Output directory: {config.output_dir}")
@@ -168,19 +175,22 @@ def _run_workflow(config: CLIConfig) -> int:
     int
         Exit code.
     """
+    # Handle group-level analysis separately
+    if config.analysis_level == "group":
+        return _run_group_workflow(config)
+
     from lacuna import SubjectData
-    from lacuna.core.pipeline import analyze
-    from lacuna.io import export_bids_derivatives, load_bids_dataset
+    from lacuna.io import load_bids_dataset
 
     # Ensure output directory exists
     config.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Ensure work directory exists
-    config.work_dir.mkdir(parents=True, exist_ok=True)
+    # Ensure tmp directory exists
+    config.tmp_dir.mkdir(parents=True, exist_ok=True)
 
     # Set/log environment variables
-    os.environ.setdefault("LACUNA_WORK_DIR", str(config.work_dir.resolve()))
-    logger.debug(f"LACUNA_WORK_DIR: {os.environ.get('LACUNA_WORK_DIR')}")
+    os.environ.setdefault("LACUNA_TMP_DIR", str(config.tmp_dir.resolve()))
+    logger.debug(f"LACUNA_TMP_DIR: {os.environ.get('LACUNA_TMP_DIR')}")
 
     # Log TemplateFlow configuration (managed by templateflow library)
     templateflow_home = os.environ.get("TEMPLATEFLOW_HOME")
@@ -189,45 +199,7 @@ def _run_workflow(config: CLIConfig) -> int:
     else:
         logger.debug("TEMPLATEFLOW_HOME not set, using default location")
 
-    # Step 1: Load input data
-    logger.info("Loading input data...")
-    try:
-        if config.is_single_file:
-            # Single NIfTI file mode
-            subject_data = SubjectData.from_nifti(
-                config.bids_dir,
-                space=config.space,
-                resolution=config.resolution,
-                metadata={
-                    "subject_id": f"sub-{config.bids_dir.stem.split('_')[0]}",
-                },
-            )
-            subjects_list = [subject_data]
-            logger.info("Loaded single mask file")
-        else:
-            # BIDS dataset mode
-            # Build pattern from subject/session filters
-            pattern = _build_pattern(
-                config.participant_label,
-                config.session_id,
-                config.pattern,
-            )
-            subjects_dict = load_bids_dataset(
-                bids_root=config.bids_dir,
-                pattern=pattern,
-                space=config.space,
-                resolution=config.resolution,
-            )
-            if not subjects_dict:
-                logger.error("No subjects found in BIDS dataset")
-                return EXIT_BIDS_ERROR
-            subjects_list = list(subjects_dict.values())
-            logger.info(f"Loaded {len(subjects_list)} subject(s)")
-    except Exception as e:
-        logger.error(f"Failed to load input data: {e}")
-        return EXIT_BIDS_ERROR
-
-    # Step 2: Register connectomes
+    # Step 1: Register connectomes (do this once before processing subjects)
     # New format: config.connectomes (dict of named connectomes from YAML)
     # CLI-provided: config.functional_connectome, config.structural_connectome
     registered_connectomes: dict[str, str] = {}
@@ -251,7 +223,7 @@ def _run_workflow(config: CLIConfig) -> int:
         tdi_path=config.structural_tdi,
     )
 
-    # Step 3: Build analysis steps
+    # Step 2: Build analysis steps (do this once)
     steps = _build_analysis_steps(
         config,
         registered_connectomes=registered_connectomes,
@@ -264,42 +236,188 @@ def _run_workflow(config: CLIConfig) -> int:
     else:
         logger.info(f"Running analyses: {', '.join(steps.keys())}")
 
-    # Step 4: Run analyses
+    # Step 3: Process subjects
+    # For memory efficiency, process each subject individually when multiple
+    # subjects are specified: load → analyze → export → release memory
+    try:
+        if config.is_single_file:
+            # Single NIfTI file mode
+            subject_data = SubjectData.from_nifti(
+                config.bids_dir,
+                space=config.space,
+                resolution=config.resolution,
+                metadata={
+                    "subject_id": f"sub-{config.bids_dir.stem.split('_')[0]}",
+                },
+            )
+            result = _process_single_subject(subject_data, steps, config, export=True)
+            if result != EXIT_SUCCESS:
+                return result
+            logger.info("Loaded and processed single mask file")
+
+        elif config.participant_label and len(config.participant_label) > 1:
+            # Multiple subjects specified - process each individually for memory efficiency
+            logger.info(f"Processing {len(config.participant_label)} subject(s) sequentially...")
+            from tqdm import tqdm
+
+            from lacuna.io.bids import BidsError
+
+            processed_count = 0
+            for subject_id in tqdm(
+                config.participant_label,
+                desc="Processing subjects",
+                disable=not config.verbose,
+            ):
+                pattern = _build_pattern(
+                    [subject_id],  # Single subject
+                    config.session_id,
+                    config.pattern,
+                )
+                try:
+                    subjects_dict = load_bids_dataset(
+                        bids_root=config.bids_dir,
+                        pattern=pattern,
+                        space=config.space,
+                        resolution=config.resolution,
+                    )
+                    if not subjects_dict:
+                        logger.warning(f"No data found for subject: {subject_id}")
+                        continue
+
+                    # Process each session for this subject
+                    for subject_data in subjects_dict.values():
+                        result = _process_single_subject(subject_data, steps, config, export=True)
+                        if result != EXIT_SUCCESS:
+                            logger.warning(f"Failed to process {subject_id}, continuing...")
+                        else:
+                            processed_count += 1
+
+                except BidsError:
+                    logger.warning(f"No data found for subject: {subject_id}")
+
+            if processed_count == 0:
+                logger.error(f"No subjects matching {config.participant_label} found")
+                return EXIT_BIDS_ERROR
+
+            logger.info(f"Successfully processed {processed_count} subject(s)")
+
+        else:
+            # Single subject or all subjects - load all at once
+            pattern = _build_pattern(
+                config.participant_label,
+                config.session_id,
+                config.pattern,
+            )
+            subjects_dict = load_bids_dataset(
+                bids_root=config.bids_dir,
+                pattern=pattern,
+                space=config.space,
+                resolution=config.resolution,
+            )
+
+            if not subjects_dict:
+                logger.error("No subjects found in BIDS dataset")
+                return EXIT_BIDS_ERROR
+
+            # Filter by multiple sessions if specified
+            if config.session_id and len(config.session_id) > 1:
+                filtered_dict = {}
+                for key, value in subjects_dict.items():
+                    session_id = value.metadata.get("session_id", "")
+                    session_id_clean = session_id.replace("ses-", "")
+                    if session_id_clean in config.session_id:
+                        filtered_dict[key] = value
+                if not filtered_dict:
+                    logger.error(f"No sessions matching {config.session_id} found")
+                    return EXIT_BIDS_ERROR
+                subjects_dict = filtered_dict
+
+            subjects_list = list(subjects_dict.values())
+            logger.info(f"Loaded {len(subjects_list)} subject(s)")
+
+            # Process subjects - if many subjects, process individually
+            if len(subjects_list) > 1:
+                from tqdm import tqdm
+
+                for subject_data in tqdm(
+                    subjects_list,
+                    desc="Processing subjects",
+                    disable=not config.verbose,
+                ):
+                    result = _process_single_subject(subject_data, steps, config, export=True)
+                    if result != EXIT_SUCCESS:
+                        logger.warning("Subject processing failed, continuing...")
+            else:
+                # Single subject
+                result = _process_single_subject(subjects_list[0], steps, config, export=True)
+                if result != EXIT_SUCCESS:
+                    return result
+
+    except Exception as e:
+        logger.error(f"Failed to process data: {e}")
+        return EXIT_BIDS_ERROR
+
+    logger.info(f"Results saved to: {config.output_dir}")
+    logger.info("Lacuna CLI completed successfully")
+    return EXIT_SUCCESS
+
+
+def _process_single_subject(
+    subject_data,
+    steps: dict,
+    config: CLIConfig,
+    export: bool = True,
+) -> int:
+    """
+    Process a single subject: analyze and optionally export.
+
+    This function processes one subject at a time to minimize memory usage.
+    After export, results can be garbage collected.
+
+    Parameters
+    ----------
+    subject_data : SubjectData
+        Input subject data.
+    steps : dict
+        Analysis steps to run.
+    config : CLIConfig
+        Configuration.
+    export : bool
+        Whether to export results immediately.
+
+    Returns
+    -------
+    int
+        Exit code.
+    """
+    from lacuna.core.pipeline import analyze
+    from lacuna.io import export_bids_derivatives
+
     try:
         if steps:
-            results = analyze(
-                data=subjects_list if len(subjects_list) > 1 else subjects_list[0],
+            result = analyze(
+                data=subject_data,
                 steps=steps,
                 n_jobs=config.n_procs,
-                show_progress=True,
+                show_progress=False,  # Outer loop shows progress
                 verbose=config.verbose,
             )
-            # Ensure results is a list
-            if not isinstance(results, list):
-                results = [results]
         else:
-            # No analysis steps, just pass through the input
-            results = subjects_list
-    except Exception as e:
-        logger.error(f"Analysis failed: {e}")
-        return EXIT_ANALYSIS_ERROR
+            result = subject_data
 
-    # Step 5: Export results
-    logger.info("Exporting BIDS derivatives...")
-    try:
-        for result in results:
+        if export:
             export_bids_derivatives(
                 subject_data=result,
                 output_dir=config.output_dir,
                 overwrite=True,
             )
-    except Exception as e:
-        logger.error(f"Failed to export derivatives: {e}")
-        return EXIT_ANALYSIS_ERROR
 
-    logger.info(f"Results saved to: {config.output_dir}")
-    logger.info("Lacuna CLI completed successfully")
-    return EXIT_SUCCESS
+        return EXIT_SUCCESS
+
+    except Exception as e:
+        subject_id = subject_data.metadata.get("subject_id", "unknown")
+        logger.error(f"Failed to process {subject_id}: {e}")
+        return EXIT_ANALYSIS_ERROR
 
 
 def _build_pattern(
@@ -332,8 +450,9 @@ def _build_pattern(
         if len(subjects) == 1:
             pattern_parts.append(f"*sub-{subjects[0]}*")
         else:
-            # For multiple subjects, we'll use a simple pattern that matches any
-            # The load_bids_dataset will match all, but we could filter after
+            # Multiple subjects should be loaded individually by caller
+            # This branch is kept for backward compatibility but caller
+            # should iterate over subjects instead
             pattern_parts.append("*sub-*")
     else:
         pattern_parts.append("*")
@@ -705,6 +824,57 @@ def _setup_logging(level: int) -> None:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+
+def _run_group_workflow(config: "CLIConfig") -> int:
+    """
+    Run group-level analysis workflow.
+
+    Aggregates subject-level parcelstats TSV files into group-level DataFrames.
+
+    Parameters
+    ----------
+    config : CLIConfig
+        Validated configuration.
+
+    Returns
+    -------
+    int
+        Exit code.
+    """
+    from lacuna.io.bids import aggregate_parcelstats, BidsError
+
+    logger.info("Running group-level analysis")
+    logger.info(f"Scanning derivatives directory: {config.output_dir}")
+
+    try:
+        # Aggregate parcelstats files
+        created_files = aggregate_parcelstats(
+            derivatives_dir=config.output_dir,
+            output_dir=config.output_dir,
+            overwrite=config.overwrite,
+        )
+
+        if not created_files:
+            logger.warning("No parcelstats files found to aggregate")
+            return EXIT_SUCCESS
+
+        logger.info(f"Created {len(created_files)} group-level TSV file(s):")
+        for output_type, path in created_files.items():
+            logger.info(f"  - {path.name}")
+
+        return EXIT_SUCCESS
+
+    except BidsError as e:
+        logger.error(f"Group analysis failed: {e}")
+        return EXIT_ANALYSIS_ERROR
+    except Exception as e:
+        logger.error(f"Unexpected error during group analysis: {e}")
+        if config.verbose_count >= 2:
+            import traceback
+
+            traceback.print_exc()
+        return EXIT_GENERAL_ERROR
 
 
 if __name__ == "__main__":

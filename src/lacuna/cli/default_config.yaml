@@ -38,7 +38,6 @@ subjects: []
 # Empty list = process all sessions
 sessions: []
   # - "01"
-  # - "baseline"
 
 # Glob pattern to filter mask files
 # Examples: "*label-WMH*", "*label-lesion*", "*acuteinfarct*"
@@ -110,7 +109,8 @@ analyses:
   #   n_jobs: 1
   #   keep_intermediate: false
   #   # parcellation_name: Schaefer2018_100Parcels7Networks
-  #   # compute_lesioned_matrix: false
+  #   # compute_disconnectivity_matrix: false
+  #   # show_mrtrix_output: false
 
   # ParcelAggregation: Aggregate voxel-wise maps to parcellation ROIs
   # Uncomment to enable aggregation of network mapping outputs
@@ -136,8 +136,8 @@ analyses:
 # Number of parallel processes (-1 = all CPUs)
 n_jobs: 1
 
-# Working directory for intermediate files
-work_dir: null
+# Temporary directory for intermediate files
+tmp_dir: null
 
 # =============================================================================
 # LOGGING

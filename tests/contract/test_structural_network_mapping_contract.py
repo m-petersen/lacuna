@@ -356,17 +356,17 @@ def test_parcellation_accepts_bundled_name(temp_connectome):
 
 @pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
 @pytest.mark.requires_mrtrix
-def test_compute_lesioned_matrix_parameter(temp_connectome):
-    """Test that compute_lesioned_matrix parameter is available."""
+def test_compute_disconnectivity_matrix_parameter(temp_connectome):
+    """Test that compute_disconnectivity_matrix parameter is available."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    # Should have compute_lesioned_matrix parameter
+    # Should have compute_disconnectivity_matrix parameter
     analysis = StructuralNetworkMapping(
         connectome_name=temp_connectome,
         parcellation_name="Schaefer2018_100Parcels7Networks",
-        compute_lesioned_matrix=True,
+        compute_disconnectivity_matrix=True,
     )
-    assert analysis.compute_lesioned_matrix is True
+    assert analysis.compute_disconnectivity_matrix is True
 
 
 def test_results_include_connectivity_matrices_when_atlas_provided():
@@ -414,7 +414,7 @@ def test_matrix_statistics_structure():
         "most_affected_parcel",
     }
 
-    # When compute_lesioned_matrix=True, additional keys expected
+    # When compute_disconnectivity_matrix=True, additional keys expected
     expected_stats_with_lesioned = expected_stats_keys | {
         "lesioned_mean_degree",
         "connectivity_preservation_ratio",
@@ -430,17 +430,17 @@ def test_lesioned_connectivity_optional(temp_connectome):
     """Test that lesioned connectivity is only computed when requested."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    # Default: compute_lesioned_matrix=False
+    # Default: compute_disconnectivity_matrix=False
     analysis1 = StructuralNetworkMapping(
         connectome_name=temp_connectome,
         parcellation_name="Schaefer2018_100Parcels7Networks",
     )
-    assert analysis1.compute_lesioned_matrix is False
+    assert analysis1.compute_disconnectivity_matrix is False
 
-    # Explicit: compute_lesioned_matrix=True
+    # Explicit: compute_disconnectivity_matrix=True
     analysis2 = StructuralNetworkMapping(
         connectome_name=temp_connectome,
         parcellation_name="Schaefer2018_100Parcels7Networks",
-        compute_lesioned_matrix=True,
+        compute_disconnectivity_matrix=True,
     )
-    assert analysis2.compute_lesioned_matrix is True
+    assert analysis2.compute_disconnectivity_matrix is True

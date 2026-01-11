@@ -58,8 +58,11 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     )
     parser.add_argument(
         "analysis_level",
-        choices=["participant"],
-        help='Processing level (only "participant" supported)',
+        choices=["participant", "group"],
+        help=(
+            'Processing level: "participant" runs per-subject analysis, '
+            '"group" aggregates subject-level parcelstats into group TSV files'
+        ),
     )
 
     # Configuration file
@@ -169,15 +172,21 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     )
     g_perf.add_argument(
         "-w",
-        "--work-dir",
+        "--tmp-dir",
+        dest="tmp_dir",
         type=Path,
-        default=Path(os.getenv("LACUNA_WORK_DIR", "work")),
+        default=Path(os.getenv("LACUNA_TMP_DIR", "tmp")),
         metavar="PATH",
-        help="Working directory (default: $LACUNA_WORK_DIR or ./work)",
+        help="Temporary directory for intermediate files (default: $LACUNA_TMP_DIR or ./tmp)",
     )
 
     # Other Options
     g_other = parser.add_argument_group("Other options")
+    g_other.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing output files",
+    )
     g_other.add_argument(
         "--version",
         action="version",
@@ -377,8 +386,11 @@ def _add_bids_arguments(parser: ArgumentParser) -> None:
     )
     parser.add_argument(
         "analysis_level",
-        choices=["participant"],
-        help='Processing level (only "participant" supported)',
+        choices=["participant", "group"],
+        help=(
+            'Processing level: "participant" runs per-subject analysis, '
+            '"group" aggregates subject-level parcelstats into group TSV files'
+        ),
     )
 
     # Configuration file
@@ -488,15 +500,21 @@ def _add_bids_arguments(parser: ArgumentParser) -> None:
     )
     g_perf.add_argument(
         "-w",
-        "--work-dir",
+        "--tmp-dir",
+        dest="tmp_dir",
         type=Path,
-        default=Path(os.getenv("LACUNA_WORK_DIR", "work")),
+        default=Path(os.getenv("LACUNA_TMP_DIR", "tmp")),
         metavar="PATH",
-        help="Working directory (default: $LACUNA_WORK_DIR or ./work)",
+        help="Temporary directory for intermediate files (default: $LACUNA_TMP_DIR or ./tmp)",
     )
 
     # Other Options
     g_other = parser.add_argument_group("Other options")
+    g_other.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing output files",
+    )
     g_other.add_argument(
         "-v",
         "--verbose",

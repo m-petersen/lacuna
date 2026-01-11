@@ -254,25 +254,25 @@ class TestSplitAtlasName:
 class TestFormatBidsExportFilename:
     """Tests for format_bids_export_filename function."""
 
-    def test_simple_fnm_key_no_desc_prefix(self):
-        """FNM simple keys use fnm prefix without desc- entity."""
+    def test_simple_fnm_key_uses_desc_prefix(self):
+        """FNM simple keys use desc-fnm_maptype format."""
         result = format_bids_export_filename("rmap", "map")
-        assert result == "fnmrmap"  # No desc- prefix, no _stat suffix
+        assert result == "desc-fnm_rmap"
 
     def test_simple_fnm_key_with_underscore_converted(self):
-        """FNM keys with underscores are converted to lowercase with fnm prefix."""
+        """FNM keys with underscores are converted to lowercase with desc-fnm prefix."""
         result = format_bids_export_filename("correlation_map", "map")
-        assert result == "fnmcorrelationmap"  # underscore removed, fnm prefix, no _stat suffix
+        assert result == "desc-fnm_correlationmap"  # underscore removed, desc-fnm prefix
 
-    def test_simple_snm_key_no_desc_prefix(self):
-        """SNM simple keys use snm prefix without desc- entity."""
+    def test_simple_snm_key_uses_desc_prefix(self):
+        """SNM simple keys use desc-snm_maptype format."""
         result = format_bids_export_filename("disconnectionmap", "map")
-        assert result == "snmdisconnectionmap"  # No desc- prefix, no _stat suffix
+        assert result == "desc-snm_disconnectionmap"
 
-    def test_simple_key_desc_prefix_for_unknown(self):
-        """Unknown simple keys use desc- prefix."""
+    def test_simple_key_becomes_suffix_for_unknown(self):
+        """Unknown simple keys become the suffix directly (no desc- prefix)."""
         result = format_bids_export_filename("customoutput", "map")
-        assert result == "desc-customoutput"  # desc- prefix for unknown, no _stat suffix
+        assert result == "customoutput"  # becomes suffix directly, no desc- prefix
 
     def test_bids_key_with_redundant_desc_omitted(self):
         """Redundant desc (when it matches source) is omitted."""
@@ -314,13 +314,16 @@ class TestFormatBidsExportFilename:
         assert "atlas-tiansubcortex" in result
         assert "desc-3ts1" in result
 
-    def test_fnm_correlation_map_redundant(self):
-        """FNM correlation_map desc is redundant with fnm source."""
+    def test_fnm_parcelstats_includes_source_and_desc(self):
+        """FNM parcelstats includes source-fnm and desc to identify analysis and map."""
         result = format_bids_export_filename(
             "atlas-HCP1065_source-FunctionalNetworkMapping_desc-rmap", "values"
         )
-        assert result == "atlas-hcp1065_source-fnm_parcelstats"
-        assert "rmap" not in result
+        # For parcelstats, include source-fnm to identify the analysis
+        # and desc-rmap to identify the specific map being aggregated
+        assert result == "atlas-hcp1065_source-fnm_desc-rmap_parcelstats"
+        assert "source-fnm" in result
+        assert "desc-rmap" in result
 
     def test_suffix_mapping_values_to_parcelstats(self):
         """Internal 'values' suffix maps to BIDS 'parcelstats'."""
@@ -332,7 +335,8 @@ class TestFormatBidsExportFilename:
         result = format_bids_export_filename("test", "map")
         # VoxelMaps don't have _stat suffix
         assert not result.endswith("_stat")
-        assert result == "desc-test"
+        # Simple keys become the suffix directly (no desc- prefix)
+        assert result == "test"
 
     def test_suffix_mapping_connmatrix_unchanged(self):
         """Connmatrix suffix is unchanged (valid BIDS derivative)."""

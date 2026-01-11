@@ -16,12 +16,27 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from ..core.exceptions import LacunaError
 from ..core.keys import format_bids_export_filename
 from ..core.subject_data import SubjectData
 
 if TYPE_CHECKING:
     from ..core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
+
+
+class NumpyJSONEncoder(json.JSONEncoder):
+    """JSON encoder that handles numpy types."""
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
 
 
 class BidsError(LacunaError):
@@ -437,7 +452,7 @@ def export_voxelmap(
         sidecar["Metadata"] = voxelmap.metadata
 
     with open(sidecar_path, "w") as f:
-        json.dump(sidecar, f, indent=2)
+        json.dump(sidecar, f, indent=2, cls=NumpyJSONEncoder)
 
     return nifti_path
 
@@ -512,7 +527,7 @@ def export_parcel_data(
         sidecar["Metadata"] = parcel_data.metadata
 
     with open(sidecar_path, "w") as f:
-        json.dump(sidecar, f, indent=2)
+        json.dump(sidecar, f, indent=2, cls=NumpyJSONEncoder)
 
     return tsv_path
 
@@ -591,7 +606,7 @@ def export_connectivity_matrix(
         sidecar["Metadata"] = matrix.metadata
 
     with open(sidecar_path, "w") as f:
-        json.dump(sidecar, f, indent=2)
+        json.dump(sidecar, f, indent=2, cls=NumpyJSONEncoder)
 
     return tsv_path
 
@@ -1143,3 +1158,249 @@ def validate_bids_derivatives(
         raise BidsError(error_msg)
 
     return {"errors": errors, "warnings": warnings_list}
+
+
+def aggregate_parcelstats(
+    derivatives_dir: str | Path,
+    output_dir: str | Path | None = None,
+    pattern: str = "*_parcelstats.tsv",
+    overwrite: bool = False,
+) -> dict[str, Path]:
+    """
+    Aggregate subject-level parcelstats TSV files into group-level DataFrames.
+
+    Scans a BIDS derivatives directory for parcelstats TSV files and combines
+    them into single TSV files per output type, with each row representing a
+    subject and each column representing a brain region.
+
+    This is the "group" analysis level, similar to fMRIprep's group analysis.
+
+    Parameters
+    ----------
+    derivatives_dir : str or Path
+        Path to BIDS derivatives directory containing subject folders.
+    output_dir : str or Path, optional
+        Output directory for group-level TSV files. If None, uses
+        derivatives_dir root.
+    pattern : str, default="*_parcelstats.tsv"
+        Glob pattern to match parcelstats files.
+    overwrite : bool, default=False
+        Overwrite existing group-level files.
+
+    Returns
+    -------
+    dict[str, Path]
+        Dictionary mapping output type names to paths of created group TSV files.
+
+    Raises
+    ------
+    BidsError
+        If no parcelstats files are found or aggregation fails.
+
+    Examples
+    --------
+    >>> from lacuna.io.bids import aggregate_parcelstats
+    >>> # After running participant-level analysis
+    >>> group_files = aggregate_parcelstats("output/lacuna")
+    >>> print(group_files)
+    {'atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-rmap_parcelstats':
+     PosixPath('output/lacuna/group_atlas-schaefer2018_..._parcelstats.tsv')}
+
+    Notes
+    -----
+    The output TSV files have the following structure:
+    - First column: participant_id (e.g., sub-001)
+    - Second column: session_id (if present, e.g., ses-01)
+    - Third column: label (if present, e.g., acuteinfarct)
+    - Remaining columns: brain region names with their values
+
+    This enables direct loading into statistical analysis tools.
+    """
+    import pandas as pd
+
+    derivatives_dir = Path(derivatives_dir)
+    if not derivatives_dir.exists():
+        raise BidsError(f"Derivatives directory not found: {derivatives_dir}")
+
+    output_dir = Path(output_dir) if output_dir else derivatives_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Find all parcelstats files
+    parcelstats_files = list(derivatives_dir.rglob(pattern))
+
+    if not parcelstats_files:
+        raise BidsError(f"No parcelstats files found matching '{pattern}' in {derivatives_dir}")
+
+    # Group files by their output type (everything after label- entity)
+    # Example: sub-CAS001_ses-01_label-acuteinfarct_atlas-schaefer2018_..._parcelstats.tsv
+    # Output type: atlas-schaefer2018_..._parcelstats
+    file_groups: dict[str, list[tuple[Path, dict[str, str]]]] = {}
+
+    for tsv_file in parcelstats_files:
+        filename = tsv_file.name
+
+        # Parse BIDS entities from filename
+        entities = _parse_bids_filename(filename)
+
+        # Extract the output type (everything after participant/session/label entities)
+        # This is the part that should be consistent across subjects
+        output_type = _extract_output_type(filename)
+
+        if output_type not in file_groups:
+            file_groups[output_type] = []
+
+        file_groups[output_type].append((tsv_file, entities))
+
+    # Create group-level TSV for each output type
+    created_files: dict[str, Path] = {}
+
+    for output_type, files_with_entities in file_groups.items():
+        # Build output filename
+        group_filename = f"group_{output_type}.tsv"
+        group_path = output_dir / group_filename
+
+        if group_path.exists() and not overwrite:
+            # Skip existing files unless overwrite is True
+            created_files[output_type] = group_path
+            continue
+
+        # Collect data from all subjects
+        rows = []
+        for tsv_file, entities in files_with_entities:
+            try:
+                df = pd.read_csv(tsv_file, sep="\t")
+
+                # Pivot the data: region -> value becomes columns
+                if "region" in df.columns and "value" in df.columns:
+                    # Create a row dict with metadata + region values
+                    row_data = {
+                        "participant_id": entities.get("sub", "unknown"),
+                    }
+                    if "ses" in entities:
+                        row_data["session_id"] = entities["ses"]
+                    if "label" in entities:
+                        row_data["label"] = entities["label"]
+
+                    # Add all region values as columns
+                    for _, region_row in df.iterrows():
+                        region_name = region_row["region"]
+                        row_data[region_name] = region_row["value"]
+
+                    rows.append(row_data)
+            except Exception as e:
+                warnings.warn(f"Failed to read {tsv_file}: {e}")
+                continue
+
+        if not rows:
+            warnings.warn(f"No valid data for output type: {output_type}")
+            continue
+
+        # Create group DataFrame
+        group_df = pd.DataFrame(rows)
+
+        # Sort by participant_id, then session_id if present
+        sort_cols = ["participant_id"]
+        if "session_id" in group_df.columns:
+            sort_cols.append("session_id")
+        group_df = group_df.sort_values(sort_cols).reset_index(drop=True)
+
+        # Save group TSV
+        group_df.to_csv(group_path, sep="\t", index=False)
+
+        # Create sidecar JSON
+        sidecar_path = group_path.with_suffix(".json")
+        sidecar = {
+            "Description": f"Group-level aggregation of {output_type}",
+            "Sources": [str(f.relative_to(derivatives_dir)) for f, _ in files_with_entities],
+            "NumberOfSubjects": len(rows),
+            "Columns": {
+                "participant_id": "Subject identifier",
+            },
+        }
+        if "session_id" in group_df.columns:
+            sidecar["Columns"]["session_id"] = "Session identifier"
+        if "label" in group_df.columns:
+            sidecar["Columns"]["label"] = "Mask label (e.g., lesion type)"
+
+        # Add region columns description
+        region_cols = [c for c in group_df.columns if c not in ["participant_id", "session_id", "label"]]
+        if region_cols:
+            sidecar["Columns"]["<region_name>"] = "Value for each brain region"
+            sidecar["NumberOfRegions"] = len(region_cols)
+
+        with open(sidecar_path, "w") as f:
+            json.dump(sidecar, f, indent=2)
+
+        created_files[output_type] = group_path
+
+    return created_files
+
+
+def _parse_bids_filename(filename: str) -> dict[str, str]:
+    """
+    Parse BIDS entities from a filename.
+
+    Parameters
+    ----------
+    filename : str
+        BIDS filename (e.g., sub-001_ses-01_label-lesion_atlas-X_parcelstats.tsv)
+
+    Returns
+    -------
+    dict[str, str]
+        Dictionary of entity key-value pairs.
+    """
+    entities = {}
+
+    # Remove extension
+    name = filename
+    for ext in [".tsv", ".json", ".nii.gz", ".nii"]:
+        if name.endswith(ext):
+            name = name[: -len(ext)]
+            break
+
+    # Parse key-value pairs
+    parts = name.split("_")
+    for part in parts:
+        if "-" in part:
+            key, value = part.split("-", 1)
+            entities[key] = value
+
+    return entities
+
+
+def _extract_output_type(filename: str) -> str:
+    """
+    Extract the output type from a parcelstats filename.
+
+    Removes subject-specific entities (sub-, ses-, label-) to get the
+    consistent output type that should match across subjects.
+
+    Parameters
+    ----------
+    filename : str
+        BIDS filename
+
+    Returns
+    -------
+    str
+        Output type string (e.g., atlas-schaefer2018_desc-100parcels7networks_parcelstats)
+    """
+    # Remove extension
+    name = filename
+    for ext in [".tsv", ".json"]:
+        if name.endswith(ext):
+            name = name[: -len(ext)]
+            break
+
+    # Split into parts and filter out subject-specific entities
+    parts = name.split("_")
+    output_parts = []
+
+    for part in parts:
+        # Skip subject-specific entities
+        if part.startswith("sub-") or part.startswith("ses-") or part.startswith("label-"):
+            continue
+        output_parts.append(part)
+
+    return "_".join(output_parts)

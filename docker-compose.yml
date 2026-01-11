@@ -79,12 +79,12 @@ services:
     volumes:
       - ${BIDS_DIR:-./tests/fixtures/bids}:/data:ro
       - ${OUTPUT_DIR:-./output}:/output
-      - ${WORK_DIR:-./work}:/work
+      - ${TMP_DIR:-./tmp}:/tmp
       - ${CONNECTOME_DIR:-./connectomes}:/connectomes:ro
     environment:
       - TEMPLATEFLOW_HOME=/templateflow
-      - LACUNA_WORK_DIR=/work
+      - LACUNA_TMP_DIR=/tmp
     command: |
       /data /output participant
-      --work-dir /work
+      --tmp-dir /tmp
       -v

@@ -217,7 +217,7 @@ DESC_TO_SOURCE_MAPPING = {
     "inputmask": "inputmask",
     "maskimg": "inputmask",  # Legacy
     "mask_img": "inputmask",  # Legacy
-    # FNM outputs
+    # FNM outputs - correlation and derived maps
     "rmap": "fnm",
     "correlationmap": "fnm",  # Legacy alias
     "correlation_map": "fnm",  # Legacy alias
@@ -225,11 +225,36 @@ DESC_TO_SOURCE_MAPPING = {
     "z_map": "fnm",
     "tmap": "fnm",
     "t_map": "fnm",
-    # SNM outputs
+    # FNM outputs - p-value maps
+    "pmap": "fnm",
+    "p_map": "fnm",
+    "pfdrmap": "fnm",
+    "pfdr_map": "fnm",
+    # FNM outputs - threshold maps
+    "tthresholdmap": "fnm",
+    "t_threshold_map": "fnm",
+    "pfdrthresholdmap": "fnm",
+    "pfdr_threshold_map": "fnm",
+    # SNM outputs - maps
     "disconnectionmap": "snm",
     "disconnection_map": "snm",
     "streamlinecount": "snm",
     "streamline_count": "snm",
+    # SNM outputs - connectivity matrices
+    "lesionconnectivitymatrix": "snm",
+    "lesion_connectivity_matrix": "snm",
+    "lesionedconnectivitymatrix": "snm",
+    "lesioned_connectivity_matrix": "snm",
+    "fullconnectivitymatrix": "snm",
+    "full_connectivity_matrix": "snm",
+    "disconnectivitypercent": "snm",
+    "disconnectivity_percent": "snm",
+    # SNM outputs - parcel data
+    "roidisconnection": "snm",
+    "roi_disconnection": "snm",
+    # SNM outputs - metrics
+    "matrixstatistics": "snm",
+    "matrix_statistics": "snm",
 }
 
 # BIDS suffix mapping - map internal suffixes to BIDS-compliant suffixes
@@ -336,8 +361,9 @@ def format_bids_export_filename(
     1. Uses ``atlas-`` entity (BIDS standard)
     2. Splits atlas names on underscore: ``Schaefer2018_100Parcels7Networks`` becomes
        ``atlas-schaefer2018_desc-100parcels7networks``
-    3. Uses proper BIDS suffixes (``stats`` for tabular data, ``stat`` for maps)
-    4. For FNM/SNM VoxelMaps (no parcellation), uses format like ``fnmrmap_stat``
+    3. Uses proper BIDS suffixes (``parcelstats`` for tabular data)
+    4. For FNM/SNM VoxelMaps (no parcellation), uses format like ``desc-fnm_rmap``
+    5. For parcelstats, always includes desc to identify the map type
 
     Underscores in the output only separate BIDS key-value pairs.
 
@@ -367,10 +393,10 @@ def format_bids_export_filename(
     ...     "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap",
     ...     "values"
     ... )
-    'atlas-schaefer100_source-fnm_parcelstats'
+    'atlas-schaefer100_source-fnm_desc-rmap_parcelstats'
 
     >>> format_bids_export_filename("rmap", "map")
-    'fnmrmap'
+    'desc-fnm_rmap'
 
     >>> format_bids_export_filename(
     ...     "atlas-HCP1065_thr0p1_source-InputMask",
@@ -378,14 +404,14 @@ def format_bids_export_filename(
     ... )
     'atlas-hcp1065_desc-thr0p1_source-inputmask_parcelstats'
 
-    For FNM/SNM outputs without parcellation (VoxelMaps), the source is
-    prepended to the desc without the desc- prefix, and no suffix is added:
+    For FNM/SNM outputs without parcellation (VoxelMaps), the desc-{source}
+    is prepended to identify the analysis:
 
     >>> format_bids_export_filename("rmap", "map")
-    'fnmrmap'
+    'desc-fnm_rmap'
 
     >>> format_bids_export_filename("disconnection_map", "map")
-    'snmdisconnectionmap'
+    'desc-snm_disconnectionmap'
     """
     # Convert internal suffix to BIDS suffix (may be empty for VoxelMaps)
     bids_suffix = BIDS_SUFFIX_MAPPING.get(suffix, suffix)
@@ -406,16 +432,18 @@ def format_bids_export_filename(
             source_prefix = DESC_TO_SOURCE_MAPPING.get(bids_desc, "")
 
         if source_prefix and source_prefix in ("fnm", "snm"):
-            # FNM/SNM VoxelMap outputs: fnmrmap (no desc- prefix)
+            # FNM/SNM VoxelMap outputs: desc-fnm_rmap format
             if bids_suffix:
-                return f"{source_prefix}{bids_desc}_{bids_suffix}"
+                return f"desc-{source_prefix}_{bids_desc}_{bids_suffix}"
             else:
-                return f"{source_prefix}{bids_desc}"
+                return f"desc-{source_prefix}_{bids_desc}"
         else:
+            # For non-FNM/SNM keys, the key name becomes the suffix directly
+            # e.g., "analysis_mask" -> "analysismask" (suffix, not desc entity)
             if bids_suffix:
-                return f"desc-{bids_desc}_{bids_suffix}"
+                return f"{bids_desc}_{bids_suffix}"
             else:
-                return f"desc-{bids_desc}"
+                return bids_desc
 
     # Parse BIDS-style key
     parsed = parse_result_key(result_key)
@@ -441,26 +469,32 @@ def format_bids_export_filename(
         desc = parsed["desc"]
         bids_desc = to_bids_label(desc)
         desc_source = DESC_TO_SOURCE_MAPPING.get(desc)
+        if not desc_source:
+            # Try without underscores
+            desc_source = DESC_TO_SOURCE_MAPPING.get(bids_desc)
 
         if "atlas" not in parsed and export_source in ("fnm", "snm"):
             # No parcellation - this is a VoxelMap output from FNM/SNM
-            # Use format: fnmrmap or snmdisconnectionmap (no desc- prefix)
-            parts.append(f"{export_source}{bids_desc}")
+            # Use format: desc-fnm_rmap or desc-snm_disconnectionmap
+            parts.append(f"desc-{export_source}")
+            parts.append(f"{bids_desc}")
         else:
-            # For parcellation results, add source first, then desc if not redundant
-            if export_source and not any("source-" in p for p in parts):
-                parts.append(f"source-{export_source}")
-            if desc_source != export_source:
-                # desc provides additional info beyond source, include it
+            # For parcellation results (parcelstats):
+            # Always include source-fnm/source-snm to identify the analysis,
+            # then desc to identify the specific map being aggregated
+            if desc_source and desc_source in ("fnm", "snm"):
+                # Add source entity to identify analysis, then desc for map type
+                # e.g., source-fnm_desc-rmap or source-snm_desc-disconnectionmap
+                parts.append(f"source-{desc_source}")
+                parts.append(f"desc-{bids_desc}")
+            else:
+                # Unknown desc or inputmask - add source entity from parsed source
+                if export_source and not any("source-" in p for p in parts):
+                    parts.append(f"source-{export_source}")
                 if not any(p.startswith(f"desc-{bids_desc}") for p in parts):
                     parts.append(f"desc-{bids_desc}")
-            # else: desc is redundant with source, omit it
     elif export_source:
         # No desc but have source - add source entity for parcellation results
-        parts.append(f"source-{export_source}")
-
-    # For parcellation results with source but no desc added yet, add source entity
-    if "atlas" in parsed and export_source and not any("source-" in p for p in parts):
         parts.append(f"source-{export_source}")
 
     # Add the BIDS suffix (only if non-empty)

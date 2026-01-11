@@ -290,14 +290,14 @@ class TestStructuralNetworkMappingRepr:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_struct_atlas",
                 parcellation_name="schaefer100",
-                compute_lesioned_matrix=True,
+                compute_disconnectivity_matrix=True,
                 check_dependencies=False,
             )
 
             repr_str = repr(analysis)
 
             assert "parcellation_name='schaefer100'" in repr_str
-            assert "compute_lesioned_matrix=True" in repr_str
+            assert "compute_disconnectivity_matrix=True" in repr_str
         finally:
             unregister_structural_connectome("test_struct_atlas")
             tractogram_path.unlink(missing_ok=True)

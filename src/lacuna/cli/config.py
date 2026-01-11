@@ -210,8 +210,8 @@ class CLIConfig:
         Additional directory containing atlas files.
     n_procs : int
         Number of parallel processes.
-    work_dir : Path
-        Working directory for intermediate files.
+    tmp_dir : Path
+        Temporary directory for intermediate files.
     verbose_count : int
         Logging verbosity level (0-2).
     connectomes : dict
@@ -244,7 +244,10 @@ class CLIConfig:
 
     # Performance options
     n_procs: int = 1
-    work_dir: Path = field(default_factory=lambda: Path("work"))
+    tmp_dir: Path = field(default_factory=lambda: Path("tmp"))
+
+    # Output options
+    overwrite: bool = False
 
     # Other options
     verbose_count: int = 0
@@ -363,10 +366,12 @@ class CLIConfig:
             if sessions == []:
                 sessions = None
 
-        # Get work_dir from CLI or YAML
-        work_dir = args.work_dir
-        if yaml_config.get("work_dir"):
-            work_dir = Path(yaml_config["work_dir"])
+        # Get tmp_dir from CLI or YAML (also supports legacy work_dir)
+        tmp_dir = args.tmp_dir
+        if yaml_config.get("tmp_dir"):
+            tmp_dir = Path(yaml_config["tmp_dir"])
+        elif yaml_config.get("work_dir"):  # Legacy support
+            tmp_dir = Path(yaml_config["work_dir"])
 
         return cls(
             bids_dir=args.bids_dir,
@@ -384,7 +389,8 @@ class CLIConfig:
             skip_regional_damage=skip_rd,
             atlas_dir=getattr(args, "atlas_dir", None),
             n_procs=getattr(args, "nprocs", None) or yaml_config.get("n_jobs", 1),
-            work_dir=work_dir,
+            tmp_dir=tmp_dir,
+            overwrite=getattr(args, "overwrite", False),
             verbose_count=getattr(args, "verbose_count", 0) or yaml_config.get("verbosity", 0),
             connectomes=connectomes,
             analyses=analyses,
@@ -407,11 +413,11 @@ class CLIConfig:
         if self.output_dir.resolve() == self.bids_dir.resolve():
             raise ValueError("Output directory cannot be same as input path")
 
-        # Analysis level must be 'participant'
-        if self.analysis_level != "participant":
+        # Analysis level must be 'participant' or 'group'
+        if self.analysis_level not in ("participant", "group"):
             raise ValueError(
                 f"Invalid analysis level '{self.analysis_level}'. "
-                "Only 'participant' is supported."
+                "Only 'participant' and 'group' are supported."
             )
 
         # For single file input, space is required (resolution is auto-detected from affine)

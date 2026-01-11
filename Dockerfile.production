@@ -1,31 +1,22 @@
 # Lacuna Production Docker Image
-# Multi-stage build with MRtrix3 and TemplateFlow support
+# ==============================
+# Multi-stage build with MRtrix3, TemplateFlow, and bundled atlases
+# Designed for offline HPC use with fMRIPrep/QSIPrep-like interface
 #
-# Build: docker build -t lacuna:latest .
-# Run: docker run --rm -it -v /data:/data:ro -v /output:/output lacuna:latest /data /output participant
+# Build: docker build -f Dockerfile.production -t lacuna:latest .
+# Run:   docker run --rm -v /data:/data:ro -v /output:/output lacuna:latest /data /output participant
+#
+# For Apptainer/Singularity:
+# singularity build lacuna.sif docker://lacuna:latest
 
 # =============================================================================
-# Stage 1: Build MRtrix3
+# Stage 1: Install MRtrix3 via Conda
 # =============================================================================
-FROM python:3.10-slim AS mrtrix-builder
+FROM continuumio/miniconda3:latest AS mrtrix-builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    git \
-    libeigen3-dev \
-    zlib1g-dev \
-    libfftw3-dev \
-    libpng-dev \
-    libtiff5-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Clone and build MRtrix3 (without GUI support)
-WORKDIR /opt
-RUN git clone --depth 1 --branch 3.0.4 https://github.com/MRtrix3/mrtrix3.git \
-    && cd mrtrix3 \
-    && ./configure -nogui \
-    && ./build -j$(nproc) \
-    && rm -rf tmp .git
+# Install MRtrix3 from conda-forge
+RUN conda install -y -c conda-forge -c mrtrix3 mrtrix3 libstdcxx-ng \
+    && conda clean -afy
 
 # =============================================================================
 # Stage 2: Fetch TemplateFlow templates
@@ -36,12 +27,38 @@ ENV TEMPLATEFLOW_HOME="/templateflow"
 
 RUN pip install --no-cache-dir templateflow
 
-# Fetch required templates for offline use
-RUN python -c "import templateflow.api as tf; \
-    tf.get('MNI152NLin6Asym', resolution=2, desc=None, suffix='T1w'); \
-    tf.get('MNI152NLin6Asym', resolution=2, desc='brain', suffix='mask'); \
-    tf.get('MNI152NLin2009cAsym', resolution=2, desc=None, suffix='T1w'); \
-    tf.get('MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')"
+# Fetch ALL required templates and transforms for offline use
+# Include both common resolutions (1mm and 2mm) for robustness
+RUN python -c "
+import templateflow.api as tf
+
+# MNI152NLin6Asym (FSL-compatible) - templates
+tf.get('MNI152NLin6Asym', resolution=1, desc=None, suffix='T1w')
+tf.get('MNI152NLin6Asym', resolution=2, desc=None, suffix='T1w')
+tf.get('MNI152NLin6Asym', resolution=1, desc='brain', suffix='mask')
+tf.get('MNI152NLin6Asym', resolution=2, desc='brain', suffix='mask')
+
+# MNI152NLin2009cAsym (fMRIPrep/QSIPrep default) - templates
+tf.get('MNI152NLin2009cAsym', resolution=1, desc=None, suffix='T1w')
+tf.get('MNI152NLin2009cAsym', resolution=2, desc=None, suffix='T1w')
+tf.get('MNI152NLin2009cAsym', resolution=1, desc='brain', suffix='mask')
+tf.get('MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')
+
+# Transforms between spaces (all modes and resolutions)
+for space in ['MNI152NLin6Asym', 'MNI152NLin2009cAsym']:
+    for mode in ['image', 'ras']:
+        for ext in ['.h5']:
+            try:
+                tf.get(space, mode=mode, suffix='xfm', extension=ext)
+            except Exception:
+                pass  # Some combinations may not exist
+
+# Direct transform fetches
+tf.get('MNI152NLin6Asym', suffix='xfm', extension='.h5')
+tf.get('MNI152NLin2009cAsym', suffix='xfm', extension='.h5')
+
+print('TemplateFlow templates and transforms fetched successfully')
+"
 
 # =============================================================================
 # Stage 3: Production image
@@ -55,16 +72,13 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libfftw3-3 \
-    libpng16-16 \
-    libtiff5 \
-    zlib1g \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy MRtrix3 from builder
-COPY --from=mrtrix-builder /opt/mrtrix3/bin /opt/mrtrix3/bin
-COPY --from=mrtrix-builder /opt/mrtrix3/lib /opt/mrtrix3/lib
-ENV PATH="/opt/mrtrix3/bin:${PATH}"
+# Copy MRtrix3 conda environment from builder
+COPY --from=mrtrix-builder /opt/conda /opt/conda
+ENV PATH="/opt/conda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/conda/lib:${LD_LIBRARY_PATH}"
 
 # Copy TemplateFlow cache
 COPY --from=templateflow-fetcher /templateflow /templateflow
@@ -77,7 +91,7 @@ RUN useradd -m -s /bin/bash -u 1000 lacuna \
 
 # Set environment variables
 ENV HOME="/home/lacuna"
-ENV LACUNA_WORK_DIR="/work"
+ENV LACUNA_TMP_DIR="/tmp"
 
 # Install lacuna
 WORKDIR /app
