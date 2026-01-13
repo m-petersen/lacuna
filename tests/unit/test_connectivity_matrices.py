@@ -26,16 +26,12 @@ class TestConnectivityMatrixComputation:
         # Create fake files
         tractogram_path = tmp_path / "tractogram.tck"
         tractogram_path.write_text("fake")
-        tdi_path = tmp_path / "tdi.nii.gz"
-        tdi_path.write_text("fake")
 
         # Register connectome
         register_structural_connectome(
             name="test_mock_connectome",
             space="MNI152NLin2009cAsym",
             tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-            n_subjects=1000,
             description="Test mock connectome",
         )
 
@@ -342,8 +338,6 @@ class TestMatrixDimensions:
                     name="test_matrix_dims",
                     space="MNI152NLin2009cAsym",
                     tractogram_path=tractogram_path,
-                    tdi_path=tdi_path,
-                    n_subjects=100,
                 )
 
                 with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):

@@ -40,8 +40,6 @@ def test_atlas_transformed_when_space_mismatch():
             name="test_struct_connectome",
             space="MNI152NLin2009cAsym",
             tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-            n_subjects=1000,
             description="Test structural connectome",
         )
 
@@ -163,8 +161,6 @@ def test_atlas_not_transformed_when_space_matches():
             name="test_struct_no_transform",
             space="MNI152NLin6Asym",
             tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-            n_subjects=1000,
             description="Test structural connectome",
         )
         registered = True
@@ -272,8 +268,6 @@ def test_atlas_transformation_uses_correct_resolution():
             name="test_struct_resolution",
             space="MNI152NLin2009cAsym",
             tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-            n_subjects=1000,
             description="Test structural connectome",
         )
 

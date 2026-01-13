@@ -251,8 +251,6 @@ class TestStructuralNetworkMappingRepr:
                 name="test_struct_repr",
                 space="MNI152NLin2009cAsym",
                 tractogram_path=tractogram_path,
-                tdi_path=tdi_path,
-                n_subjects=1000,
                 description="Test",
             )
 
@@ -282,8 +280,6 @@ class TestStructuralNetworkMappingRepr:
                 name="test_struct_atlas",
                 space="MNI152NLin2009cAsym",
                 tractogram_path=tractogram_path,
-                tdi_path=tdi_path,
-                n_subjects=1000,
                 description="Test",
             )
 
@@ -315,8 +311,6 @@ class TestStructuralNetworkMappingRepr:
                 name="test_struct_str",
                 space="MNI152NLin2009cAsym",
                 tractogram_path=tractogram_path,
-                tdi_path=tdi_path,
-                n_subjects=1000,
                 description="Test",
             )
 
@@ -457,8 +451,6 @@ class TestReprConsistency:
                 name="test_all_repr_struct",
                 space="MNI152NLin2009cAsym",
                 tractogram_path=tractogram_path,
-                tdi_path=tdi_path,
-                n_subjects=1000,
                 description="Test",
             )
             registered_struct = True
@@ -522,8 +514,6 @@ class TestReprConsistency:
                 name="test_all_str_struct",
                 space="MNI152NLin2009cAsym",
                 tractogram_path=tractogram_path,
-                tdi_path=tdi_path,
-                n_subjects=1000,
                 description="Test",
             )
             registered_struct = True

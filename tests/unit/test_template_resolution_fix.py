@@ -32,24 +32,14 @@ def test_template_resolved_before_tdi_computation(tmp_path):
     tractogram_path = tmp_path / "tractogram.tck"
     tractogram_path.write_text("dummy tractogram")
 
-    # Create dummy TDI file
-    tdi_path = tmp_path / "tdi.nii.gz"
-    tdi_data = np.zeros((91, 109, 91), dtype=np.float32)
-    tdi_img = nib.Nifti1Image(tdi_data, np.eye(4))
-    nib.save(tdi_img, tdi_path)
-
     registered = False
     try:
-        # Register connectome
+        # Register connectome (TDI will be computed on-the-fly)
         register_structural_connectome(
             name="test_template_fix",
             space="MNI152NLin2009cAsym",
             tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-            n_subjects=100,
         )
-        registered = True
-
         registered = True
 
         # Create dummy lesion
@@ -83,13 +73,12 @@ def test_template_resolved_before_tdi_computation(tmp_path):
                     "lacuna.analysis.structural_network_mapping.compute_tdi_map"
                 ) as mock_compute_tdi:
                     # Mock TDI computation - this is where the bug would have occurred
-                    tdi_path = tmp_path / "tdi.nii.gz"
-                    tdi_img = nib.Nifti1Image(template_data, np.eye(4))
-                    nib.save(tdi_img, tdi_path)
-
+                    # TDI is now computed on-the-fly, so we just mock the function
                     def save_tdi(*args, **kwargs):
                         output_path = kwargs.get("output_path")
+                        tdi_img = nib.Nifti1Image(template_data, np.eye(4))
                         nib.save(tdi_img, output_path)
+                        return output_path
 
                     mock_compute_tdi.side_effect = save_tdi
 
@@ -140,13 +129,9 @@ def test_cache_directory_uses_unified_location():
     """Test that TDI cache uses the unified cache directory system."""
     from lacuna.utils.cache import get_tdi_cache_dir
 
-    # Create dummy tractogram and TDI files
+    # Create dummy tractogram file
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as tmp:
         tractogram_path = Path(tmp.name)
-        tmp.write(b"dummy")
-
-    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
-        tdi_path = Path(tmp.name)
         tmp.write(b"dummy")
 
     registered = False
@@ -155,8 +140,6 @@ def test_cache_directory_uses_unified_location():
             name="test_cache_location",
             space="MNI152NLin2009cAsym",
             tractogram_path=tractogram_path,
-            tdi_path=tdi_path,
-            n_subjects=100,
         )
         registered = True
 
@@ -178,7 +161,6 @@ def test_cache_directory_uses_unified_location():
         if registered:
             unregister_structural_connectome("test_cache_location")
         tractogram_path.unlink(missing_ok=True)
-        tdi_path.unlink(missing_ok=True)
 
 
 def test_cache_directory_respects_env_variable():
