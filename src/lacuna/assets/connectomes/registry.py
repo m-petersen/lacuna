@@ -18,7 +18,7 @@ class StructuralConnectomeMetadata(SpatialAssetMetadata):
 
     Used for structural lesion network mapping (sLNM). Requires:
     - Tractogram file (.tck format from MRtrix3)
-    - Whole-brain track density image (TDI) as reference connectivity
+    - TDI computed on-the-fly during analysis (with optional caching)
 
     Note: Unlike functional connectomes, structural connectomes (tractograms)
     don't have an inherent voxel resolution - they exist in continuous 3D space.
@@ -34,22 +34,16 @@ class StructuralConnectomeMetadata(SpatialAssetMetadata):
         Resolution in mm (placeholder value, not used for tractograms)
     description : str
         Human-readable description
-    n_subjects : int
-        Sample size used to generate connectome
     modality : str
         Imaging modality (always "dwi")
     tractogram_path : Path
         Path to .tck streamlines file
-    tdi_path : Path
-        Path to whole-brain TDI NIfTI file
     template_path : Path | None
         Optional path to template image defining output grid
     """
 
-    n_subjects: int = 0
     modality: str = "dwi"
     tractogram_path: Path | None = None
-    tdi_path: Path | None = None
     template_path: Path | None = None
 
     def __repr__(self) -> str:

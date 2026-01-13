@@ -35,15 +35,11 @@ def temp_connectome():
 
     with tempfile.NamedTemporaryFile(suffix=".tck", delete=False) as f:
         temp_tck = Path(f.name)
-    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as f:
-        temp_tdi = Path(f.name)
 
     register_structural_connectome(
         name=connectome_name,
         space="MNI152NLin2009cAsym",
         tractogram_path=temp_tck,
-        tdi_path=temp_tdi,
-        n_subjects=10,
         description="Test structural connectome",
     )
 
@@ -52,7 +48,6 @@ def temp_connectome():
     # Cleanup
     unregister_structural_connectome(connectome_name)
     temp_tck.unlink(missing_ok=True)
-    temp_tdi.unlink(missing_ok=True)
 
 
 def test_structural_network_mapping_import():

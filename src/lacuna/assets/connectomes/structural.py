@@ -22,8 +22,8 @@ _structural_connectome_registry = AssetRegistry[StructuralConnectomeMetadata](
 class StructuralConnectome:
     """Loaded structural connectome for sLNM analysis.
 
-    Provides paths to tractogram and TDI files needed for
-    StructuralNetworkMapping analysis.
+    Provides tractogram path for StructuralNetworkMapping analysis.
+    TDI is computed on-the-fly during analysis (with optional caching).
 
     Attributes
     ----------
@@ -31,15 +31,12 @@ class StructuralConnectome:
         Connectome metadata
     tractogram_path : Path
         Path to .tck streamlines file
-    tdi_path : Path
-        Path to whole-brain TDI image
     template_path : Path | None
         Optional template image path
     """
 
     metadata: StructuralConnectomeMetadata
     tractogram_path: Path
-    tdi_path: Path
     template_path: Path | None = None
 
 
@@ -47,15 +44,14 @@ def register_structural_connectome(
     name: str,
     space: str,
     tractogram_path: str | Path,
-    tdi_path: str | Path | None = None,
     template_path: str | Path | None = None,
-    n_subjects: int | None = None,
     description: str = "",
 ) -> None:
     """Register a structural connectome for sLNM analysis.
 
-    TDI computation is now done on-demand during analysis, so tdi_path is optional.
-    If not provided, TDI will be computed automatically when needed.
+    TDI is computed on-the-fly during analysis. Use cache_tdi=True (default) in
+    StructuralNetworkMapping to cache computed TDIs for reuse, or cache_tdi=False
+    to compute without caching.
 
     Note: Unlike functional connectomes, structural connectomes (tractograms) don't
     have an inherent voxel resolution - they exist in continuous 3D space. The output
@@ -70,20 +66,15 @@ def register_structural_connectome(
         Coordinate space (e.g., "MNI152NLin2009bAsym")
     tractogram_path : str or Path
         Path to .tck whole-brain streamlines file
-    tdi_path : str or Path, optional
-        Path to whole-brain TDI NIfTI file.
-        If None, TDI will be computed during analysis (cached for reuse).
     template_path : str or Path, optional
         Path to template image for output grid
-    n_subjects : int, optional
-        Sample size (for documentation purposes only)
     description : str, optional
         Human-readable description
 
     Raises
     ------
     FileNotFoundError
-        If tractogram file doesn't exist (or TDI if provided)
+        If tractogram file doesn't exist
     ValueError
         If file validation fails
 
@@ -91,26 +82,21 @@ def register_structural_connectome(
     --------
     >>> from lacuna.assets.connectomes import register_structural_connectome
     >>>
-    >>> # Register tractogram (TDI computed on-demand at specified output_resolution)
+    >>> # Register tractogram (TDI computed on-the-fly during analysis)
     >>> register_structural_connectome(
     ...     name="dTOR985",
     ...     space="MNI152NLin2009cAsym",
     ...     tractogram_path="/data/dtor/dTOR985_tractogram.tck",
-    ...     description="dTOR tractogram (TDI computed on-demand)"
+    ...     description="dTOR tractogram - TDI computed on-demand"
     ... )
     """
     # Convert to paths
     tractogram_path = Path(tractogram_path).resolve()
-    tdi_path = Path(tdi_path).resolve() if tdi_path else None
     template_path = Path(template_path).resolve() if template_path else None
 
     # Validate tractogram exists
     if not tractogram_path.exists():
         raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
-
-    # Validate TDI exists if provided
-    if tdi_path and not tdi_path.exists():
-        raise FileNotFoundError(f"TDI file not found: {tdi_path}")
 
     # Validate template exists if provided
     if template_path and not template_path.exists():
@@ -119,8 +105,6 @@ def register_structural_connectome(
     # Validate file extensions
     if tractogram_path.suffix != ".tck":
         raise ValueError(f"Expected .tck file, got: {tractogram_path.suffix}")
-    if tdi_path and tdi_path.suffix not in [".nii", ".gz"]:
-        raise ValueError(f"Expected .nii/.nii.gz file, got: {tdi_path.suffix}")
 
     # Create metadata
     # Note: resolution=0.0 as placeholder since tractograms don't have inherent voxel
@@ -130,9 +114,7 @@ def register_structural_connectome(
         space=space,
         resolution=0.0,  # Tractograms don't have inherent voxel resolution
         description=description or f"Structural connectome: {name}",
-        n_subjects=n_subjects or 0,
         tractogram_path=tractogram_path,
-        tdi_path=tdi_path,
         template_path=template_path,
     )
 
@@ -205,7 +187,8 @@ def load_structural_connectome(name: str) -> StructuralConnectome:
     Returns
     -------
     StructuralConnectome
-        Loaded connectome with paths ready for StructuralNetworkMapping
+        Loaded connectome with tractogram path ready for StructuralNetworkMapping.
+        TDI will be computed on-the-fly during analysis.
 
     Raises
     ------
@@ -219,9 +202,8 @@ def load_structural_connectome(name: str) -> StructuralConnectome:
     >>>
     >>> connectome = load_structural_connectome("dTOR985")
     >>> analysis = StructuralNetworkMapping(
-    ...     tractogram_path=connectome.tractogram_path,
-    ...     whole_brain_tdi=connectome.tdi_path,
-    ...     template=connectome.template_path
+    ...     connectome_name="dTOR985",
+    ...     cache_tdi=True  # Cache computed TDI for reuse
     ... )
     """
     metadata = _structural_connectome_registry.get(name)
@@ -229,7 +211,6 @@ def load_structural_connectome(name: str) -> StructuralConnectome:
     return StructuralConnectome(
         metadata=metadata,
         tractogram_path=metadata.tractogram_path,
-        tdi_path=metadata.tdi_path,
         template_path=metadata.template_path,
     )
 
