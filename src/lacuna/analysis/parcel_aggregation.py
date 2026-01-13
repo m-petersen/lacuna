@@ -2,7 +2,7 @@
 
 Provides flexible ROI-level aggregation of voxel-level maps across multiple
 parcellations. This is the core tool for extracting region-of-interest statistics
-from lesion masks, connectivity maps, or any other spatial maps.
+from mask images, connectivity maps, or any other spatial maps.
 
 Examples
 --------
@@ -10,12 +10,12 @@ Examples
 >>> from lacuna.analysis import ParcelAggregation
 >>>
 >>> # Use bundled atlases
->>> lesion = SubjectData.from_nifti("lesion.nii.gz")
+>>> mask = SubjectData.from_nifti("mask.nii.gz")
 >>> analysis = ParcelAggregation(
 ...     source="maskimg",
 ...     aggregation="percent"
 ... )
->>> result = analysis.run(lesion)
+>>> result = analysis.run(mask)
 >>> print(result.results["ParcelAggregation"])
 >>>
 >>> # Use custom atlas directory
@@ -24,16 +24,16 @@ Examples
 ...     source="maskimg",
 ...     aggregation="percent"
 ... )
->>> result = analysis.run(lesion)
+>>> result = analysis.run(mask)
 >>>
 >>> # Aggregate functional connectivity map by atlas regions
 >>> from lacuna.analysis import FunctionalNetworkMapping
->>> fnm = FunctionalNetworkMapping(connectome_path="gsp1000.h5")
->>> result = fnm.run(lesion)
+>>> fnm = FunctionalNetworkMapping(connectome_name="GSP1000")
+>>> result = fnm.run(mask)
 >>>
 >>> # Now aggregate the network map to atlas ROIs
 >>> agg = ParcelAggregation(
-...     source="FunctionalNetworkMapping.network_map",
+...     source="FunctionalNetworkMapping.zmap",
 ...     aggregation="mean"
 ... )
 >>> final = agg.run(result)
@@ -61,11 +61,7 @@ class ParcelAggregation(BaseAnalysis):
     """Atlas aggregation analysis.
 
     Computations performed in input data space (atlases transformed to match input).
-    """
 
-    TARGET_SPACE = None  # Space determined from input data
-    TARGET_RESOLUTION = None  # Resolution determined from input data
-    """
     Aggregate voxel-level maps to ROI-level statistics using atlases.
 
     This is a composable analysis that can:
@@ -190,6 +186,10 @@ class ParcelAggregation(BaseAnalysis):
     BaseAnalysis : Parent class defining analysis interface
     """
 
+    #: Space is determined from the input data
+    TARGET_SPACE = None
+    #: Resolution is determined from the input data
+    TARGET_RESOLUTION = None
     #: Preferred batch processing strategy
     batch_strategy: str = "parallel"
 
@@ -381,7 +381,7 @@ class ParcelAggregation(BaseAnalysis):
         Examples
         --------
         >>> # SubjectData input
-        >>> mask_data = SubjectData(mask_img, metadata={'space': 'MNI152NLin6Asym', 'resolution': 2})
+        >>> mask_data = SubjectData(mask_img, space='MNI152NLin6Asym', resolution=2)
         >>> analysis = ParcelAggregation(aggregation='percent')
         >>> result = analysis.run(mask_data)
         >>> isinstance(data, SubjectData)
@@ -389,13 +389,13 @@ class ParcelAggregation(BaseAnalysis):
 
         >>> # Nibabel image input
         >>> import nibabel as nib
-        >>> img = nib.load('lesion.nii.gz')
+        >>> img = nib.load('mask.nii.gz')
         >>> result = analysis.run(img)
         >>> isinstance(result, ParcelData)
         True
 
         >>> # List of images
-        >>> images = [nib.load(f'lesion_{i}.nii.gz') for i in range(5)]
+        >>> images = [nib.load(f'mask_{i}.nii.gz') for i in range(5)]
         >>> results = analysis.run(images)
         >>> len(results) == 5
         True
@@ -467,11 +467,13 @@ class ParcelAggregation(BaseAnalysis):
         input_space = SubjectData._detect_space_from_image(img)
         input_resolution = SubjectData._detect_resolution_from_image(img)
 
-        # Fallback to defaults if detection fails
+        # Use detected space or fall back with warning
         if input_space is None:
             input_space = "MNI152NLin6Asym"
-            self.logger.info(
-                "Could not detect space from image header, defaulting to MNI152NLin6Asym"
+            self.logger.warning(
+                "Could not auto-detect coordinate space from image header. "
+                "Assuming MNI152NLin6Asym. For explicit control, use SubjectData wrapper: "
+                "SubjectData(img, space='...', resolution=...)"
             )
         if input_resolution is None:
             input_resolution = float(round(abs(img.affine[0, 0])))
