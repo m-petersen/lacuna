@@ -23,10 +23,9 @@ SUPPORTED_SPACES = [
     "MNI152NLin2009cAsym",
     "MNI152NLin2009aAsym",  # Alias for cAsym
     "MNI152NLin2009bAsym",  # Alias for cAsym
-    "native",
 ]
 
-# Space aliases - anatomically identical spaces that require no transformation
+# Space aliases - no transformation required
 # Only resampling is needed if resolutions differ
 SPACE_ALIASES = {
     "MNI152NLin2009aAsym": "MNI152NLin2009cAsym",

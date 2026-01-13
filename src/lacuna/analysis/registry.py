@@ -2,7 +2,7 @@
 Lacuna analysis auto-discovery registry module.
 
 This module provides automatic discovery of BaseAnalysis subclasses
-using the pkgutil pattern.
+using pkgutil.
 
 Classes:
     AnalysisRegistry: Registry for discovered analysis classes.
