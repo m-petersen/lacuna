@@ -24,10 +24,13 @@ Examples
 >>> print(schaefer.space, schaefer.resolution)
 """
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from lacuna.assets.base import AssetRegistry, SpatialAssetMetadata
+from lacuna.assets.base import SpatialAssetMetadata
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -74,9 +77,6 @@ class ParcellationMetadata(SpatialAssetMetadata):
     is_4d: bool = False
     region_labels: list[str] | None = None
 
-
-# Global registry instance
-_parcellation_registry = AssetRegistry[ParcellationMetadata]("parcellation")
 
 # Registry of bundled parcellations
 # Maps parcellation name -> ParcellationMetadata
@@ -525,8 +525,8 @@ def register_parcellations_from_directory(
                         parcellation_space = detected_space
                     if parcellation_resolution is None:
                         parcellation_resolution = detected_res
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Could not detect space from header for {nifti_path}: {e}")
 
         # Skip if we couldn't determine space/resolution
         if parcellation_space is None or parcellation_resolution is None:
@@ -543,8 +543,9 @@ def register_parcellations_from_directory(
                 description=f"Parcellation from {directory.name}",
             )
             registered_names.append(base_name)
-        except Exception:
+        except Exception as e:
             # Skip parcellations that fail to register
+            logger.warning(f"Failed to register parcellation {base_name}: {e}")
             continue
 
     return registered_names
@@ -565,42 +566,33 @@ def _load_bundled_parcellation_labels(labels_filename: str) -> list[str] | None:
     """
     from pathlib import Path
 
-    bundled_dir = Path(__file__).parent.parent.parent / "data" / "parcellations"
+    bundled_dir = Path(__file__).parent.parent.parent / "data" / "atlases"
     labels_path = bundled_dir / labels_filename
 
     if not labels_path.exists():
         return None
 
-    # Inline label loading to avoid circular import
-    labels_dict = {}
+    # Inline label loading to avoid circular import with loader.py
+    labels_dict: dict[int, str] = {}
     with open(labels_path) as f:
-        for _line_num, line in enumerate(f, start=1):
+        for line in f:
             line = line.strip()
-
-            # Skip empty lines and comments
             if not line or line.startswith("#"):
                 continue
-
-            # Try to parse "region_id region_name" format first
             parts = line.split(maxsplit=1)
             if len(parts) == 2:
                 try:
                     region_id = int(parts[0])
-                    region_name = parts[1]
-                    labels_dict[region_id] = region_name
+                    labels_dict[region_id] = parts[1]
                     continue
                 except ValueError:
                     pass
-
-            # Use line number as region ID
             if line:
-                actual_region_id = len(labels_dict) + 1
-                labels_dict[actual_region_id] = line
+                labels_dict[len(labels_dict) + 1] = line
 
     if not labels_dict:
         return None
 
-    # Convert to list ordered by region ID (1-indexed)
     max_region = max(labels_dict.keys())
     return [labels_dict.get(i, f"region_{i:03d}") for i in range(1, max_region + 1)]
 

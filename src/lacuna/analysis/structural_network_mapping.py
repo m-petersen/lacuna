@@ -123,11 +123,8 @@ class StructuralNetworkMapping(BaseAnalysis):
     >>> register_structural_connectome(
     ...     name="dTOR985",
     ...     space="MNI152NLin2009cAsym",
-    ...     resolution=1.0,
     ...     tractogram_path="/data/dtor/dtor985_tractogram.tck",
-    ...     tdi_path="/data/dtor/dtor985_tdi_1mm.nii.gz",
-    ...     n_subjects=985,
-    ...     description="HCP dTOR tractogram"
+    ...     description="HCP dTOR tractogram - TDI computed on-demand"
     ... )
     >>>
     >>> # List available connectomes
