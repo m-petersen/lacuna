@@ -156,6 +156,17 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         ),
     )
     g_analysis.add_argument(
+        "--custom-parcellation",
+        nargs=2,
+        action="append",
+        metavar=("NIFTI", "LABELS"),
+        help=(
+            "Custom parcellation: NIfTI file path and labels file path. "
+            "Can be specified multiple times. Space/resolution auto-detected. "
+            "Example: --custom-parcellation /path/atlas.nii.gz /path/labels.txt"
+        ),
+    )
+    g_analysis.add_argument(
         "--skip-regional-damage",
         action="store_true",
         help="Skip RegionalDamage analysis (enabled by default)",
@@ -481,6 +492,17 @@ def _add_bids_arguments(parser: ArgumentParser) -> None:
         help=(
             "Atlas names for RegionalDamage analysis. "
             "Use 'lacuna list-parcellations' to see available atlases."
+        ),
+    )
+    g_analysis.add_argument(
+        "--custom-parcellation",
+        nargs=2,
+        action="append",
+        metavar=("NIFTI", "LABELS"),
+        help=(
+            "Custom parcellation: NIfTI file path and labels file path. "
+            "Can be specified multiple times. Space/resolution auto-detected. "
+            "Example: --custom-parcellation /path/atlas.nii.gz /path/labels.txt"
         ),
     )
     g_analysis.add_argument(

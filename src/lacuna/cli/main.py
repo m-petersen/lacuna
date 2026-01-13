@@ -220,7 +220,6 @@ def _run_workflow(config: CLIConfig) -> int:
         config.structural_connectome,
         connectome_type="structural",
         space=config.space,
-        tdi_path=config.structural_tdi,
     )
 
     # Step 2: Build analysis steps (do this once)
@@ -630,7 +629,6 @@ def _resolve_connectome(
     connectome_path: str | Path | None,
     connectome_type: str,
     space: str | None = None,
-    tdi_path: Path | None = None,
 ) -> str | None:
     """
     Resolve a connectome path to a registered name.
@@ -643,8 +641,6 @@ def _resolve_connectome(
         Type of connectome ("functional" or "structural").
     space : str, optional
         Coordinate space for registration.
-    tdi_path : Path, optional
-        TDI path for structural connectomes.
 
     Returns
     -------
@@ -665,7 +661,6 @@ def _resolve_connectome(
         connectome_path,
         connectome_type=connectome_type,
         space=space or "MNI152NLin6Asym",
-        tdi_path=tdi_path,
     )
 
 
@@ -673,7 +668,6 @@ def _register_connectome_from_path(
     connectome_path: Path,
     connectome_type: str,
     space: str,
-    tdi_path: Path | None = None,
 ) -> str | None:
     """
     Register a connectome from a file path.
@@ -686,8 +680,6 @@ def _register_connectome_from_path(
         Type of connectome ("functional" or "structural").
     space : str
         Coordinate space.
-    tdi_path : Path, optional
-        TDI path for structural connectomes.
 
     Returns
     -------
@@ -716,7 +708,6 @@ def _register_connectome_from_path(
                 name=name,
                 space=space,
                 tractogram_path=connectome_path,
-                tdi_path=tdi_path,
             )
 
         logger.info(f"Registered {connectome_type} connectome: {name} (space={space})")
@@ -800,7 +791,7 @@ def _register_connectome_from_config(name: str, conn_config) -> str | None:
                 name=registered_name,
                 space=conn_config.space,
                 tractogram_path=conn_config.path,
-                tdi_path=conn_config.tdi_path,
+                template_path=conn_config.template_path,
             )
         else:
             logger.error(f"Unknown connectome type: {conn_config.type}")

@@ -67,7 +67,7 @@ connectomes:
   #   path: /path/to/dTOR.tck
   #   space: MNI152NLin6Asym
   #   resolution: 2  # Resolution of the TDI output
-  #   tdi_path: /path/to/precomputed_tdi.nii.gz  # Optional, speeds up processing
+  #   template_path: /path/to/template.nii.gz  # Optional, for output grid
 
 # =============================================================================
 # ANALYSES SECTION

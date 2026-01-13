@@ -41,15 +41,15 @@ class ConnectomeConfig:
         Resolution in mm (auto-detected from file if not provided).
     type : str
         Connectome type: "functional" or "structural".
-    tdi_path : Path, optional
-        Path to whole-brain TDI NIfTI (for structural connectomes only).
+    template_path : Path, optional
+        Path to template NIfTI for output grid (structural connectomes only).
     """
 
     path: Path
     space: str
     type: str = "functional"
     resolution: float | None = None
-    tdi_path: Path | None = None
+    template_path: Path | None = None
 
     @classmethod
     def from_dict(cls, name: str, config: dict[str, Any]) -> ConnectomeConfig:
@@ -78,16 +78,16 @@ class ConnectomeConfig:
             else:
                 conn_type = "functional"
 
-        tdi_path = None
-        if config.get("tdi_path"):
-            tdi_path = Path(config["tdi_path"])
+        template_path = None
+        if config.get("template_path"):
+            template_path = Path(config["template_path"])
 
         return cls(
             path=path,
             space=config.get("space", "MNI152NLin6Asym"),
             type=conn_type,
             resolution=config.get("resolution"),
-            tdi_path=tdi_path,
+            template_path=template_path,
         )
 
 
@@ -200,8 +200,6 @@ class CLIConfig:
         Functional connectome name or path (from CLI).
     structural_connectome : str, optional
         Structural connectome name or path (from CLI).
-    structural_tdi : Path, optional
-        Path to whole-brain TDI NIfTI (from CLI).
     parcel_atlases : list of str, optional
         Atlas names for RegionalDamage analysis.
     skip_regional_damage : bool
@@ -237,7 +235,6 @@ class CLIConfig:
     # Analysis options
     functional_connectome: str | None = None
     structural_connectome: str | None = None
-    structural_tdi: Path | None = None
     parcel_atlases: list[str] | None = None
     skip_regional_damage: bool = False
     atlas_dir: Path | None = None
@@ -348,8 +345,6 @@ class CLIConfig:
 
         struct_conn = getattr(args, "structural_tractogram", None)
 
-        struct_tdi = getattr(args, "structural_tdi", None)
-
         # Get space from CLI or YAML
         space = getattr(args, "mask_space", None) or yaml_config.get("mask_space")
 
@@ -384,7 +379,6 @@ class CLIConfig:
             resolution=None,  # Resolution is auto-detected from image affine
             functional_connectome=func_conn,
             structural_connectome=struct_conn,
-            structural_tdi=struct_tdi,
             parcel_atlases=parcel_atlases,
             skip_regional_damage=skip_rd,
             atlas_dir=getattr(args, "atlas_dir", None),
@@ -448,8 +442,8 @@ class CLIConfig:
         for conn_name, conn_config in self.connectomes.items():
             if not conn_config.path.exists():
                 raise ValueError(f"Connectome '{conn_name}' path not found: {conn_config.path}")
-            if conn_config.tdi_path and not conn_config.tdi_path.exists():
-                raise ValueError(f"Connectome '{conn_name}' TDI not found: {conn_config.tdi_path}")
+            if conn_config.template_path and not conn_config.template_path.exists():
+                raise ValueError(f"Connectome '{conn_name}' template not found: {conn_config.template_path}")
 
         # n_procs validation
         if self.n_procs < -1 or self.n_procs == 0:

@@ -178,7 +178,6 @@ class TestCLIConfigValidation:
             output_dir=tmp_path / "output",
             analysis_level="participant",
             structural_connectome=str(tmp_path / "nonexistent.tck"),  # Non-existent path
-            structural_tdi=None,
         )
 
         with pytest.raises(ValueError, match="Structural tractogram not found"):
@@ -196,10 +195,9 @@ class TestCLIConfigValidation:
             output_dir=tmp_path / "output",
             analysis_level="participant",
             structural_connectome=str(connectome),  # String path
-            structural_tdi=None,  # TDI is optional
         )
 
-        # Should not raise - TDI is optional
+        # Should not raise
         config.validate()
 
     def test_validate_fails_with_invalid_nprocs(self, tmp_path):
@@ -234,21 +232,18 @@ class TestCLIConfigValidation:
         # Should not raise
         config.validate()
 
-    def test_validate_passes_with_structural_and_tdi(self, tmp_path):
-        """Test that validation passes with structural connectome and TDI."""
+    def test_validate_passes_with_structural_connectome(self, tmp_path):
+        """Test that validation passes with structural connectome."""
         bids_dir = tmp_path / "bids"
         bids_dir.mkdir()
         connectome = tmp_path / "connectome.tck"
         connectome.touch()
-        tdi = tmp_path / "tdi.nii.gz"
-        tdi.touch()
 
         config = CLIConfig(
             bids_dir=bids_dir,
             output_dir=tmp_path / "output",
             analysis_level="participant",
             structural_connectome=str(connectome),  # String path
-            structural_tdi=tdi,
         )
 
         # Should not raise
