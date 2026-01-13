@@ -1,6 +1,6 @@
 """Core data class - the central API contract for the toolkit.
 
-This class encapsulates a single research participant's lesion data with metadata,
+This class encapsulates a single research participant's mask data with metadata,
 provenance tracking, and analysis results. It serves as the stable interface between
 all pipeline modules.
 """
@@ -121,18 +121,12 @@ class SubjectData:
     >>> import nibabel as nib
     >>> mask_img = nib.load("mask.nii.gz")
 
-    # Preferred: Direct kwargs
+    # Recommended: Direct kwargs for space and resolution
     >>> mask_data = SubjectData(
     ...     mask_img,
     ...     space="MNI152NLin6Asym",
     ...     resolution=2,
     ...     metadata={"subject_id": "sub-001"}
-    ... )
-
-    # Also supported: Via metadata dict (backward compatible)
-    >>> mask_data = SubjectData(
-    ...     mask_img,
-    ...     metadata={"subject_id": "sub-001", "space": "MNI152NLin6Asym", "resolution": 2}
     ... )
 
     >>> print(f"Volume: {mask_data.get_volume_mm3()} mm³")
@@ -183,7 +177,7 @@ class SubjectData:
         SUPPORTED_TEMPLATE_SPACES = [
             "MNI152NLin6Asym",
             "MNI152NLin2009aAsym",
-            "MNI152NLin2009bAsym",  # Equivalent to cAsym
+            "MNI152NLin2009bAsym",
             "MNI152NLin2009cAsym",
         ]
 
@@ -387,7 +381,7 @@ class SubjectData:
     @classmethod
     def from_nifti(
         cls,
-        lesion_path: str | Path,
+        mask_path: str | Path,
         space: str | None = None,
         resolution: float | None = None,
         metadata: dict[str, Any] | None = None,
@@ -397,7 +391,7 @@ class SubjectData:
 
         Parameters
         ----------
-        lesion_path : str or Path
+        mask_path : str or Path
             Path to mask NIfTI file.
         space : str, optional
             Coordinate space identifier (e.g., 'MNI152NLin6Asym').
@@ -437,15 +431,15 @@ class SubjectData:
         ...     metadata={"subject_id": "sub-001", "session": "baseline"}
         ... )
         """
-        lesion_path = Path(lesion_path)
+        mask_path = Path(mask_path)
 
         # Load lesion image
         try:
-            mask_img = nib.load(lesion_path)
+            mask_img = nib.load(mask_path)
         except FileNotFoundError:
             raise
         except Exception as e:
-            raise NiftiLoadError(f"Failed to load mask from {lesion_path}: {e}") from e
+            raise NiftiLoadError(f"Failed to load mask from {mask_path}: {e}") from e
 
         # Initialize metadata dict
         if metadata is None:
@@ -456,7 +450,7 @@ class SubjectData:
         # Auto-generate subject_id from filename if not provided
         if "subject_id" not in metadata:
             # Try to extract BIDS-like subject ID from filename
-            filename = lesion_path.stem.replace(".nii", "")
+            filename = mask_path.stem.replace(".nii", "")
             if "sub-" in filename:
                 # Extract sub-XXX pattern
                 parts = filename.split("_")
@@ -467,7 +461,7 @@ class SubjectData:
 
         # Auto-extract session_id from filename if not provided (BIDS compliant)
         if "session_id" not in metadata:
-            filename = lesion_path.stem.replace(".nii", "")
+            filename = mask_path.stem.replace(".nii", "")
             if "ses-" in filename:
                 # Extract ses-XXX pattern
                 parts = filename.split("_")
@@ -488,7 +482,7 @@ class SubjectData:
                 # Import lazily to avoid circular imports at module load time
                 from .spaces import get_image_space
 
-                detected = get_image_space(mask_img, filepath=lesion_path)
+                detected = get_image_space(mask_img, filepath=mask_path)
                 if detected is not None:
                     # Populate metadata entries if not already present
                     if "space" not in metadata:
@@ -749,7 +743,6 @@ class SubjectData:
         >>> from lacuna.core.provenance import create_provenance_record
         >>> prov = create_provenance_record(
         ...     function="lacuna.analysis.RegionalDamage",
-        ...     atlas_names=["Schaefer2018_100Parcels7Networks"],
         ...     version="0.1.0"
         ... )
         >>> result = mask_data.add_provenance(prov)
@@ -926,7 +919,7 @@ class SubjectData:
         self,
         analysis: str,
         pattern: str | None = None,
-        unwrap: bool = False,
+        unwrap: bool = True,
     ) -> Any:
         """
         Get result by analysis name with optional glob pattern filtering.
@@ -944,7 +937,7 @@ class SubjectData:
             - ``*`` matches any sequence of characters
             - ``?`` matches any single character
             - ``[seq]`` matches any character in seq
-        unwrap : bool, default=False
+        unwrap : bool, default=True
             If True, call `.get_data()` on result objects to return raw data
             (e.g., numpy arrays, nibabel images) instead of wrapper objects.
 

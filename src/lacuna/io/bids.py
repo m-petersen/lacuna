@@ -224,7 +224,7 @@ def load_bids_dataset(
 
         try:
             mask_data = SubjectData.from_nifti(
-                lesion_path=filepath,
+                mask_path=filepath,
                 metadata=metadata,
                 space=file_space,
                 resolution=file_resolution,

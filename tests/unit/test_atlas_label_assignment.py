@@ -85,7 +85,7 @@ class TestAtlasLabelAssignment:
 
             # Load lesion data
             mask_data_obj = SubjectData.from_nifti(
-                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+                mask_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
             )
 
             # Register atlas
@@ -178,7 +178,7 @@ class TestAtlasLabelAssignment:
 
             # Load and analyze
             mask_data_obj = SubjectData.from_nifti(
-                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+                mask_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
             )
 
             # Register atlas
@@ -257,7 +257,7 @@ class TestAtlasLabelAssignment:
 
             # Load and analyze
             mask_data_obj = SubjectData.from_nifti(
-                lesion_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
+                mask_path=lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
             )
 
             # Register atlas
