@@ -108,9 +108,9 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> analysis = FunctionalNetworkMapping(connectome_path='...')
+        >>> analysis = FunctionalNetworkMapping(connectome_name='GSP1000')
         >>> repr(analysis)
-        "FunctionalNetworkMapping(connectome_path='...', ...)"
+        "FunctionalNetworkMapping(connectome_name='GSP1000', ...)"
         """
         params = self._get_parameters()
         class_name = self.__class__.__name__
@@ -247,19 +247,7 @@ class BaseAnalysis(ABC):
         analysis_results = self._run_analysis(transformed_data)
 
         # Step 4: Namespace results under class name
-        # Convert list[DataContainer] to dict[str, DataContainer]
-        # For backward compatibility during transition, support both formats
-        if isinstance(analysis_results, list):
-            # Legacy format: list of results
-            # Convert to dict using result.name attribute
-            results_dict = {}
-            for i, result in enumerate(analysis_results):
-                # Use result name if available, otherwise fall back to index
-                key = getattr(result, "name", None) or f"result_{i}"
-                results_dict[key] = result
-        else:
-            # New format: already a dict
-            results_dict = analysis_results
+        results_dict = analysis_results
 
         # Add analysis mask to intermediates if keep_intermediate=True
         # Note: This is a fallback that stores the space-transformed mask.
