@@ -10,15 +10,15 @@ Examples
 >>> from lacuna import SubjectData
 >>> from lacuna.analysis import RegionalDamage
 >>>
->>> # Load lesion data
->>> lesion = SubjectData.from_nifti("lesion.nii.gz")
+>>> # Load mask data
+>>> mask = SubjectData.from_nifti("mask.nii.gz")
 >>>
 >>> # Compute regional damage
 >>> analysis = RegionalDamage(atlas_dir="/data/atlases")
->>> result = analysis.run(lesion)
+>>> result = analysis.run(mask)
 >>>
 >>> # Access results (percent overlap per region)
->>> print(result.results["ParcelAggregation"])
+>>> print(result.results["RegionalDamage"])
 """
 
 from lacuna.analysis.parcel_aggregation import ParcelAggregation
@@ -48,7 +48,7 @@ class RegionalDamage(ParcelAggregation):
         If None, all registered atlases are processed.
         Use list_parcellations() to see available atlases.
     threshold : float | None, default=None
-        Threshold for binary lesion conversion. If None, no thresholding is applied.
+        Threshold for binary mask conversion. If None, no thresholding is applied.
         For probabilistic atlases: minimum probability to consider a voxel
         as belonging to a region (0.0-1.0).
 
@@ -59,8 +59,7 @@ class RegionalDamage(ParcelAggregation):
 
     Notes
     -----
-    - Lesion mask must be in same space as atlases (typically MNI152)
-    - Results show percentage of each region overlapping with lesion
+    - Results show percentage of each region overlapping with mask
     - For more control (e.g., computing volume instead of percent),
       use ParcelAggregation directly
 
@@ -70,12 +69,12 @@ class RegionalDamage(ParcelAggregation):
     >>> from lacuna import SubjectData
     >>> from lacuna.analysis import RegionalDamage
     >>>
-    >>> lesion = SubjectData.from_nifti("lesion.nii.gz")
+    >>> mask = SubjectData.from_nifti("mask.nii.gz")
     >>> analysis = RegionalDamage()  # Uses all registered atlases
-    >>> result = analysis.run(lesion)
+    >>> result = analysis.run(mask)
     >>>
-    >>> # Results are in ParcelAggregation namespace
-    >>> overlap_pcts = result.results["ParcelAggregation"]
+    >>> # Results are in RegionalDamage namespace
+    >>> overlap_pcts = result.results["RegionalDamage"]
     >>> for region, pct in overlap_pcts.items():
     ...     if pct > 10:  # Show regions with >10% damage
     ...         print(f"{region}: {pct:.1f}%")
@@ -84,7 +83,7 @@ class RegionalDamage(ParcelAggregation):
     >>> analysis = RegionalDamage(
     ...     parcel_names=["Schaefer2018_100Parcels7Networks"]
     ... )
-    >>> result = analysis.run(lesion)
+    >>> result = analysis.run(mask)
 
     See Also
     --------
@@ -136,22 +135,22 @@ class RegionalDamage(ParcelAggregation):
         """
         Validate inputs for regional damage analysis.
 
-        Extends parent validation to ensure lesion mask is binary.
+        Extends parent validation to ensure mask is binary.
 
         Parameters
         ----------
         mask_data : SubjectData
-            Lesion data to validate
+            Mask data to validate
 
         Raises
         ------
         ValueError
-            If lesion mask is not binary (contains values other than 0 and 1)
+            If mask is not binary (contains values other than 0 and 1)
         """
         # Run parent validation first
         super()._validate_inputs(mask_data)
 
-        # Check that lesion mask is binary
+        # Check that mask is binary
         import numpy as np
 
         mask_data_arr = mask_data.mask_img.get_fdata()
@@ -160,7 +159,7 @@ class RegionalDamage(ParcelAggregation):
         # Binary mask should only have 0 and 1 (or just 0, or just 1)
         if not np.all(np.isin(unique_vals, [0, 1])):
             raise ValueError(
-                f"RegionalDamage requires binary lesion mask (0 and 1 only).\n"
+                f"RegionalDamage requires binary mask (0 and 1 only).\n"
                 f"Found values: {unique_vals}\n"
                 f"Use thresholding or binarization to convert continuous maps."
             )
@@ -179,7 +178,7 @@ class RegionalDamage(ParcelAggregation):
         params.update(
             {
                 "analysis_type": "RegionalDamage",
-                "threshold": params.get("threshold", 0.5),
+                "threshold": params.get("threshold"),
             }
         )
         return params
