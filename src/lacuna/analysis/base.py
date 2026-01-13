@@ -40,21 +40,20 @@ class BaseAnalysis(ABC):
         Can be defined as a class attribute or instance attribute.
         Set to None for analyses that adapt to input data resolution.
     batch_strategy : str
-        Preferred batch processing strategy ("parallel", "vectorized", or "streaming").
+        Preferred batch processing strategy ("parallel", or "vectorized").
         Default is "parallel". Subclasses should override this if they benefit from
         a different strategy (e.g., vectorized for network mapping analyses).
 
     Examples
     --------
-    >>> class MyAnalysis(BaseAnalysis):
-    ...     # Declare computation space - lesions will be transformed to this space
+    >>> class LesionVolume(BaseAnalysis):
+    ...     # Declare computation space - masks will be transformed to this space
     ...     TARGET_SPACE = "MNI152NLin6Asym"
     ...     TARGET_RESOLUTION = 2
     ...     batch_strategy = "parallel"  # Process subjects in parallel
     ...
-    ...     def __init__(self, threshold=0.5):
+    ...     def __init__(self):
     ...         super().__init__()
-    ...         self.threshold = threshold
     ...
     ...     def _validate_inputs(self, mask_data):
     ...         # Validation happens AFTER automatic transformation to TARGET_SPACE
@@ -65,12 +64,12 @@ class BaseAnalysis(ABC):
     ...     def _run_analysis(self, mask_data):
     ...         # Lesion is guaranteed to be in TARGET_SPACE @ TARGET_RESOLUTION
     ...         volume = mask_data.get_volume_mm3()
-    ...         return {"volume": volume, "above_threshold": volume > self.threshold}
+    ...         return {"volume": volume}
     ...
-    >>> analysis = MyAnalysis(threshold=100.0)
+    >>> analysis = LesionVolume()
     >>> result = analysis.run(mask_data)
-    >>> print(result.results["MyAnalysis"])
-    {"volume": 523.5, "above_threshold": True}
+    >>> print(result.results["LesionVolume"])
+    {"volume": 523.5}
     """
 
     #: Preferred batch processing strategy (default: parallel)
@@ -109,9 +108,9 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> analysis = FunctionalNetworkMapping(method='pearson', connectome_path='...')
+        >>> analysis = FunctionalNetworkMapping(connectome_path='...')
         >>> repr(analysis)
-        "FunctionalNetworkMapping(method='pearson', connectome_path='...', ...)"
+        "FunctionalNetworkMapping(connectome_path='...', ...)"
         """
         params = self._get_parameters()
         class_name = self.__class__.__name__
@@ -150,7 +149,7 @@ class BaseAnalysis(ABC):
         Configuration:
           - method: pearson
           - connectome_path: /path/to/connectome.h5
-          - t_threshold: 2.0
+          - t_threshold: 9.0
         """
         class_name = self.__class__.__name__
         params = self._get_parameters()
@@ -176,12 +175,13 @@ class BaseAnalysis(ABC):
 
         This is the ONLY public method users should call. It orchestrates
         the complete analysis workflow:
-        1. Validate inputs via _validate_inputs()
-        2. Run analysis via _run_analysis()
-        3. Namespace results under the analysis class name
-        4. Create new SubjectData with updated results
-        5. Record provenance
-        6. Return new SubjectData instance
+        1. Transform to TARGET_SPACE if defined
+        2. Validate inputs via _validate_inputs()
+        3. Run analysis via _run_analysis()
+        4. Namespace results under the analysis class name
+        5. Create new SubjectData with updated results
+        6. Record provenance
+        7. Return new SubjectData instance
 
         The input SubjectData is never modified (immutability principle).
 
@@ -214,15 +214,15 @@ class BaseAnalysis(ABC):
 
         Examples
         --------
-        >>> analysis = LesionNetworkMapping(connectome='HCP1200')
+        >>> analysis = FunctionalNetworkMapping(connectome='GSP1000')
         >>> result = analysis.run(mask_data)
-        >>> print(result.results['LesionNetworkMapping']['network_scores'])
+        >>> print(result.results['FunctionalNetworkMapping']['rmap'])
         """
         # Track original input space info for analyses that need to transform back
         original_space = mask_data.space
         original_resolution = mask_data.resolution
 
-        # Step 0: Transform to target space if TARGET_SPACE is defined
+        # Step 1: Transform to target space if TARGET_SPACE is defined
         transformed_data = self._ensure_target_space(mask_data)
 
         # Store original input info in metadata for _run_analysis to access
@@ -240,13 +240,13 @@ class BaseAnalysis(ABC):
                 results=transformed_data.results,
             )
 
-        # Step 1: Validate inputs
+        # Step 2: Validate inputs
         self._validate_inputs(transformed_data)
 
-        # Step 2: Run analysis computation
+        # Step 3: Run analysis computation
         analysis_results = self._run_analysis(transformed_data)
 
-        # Step 3: Namespace results under class name
+        # Step 4: Namespace results under class name
         # Convert list[DataContainer] to dict[str, DataContainer]
         # For backward compatibility during transition, support both formats
         if isinstance(analysis_results, list):
@@ -347,15 +347,14 @@ class BaseAnalysis(ABC):
         Examples
         --------
         >>> def _validate_inputs(self, mask_data: SubjectData) -> None:
-        ...     if mask_data.get_coordinate_space() != "MNI152_2mm":
+        ...     if mask_data.get_coordinate_space() != "MNI152Nlin6Asym":
         ...         raise ValueError(
-        ...             "LesionNetworkMapping requires data in MNI152 space. "
-        ...             "Use lacuna.preprocess.normalize_to_mni() first."
+        ...             "ExampleAnalysis requires data in MNI152Nlin6Asym space. "
         ...         )
         ...
         ...     data = mask_data.mask_img.get_fdata()
         ...     if not np.all(np.isin(data, [0, 1])):
-        ...         raise ValueError("Lesion mask must be binary (0s and 1s).")
+        ...         raise ValueError("Mask data must be binary (0s and 1s).")
         """
         pass
 
@@ -395,10 +394,10 @@ class BaseAnalysis(ABC):
         --------
         >>> from lacuna.core.data_types import VoxelMap, ScalarMetric
         >>> def _run_analysis(self, mask_data: SubjectData) -> list[DataContainer]:
-        ...     lesion_array = mask_data.mask_img.get_fdata()
+        ...     mask_array = mask_data.mask_img.get_fdata()
         ...
         ...     # Create voxel map result
-        ...     correlation_img = self._compute_correlation_map(lesion_array)
+        ...     correlation_img = self._compute_correlation_map(mask_array)
         ...     voxel_result = VoxelMap(
         ...         name="rmap",
         ...         data=correlation_img,
@@ -409,7 +408,7 @@ class BaseAnalysis(ABC):
         ...     # Create summary statistics result
         ...     summary_result = ScalarMetric(
         ...         name="summarystatistics",
-        ...         data={"mean": float(np.mean(lesion_array))}
+        ...         data={"sum": float(np.sum(mask_array))}
         ...     )
         ...
         ...     return [voxel_result, summary_result]
