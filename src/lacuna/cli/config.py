@@ -241,6 +241,7 @@ class CLIConfig:
 
     # Performance options
     n_procs: int = 1
+    batch_size: int = 1
     tmp_dir: Path = field(default_factory=lambda: Path("tmp"))
 
     # Output options
@@ -383,6 +384,7 @@ class CLIConfig:
             skip_regional_damage=skip_rd,
             atlas_dir=getattr(args, "atlas_dir", None),
             n_procs=getattr(args, "nprocs", None) or yaml_config.get("n_jobs", 1),
+            batch_size=getattr(args, "batch_size", None) or yaml_config.get("batch_size", 1),
             tmp_dir=tmp_dir,
             overwrite=getattr(args, "overwrite", False),
             verbose_count=getattr(args, "verbose_count", 0) or yaml_config.get("verbosity", 0),

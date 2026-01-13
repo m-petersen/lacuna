@@ -182,6 +182,17 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         help="Number of parallel processes (-1 for all CPUs)",
     )
     g_perf.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        metavar="N",
+        help=(
+            "Number of subjects to process together in vectorized mode. "
+            "Higher values improve FNM performance but use more memory. "
+            "Use -1 for all subjects at once. (default: 1 = sequential)"
+        ),
+    )
+    g_perf.add_argument(
         "-w",
         "--tmp-dir",
         dest="tmp_dir",
@@ -519,6 +530,17 @@ def _add_bids_arguments(parser: ArgumentParser) -> None:
         default=1,
         metavar="N",
         help="Number of parallel processes (-1 for all CPUs)",
+    )
+    g_perf.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        metavar="N",
+        help=(
+            "Number of subjects to process together in vectorized mode. "
+            "Higher values improve FNM performance but use more memory. "
+            "Use -1 for all subjects at once. (default: 1 = sequential)"
+        ),
     )
     g_perf.add_argument(
         "-w",

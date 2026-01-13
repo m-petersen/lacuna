@@ -255,18 +255,12 @@ def _run_workflow(config: CLIConfig) -> int:
             logger.info("Loaded and processed single mask file")
 
         elif config.participant_label and len(config.participant_label) > 1:
-            # Multiple subjects specified - process each individually for memory efficiency
-            logger.info(f"Processing {len(config.participant_label)} subject(s) sequentially...")
-            from tqdm import tqdm
-
+            # Multiple subjects specified by participant label
             from lacuna.io.bids import BidsError
 
-            processed_count = 0
-            for subject_id in tqdm(
-                config.participant_label,
-                desc="Processing subjects",
-                disable=not config.verbose,
-            ):
+            # First, load all subjects
+            all_subjects = []
+            for subject_id in config.participant_label:
                 pattern = _build_pattern(
                     [subject_id],  # Single subject
                     config.session_id,
@@ -279,26 +273,42 @@ def _run_workflow(config: CLIConfig) -> int:
                         space=config.space,
                         resolution=config.resolution,
                     )
-                    if not subjects_dict:
+                    if subjects_dict:
+                        all_subjects.extend(subjects_dict.values())
+                    else:
                         logger.warning(f"No data found for subject: {subject_id}")
-                        continue
-
-                    # Process each session for this subject
-                    for subject_data in subjects_dict.values():
-                        result = _process_single_subject(subject_data, steps, config, export=True)
-                        if result != EXIT_SUCCESS:
-                            logger.warning(f"Failed to process {subject_id}, continuing...")
-                        else:
-                            processed_count += 1
-
                 except BidsError:
                     logger.warning(f"No data found for subject: {subject_id}")
 
-            if processed_count == 0:
+            if not all_subjects:
                 logger.error(f"No subjects matching {config.participant_label} found")
                 return EXIT_BIDS_ERROR
 
-            logger.info(f"Successfully processed {processed_count} subject(s)")
+            logger.info(f"Loaded {len(all_subjects)} subject(s)")
+
+            # Process using batch or sequential mode
+            if config.batch_size != 1 and steps:
+                # Batch processing mode
+                result = _process_batch(all_subjects, steps, config, config.batch_size)
+                if result != EXIT_SUCCESS:
+                    return result
+            else:
+                # Sequential processing
+                from tqdm import tqdm
+
+                processed_count = 0
+                for subject_data in tqdm(
+                    all_subjects,
+                    desc="Processing subjects",
+                    disable=not config.verbose,
+                ):
+                    result = _process_single_subject(subject_data, steps, config, export=True)
+                    if result != EXIT_SUCCESS:
+                        logger.warning("Subject processing failed, continuing...")
+                    else:
+                        processed_count += 1
+
+                logger.info(f"Successfully processed {processed_count} subject(s)")
 
         else:
             # Single subject or all subjects - load all at once
@@ -334,18 +344,25 @@ def _run_workflow(config: CLIConfig) -> int:
             subjects_list = list(subjects_dict.values())
             logger.info(f"Loaded {len(subjects_list)} subject(s)")
 
-            # Process subjects - if many subjects, process individually
+            # Process subjects - use batch processing if batch_size != 1
             if len(subjects_list) > 1:
-                from tqdm import tqdm
-
-                for subject_data in tqdm(
-                    subjects_list,
-                    desc="Processing subjects",
-                    disable=not config.verbose,
-                ):
-                    result = _process_single_subject(subject_data, steps, config, export=True)
+                if config.batch_size != 1 and steps:
+                    # Batch processing mode - process multiple subjects together
+                    result = _process_batch(subjects_list, steps, config, config.batch_size)
                     if result != EXIT_SUCCESS:
-                        logger.warning("Subject processing failed, continuing...")
+                        return result
+                else:
+                    # Sequential processing - one subject at a time
+                    from tqdm import tqdm
+
+                    for subject_data in tqdm(
+                        subjects_list,
+                        desc="Processing subjects",
+                        disable=not config.verbose,
+                    ):
+                        result = _process_single_subject(subject_data, steps, config, export=True)
+                        if result != EXIT_SUCCESS:
+                            logger.warning("Subject processing failed, continuing...")
             else:
                 # Single subject
                 result = _process_single_subject(subjects_list[0], steps, config, export=True)
@@ -417,6 +434,118 @@ def _process_single_subject(
         subject_id = subject_data.metadata.get("subject_id", "unknown")
         logger.error(f"Failed to process {subject_id}: {e}")
         return EXIT_ANALYSIS_ERROR
+
+
+def _process_batch(
+    subjects_list: list,
+    steps: dict,
+    config: CLIConfig,
+    batch_size: int,
+) -> int:
+    """
+    Process subjects in batches using optimized batch operations.
+
+    Automatically selects the best strategy for each analysis:
+    - "vectorized" for FNM (processes all masks together in matrix operations)
+    - "parallel" for other analyses (parallel processing across subjects)
+
+    Parameters
+    ----------
+    subjects_list : list[SubjectData]
+        List of subjects to process.
+    steps : dict
+        Analysis steps to run.
+    config : CLIConfig
+        Configuration.
+    batch_size : int
+        Number of subjects per batch. Use -1 for all subjects at once.
+
+    Returns
+    -------
+    int
+        Exit code.
+    """
+    from lacuna.batch import batch_process
+    from lacuna.io import export_bids_derivatives
+
+    # Determine actual batch size
+    n_subjects = len(subjects_list)
+    if batch_size == -1:
+        actual_batch_size = n_subjects
+    else:
+        actual_batch_size = min(batch_size, n_subjects)
+
+    logger.info(
+        f"Batch processing: {n_subjects} subjects in batches of {actual_batch_size}"
+    )
+
+    # Build analysis instances from steps
+    from lacuna.analysis import get_analysis
+
+    analyses = []
+    for analysis_name, kwargs in steps.items():
+        analysis_cls = get_analysis(analysis_name)
+        if kwargs is None:
+            kwargs = {}
+        else:
+            kwargs = kwargs.copy()
+        if "verbose" not in kwargs:
+            kwargs["verbose"] = config.verbose
+        analyses.append((analysis_name, analysis_cls(**kwargs)))
+
+    # Process in batches
+    processed_count = 0
+    failed_count = 0
+
+    for batch_start in range(0, n_subjects, actual_batch_size):
+        batch_end = min(batch_start + actual_batch_size, n_subjects)
+        batch = subjects_list[batch_start:batch_end]
+
+        if n_subjects > actual_batch_size:
+            logger.info(f"Processing batch {batch_start // actual_batch_size + 1} ({batch_start + 1}-{batch_end} of {n_subjects})")
+
+        try:
+            # Run each analysis in sequence using batch_process
+            # batch_process auto-selects strategy based on analysis.batch_strategy
+            current_data = batch
+            for analysis_name, analysis in analyses:
+                strategy = getattr(analysis, "batch_strategy", "parallel")
+                logger.info(f"Running {analysis_name} ({strategy} strategy)")
+                current_data = batch_process(
+                    inputs=current_data,
+                    analysis=analysis,
+                    n_jobs=config.n_procs,
+                    show_progress=config.verbose,
+                    strategy=None,  # Auto-select based on analysis.batch_strategy
+                )
+
+            # Export results
+            for result in current_data:
+                try:
+                    export_bids_derivatives(
+                        subject_data=result,
+                        output_dir=config.output_dir,
+                        overwrite=True,
+                    )
+                    processed_count += 1
+                except Exception as e:
+                    subject_id = result.metadata.get("subject_id", "unknown")
+                    logger.warning(f"Failed to export {subject_id}: {e}")
+                    failed_count += 1
+
+        except Exception as e:
+            logger.error(f"Batch processing failed: {e}")
+            failed_count += len(batch)
+
+    if processed_count == 0:
+        logger.error("No subjects were successfully processed")
+        return EXIT_ANALYSIS_ERROR
+
+    if failed_count > 0:
+        logger.warning(f"Completed with {failed_count} failures out of {n_subjects} subjects")
+
+    logger.info(f"Successfully processed {processed_count} subject(s)")
+    return EXIT_SUCCESS
 
 
 def _build_pattern(
