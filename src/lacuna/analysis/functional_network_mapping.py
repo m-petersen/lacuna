@@ -264,16 +264,28 @@ class FunctionalNetworkMapping(BaseAnalysis):
     def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate inputs for functional network mapping.
 
+        This method validates that the mask data is ready for FNM analysis.
+        By the time this is called, BaseAnalysis.run() has already transformed
+        the mask to TARGET_SPACE (the connectome space) via _ensure_target_space().
+
         Parameters
         ----------
         mask_data : SubjectData
-            Lesion data to validate.
+            Mask data to validate (already transformed to connectome space).
 
         Raises
         ------
         ValidationError
-            If connectome file(s) don't exist, lesion is not in MNI152 space,
-            or lesion mask is not binary.
+            If connectome file(s) don't exist or mask space doesn't match
+            the expected connectome space.
+
+        Notes
+        -----
+        Binary mask validation is handled by SubjectData.__init__, so we don't
+        need to duplicate that check here.
+
+        Space transformation is handled by BaseAnalysis._ensure_target_space(),
+        so by the time we get here, mask_data.space should equal self.TARGET_SPACE.
         """
         # Check connectome path exists
         if not self.connectome_path.exists():
@@ -283,25 +295,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Validate that we have connectome files
         _ = self._get_connectome_files()  # Raises ValidationError if no files found
 
-        # Validate MNI152 coordinate space
-        space = mask_data.metadata.get("space", "")
-        if "MNI152" not in space.upper() and space != "":
-            # If no space specified, check affine approximately
-            # (This is a simplified check - production should be more robust)
-            if not hasattr(mask_data.mask_img, "affine"):
-                msg = "Lesion must be in MNI152 space for functional network mapping"
-                raise ValidationError(msg)
-
-        # Check if no space metadata at all (warn but continue)
-        if not space:
-            # Allow if no metadata, but in real case should validate affine
-            pass
-
-        # Validate binary mask
-        mask_data_array = mask_data.mask_img.get_fdata()
-        unique_values = np.unique(mask_data_array)
-        if not np.all(np.isin(unique_values, [0, 1])):
-            msg = "Lesion mask must be binary (only 0 and 1 values)"
+        # Validate coordinate space matches connectome space
+        # (should already be transformed by _ensure_target_space)
+        if mask_data.space != self.TARGET_SPACE:
+            msg = (
+                f"Mask space '{mask_data.space}' does not match connectome space "
+                f"'{self.TARGET_SPACE}'. This is unexpected - space transformation "
+                f"should have been handled by BaseAnalysis._ensure_target_space()."
+            )
             raise ValidationError(msg)
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
@@ -328,7 +329,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Notes
         -----
-        This method implements a memory-efficient fLNM pipeline:
+        This method implements a memory-efficient FNM pipeline:
         1. Load mask info once (shared across batches)
         2. For each connectome batch:
            a. Load timeseries data
@@ -883,9 +884,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         providing massive speedup for large masks.
 
         **Performance**:
-        - Complexity: O(N) where N = number of mask voxels
         - Speedup: 15-2000x vs. legacy implementation (increases with mask size)
-        - Memory cost: ~3.6 MB (2mm), ~28.8 MB (1mm) for lookup array
 
         **Benchmark Results** (MNI152 @ 2mm, ~335K brain voxels):
         - 100 voxels: 113ms → 7ms (15.7x speedup)
@@ -915,7 +914,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         Notes
         -----
         For batch processing scenarios, consider caching the lookup array to avoid
-        rebuilding it for every subject (see T172 in development roadmap).
+        rebuilding it for every subject
         """
         # Get connectome mask info
         mask_shape = self._mask_info["mask_shape"]
@@ -957,9 +956,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_coords = np.where(resampled_mask)
 
         # Build lookup array: 3D array mapping coordinates to flat indices
-        # Memory cost: mask_shape × 4 bytes (int32)
-        # - MNI152 @ 2mm (91×109×91): ~3.6 MB
-        # - MNI152 @ 1mm (182×218×182): ~28.8 MB
         lookup = np.full(mask_shape, -1, dtype=np.int32)
         lookup[mask_indices] = np.arange(len(mask_indices[0]), dtype=np.int32)
 
@@ -1186,10 +1182,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
             mean_z = aggregators[i]["sum_z"] / n
             mean_r = np.tanh(mean_z).astype(np.float32)
 
-            # Compute standard deviation for t-statistics (always computed)
-            # Var(X) = E[X²] - E[X]²
-            var_z = (aggregators[i]["sum_z2"] / n) - (mean_z**2)
-            std_z = np.sqrt(np.maximum(var_z, 0))  # Avoid negative from numerical errors
+            # Compute sample standard deviation for t-statistics (always computed)
+            # Using Bessel's correction (N-1 denominator) to match _run_analysis
+            # Population variance: Var_pop = E[X²] - E[X]² = sum_z2/n - mean_z²
+            # Sample variance: Var_sample = (n / (n-1)) * Var_pop
+            var_z_population = (aggregators[i]["sum_z2"] / n) - (mean_z**2)
+            var_z_sample = (n / (n - 1)) * var_z_population
+            std_z = np.sqrt(np.maximum(var_z_sample, 0))  # Avoid negative from numerical errors
 
             # Create a copy of mask_data to avoid modifying input
             mask_copy = mask_info["mask_data"].copy()
@@ -1221,9 +1220,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
     ) -> np.ndarray:
         """Compute correlations for ALL masks at once (vectorized).
 
-        This is the key optimization: uses einsum "lit,itv->liv" to compute
-        correlations for all masks simultaneously, dramatically reducing
-        overhead and enabling optimized BLAS operations.
+        Uses einsum "lit,itv->liv" to compute correlations for all masks simultaneously, 
+        reducing overhead and enabling optimized BLAS operations.
 
         Parameters
         ----------
@@ -1361,8 +1359,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         This method is used by vectorized batch processing with streaming
         aggregation. Instead of storing all individual correlation maps,
-        it accepts pre-computed mean and standard deviation, dramatically
-        reducing memory usage.
+        it accepts pre-computed mean and standard deviation, reducing memory usage.
 
         Parameters
         ----------
