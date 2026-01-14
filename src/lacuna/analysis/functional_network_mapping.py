@@ -1071,19 +1071,35 @@ class FunctionalNetworkMapping(BaseAnalysis):
         )
 
         # Prepare all masks with resampling if needed
+        # Track valid and skipped masks separately
         mask_batch = []
+        skipped_indices = []
+        
         for i, mask_data in enumerate(mask_data_list):
             subject_id = mask_data.metadata.get("subject_id", f"mask_{i}")
             self.logger.info(
                 f"Preparing mask {i + 1}/{len(mask_data_list)}: {subject_id}", indent_level=1
             )
 
+            # Check for empty mask BEFORE resampling
+            input_mask_data = mask_data.mask_img.get_fdata()
+            if not np.any(input_mask_data > 0):
+                self.logger.warning(
+                    f"Skipping mask {i} ({subject_id}): input mask is empty (no non-zero voxels)",
+                    indent_level=2,
+                )
+                skipped_indices.append(i)
+                continue
+
             voxel_indices, _ = self._get_mask_voxel_indices(mask_data)
 
             if len(voxel_indices) == 0:
-                raise ValidationError(
-                    f"Mask {i} has no overlap with connectome mask after resampling"
+                self.logger.warning(
+                    f"Skipping mask {i} ({subject_id}): no overlap with connectome brain mask after resampling",
+                    indent_level=2,
                 )
+                skipped_indices.append(i)
+                continue
 
             mask_batch.append(
                 {
@@ -1091,6 +1107,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "voxel_indices": voxel_indices,
                     "index": i,
                 }
+            )
+
+        # Check if we have any valid masks to process
+        if len(mask_batch) == 0:
+            raise ValidationError(
+                f"All {len(mask_data_list)} masks were skipped (empty or no overlap with connectome)"
             )
 
         # Process through all connectome batches (VECTORIZED)
@@ -1180,9 +1202,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Compute final statistics from aggregated values
         self.logger.info("Aggregating results...")
-        results = []
+        
+        # Build results for processed masks, indexed by original position
+        processed_results = {}
         for i, mask_info in enumerate(mask_batch):
-            subject_id = mask_info["mask_data"].metadata.get("subject_id", f"mask_{i}")
+            original_idx = mask_info["index"]
+            subject_id = mask_info["mask_data"].metadata.get("subject_id", f"mask_{original_idx}")
             self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
 
             # Compute statistics from streaming aggregators
@@ -1213,10 +1238,25 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 total_subjects,
             )
 
-            results.append(result)
+            processed_results[original_idx] = result
+
+        # Build final results list in original input order
+        # For skipped masks, return original SubjectData unchanged (no results added)
+        results = []
+        for i, mask_data in enumerate(mask_data_list):
+            if i in processed_results:
+                results.append(processed_results[i])
+            else:
+                # Skipped mask - return original data (will have no analysis results)
+                # The CLI export will detect this as having no results to export
+                results.append(mask_data)
 
         self.logger.success(
-            "Batch processing complete", details={"n_masks_processed": len(results)}
+            "Batch processing complete", 
+            details={
+                "n_masks_processed": len(processed_results),
+                "n_masks_skipped": len(skipped_indices),
+            },
         )
 
         return results
