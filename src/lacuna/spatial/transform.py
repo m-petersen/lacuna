@@ -174,27 +174,31 @@ class TransformationStrategy:
         interp_method = self.select_interpolation(img, interpolation)
         interp_str = "nearest" if interp_method == InterpolationMethod.NEAREST else "continuous"
 
-        # Calculate target affine with new resolution
+        # Get current voxel sizes (zooms) - handles rotated/oblique affines correctly
+        current_zooms = np.array(img.header.get_zooms()[:3])
+        target_res = target_space.resolution
+
+        # Build target affine by normalizing and rescaling column vectors
+        # This preserves orientation for oblique/rotated images
         source_affine = img.affine
         target_affine = source_affine.copy()
 
-        # Get current resolution from affine diagonal
-        current_res = abs(source_affine[0, 0])  # Assume isotropic for simplicity
-        target_res = target_space.resolution
-
-        # Update affine diagonal to target resolution (preserve sign)
         for i in range(3):
-            if source_affine[i, i] >= 0:
-                target_affine[i, i] = target_res
-            else:
-                target_affine[i, i] = -target_res
+            # Extract column vector (direction cosine * zoom)
+            col = target_affine[:3, i]
+            # Normalize and rescale to target resolution
+            norm = np.linalg.norm(col)
+            if norm > 0:
+                target_affine[:3, i] = (col / norm) * target_res
 
         # Calculate target shape based on resolution change
-        scale_factor = current_res / target_res
-        target_shape = tuple(int(s * scale_factor) for s in img.shape[:3])
+        # Use geometric mean of current zooms for more accurate scaling
+        mean_current_res = np.mean(current_zooms)
+        scale_factor = mean_current_res / target_res
+        target_shape = tuple(int(round(s * scale_factor)) for s in img.shape[:3])
 
         logger.debug(
-            f"Resampling: {img.shape} @ {current_res}mm -> {target_shape} @ {target_res}mm"
+            f"Resampling: {img.shape} @ {current_zooms}mm -> {target_shape} @ {target_res}mm"
         )
 
         # Suppress "Non-finite values detected" warning from nilearn

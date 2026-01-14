@@ -1,17 +1,19 @@
 """
-Data fetching and caching utilities for reference datasets.
+Data fetching and caching utilities for connectomes and tractograms.
 
-This module provides automatic downloading and caching of atlases and templates
-using Pooch. Connectomes are user-managed due to size and licensing.
+This module provides automatic downloading, conversion, and caching of
+connectome datasets (GSP1000, dTOR985) for use with Lacuna analyses.
+
+Atlases are bundled in the package and accessed via `lacuna.assets.parcellations`.
 """
 
 from __future__ import annotations
 
 import os
+import time
+import warnings
 from collections.abc import Callable
 from pathlib import Path
-
-import pooch
 
 from ..core.exceptions import AtlasNotFoundError
 from .downloaders import ConnectomeSource, FetchProgress, FetchResult
@@ -50,59 +52,6 @@ def get_data_dir() -> Path:
         return Path(xdg_cache) / "lacuna"
 
     return Path.home() / ".cache" / "lacuna"
-
-
-# Pooch registry for pre-registered atlases
-# NOTE: This registry is NOT FUNCTIONAL - URLs and hashes are placeholders.
-# The actual parcellation files are bundled in lacuna/data/atlases/ and accessed
-# via lacuna.assets.parcellations module. This registry is reserved for future
-# remote hosting capability.
-# TODO: Replace with actual hosting URLs when lacuna-data repository is created
-ATLAS_REGISTRY = pooch.create(
-    path=get_data_dir() / "atlases",
-    base_url="https://github.com/lacuna/data/raw/main/atlases/",  # placeholder
-    registry={
-        # Placeholder entries - NOT FUNCTIONAL
-        "schaefer2018-100parcels-7networks.nii.gz": "sha256:placeholder",
-        "schaefer2018-100parcels-7networks_labels.txt": "sha256:placeholder",
-        "schaefer2018-400parcels-7networks.nii.gz": "sha256:placeholder",
-        "schaefer2018-400parcels-7networks_labels.txt": "sha256:placeholder",
-    },
-)
-
-
-# Pooch registry for pre-registered tractograms
-# NOTE: This registry is NOT FUNCTIONAL - URLs and hashes are placeholders.
-# Tractograms should be registered via lacuna.assets.connectomes module.
-# TODO: Replace with actual hosting URLs when lacuna-data repository is created
-TRACTOGRAM_REGISTRY = pooch.create(
-    path=get_data_dir() / "tractograms",
-    base_url="https://github.com/lacuna/lacuna-data/raw/main/tractograms/",  # placeholder
-    registry={
-        # Placeholder entry - NOT FUNCTIONAL
-        "dTOR985.trk": "sha256:placeholder",
-    },
-)
-
-
-def list_available_atlases() -> list[str]:
-    """
-    List all pre-registered atlases that can be automatically downloaded.
-
-    Returns
-    -------
-    List[str]
-        Names of available atlases
-
-    Examples
-    --------
-    >>> atlases = list_available_atlases()
-    >>> print(atlases)
-    ['harvard-oxford-cortical', 'schaefer2018-100parcels-7networks', ...]
-    """
-    # Extract base names (without .nii.gz extension)
-    atlas_files = [f for f in ATLAS_REGISTRY.registry.keys() if f.endswith(".nii.gz")]
-    return [Path(f).stem for f in atlas_files]
 
 
 def discover_atlas_files(atlas_path: Path) -> tuple[Path, Path]:
@@ -177,291 +126,74 @@ def discover_atlas_files(atlas_path: Path) -> tuple[Path, Path]:
         )
 
 
-def _fetch_registered_atlas(name: str) -> tuple[Path, Path]:
-    """
-    Fetch a pre-registered atlas from the Pooch registry.
-
-    Downloads if not cached, verifies checksums.
-
-    Parameters
-    ----------
-    name : str
-        Atlas name (without .nii.gz extension)
-
-    Returns
-    -------
-    Tuple[Path, Path]
-        (image_path, labels_path) pair
-
-    Raises
-    ------
-    AtlasNotFoundError
-        If atlas is not in registry
-    """
-    img_filename = f"{name}.nii.gz"
-    labels_filename = f"{name}_labels.txt"
-
-    if img_filename not in ATLAS_REGISTRY.registry:
-        raise AtlasNotFoundError(
-            f"Atlas '{name}' is not in the pre-registered catalog.\n"
-            f"Available atlases: {list_available_atlases()}"
-        )
-
-    # Fetch both files (downloads if missing, uses cache otherwise)
-    img_path = Path(ATLAS_REGISTRY.fetch(img_filename, progressbar=True))
-    labels_path = Path(ATLAS_REGISTRY.fetch(labels_filename, progressbar=True))
-
-    return img_path, labels_path
-
-
-def _scan_atlas_directory(atlas_dir: Path, pattern: str) -> tuple[Path, Path] | None:
-    """
-    Scan a directory for atlas files matching a pattern.
-
-    Parameters
-    ----------
-    atlas_dir : Path
-        Directory to scan
-    pattern : str
-        Atlas name pattern to match
-
-    Returns
-    -------
-    Optional[Tuple[Path, Path]]
-        (image_path, labels_path) if found, None otherwise
-    """
-    # Try exact match
-    img_candidates = [
-        atlas_dir / f"{pattern}.nii.gz",
-        atlas_dir / pattern / f"{pattern}.nii.gz",
-    ]
-
-    for img_path in img_candidates:
-        if img_path.exists():
-            try:
-                return discover_atlas_files(img_path)
-            except AtlasNotFoundError:
-                continue
-
-    # Try glob pattern
-    matches = list(atlas_dir.glob(f"*{pattern}*.nii.gz"))
-    if matches:
-        try:
-            return discover_atlas_files(matches[0])
-        except AtlasNotFoundError:
-            pass
-
-    return None
-
-
-def get_atlas(name_or_path: str) -> tuple[Path, Path]:
-    """
-    Get atlas files with automatic download or discovery.
-
-    Resolution order:
-    1. If path exists → use directly (custom atlas)
-    2. If in pre-registered catalog → fetch via Pooch (download if missing)
-    3. If LACUNA_ATLAS_DIR set → scan directory for matching files
-    4. Else → raise AtlasNotFoundError
-
-    Parameters
-    ----------
-    name_or_path : str
-        Atlas name (e.g., 'schaefer2018-100parcels-7networks') or path to .nii.gz file
-
-    Returns
-    -------
-    Tuple[Path, Path]
-        (image_path, labels_path) pair
-
-    Raises
-    ------
-    AtlasNotFoundError
-        If atlas cannot be found through any resolution method
-
-    Examples
-    --------
-    >>> # Pre-registered atlas (downloads if needed)
-    >>> img, labels = get_atlas("schaefer2018-100parcels-7networks")
-
-    >>> # Custom atlas file
-    >>> img, labels = get_atlas("/path/to/custom_atlas.nii.gz")
-
-    >>> # Atlas in custom directory
-    >>> import os
-    >>> os.environ['LACUNA_ATLAS_DIR'] = '/lab/atlases'
-    >>> img, labels = get_atlas("my_custom_atlas")
-    """
-    # 1. Check if it's a path that exists
-    if Path(name_or_path).exists():
-        return discover_atlas_files(Path(name_or_path))
-
-    # 2. Try pre-registered catalog
-    if name_or_path in list_available_atlases():
-        return _fetch_registered_atlas(name_or_path)
-
-    # 3. Check custom atlas directory
-    if atlas_dir := os.getenv("LACUNA_ATLAS_DIR"):
-        result = _scan_atlas_directory(Path(atlas_dir), name_or_path)
-        if result:
-            return result
-
-    # 4. Not found anywhere
-    raise AtlasNotFoundError(
-        f"Atlas '{name_or_path}' not found.\n"
-        f"Available pre-registered atlases: {list_available_atlases()}\n"
-        f"You can:\n"
-        f"  - Provide a direct path to a .nii.gz file\n"
-        f"  - Set LACUNA_ATLAS_DIR to search a custom directory\n"
-        f"  - Check spelling of atlas name"
-    )
-
-
 def get_connectome_path(name_or_path: str) -> Path:
     """
-    Resolve connectome file path.
+    Resolve a connectome name or path to its file location.
 
-    Resolution order:
-    1. If path exists → use directly
-    2. If LACUNA_CONNECTOME_DIR set → look for named file
-    3. Else → raise ConnectomeNotFoundError with setup instructions
+    For registered connectomes, looks up path in registry.
+    For paths, validates existence.
 
     Parameters
     ----------
     name_or_path : str
-        Connectome name or path to HDF5 file
+        Either a registered connectome name (e.g., "GSP1000") or
+        a direct path to .h5 file or directory.
 
     Returns
     -------
     Path
-        Path to connectome HDF5 file
+        Resolved path to connectome data.
 
     Raises
     ------
     FileNotFoundError
-        If connectome cannot be found
+        If connectome cannot be resolved.
 
     Examples
     --------
-    >>> # Direct path
-    >>> path = get_connectome_path("/data/gsp1000_chunk_000.h5")
-
-    >>> # Named connectome in custom directory
-    >>> import os
-    >>> os.environ['LACUNA_CONNECTOME_DIR'] = '/data/connectomes'
-    >>> path = get_connectome_path("gsp1000_chunk_000")
+    >>> path = get_connectome_path("GSP1000")  # Registered name
+    >>> path = get_connectome_path("/data/my_connectome.h5")  # Direct path
     """
-    from ..core.exceptions import ConnectomeNotFoundError
+    # Check if it's a path
+    path = Path(name_or_path)
+    if path.exists():
+        return path
 
-    # 1. Direct path
-    if Path(name_or_path).exists():
-        return Path(name_or_path)
-
-    # 2. Check connectome directory
-    if connectome_dir := os.getenv("LACUNA_CONNECTOME_DIR"):
-        candidates = [
-            Path(connectome_dir) / name_or_path,
-            Path(connectome_dir) / f"{name_or_path}.h5",
-            Path(connectome_dir) / f"{name_or_path}.hdf5",
-        ]
-
-        for candidate in candidates:
-            if candidate.exists():
-                return candidate
-
-    # 3. Not found - provide helpful error
-    raise ConnectomeNotFoundError(
-        f"Connectome '{name_or_path}' not found.\n\n"
-        "Connectomes are not automatically downloaded due to size and licensing.\n"
-        "To prepare your connectome:\n\n"
-        "1. Download GSP1000 from Harvard Dataverse:\n"
-        "   https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/ILXIKS\n\n"
-        "2. Convert to Lacuna format:\n"
-        "   lacuna convert gsp1000 /path/to/raw /output/dir\n\n"
-        "3. Set environment variable:\n"
-        "   export LACUNA_CONNECTOME_DIR=/output/dir\n\n"
-        "Or provide direct path: FunctionalNetworkMapping(connectome_path='/path/to/file.h5')"
-    )
-
-
-def get_tractogram(name: str = "dTOR985", *, convert_to_tck: bool = True) -> Path:
-    """
-    Get structural tractogram with automatic download and conversion.
-
-    The default tractogram is dTOR985 (985 subjects), which is automatically
-    downloaded in TrackVis .trk format and optionally converted to MRtrix3 .tck
-    format for use with StructuralNetworkMapping.
-
-    Parameters
-    ----------
-    name : str, default="dTOR985"
-        Tractogram name (currently only "dTOR985" supported)
-    convert_to_tck : bool, default=True
-        Whether to convert .trk to .tck format using MRtrix3 tckconvert
-        Required for StructuralNetworkMapping
-
-    Returns
-    -------
-    Path
-        Path to tractogram file (.tck if converted, .trk otherwise)
-
-    Raises
-    ------
-    ValueError
-        If tractogram name not recognized
-    RuntimeError
-        If MRtrix3 not available and convert_to_tck=True
-
-    Examples
-    --------
-    >>> # Get dTOR985 as .tck (default, ready for analysis)
-    >>> tck_path = get_tractogram("dTOR985")
-    >>> analysis = StructuralNetworkMapping(tractogram_path=tck_path)
-
-    >>> # Get raw .trk file without conversion
-    >>> trk_path = get_tractogram("dTOR985", convert_to_tck=False)
-
-    Notes
-    -----
-    - First call downloads ~2GB .trk file from repository
-    - Conversion to .tck creates ~5-10GB file (MRtrix3 format)
-    - Files cached in ~/.cache/lacuna/tractograms/
-    - Conversion requires MRtrix3 installation
-    """
-    if name not in TRACTOGRAM_REGISTRY.registry:
-        raise ValueError(
-            f"Tractogram '{name}' not recognized.\n"
-            f"Available tractograms: {list(TRACTOGRAM_REGISTRY.registry.keys())}"
-        )
-
-    # Fetch .trk file (downloads if needed, uses cache otherwise)
-    trk_filename = f"{name}.trk"
-    trk_path = Path(TRACTOGRAM_REGISTRY.fetch(trk_filename, progressbar=True))
-
-    if not convert_to_tck:
-        return trk_path
-
-    # Convert to .tck format
-    tck_path = trk_path.parent / f"{name}.tck"
-
-    if tck_path.exists():
-        print(f"Using cached .tck file: {tck_path}")
-        return tck_path
-
-    print(f"Converting {name} to MRtrix3 .tck format...")
-
-    # Import here to avoid circular import
-    from .convert import trk_to_tck
-
+    # Try looking up in registry
     try:
-        return trk_to_tck(trk_path, tck_path)
-    except RuntimeError as e:
-        print(
-            f"\nWARNING: Could not convert to .tck format: {e}\n"
-            f"Returning .trk file. You'll need to convert manually:\n"
-            f"  lacuna.io.trk_to_tck('{trk_path}', '{tck_path}')"
-        )
-        return trk_path
+        from ..assets.connectomes import get_functional_connectome
+
+        return get_functional_connectome(name_or_path).data_path
+    except (ImportError, KeyError, AttributeError):
+        pass
+
+    # Check cache directory
+    cache_dir = get_data_dir() / "connectomes"
+    candidates = [
+        cache_dir / name_or_path,
+        cache_dir / name_or_path.lower(),
+        cache_dir / f"{name_or_path}.h5",
+        cache_dir / f"{name_or_path.lower()}.h5",
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    raise FileNotFoundError(
+        f"Connectome '{name_or_path}' not found.\n"
+        "Options:\n"
+        "  - Provide a direct path to an existing .h5 file or directory\n"
+        "  - Register a connectome using lacuna.assets.connectomes\n"
+        "  - Download using: lacuna.io.fetch_gsp1000() or fetch_dtor985()\n\n"
+        "Quick start:\n"
+        "1. Get API key from https://dataverse.harvard.edu/\n"
+        "2. Run:\n"
+        "   lacuna fetch gsp1000 /path/to/output --api-key YOUR_KEY\n\n"
+        "Or in Python:\n"
+        "   from lacuna.io import fetch_gsp1000\n"
+        "   fetch_gsp1000('/path/to/output', api_key='YOUR_KEY')"
+    )
 
 
 # ============================================================================
@@ -498,11 +230,8 @@ def fetch_gsp1000(
     batches : int, default=10
         Number of HDF5 batch files to create. More batches = lower RAM usage.
         Recommendations: 4GB RAM → 100, 8GB → 50, 16GB → 25, 32GB+ → 10.
-        Ignored if test_mode=True (uses 1 batch for test data).
     test_mode : bool, default=False
-        If True, downloads only 1 tarball (~2GB) to test the full pipeline
-        (download → extract → convert → register). Useful for verifying
-        the setup works before committing to the full ~100GB download.
+        If True, downloads only 1 tarball (~2GB) to test the full pipeline.
     register : bool, default=True
         Automatically register connectome after processing.
     register_name : str, default="GSP1000"
@@ -512,8 +241,7 @@ def fetch_gsp1000(
     progress_callback : callable, optional
         Function called with FetchProgress updates during operation.
     verbose : bool, default=False
-        Print informational messages about operations, including when files
-        already exist and are reused without re-downloading.
+        Print informational messages.
 
     Returns
     -------
@@ -532,30 +260,16 @@ def fetch_gsp1000(
     Examples
     --------
     >>> from lacuna.io import fetch_gsp1000
-    >>>
-    >>> # Basic usage with API key
     >>> result = fetch_gsp1000(
     ...     output_dir="/data/connectomes/gsp1000",
     ...     api_key="your-dataverse-api-key",
-    ...     batches=50  # for 8GB RAM systems
+    ...     batches=50
     ... )
     >>> print(result.summary())
-
-    >>> # Using environment variable for API key
-    >>> import os
-    >>> os.environ["DATAVERSE_API_KEY"] = "your-key"
-    >>> result = fetch_gsp1000("/data/connectomes/gsp1000")
-
-    >>> # With progress tracking
-    >>> def on_progress(p: FetchProgress):
-    ...     print(f"{p.phase}: {p.percent_complete:.1f}%")
-    >>> result = fetch_gsp1000("/data", progress_callback=on_progress)
     """
-    import time
-
     from ..core.exceptions import AuthenticationError, DownloadError, ProcessingError
     from .convert import gsp1000_to_hdf5
-    from .downloaders import CONNECTOME_SOURCES, FetchProgress, FetchResult
+    from .downloaders import CONNECTOME_SOURCES
     from .downloaders.dataverse import DataverseDownloader
 
     output_dir = Path(output_dir)
@@ -564,7 +278,7 @@ def fetch_gsp1000(
     start_time = time.time()
     download_time = 0.0
     processing_time = 0.0
-    warnings: list[str] = []
+    warn_list: list[str] = []
 
     source = CONNECTOME_SOURCES["gsp1000"]
 
@@ -578,39 +292,13 @@ def fetch_gsp1000(
     existing_hdf5 = list(processed_dir.glob("*.h5")) + list(processed_dir.glob("*.hdf5"))
     if existing_hdf5 and not force:
         if verbose:
-            print(
-                f"Using existing HDF5 files (skipping download): {processed_dir} "
-                f"({len(existing_hdf5)} files)"
-            )
-        warnings.append(f"Using existing HDF5 files: {processed_dir}")
+            print(f"Using existing HDF5 files: {processed_dir} ({len(existing_hdf5)} files)")
+        warn_list.append(f"Using existing HDF5 files: {processed_dir}")
 
         # Skip to registration phase
-        registered = False
-        if register:
-            if progress_callback:
-                progress_callback(
-                    FetchProgress(
-                        phase="registration",
-                        current_file="",
-                        files_completed=0,
-                        files_total=1,
-                        message=f"Registering as '{register_name}'...",
-                    )
-                )
-            try:
-                from ..assets.connectomes import register_functional_connectome
-
-                register_functional_connectome(
-                    name=register_name,
-                    space=source.space,
-                    resolution=2.0,
-                    data_path=processed_dir,
-                    n_subjects=source.n_subjects,
-                    description=source.description or "Downloaded via fetch_gsp1000",
-                )
-                registered = True
-            except Exception as e:
-                warnings.append(f"Registration failed: {e}")
+        registered = _register_gsp1000(
+            register, register_name, source, processed_dir, progress_callback, warn_list
+        )
 
         return FetchResult(
             success=True,
@@ -622,7 +310,7 @@ def fetch_gsp1000(
             duration_seconds=time.time() - start_time,
             download_time_seconds=0.0,
             processing_time_seconds=0.0,
-            warnings=warnings,
+            warnings=warn_list,
         )
 
     try:
@@ -661,7 +349,6 @@ def fetch_gsp1000(
                 )
             )
 
-        # Extract all .tar files
         import tarfile
 
         tar_files = list(raw_dir.glob("*.tar"))
@@ -669,7 +356,7 @@ def fetch_gsp1000(
             with tarfile.open(tar_path, "r") as tar:
                 tar.extractall(path=raw_dir)
 
-        # Phase 3: Processing (convert to HDF5 batches)
+        # Phase 3: Convert to HDF5
         processing_start = time.time()
 
         if progress_callback:
@@ -683,39 +370,12 @@ def fetch_gsp1000(
                 )
             )
 
-        # Calculate subjects per batch from batches count
-        # GSP1000 has ~1000 subjects, but test_mode has only ~10 subjects
+        subjects_per_chunk = 100 if test_mode else max(1, 1000 // batches)
         if test_mode:
-            # In test mode, use 1 batch for the small amount of test data
-            subjects_per_chunk = 100  # More than enough for 1 tarball
-            warnings.append("Test mode: using 1 tarball with minimal batching")
-        else:
-            subjects_per_chunk = max(1, 1000 // batches)
+            warn_list.append("Test mode: using 1 tarball with minimal batching")
 
-        # Find brain mask (should be included in download or use template)
-        mask_candidates = list(raw_dir.glob("*mask*.nii.gz")) + list(
-            raw_dir.glob("*MNI152*.nii.gz")
-        )
-        if mask_candidates:
-            mask_path = mask_candidates[0]
-        else:
-            # Use templateflow mask as fallback
-            try:
-                import templateflow.api as tflow
-
-                mask_path = Path(
-                    tflow.get(
-                        "MNI152NLin6Asym",
-                        resolution=2,
-                        desc="brain",
-                        suffix="mask",
-                    )
-                )
-            except Exception as e:
-                raise ProcessingError(
-                    operation="locate brain mask",
-                    reason=f"No brain mask found in download and templateflow failed: {e}",
-                ) from e
+        # Find brain mask
+        mask_path = _find_brain_mask(raw_dir)
 
         # Run conversion
         output_files = gsp1000_to_hdf5(
@@ -728,33 +388,10 @@ def fetch_gsp1000(
 
         processing_time = time.time() - processing_start
 
-        # Phase 3: Registration (if requested)
-        registered = False
-        if register:
-            if progress_callback:
-                progress_callback(
-                    FetchProgress(
-                        phase="registration",
-                        current_file="",
-                        files_completed=0,
-                        files_total=1,
-                        message=f"Registering as '{register_name}'...",
-                    )
-                )
-            try:
-                from ..assets.connectomes import register_functional_connectome
-
-                register_functional_connectome(
-                    name=register_name,
-                    space=source.space,
-                    resolution=2.0,  # GSP1000 is 2mm resolution
-                    data_path=processed_dir,
-                    n_subjects=source.n_subjects,
-                    description=source.description or "Downloaded via fetch_gsp1000",
-                )
-                registered = True
-            except Exception as e:
-                warnings.append(f"Registration failed: {e}")
+        # Phase 4: Registration
+        registered = _register_gsp1000(
+            register, register_name, source, processed_dir, progress_callback, warn_list
+        )
 
         duration = time.time() - start_time
 
@@ -768,16 +405,76 @@ def fetch_gsp1000(
             duration_seconds=duration,
             download_time_seconds=download_time,
             processing_time_seconds=processing_time,
-            warnings=warnings,
+            warnings=warn_list,
         )
 
     except (AuthenticationError, DownloadError, ProcessingError):
         raise
     except Exception as e:
+        raise ProcessingError(operation="fetch_gsp1000", reason=str(e)) from e
+
+
+def _find_brain_mask(raw_dir: Path) -> Path:
+    """Find brain mask from download or templateflow."""
+    from ..core.exceptions import ProcessingError
+
+    mask_candidates = list(raw_dir.glob("*mask*.nii.gz")) + list(
+        raw_dir.glob("*MNI152*.nii.gz")
+    )
+    if mask_candidates:
+        return mask_candidates[0]
+
+    # Use templateflow mask as fallback
+    try:
+        import templateflow.api as tflow
+
+        return Path(
+            tflow.get("MNI152NLin6Asym", resolution=2, desc="brain", suffix="mask")
+        )
+    except Exception as e:
         raise ProcessingError(
-            operation="fetch_gsp1000",
-            reason=str(e),
+            operation="locate brain mask",
+            reason=f"No brain mask found in download and templateflow failed: {e}",
         ) from e
+
+
+def _register_gsp1000(
+    register: bool,
+    register_name: str,
+    source,
+    processed_dir: Path,
+    progress_callback: Callable | None,
+    warn_list: list[str],
+) -> bool:
+    """Register GSP1000 connectome."""
+    if not register:
+        return False
+
+    if progress_callback:
+        progress_callback(
+            FetchProgress(
+                phase="registration",
+                current_file="",
+                files_completed=0,
+                files_total=1,
+                message=f"Registering as '{register_name}'...",
+            )
+        )
+    try:
+        from ..assets.connectomes import register_functional_connectome
+
+        register_functional_connectome(
+            name=register_name,
+            space=source.space,
+            resolution=2.0,
+            data_path=processed_dir,
+            n_subjects=source.n_subjects,
+            description=source.description or "Downloaded via fetch_gsp1000",
+        )
+        return True
+    except Exception as e:
+        warn_list.append(f"Registration failed: {e}")
+        return False
 
 
 def fetch_dtor985(
@@ -802,7 +499,7 @@ def fetch_dtor985(
     output_dir : str or Path
         Directory for output .tck file.
     keep_original : bool, default=True
-        Keep original .trk file after conversion. Set False to save disk space.
+        Keep original .trk file after conversion.
     register : bool, default=True
         Automatically register tractogram after processing.
     register_name : str, default="dTOR985"
@@ -812,8 +509,7 @@ def fetch_dtor985(
     progress_callback : callable, optional
         Function called with FetchProgress updates during operation.
     verbose : bool, default=False
-        Print informational messages about operations, including when files
-        already exist and are reused without re-downloading.
+        Print informational messages.
 
     Returns
     -------
@@ -823,26 +519,19 @@ def fetch_dtor985(
     Raises
     ------
     DownloadError
-        If download fails (network or Cloudflare issues).
+        If download fails.
     ProcessingError
         If .trk to .tck conversion fails.
 
     Examples
     --------
     >>> from lacuna.io import fetch_dtor985
-    >>>
-    >>> # Basic usage
     >>> result = fetch_dtor985("/data/connectomes/dtor985")
     >>> print(result.output_files[0])  # Path to .tck file
-
-    >>> # Save disk space by removing .trk after conversion
-    >>> result = fetch_dtor985("/data", keep_original=False)
     """
-    import time
-
     from ..core.exceptions import DownloadError, ProcessingError
     from .convert import trk_to_tck
-    from .downloaders import CONNECTOME_SOURCES, FetchProgress, FetchResult
+    from .downloaders import CONNECTOME_SOURCES
     from .downloaders.figshare import FigshareDownloader
 
     output_dir = Path(output_dir)
@@ -851,45 +540,22 @@ def fetch_dtor985(
     start_time = time.time()
     download_time = 0.0
     processing_time = 0.0
-    warnings: list[str] = []
+    warn_list: list[str] = []
 
     source = CONNECTOME_SOURCES["dtor985"]
 
-    # Check if .tck already exists (skip download if so, unless force=True)
+    # Check if .tck already exists
     tck_path = output_dir / f"{source.name}.tck"
     trk_path = output_dir / f"{source.name}.trk"
 
     if tck_path.exists() and not force:
         if verbose:
-            print(f"Using existing .tck file (skipping download): {tck_path}")
-        warnings.append(f"Using existing .tck file: {tck_path}")
+            print(f"Using existing .tck file: {tck_path}")
+        warn_list.append(f"Using existing .tck file: {tck_path}")
 
-        # Skip to registration phase
-        registered = False
-        if register:
-            if progress_callback:
-                progress_callback(
-                    FetchProgress(
-                        phase="registration",
-                        current_file="",
-                        files_completed=0,
-                        files_total=1,
-                        message=f"Registering as '{register_name}'...",
-                    )
-                )
-            try:
-                from ..assets.connectomes import register_structural_connectome
-
-                register_structural_connectome(
-                    name=register_name,
-                    space=source.space,
-                    tractogram_path=tck_path,
-                    n_subjects=source.n_subjects,
-                    description=source.description or "Downloaded via fetch_dtor985",
-                )
-                registered = True
-            except Exception as e:
-                warnings.append(f"Registration failed: {e}")
+        registered = _register_dtor985(
+            register, register_name, source, tck_path, progress_callback, warn_list
+        )
 
         return FetchResult(
             success=True,
@@ -901,7 +567,7 @@ def fetch_dtor985(
             duration_seconds=time.time() - start_time,
             download_time_seconds=0.0,
             processing_time_seconds=0.0,
-            warnings=warnings,
+            warnings=warn_list,
         )
 
     try:
@@ -926,15 +592,12 @@ def fetch_dtor985(
         )
 
         if not downloaded_files:
-            raise DownloadError(
-                url=source.download_url or "",
-                reason="No files downloaded",
-            )
+            raise DownloadError(url=source.download_url or "", reason="No files downloaded")
 
         trk_path = downloaded_files[0]
         download_time = time.time() - download_start
 
-        # Phase 2: Convert to .tck format
+        # Phase 2: Convert to .tck
         processing_start = time.time()
 
         if progress_callback:
@@ -952,43 +615,20 @@ def fetch_dtor985(
 
         if tck_path.exists() and not force:
             if verbose:
-                print(f"Using existing .tck file (skipping conversion): {tck_path}")
-            warnings.append(f"Using existing .tck file: {tck_path}")
+                print(f"Using existing .tck file: {tck_path}")
+            warn_list.append(f"Using existing .tck file: {tck_path}")
         else:
             tck_path = trk_to_tck(trk_path, tck_path)
 
-        # Remove original if requested
         if not keep_original and trk_path.exists():
             trk_path.unlink()
 
         processing_time = time.time() - processing_start
 
-        # Phase 3: Registration (if requested)
-        registered = False
-        if register:
-            if progress_callback:
-                progress_callback(
-                    FetchProgress(
-                        phase="registration",
-                        current_file="",
-                        files_completed=0,
-                        files_total=1,
-                        message=f"Registering as '{register_name}'...",
-                    )
-                )
-            try:
-                from ..assets.connectomes import register_structural_connectome
-
-                register_structural_connectome(
-                    name=register_name,
-                    space=source.space,
-                    tractogram_path=tck_path,
-                    n_subjects=source.n_subjects,
-                    description=source.description or "Downloaded via fetch_dtor985",
-                )
-                registered = True
-            except Exception as e:
-                warnings.append(f"Registration failed: {e}")
+        # Phase 3: Registration
+        registered = _register_dtor985(
+            register, register_name, source, tck_path, progress_callback, warn_list
+        )
 
         duration = time.time() - start_time
 
@@ -1006,16 +646,51 @@ def fetch_dtor985(
             duration_seconds=duration,
             download_time_seconds=download_time,
             processing_time_seconds=processing_time,
-            warnings=warnings,
+            warnings=warn_list,
         )
 
     except (DownloadError, ProcessingError):
         raise
     except Exception as e:
-        raise ProcessingError(
-            operation="fetch_dtor985",
-            reason=str(e),
-        ) from e
+        raise ProcessingError(operation="fetch_dtor985", reason=str(e)) from e
+
+
+def _register_dtor985(
+    register: bool,
+    register_name: str,
+    source,
+    tck_path: Path,
+    progress_callback: Callable | None,
+    warn_list: list[str],
+) -> bool:
+    """Register dTOR985 tractogram."""
+    if not register:
+        return False
+
+    if progress_callback:
+        progress_callback(
+            FetchProgress(
+                phase="registration",
+                current_file="",
+                files_completed=0,
+                files_total=1,
+                message=f"Registering as '{register_name}'...",
+            )
+        )
+    try:
+        from ..assets.connectomes import register_structural_connectome
+
+        register_structural_connectome(
+            name=register_name,
+            space=source.space,
+            tractogram_path=tck_path,
+            n_subjects=source.n_subjects,
+            description=source.description or "Downloaded via fetch_dtor985",
+        )
+        return True
+    except Exception as e:
+        warn_list.append(f"Registration failed: {e}")
+        return False
 
 
 def fetch_connectome(
@@ -1080,7 +755,6 @@ def list_fetchable_connectomes() -> list[ConnectomeSource]:
     >>> from lacuna.io import list_fetchable_connectomes
     >>> for source in list_fetchable_connectomes():
     ...     print(f"{source.name}: {source.display_name}")
-    ...     print(f"  Type: {source.type}, Size: ~{source.estimated_size_gb}GB")
     """
     from .downloaders import CONNECTOME_SOURCES
 
@@ -1136,3 +810,119 @@ def get_fetch_status(name: str) -> dict:
         "location": location,
         "size_bytes": size_bytes,
     }
+
+
+# ============================================================================
+# Deprecated Functions
+# ============================================================================
+
+
+def list_available_atlases() -> list[str]:
+    """
+    List available atlases.
+
+    .. deprecated::
+        Use ``lacuna.assets.parcellations.list_parcellations()`` instead.
+        Atlases are bundled in the package, not fetched remotely.
+
+    Returns
+    -------
+    list[str]
+        List of bundled atlas names.
+    """
+    warnings.warn(
+        "list_available_atlases() is deprecated. "
+        "Use lacuna.assets.parcellations.list_parcellations() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    try:
+        from ..assets.parcellations import list_parcellations
+
+        return [p.name for p in list_parcellations()]
+    except ImportError:
+        return []
+
+
+def get_atlas(name_or_path: str) -> tuple[Path, Path]:
+    """
+    Get atlas files.
+
+    .. deprecated::
+        Use ``lacuna.assets.parcellations.load_parcellation()`` instead.
+        Atlases are bundled in the package, not fetched remotely.
+
+    Parameters
+    ----------
+    name_or_path : str
+        Atlas name or path.
+
+    Returns
+    -------
+    tuple[Path, Path]
+        (image_path, labels_path) pair.
+    """
+    warnings.warn(
+        "get_atlas() is deprecated. "
+        "Use lacuna.assets.parcellations.load_parcellation() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    # Try as path first
+    path = Path(name_or_path)
+    if path.exists():
+        return discover_atlas_files(path)
+
+    # Try bundled atlases
+    try:
+        from ..assets.parcellations import load_parcellation
+
+        parc = load_parcellation(name_or_path)
+        return parc.image_path, parc.labels_path
+    except (ImportError, KeyError) as e:
+        raise AtlasNotFoundError(
+            f"Atlas '{name_or_path}' not found. "
+            "Use lacuna.assets.parcellations.list_parcellations() to see available atlases."
+        ) from e
+
+
+def get_tractogram(name: str = "dTOR985", *, convert_to_tck: bool = True) -> Path:
+    """
+    Get structural tractogram.
+
+    .. deprecated::
+        Use ``lacuna.io.fetch_dtor985()`` instead.
+
+    Parameters
+    ----------
+    name : str
+        Tractogram name.
+    convert_to_tck : bool
+        Convert to .tck format.
+
+    Returns
+    -------
+    Path
+        Path to tractogram file.
+    """
+    warnings.warn(
+        "get_tractogram() is deprecated. Use lacuna.io.fetch_dtor985() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    cache_dir = get_data_dir() / "tractograms"
+    tck_path = cache_dir / f"{name}.tck"
+    trk_path = cache_dir / f"{name}.trk"
+
+    if tck_path.exists() and convert_to_tck:
+        return tck_path
+    elif trk_path.exists():
+        if convert_to_tck:
+            from .convert import trk_to_tck
+
+            return trk_to_tck(trk_path, tck_path)
+        return trk_path
+
+    raise FileNotFoundError(
+        f"Tractogram '{name}' not found. Use lacuna.io.fetch_dtor985() to download it."
+    )

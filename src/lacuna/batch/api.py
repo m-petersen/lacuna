@@ -115,7 +115,6 @@ def batch_process(
         - None: Automatic selection based on analysis.batch_strategy
         - "parallel": Force parallel processing
         - "vectorized": Force vectorized processing
-        - "streaming": Force streaming processing (future)
     backend : str, default='loky'
         Joblib backend for parallel processing:
     lesion_batch_size : int or None, default=None
