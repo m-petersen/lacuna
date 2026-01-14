@@ -775,7 +775,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 mask_indices = tuple(mask_indices_array[:, i].astype(int) for i in range(3))
 
             mask_affine = hf["mask_affine"][:]
-            mask_shape = tuple(hf.attrs["mask_shape"])
+            # Convert to native Python int tuple for cleaner display
+            mask_shape = tuple(int(x) for x in hf.attrs["mask_shape"])
 
             self._mask_info = {
                 "mask_indices": mask_indices,

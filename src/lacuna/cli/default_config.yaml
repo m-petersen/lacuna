@@ -66,7 +66,7 @@ connectomes:
   # structural:
   #   path: /path/to/dTOR.tck
   #   space: MNI152NLin6Asym
-  #   resolution: 2  # Resolution of the TDI output
+  #   resolution: 2  # Resolution of the output
   #   template_path: /path/to/template.nii.gz  # Optional, for output grid
 
 # =============================================================================

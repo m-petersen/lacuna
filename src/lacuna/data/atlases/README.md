@@ -26,7 +26,6 @@ Each atlas consists of two files:
 - **Source**: Human Connectome Project
 - **Citation**: Yeh et al. (2022), Nature Communications, 22;13(1):4933
 - **License**: CC BY-SA 4.0
-- **Size**: ~1.1 MB
 
 ### Schaefer 2018 Atlas - 100 Parcels (7 Networks)
 - **File**: `Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
@@ -35,7 +34,6 @@ Each atlas consists of two files:
 - **Coverage**: Cerebral cortex
 - **Networks**: 7 networks (Visual, Somatomotor, Dorsal Attention, Ventral Attention, Limbic, Frontoparietal, Default)
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
-- **Size**: ~229 KB
 
 ### Schaefer 2018 Atlas - 200 Parcels (7 Networks)
 - **File**: `Schaefer2018_200Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
@@ -45,7 +43,6 @@ Each atlas consists of two files:
 - **Networks**: 7 networks
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
 - **License**: MIT
-- **Size**: ~253 KB
 
 ### Schaefer 2018 Atlas - 400 Parcels (7 Networks)
 - **File**: `Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
@@ -55,7 +52,6 @@ Each atlas consists of two files:
 - **Networks**: 7 networks
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
 - **License**: MIT
-- **Size**: ~289 KB
 
 ### Schaefer 2018 Atlas - 1000 Parcels (7 Networks)
 - **File**: `Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
@@ -65,7 +61,6 @@ Each atlas consists of two files:
 - **Networks**: 7 networks
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
 - **License**: MIT
-- **Size**: ~353 KB
 
 ### Tian Subcortical Atlas - Scale 1
 - **File**: `Tian_Subcortex_S1_3T_2009cAsym.nii.gz`
@@ -75,7 +70,6 @@ Each atlas consists of two files:
 - **Regions**: 16 regions
 - **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
 - **License**: Permissive with attribution
-- **Size**: ~8.3 KB
 
 ### Tian Subcortical Atlas - Scale 2
 - **File**: `Tian_Subcortex_S2_3T_2009cAsym.nii.gz`
@@ -85,7 +79,6 @@ Each atlas consists of two files:
 - **Regions**: 32 regions
 - **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
 - **License**: Permissive with attribution
-- **Size**: ~8.9 KB
 
 ### Tian Subcortical Atlas - Scale 3
 - **File**: `Tian_Subcortex_S3_3T_2009cAsym.nii.gz`
@@ -95,7 +88,6 @@ Each atlas consists of two files:
 - **Regions**: 54 regions
 - **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
 - **License**: Permissive with attribution
-- **Size**: ~9.5 KB
 
 ## Usage
 
