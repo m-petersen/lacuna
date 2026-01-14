@@ -164,10 +164,6 @@ class StructuralNetworkMapping(BaseAnalysis):
     Notes
     -----
     - Requires MRtrix3: https://www.mrtrix.org/download/
-    - Lesion must be in MNI152 space (1mm or 2mm resolution supported)
-    - Set lesion.metadata['space'] = 'MNI152NLin6Asym' or 'MNI152NLin2009cAsym' before analysis
-    - Lesion must be binary (0/1 values only)
-    - Template and TDI resolution should match your lesion resolution
     - Processing time scales with lesion size and tractogram density
     - For large tractograms, processing can take several minutes per subject
     - **Memory management**: Use load_to_memory=False for large batch jobs to minimize RAM usage
@@ -381,21 +377,43 @@ class StructuralNetworkMapping(BaseAnalysis):
         """
         Validate that lesion data meets requirements for structural network mapping.
 
+        This method validates that the mask data is ready for SNM analysis and
+        performs essential setup (template loading, TDI computation, atlas loading).
+        By the time this is called, BaseAnalysis.run() has already transformed
+        the mask to TARGET_SPACE (the tractogram space) via _ensure_target_space().
+
         Parameters
         ----------
         mask_data : SubjectData
-            Lesion data to validate
+            Lesion data to validate (already transformed to tractogram space).
 
         Raises
         ------
-        ValueError
-            If lesion is not in MNI152 space or is not binary
+        ValidationError
+            If mask space doesn't match the expected tractogram space.
         FileNotFoundError
-            If required input files don't exist
+            If required input files don't exist (tractogram, template).
+
+        Notes
+        -----
+        Binary mask validation is handled by SubjectData.__init__, so we don't
+        need to duplicate that check here.
+
+        Space transformation is handled by BaseAnalysis._ensure_target_space(),
+        so by the time we get here, mask_data.space should equal self.TARGET_SPACE.
         """
         # Validate that required files exist
         if not self.tractogram_path.exists():
             raise FileNotFoundError(f"Tractogram file not found: {self.tractogram_path}")
+
+        # Validate coordinate space matches tractogram space
+        # (should already be transformed by _ensure_target_space)
+        if mask_data.space != self.TARGET_SPACE:
+            raise ValueError(
+                f"Mask space '{mask_data.space}' does not match tractogram space "
+                f"'{self.TARGET_SPACE}'. This is unexpected - space transformation "
+                f"should have been handled by BaseAnalysis._ensure_target_space()."
+            )
 
         # Load template from asset management if not provided (MUST BE DONE BEFORE TDI COMPUTATION)
         if self.template is None:
@@ -435,9 +453,6 @@ class StructuralNetworkMapping(BaseAnalysis):
             )
             self._compute_tdi_to_path(temp_tdi)
             self.whole_brain_tdi = temp_tdi
-
-        # Space validation is handled in run() method before transformation
-        # At this point, mask_data should already be in TARGET_SPACE
 
         # Verify template exists
         if not self.template.exists():
@@ -535,17 +550,6 @@ class StructuralNetworkMapping(BaseAnalysis):
                     f"Available parcellations: {', '.join(available[:5])}... "
                     f"Use list_parcellations() to see all options."
                 ) from e
-
-        # Check that lesion is binary
-        lesion_array = mask_data.mask_img.get_fdata()
-        unique_vals = np.unique(lesion_array)
-
-        if not np.all(np.isin(unique_vals, [0, 1])):
-            raise ValueError(
-                f"Structural network mapping requires binary lesion mask (0 and 1 only).\n"
-                f"Found values: {unique_vals}\n"
-                f"Use thresholding or binarization to convert continuous maps."
-            )
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
         """
