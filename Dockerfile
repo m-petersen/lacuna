@@ -11,7 +11,7 @@ RUN conda install -y -c conda-forge -c mrtrix3 mrtrix3 libstdcxx-ng \
 # =============================================================================
 # Stage 2: Fetch TemplateFlow templates & CLEAN UP
 # =============================================================================
-FROM python:3.10-slim AS templateflow-fetcher
+FROM python:3.11-slim AS templateflow-fetcher
 ENV TEMPLATEFLOW_HOME="/templateflow"
 RUN pip install --no-cache-dir templateflow
 
@@ -43,7 +43,7 @@ RUN find /templateflow -mindepth 1 -maxdepth 1 -type d -name "tpl-*" \
 # =============================================================================
 # Stage 3: Build the Lacuna Wheel
 # =============================================================================
-FROM python:3.10-slim AS lacuna-builder
+FROM python:3.11-slim AS lacuna-builder
 WORKDIR /build
 # Install git for setuptools-scm versioning
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
@@ -53,7 +53,7 @@ RUN pip install build && python -m build --wheel
 # =============================================================================
 # Stage 4: Final Production Image
 # =============================================================================
-FROM python:3.10-slim AS production
+FROM python:3.11-slim AS production
 
 LABEL org.opencontainers.image.title="Lacuna"
 LABEL org.opencontainers.image.source="https://github.com/lacuna/lacuna"
