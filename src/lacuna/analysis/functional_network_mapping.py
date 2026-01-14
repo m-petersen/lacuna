@@ -147,6 +147,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         fdr_alpha: float | None = 0.05,
         t_threshold: float | None = None,
         return_in_input_space: bool = True,
+        output_resolution: int | None = None,
         keep_intermediate: bool = False,
     ):
         """Initialize functional network mapping analysis.
@@ -174,8 +175,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
             If provided, create binary mask of voxels with |t| > threshold.
         return_in_input_space : bool, default=True
             If True, transform VoxelMap outputs back to the original input mask space.
-            If False, outputs remain in the connectome space (e.g., MNI152NLin6Asym @ 2mm).
-            Requires input SubjectData to have valid space/resolution metadata.
+            If False, outputs remain in the connectome space (e.g., MNI152NLin6Asym).
+            Requires input SubjectData to have valid space metadata.
+        output_resolution : int, optional
+            Final output resolution in mm (1 or 2). Controls the resolution of VoxelMap outputs.
+            If None (default), matches the input mask resolution when return_in_input_space=True,
+            or uses analysis resolution when return_in_input_space=False.
+            Set explicitly to ensure consistent output resolution across analyses.
         keep_intermediate : bool, default=False
             If True, include intermediate results (e.g., warped mask images)
             in the output. Useful for debugging and quality control.
@@ -224,6 +230,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.fdr_alpha = fdr_alpha
         self.t_threshold = t_threshold
         self.return_in_input_space = return_in_input_space
+        self.final_output_resolution = output_resolution  # User-specified, None means auto
 
         # Initialize logger
         self.logger = ConsoleLogger(verbose=verbose, width=70)
@@ -1791,8 +1798,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
             "method": self.method,
             "pini_percentile": self.pini_percentile,
             "n_jobs": self.n_jobs,
+            "compute_p_map": self.compute_p_map,
+            "fdr_alpha": self.fdr_alpha,
             "t_threshold": self.t_threshold,
             "return_in_input_space": self.return_in_input_space,
+            "output_resolution": self.final_output_resolution,
+            "keep_intermediate": self.keep_intermediate,
+            "analysis_space": self.output_space,
+            "analysis_resolution": self.output_resolution,
             "verbose": self.verbose,
         }
 
@@ -1823,11 +1836,18 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Get original input space from metadata (if available) or current space
         target_space_id = mask_data.metadata.get("_original_input_space", mask_data.space)
-        target_resolution = mask_data.metadata.get(
-            "_original_input_resolution", mask_data.resolution
-        )
 
-        # If we're already in the input space, no transformation needed
+        # Determine target resolution:
+        # 1. If user specified output_resolution, use that
+        # 2. Otherwise, match the original input resolution
+        if self.final_output_resolution is not None:
+            target_resolution = self.final_output_resolution
+        else:
+            target_resolution = mask_data.metadata.get(
+                "_original_input_resolution", mask_data.resolution
+            )
+
+        # If we're already in the target space/resolution, no transformation needed
         if target_space_id == self.output_space and target_resolution == self.output_resolution:
             return results
 

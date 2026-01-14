@@ -5,7 +5,6 @@ parcelstats TSV files into group-level DataFrames.
 """
 
 import json
-from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -177,11 +176,11 @@ class TestAggregateParcelstats:
         original_mtime = group_file.stat().st_mtime
 
         # Second aggregation without overwrite should skip
-        result2 = aggregate_parcelstats(sample_derivatives, overwrite=False)
+        aggregate_parcelstats(sample_derivatives, overwrite=False)
         assert group_file.stat().st_mtime == original_mtime
 
         # Third aggregation with overwrite should update
-        result3 = aggregate_parcelstats(sample_derivatives, overwrite=True)
+        aggregate_parcelstats(sample_derivatives, overwrite=True)
         assert group_file.stat().st_mtime >= original_mtime
 
     def test_aggregate_parcelstats_multiple_output_types(self, tmp_path):
@@ -265,7 +264,7 @@ class TestAggregateParcelstatsIntegration:
         assert len(result) == 2
 
         # Each file should have 3 subjects
-        for output_type, group_file in result.items():
+        for _output_type, group_file in result.items():
             df = pd.read_csv(group_file, sep="\t")
             assert len(df) == 3
             assert "participant_id" in df.columns

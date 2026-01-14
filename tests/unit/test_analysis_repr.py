@@ -142,8 +142,8 @@ class TestFunctionalNetworkMappingRepr:
             # The long connectome name (116 chars) should be truncated
             assert "..." in repr_str
             # Repr should be shorter than having the full 116 char name
-            # (full name would make repr ~300+ chars)
-            assert len(repr_str) < 300
+            # (full name would make repr ~350+ chars, threshold accounts for new params)
+            assert len(repr_str) < 380
         finally:
             if registered:
                 unregister_functional_connectome(long_name)

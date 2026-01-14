@@ -301,21 +301,21 @@ def test_batch_strategy_is_parallel():
 @pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
 @pytest.mark.requires_mrtrix
 def test_provenance_includes_memory_settings(temp_connectome):
-    """Test that provenance includes memory management settings."""
+    """Test that provenance includes cleanup and intermediate settings."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
     analysis = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        load_to_memory=False,
+        cleanup_temp_files=False,
         keep_intermediate=True,
     )
 
     params = analysis._get_parameters()
 
-    # Should include memory management settings
-    assert "load_to_memory" in params
+    # Should include cleanup and intermediate settings
+    assert "cleanup_temp_files" in params
     assert "keep_intermediate" in params
-    assert params["load_to_memory"] is False
+    assert params["cleanup_temp_files"] is False
     assert params["keep_intermediate"] is True
 
 

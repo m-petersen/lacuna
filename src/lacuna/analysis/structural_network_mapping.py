@@ -27,6 +27,7 @@ from lacuna.core.data_types import (
     Tractogram,
     VoxelMap,
 )
+from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 from lacuna.utils.cache import get_tdi_cache_dir, get_temp_dir
 from lacuna.utils.logging import ConsoleLogger
@@ -90,9 +91,12 @@ class StructuralNetworkMapping(BaseAnalysis):
     n_jobs : int, default=1
         Number of threads for MRtrix3 processing.
     keep_intermediate : bool, default=False
-        If True, keeps intermediate tractogram files.
-    load_to_memory : bool, default=True
-        If True, loads results into memory. Set False for batch processing.
+        If True, include intermediate results in output (lesion tractogram, lesion TDI,
+        warped atlas if transformed). Useful for debugging and quality control.
+    cleanup_temp_files : bool, default=True
+        If True, delete temporary working directory after analysis completes.
+        Set to False to preserve temp files on disk for inspection.
+        Note: This is independent of keep_intermediate.
     check_dependencies : bool, default=True
         If True, checks for MRtrix3 availability.
     verbose : bool, default=True
@@ -133,30 +137,26 @@ class StructuralNetworkMapping(BaseAnalysis):
     >>> # Load lesion data
     >>> lesion = SubjectData.from_nifti("lesion.nii.gz")
     >>>
-    >>> # Interactive analysis (results loaded into memory)
+    >>> # Interactive analysis
     >>> analysis = StructuralNetworkMapping(
     ...     connectome_name="dTOR985",
     ...     n_jobs=8,
-    ...     load_to_memory=True
     ... )
     >>> result = analysis.run(lesion)
     >>> disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
     >>> disconn_map.orthoview()
 
-    **Memory-efficient batch processing:**
+    **Batch processing:**
 
     >>> from lacuna import batch_process
     >>>
-    >>> # For large batch jobs, use memory-mapped files
     >>> analysis = StructuralNetworkMapping(
     ...     connectome_name="dTOR985",
     ...     n_jobs=8,
-    ...     keep_intermediate=True,
-    ...     load_to_memory=False
     ... )
     >>> results = batch_process(lesions, analysis, n_jobs=2)
     >>>
-    >>> # Save results immediately
+    >>> # Save results
     >>> for result in results:
     ...     disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
     ...     nib.save(disconn_map, f"output/{subject_id}_disconn.nii.gz")
@@ -166,7 +166,6 @@ class StructuralNetworkMapping(BaseAnalysis):
     - Requires MRtrix3: https://www.mrtrix.org/download/
     - Processing time scales with lesion size and tractogram density
     - For large tractograms, processing can take several minutes per subject
-    - **Memory management**: Use load_to_memory=False for large batch jobs to minimize RAM usage
 
     See Also
     --------
@@ -186,7 +185,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         cache_tdi: bool = True,
         n_jobs: int = 1,
         keep_intermediate: bool = False,
-        load_to_memory: bool = True,
+        cleanup_temp_files: bool = True,
         check_dependencies: bool = True,
         verbose: bool = False,
         show_mrtrix_output: bool = False,
@@ -211,9 +210,11 @@ class StructuralNetworkMapping(BaseAnalysis):
         n_jobs : int, default=1
             Number of threads for MRtrix3.
         keep_intermediate : bool, default=False
-            If True, keeps intermediate tractogram files.
-        load_to_memory : bool, default=True
-            If True, loads results into memory.
+            If True, include intermediate results in output (lesion tractogram,
+            lesion TDI, warped atlas). Useful for debugging and QC.
+        cleanup_temp_files : bool, default=True
+            If True, delete temporary working directory after analysis.
+            Set to False to preserve temp files on disk for inspection.
         check_dependencies : bool, default=True
             If True, checks for MRtrix3 availability.
         verbose : bool, default=True
@@ -265,7 +266,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.cache_tdi = cache_tdi
         self.n_jobs = n_jobs
         self.keep_intermediate = keep_intermediate
-        self.load_to_memory = load_to_memory
+        self.cleanup_temp_files = cleanup_temp_files
         self.show_mrtrix_output = show_mrtrix_output
         self.return_in_input_space = return_in_input_space
 
@@ -641,24 +642,12 @@ class StructuralNetworkMapping(BaseAnalysis):
             lesion_tdi = nib.load(lesion_tdi_path, mmap=True)
             lesion_streamline_count = int(np.sum(lesion_tdi.get_fdata()))
 
-            # Determine how to store the disconnection map based on load_to_memory setting
-            if self.load_to_memory:
-                # Load into memory for convenient visualization/access
-                # Suitable for interactive analysis and small-to-medium batch jobs
-                disconn_data = nib.load(disconn_map_path).get_fdata()
-                final_disconn_map = nib.Nifti1Image(
-                    disconn_data, disconn_map.affine, disconn_map.header
-                )
-            else:
-                # Keep as memory-mapped file for minimal memory footprint
-                # Requires keep_intermediate=True to prevent file deletion
-                # Suitable for large batch processing with limited RAM
-                if not self.keep_intermediate:
-                    raise ValueError(
-                        "load_to_memory=False requires keep_intermediate=True "
-                        "to prevent temp file cleanup before results can be accessed."
-                    )
-                final_disconn_map = disconn_map
+            # Load disconnection map into memory
+            # This ensures results are independent of temp directory lifecycle
+            disconn_data = nib.load(disconn_map_path).get_fdata()
+            final_disconn_map = nib.Nifti1Image(
+                disconn_data, disconn_map.affine, disconn_map.header
+            )
 
             # Build results dict
             results = {}
@@ -675,7 +664,6 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "template": str(self.template),
                     "n_jobs": self.n_jobs,
                     "keep_intermediate": self.keep_intermediate,
-                    "load_to_memory": self.load_to_memory,
                 },
             )
             results["disconnection_map"] = disconnection_result
@@ -766,13 +754,13 @@ class StructuralNetworkMapping(BaseAnalysis):
             return results
 
         finally:
-            # Clean up intermediate files unless keep_intermediate=True
-            if not self.keep_intermediate:
+            # Clean up temp files based on cleanup_temp_files flag (independent of keep_intermediate)
+            if self.cleanup_temp_files:
                 import shutil
 
                 shutil.rmtree(temp_dir_path, ignore_errors=True)
             else:
-                self.logger.success(f"Intermediate files preserved in: {temp_dir_path}")
+                self.logger.success(f"Temp files preserved in: {temp_dir_path}")
                 self.logger.info("Files saved:", indent_level=1)
                 self.logger.info("- lesion_streamlines.tck", indent_level=2)
                 self.logger.info("- lesion_tdi.nii.gz", indent_level=2)
@@ -898,7 +886,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "tractogram": str(self.tractogram_path),
             },
         )
-        results["lesion_connectivity_matrix"] = lesion_connectivity_result
+        lesion_conn_key = build_result_key(
+            atlas=self.parcellation_name,
+            source="StructuralNetworkMapping",
+            desc="lesion_connectivity_matrix",
+        )
+        results[lesion_conn_key] = lesion_connectivity_result
 
         # ConnectivityMatrixResult for disconnectivity percentage
         disconn_result = ConnectivityMatrix(
@@ -911,7 +904,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "description": "Percentage of streamlines disconnected by lesion",
             },
         )
-        results["disconnectivity_percent"] = disconn_result
+        disconn_pct_key = build_result_key(
+            atlas=self.parcellation_name,
+            source="StructuralNetworkMapping",
+            desc="disconnectivity_percent",
+        )
+        results[disconn_pct_key] = disconn_result
 
         # ConnectivityMatrixResult for full connectivity (reference)
         full_connectivity_result = ConnectivityMatrix(
@@ -924,7 +922,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "description": "Full brain connectivity matrix (reference)",
             },
         )
-        results["full_connectivity_matrix"] = full_connectivity_result
+        full_conn_key = build_result_key(
+            atlas=self.parcellation_name,
+            source="StructuralNetworkMapping",
+            desc="full_connectivity_matrix",
+        )
+        results[full_conn_key] = full_connectivity_result
 
         # Optional: lesioned (intact) connectivity matrix
         if lesioned_matrix is not None:
@@ -938,7 +941,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "description": "Intact connectivity excluding lesion streamlines",
                 },
             )
-            results["lesioned_connectivity_matrix"] = lesioned_result
+            lesioned_conn_key = build_result_key(
+                atlas=self.parcellation_name,
+                source="StructuralNetworkMapping",
+                desc="lesioned_connectivity_matrix",
+            )
+            results[lesioned_conn_key] = lesioned_result
 
             # Compute per-ROI disconnection percentage
             # For each ROI: (streamlines through mask connecting ROI) / (all streamlines connecting ROI)
@@ -970,7 +978,13 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "unit": "percent",
                 },
             )
-            results["roi_disconnection"] = roi_disconnection_result
+            # Build BIDS-style result key with atlas prefix
+            roi_disconnection_key = build_result_key(
+                atlas=self.parcellation_name,
+                source="StructuralNetworkMapping",
+                desc="roi_disconnection",
+            )
+            results[roi_disconnection_key] = roi_disconnection_result
 
         # MiscResult for matrix statistics
         stats_result = ScalarMetric(
@@ -980,7 +994,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "atlas": self.parcellation_name,
             },
         )
-        results["matrix_statistics"] = stats_result
+        matrix_stats_key = build_result_key(
+            atlas=self.parcellation_name,
+            source="StructuralNetworkMapping",
+            desc="matrix_statistics",
+        )
+        results[matrix_stats_key] = stats_result
 
         return results
 
@@ -1111,7 +1130,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             "output_resolution": self.output_resolution,
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
-            "load_to_memory": self.load_to_memory,
+            "cleanup_temp_files": self.cleanup_temp_files,
             "show_mrtrix_output": self.show_mrtrix_output,
             "return_in_input_space": self.return_in_input_space,
             "verbose": self.verbose,
@@ -1138,6 +1157,12 @@ class StructuralNetworkMapping(BaseAnalysis):
         ------
         ValueError
             If mask_data lacks space or resolution metadata
+
+        Notes
+        -----
+        Transforms to original input space but keeps output_resolution for
+        consistent output resolution. The output_resolution parameter controls
+        both TDI generation and final output resolution.
         """
         from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
         from lacuna.spatial.transform import transform_image
@@ -1145,23 +1170,28 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Get original input space from metadata (set by BaseAnalysis before transformation)
         # Fall back to current mask_data.space if not available (already in input space)
         original_space = mask_data.metadata.get("_original_input_space", mask_data.space)
-        original_resolution = mask_data.metadata.get(
-            "_original_input_resolution", mask_data.resolution
-        )
+
+        # Use output_resolution for final output (not input resolution)
+        # This ensures consistent output resolution as specified by user
+        target_resolution = self.output_resolution
 
         # Get reference affine for target space
-        target_key = (original_space, original_resolution)
+        target_key = (original_space, target_resolution)
         if target_key not in REFERENCE_AFFINES:
             raise ValueError(
-                f"No reference affine available for {original_space}@{original_resolution}mm. "
+                f"No reference affine available for {original_space}@{target_resolution}mm. "
                 f"Available spaces: {list(REFERENCE_AFFINES.keys())}"
             )
 
         target_space = CoordinateSpace(
             identifier=original_space,
-            resolution=original_resolution,
+            resolution=target_resolution,
             reference_affine=REFERENCE_AFFINES[target_key],
         )
+
+        # Check if transformation is actually needed
+        if original_space == self.TARGET_SPACE and target_resolution == self.output_resolution:
+            return results
 
         self.logger.info(
             f"Transforming VoxelMap outputs from {self.TARGET_SPACE}@{self.output_resolution}mm "

@@ -98,16 +98,19 @@ analyses:
   #   fdr_alpha: 0.05  # FDR correction alpha level (null to disable)
   #   # t_threshold: 9.0  # Optional threshold for binary mask
   #   return_in_input_space: true  # Transform outputs to input mask space
+  #   output_resolution: null  # Output resolution in mm (1 or 2). null = match input
 
   # StructuralNetworkMapping: Maps white matter disconnection
   # Requires MRtrix3 installation
   # Uncomment and provide a connectome reference to enable
   # StructuralNetworkMapping:
   #   connectome: structural  # Reference to connectomes section
-  #   output_resolution: 2
+  #   output_resolution: 2  # Output resolution in mm (1 or 2) for TDI and final outputs
   #   cache_tdi: true
   #   n_jobs: 1
-  #   keep_intermediate: false
+  #   keep_intermediate: false  # Include intermediate results (lesion tractogram, TDI)
+  #   cleanup_temp_files: true  # Delete temp working directory after analysis
+  #   return_in_input_space: true  # Transform outputs to input mask space
   #   # parcellation_name: Schaefer2018_100Parcels7Networks
   #   # compute_disconnectivity_matrix: false
   #   # show_mrtrix_output: false

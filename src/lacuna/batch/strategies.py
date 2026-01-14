@@ -5,8 +5,7 @@ This module implements the Strategy pattern for batch processing, enabling
 automatic optimization based on analysis characteristics:
 
 - **ParallelStrategy**: Independent per-subject processing with multiprocessing
-- **VectorizedStrategy**: Batch matrix operations (future - Phase 5)
-- **StreamingStrategy**: Memory-constrained sequential processing (future)
+- **VectorizedStrategy**: Batch matrix operations for connectome analyses
 """
 
 import warnings
@@ -63,7 +62,6 @@ class BatchStrategy(ABC):
     Each strategy implements a different approach to processing multiple subjects:
     - Parallel: Uses multiprocessing for independent analyses
     - Vectorized: Stacks data for batch matrix operations
-    - Streaming: Processes sequentially with immediate disk writes
 
     Parameters
     ----------
@@ -118,9 +116,9 @@ class ParallelStrategy(BatchStrategy):
     """
     Parallel batch processing using joblib multiprocessing.
 
-    Best for: Independent per-subject analyses (RegionalDamage, ParcelAggregation)
-    Speedup: 4-8x on multi-core systems (proportional to available cores)
-    Memory: Low overhead (~1.2x per-subject memory usage)
+    Best for independent per-subject analyses (RegionalDamage, ParcelAggregation)
+    Speedup on multi-core systems (proportional to available cores)
+    Low memory overhead
 
     This strategy processes each subject independently using joblib.Parallel.
     The backend can be configured to handle different environments:
@@ -243,9 +241,9 @@ class VectorizedStrategy(BatchStrategy):
     """
     Vectorized batch processing using batched NumPy operations.
 
-    Best for: Matrix-based analyses (FunctionalNetworkMapping)
-    Speedup: 10-50x via optimized BLAS operations and reduced overhead
-    Memory: Moderate (processes lesions in configurable batches)
+    Best for matrix-based analyses (FunctionalNetworkMapping)
+    Speedup via optimized BLAS operations and reduced overhead
+    Moderate memory overhead (processes lesions in configurable batches)
 
     This strategy leverages vectorized operations to process multiple lesions
     simultaneously through each connectome batch. Instead of:
