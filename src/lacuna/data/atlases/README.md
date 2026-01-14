@@ -12,14 +12,16 @@ These atlases enable:
 
 ## Atlas Files
 
-Each atlas consists of two files:
-- **`<atlas_name>.nii.gz`**: NIfTI image file with region labels or probabilities
-- **`<atlas_name>_labels.txt`**: Text file mapping region IDs to anatomical names
+Each atlas uses BIDS-style naming:
+- **`tpl-<space>_res-<resolution>_atlas-<name>_desc-<description>_dseg.nii.gz`**: NIfTI image file with discrete region labels
+- **`tpl-<space>_res-<resolution>_atlas-<name>_desc-<description>_probseg.nii.gz`**: NIfTI image file with probabilistic values (4D)
+- **`..._labels.txt`**: Text file mapping region IDs to anatomical names
 
 ## Included Atlases
 
 ### HCP1065 White Matter Tracts (Atlas)
-- **File**: `HCP1065_thr0p1.nii.gz`
+- **File**: `tpl-MNI152Nlin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg.nii.gz`
+- **Space**: MNI152NLin2009aAsym (1mm)
 - **Type**: Probabilistic (4D)
 - **Coverage**: White matter tracts
 - **Threshold**: 0.1 (10% probability threshold applied)
@@ -28,16 +30,17 @@ Each atlas consists of two files:
 - **License**: CC BY-SA 4.0
 
 ### Schaefer 2018 Atlas - 100 Parcels (7 Networks)
-- **File**: `Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
-- **Space**: MNI152 1mm
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex
 - **Networks**: 7 networks (Visual, Somatomotor, Dorsal Attention, Ventral Attention, Limbic, Frontoparietal, Default)
 - **Citation**: Schaefer et al. (2018), Cerebral Cortex, 28(9), 3095-3114
+- **License**: MIT
 
 ### Schaefer 2018 Atlas - 200 Parcels (7 Networks)
-- **File**: `Schaefer2018_200Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
-- **Space**: MNI152 1mm
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-200Parcels7Networks_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex (medium parcellation)
 - **Networks**: 7 networks
@@ -45,8 +48,8 @@ Each atlas consists of two files:
 - **License**: MIT
 
 ### Schaefer 2018 Atlas - 400 Parcels (7 Networks)
-- **File**: `Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
-- **Space**: MNI152 1mm
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-400Parcels7Networks_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex (fine parcellation)
 - **Networks**: 7 networks
@@ -54,8 +57,8 @@ Each atlas consists of two files:
 - **License**: MIT
 
 ### Schaefer 2018 Atlas - 1000 Parcels (7 Networks)
-- **File**: `Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_1mm.nii.gz`
-- **Space**: MNI152 1mm
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex (very fine parcellation)
 - **Networks**: 7 networks
@@ -63,8 +66,8 @@ Each atlas consists of two files:
 - **License**: MIT
 
 ### Tian Subcortical Atlas - Scale 1
-- **File**: `Tian_Subcortex_S1_3T_2009cAsym.nii.gz`
-- **Space**: MNI152 (2009c asymmetric)
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Subcortical structures (coarse parcellation)
 - **Regions**: 16 regions
@@ -72,8 +75,8 @@ Each atlas consists of two files:
 - **License**: Permissive with attribution
 
 ### Tian Subcortical Atlas - Scale 2
-- **File**: `Tian_Subcortex_S2_3T_2009cAsym.nii.gz`
-- **Space**: MNI152 (2009c asymmetric)
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS2_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Subcortical structures (medium parcellation)
 - **Regions**: 32 regions
@@ -81,8 +84,8 @@ Each atlas consists of two files:
 - **License**: Permissive with attribution
 
 ### Tian Subcortical Atlas - Scale 3
-- **File**: `Tian_Subcortex_S3_3T_2009cAsym.nii.gz`
-- **Space**: MNI152 (2009c asymmetric)
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS3_dseg.nii.gz`
+- **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Subcortical structures (fine parcellation)
 - **Regions**: 54 regions

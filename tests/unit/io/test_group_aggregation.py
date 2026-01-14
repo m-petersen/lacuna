@@ -275,9 +275,7 @@ class TestAggregateParcelstatsIntegration:
         """Test aggregation to a custom output directory."""
         output_dir = tmp_path / "group_results"
 
-        result = aggregate_parcelstats(
-            realistic_derivatives, output_dir=output_dir
-        )
+        result = aggregate_parcelstats(realistic_derivatives, output_dir=output_dir)
 
         # Files should be in custom output directory
         for group_file in result.values():

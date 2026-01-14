@@ -1288,11 +1288,11 @@ def aggregate_parcelstats(
 
                     rows.append(row_data)
             except Exception as e:
-                warnings.warn(f"Failed to read {tsv_file}: {e}")
+                warnings.warn(f"Failed to read {tsv_file}: {e}", stacklevel=2)
                 continue
 
         if not rows:
-            warnings.warn(f"No valid data for output type: {output_type}")
+            warnings.warn(f"No valid data for output type: {output_type}", stacklevel=2)
             continue
 
         # Create group DataFrame
@@ -1323,7 +1323,9 @@ def aggregate_parcelstats(
             sidecar["Columns"]["label"] = "Mask label (e.g., lesion type)"
 
         # Add region columns description
-        region_cols = [c for c in group_df.columns if c not in ["participant_id", "session_id", "label"]]
+        region_cols = [
+            c for c in group_df.columns if c not in ["participant_id", "session_id", "label"]
+        ]
         if region_cols:
             sidecar["Columns"]["<region_name>"] = "Value for each brain region"
             sidecar["NumberOfRegions"] = len(region_cols)

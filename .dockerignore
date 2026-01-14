@@ -20,7 +20,6 @@ htmlcov/
 .nox/
 
 # Git
-.git/
 .gitignore
 .gitattributes
 

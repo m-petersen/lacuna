@@ -1,6 +1,6 @@
 """Spatial operations module for coordinate space transformations.
 
-This module handles spatial transformations and caching for neuroimaging data
+This module handles spatial transformations for neuroimaging data
 across different MNI coordinate spaces.
 
 For asset management (templates, transforms, atlases), use the lacuna.assets module.
@@ -8,5 +8,4 @@ For asset management (templates, transforms, atlases), use the lacuna.assets mod
 
 __all__ = [
     "transform",
-    "cache",
 ]

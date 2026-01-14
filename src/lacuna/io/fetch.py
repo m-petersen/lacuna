@@ -418,9 +418,7 @@ def _find_brain_mask(raw_dir: Path) -> Path:
     """Find brain mask from download or templateflow."""
     from ..core.exceptions import ProcessingError
 
-    mask_candidates = list(raw_dir.glob("*mask*.nii.gz")) + list(
-        raw_dir.glob("*MNI152*.nii.gz")
-    )
+    mask_candidates = list(raw_dir.glob("*mask*.nii.gz")) + list(raw_dir.glob("*MNI152*.nii.gz"))
     if mask_candidates:
         return mask_candidates[0]
 
@@ -428,9 +426,7 @@ def _find_brain_mask(raw_dir: Path) -> Path:
     try:
         import templateflow.api as tflow
 
-        return Path(
-            tflow.get("MNI152NLin6Asym", resolution=2, desc="brain", suffix="mask")
-        )
+        return Path(tflow.get("MNI152NLin6Asym", resolution=2, desc="brain", suffix="mask"))
     except Exception as e:
         raise ProcessingError(
             operation="locate brain mask",

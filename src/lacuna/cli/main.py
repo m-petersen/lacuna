@@ -475,9 +475,7 @@ def _process_batch(
     else:
         actual_batch_size = min(batch_size, n_subjects)
 
-    logger.info(
-        f"Batch processing: {n_subjects} subjects in batches of {actual_batch_size}"
-    )
+    logger.info(f"Batch processing: {n_subjects} subjects in batches of {actual_batch_size}")
 
     # Build analysis instances from steps
     from lacuna.analysis import get_analysis
@@ -502,7 +500,9 @@ def _process_batch(
         batch = subjects_list[batch_start:batch_end]
 
         if n_subjects > actual_batch_size:
-            logger.info(f"Processing batch {batch_start // actual_batch_size + 1} ({batch_start + 1}-{batch_end} of {n_subjects})")
+            logger.info(
+                f"Processing batch {batch_start // actual_batch_size + 1} ({batch_start + 1}-{batch_end} of {n_subjects})"
+            )
 
         try:
             # Run each analysis in sequence using batch_process
@@ -946,7 +946,7 @@ def _setup_logging(level: int) -> None:
     )
 
 
-def _run_group_workflow(config: "CLIConfig") -> int:
+def _run_group_workflow(config: CLIConfig) -> int:
     """
     Run group-level analysis workflow.
 
@@ -962,7 +962,7 @@ def _run_group_workflow(config: "CLIConfig") -> int:
     int
         Exit code.
     """
-    from lacuna.io.bids import aggregate_parcelstats, BidsError
+    from lacuna.io.bids import BidsError, aggregate_parcelstats
 
     logger.info("Running group-level analysis")
     logger.info(f"Scanning derivatives directory: {config.output_dir}")
@@ -980,7 +980,7 @@ def _run_group_workflow(config: "CLIConfig") -> int:
             return EXIT_SUCCESS
 
         logger.info(f"Created {len(created_files)} group-level TSV file(s):")
-        for output_type, path in created_files.items():
+        for _output_type, path in created_files.items():
             logger.info(f"  - {path.name}")
 
         return EXIT_SUCCESS

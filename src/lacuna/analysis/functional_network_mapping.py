@@ -1074,7 +1074,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Track valid and skipped masks separately
         mask_batch = []
         skipped_indices = []
-        
+
         for i, mask_data in enumerate(mask_data_list):
             subject_id = mask_data.metadata.get("subject_id", f"mask_{i}")
             self.logger.info(
@@ -1202,7 +1202,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Compute final statistics from aggregated values
         self.logger.info("Aggregating results...")
-        
+
         # Build results for processed masks, indexed by original position
         processed_results = {}
         for i, mask_info in enumerate(mask_batch):
@@ -1252,7 +1252,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 results.append(mask_data)
 
         self.logger.success(
-            "Batch processing complete", 
+            "Batch processing complete",
             details={
                 "n_masks_processed": len(processed_results),
                 "n_masks_skipped": len(skipped_indices),
@@ -1268,7 +1268,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
     ) -> np.ndarray:
         """Compute correlations for ALL masks at once (vectorized).
 
-        Uses einsum "lit,itv->liv" to compute correlations for all masks simultaneously, 
+        Uses einsum "lit,itv->liv" to compute correlations for all masks simultaneously,
         reducing overhead and enabling optimized BLAS operations.
 
         Parameters

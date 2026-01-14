@@ -445,7 +445,9 @@ class CLIConfig:
             if not conn_config.path.exists():
                 raise ValueError(f"Connectome '{conn_name}' path not found: {conn_config.path}")
             if conn_config.template_path and not conn_config.template_path.exists():
-                raise ValueError(f"Connectome '{conn_name}' template not found: {conn_config.template_path}")
+                raise ValueError(
+                    f"Connectome '{conn_name}' template not found: {conn_config.template_path}"
+                )
 
         # n_procs validation
         if self.n_procs < -1 or self.n_procs == 0:
