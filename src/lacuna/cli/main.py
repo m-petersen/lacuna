@@ -571,7 +571,7 @@ def _process_batch(
     else:
         actual_batch_size = min(batch_size, n_subjects)
 
-    logger.info(f"Batch processing: {n_subjects} subjects in batches of {actual_batch_size}")
+    logger.info(f"Batch processing: {n_subjects} masks in batches of {actual_batch_size}")
 
     # Build analysis instances from steps
     from lacuna.analysis import get_analysis
@@ -610,14 +610,13 @@ def _process_batch(
             # batch_process auto-selects strategy based on analysis.batch_strategy
             current_data = batch
             for analysis_name, analysis in analyses:
-                strategy = getattr(analysis, "batch_strategy", "parallel")
-                logger.info(f"Running {analysis_name} ({strategy} strategy)")
                 current_data = batch_process(
                     inputs=current_data,
                     analysis=analysis,
                     n_jobs=config.n_procs,
                     show_progress=config.verbose,
                     strategy=None,  # Auto-select based on analysis.batch_strategy
+                    progress_desc=analysis_name,
                 )
 
             # Export results

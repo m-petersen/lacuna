@@ -88,6 +88,7 @@ def batch_process(
     backend: str = "loky",
     lesion_batch_size: int | None = None,
     batch_result_callback: Callable | None = None,
+    progress_desc: str | None = None,
 ) -> list[SubjectData | ParcelData]:
     """
     Process multiple subjects through an analysis pipeline with automatic optimization.
@@ -229,10 +230,12 @@ def batch_process(
     # Setup progress tracking
     progress_bar = None
     if show_progress:
+        # Build progress bar description
+        desc = progress_desc or analysis.__class__.__name__
         progress_bar = tqdm(
             total=len(inputs),
-            desc=f"Processing with {strategy_instance.name} strategy",
-            unit="subject",
+            desc=desc,
+            unit="mask",
         )
 
         def progress_callback(idx: int) -> None:

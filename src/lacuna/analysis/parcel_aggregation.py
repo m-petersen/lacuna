@@ -894,10 +894,13 @@ class ParcelAggregation(BaseAnalysis):
             Dictionary mapping BIDS-style keys to ParcelData objects.
             Keys follow the pattern: parc-{atlas}_source-{SourceClass}_desc-{key}
         """
-        # Log analysis start
+        # Log analysis start with atlas names
         n_atlases = len(self.atlases) if hasattr(self, "atlases") and self.atlases else 0
         n_sources = len(self.sources)
-        self.logger.info(f"Aggregating {n_sources} source(s) across {n_atlases} atlas(es)...")
+        atlas_names = [a["name"] for a in self.atlases] if self.atlases else []
+        self.logger.info(
+            f"Aggregating {n_sources} source(s) across {n_atlases} atlas(es): {', '.join(atlas_names)}"
+        )
 
         # Get input data space/resolution once
         input_space = mask_data.space
