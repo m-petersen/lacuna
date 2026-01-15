@@ -239,6 +239,37 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self._batch_files = None
         self._mask_info = None
 
+    def _format_subject_id(self, mask_data: SubjectData) -> str:
+        """Format a human-readable identifier for a subject.
+
+        Combines subject_id, session_id, and label into a compact string.
+
+        Parameters
+        ----------
+        mask_data : SubjectData
+            Subject data with metadata.
+
+        Returns
+        -------
+        str
+            Formatted identifier like 'sub-001/ses-01/lesion'
+        """
+        parts = []
+        metadata = mask_data.metadata
+
+        subject_id = metadata.get("subject_id", "unknown")
+        parts.append(subject_id)
+
+        session_id = metadata.get("session_id")
+        if session_id:
+            parts.append(session_id)
+
+        label = metadata.get("label")
+        if label:
+            parts.append(label)
+
+        return "/".join(parts)
+
     def _get_connectome_files(self) -> list[Path]:
         """Get list of HDF5 connectome files to process.
 
@@ -1076,7 +1107,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         skipped_indices = []
 
         for i, mask_data in enumerate(mask_data_list):
-            subject_id = mask_data.metadata.get("subject_id", f"mask_{i}")
+            subject_id = self._format_subject_id(mask_data)
             self.logger.info(
                 f"Preparing mask {i + 1}/{len(mask_data_list)}: {subject_id}", indent_level=1
             )
@@ -1085,7 +1116,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             input_mask_data = mask_data.mask_img.get_fdata()
             if not np.any(input_mask_data > 0):
                 self.logger.warning(
-                    f"Skipping mask {i} ({subject_id}): input mask is empty (no non-zero voxels)",
+                    f"Skipping {subject_id}: input mask is empty (no non-zero voxels)",
                     indent_level=2,
                 )
                 skipped_indices.append(i)
@@ -1095,7 +1126,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             if len(voxel_indices) == 0:
                 self.logger.warning(
-                    f"Skipping mask {i} ({subject_id}): no overlap with connectome brain mask after resampling",
+                    f"Skipping {subject_id}: no overlap with connectome brain mask after resampling",
                     indent_level=2,
                 )
                 skipped_indices.append(i)
@@ -1207,7 +1238,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         processed_results = {}
         for i, mask_info in enumerate(mask_batch):
             original_idx = mask_info["index"]
-            subject_id = mask_info["mask_data"].metadata.get("subject_id", f"mask_{original_idx}")
+            subject_id = self._format_subject_id(mask_info["mask_data"])
             self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
 
             # Compute statistics from streaming aggregators

@@ -18,6 +18,39 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.core.subject_data import SubjectData
 
 
+def _format_subject_id(subject_data: SubjectData) -> str:
+    """
+    Format a human-readable identifier for a subject.
+
+    Combines subject_id, session_id, and label into a compact string.
+
+    Parameters
+    ----------
+    subject_data : SubjectData
+        Subject data with metadata.
+
+    Returns
+    -------
+    str
+        Formatted identifier like 'sub-001/ses-01/lesion' or 'sub-001/lesion'
+    """
+    parts = []
+    metadata = subject_data.metadata
+
+    subject_id = metadata.get("subject_id", "unknown")
+    parts.append(subject_id)
+
+    session_id = metadata.get("session_id")
+    if session_id:
+        parts.append(session_id)
+
+    label = metadata.get("label")
+    if label:
+        parts.append(label)
+
+    return "/".join(parts)
+
+
 def _process_one_subject(
     mask_data: SubjectData, idx: int, analysis: BaseAnalysis
 ) -> tuple[int, SubjectData | None]:
@@ -45,10 +78,10 @@ def _process_one_subject(
         result = analysis.run(mask_data)
         return idx, result
     except Exception as e:
-        # Get subject ID from metadata if available
-        subject_id = mask_data.metadata.get("subject_id", f"index_{idx}")
+        # Get formatted subject identifier
+        subject_id = _format_subject_id(mask_data)
         warnings.warn(
-            f"Analysis failed for subject {subject_id} (index {idx}): {e}",
+            f"Analysis failed for {subject_id}: {e}",
             RuntimeWarning,
             stacklevel=2,
         )

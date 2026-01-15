@@ -29,6 +29,102 @@ EXIT_BIDS_ERROR = 64
 EXIT_ANALYSIS_ERROR = 65
 
 
+def _format_subject_id(subject_data) -> str:
+    """
+    Format a human-readable identifier for a subject.
+
+    Combines subject_id, session_id, and label into a compact string.
+
+    Parameters
+    ----------
+    subject_data : SubjectData
+        Subject data with metadata.
+
+    Returns
+    -------
+    str
+        Formatted identifier like 'sub-001/ses-01/lesion' or 'sub-001/lesion'
+    """
+    parts = []
+    metadata = subject_data.metadata
+
+    subject_id = metadata.get("subject_id", "unknown")
+    parts.append(subject_id)
+
+    session_id = metadata.get("session_id")
+    if session_id:
+        parts.append(session_id)
+
+    label = metadata.get("label")
+    if label:
+        parts.append(label)
+
+    return "/".join(parts)
+
+
+def _log_discovery_summary(subjects_list: list, config) -> None:
+    """
+    Log a summary of discovered subjects and masks.
+
+    Parameters
+    ----------
+    subjects_list : list[SubjectData]
+        List of discovered subject data.
+    config : CLIConfig
+        Configuration with filter criteria.
+    """
+    if not subjects_list:
+        return
+
+    # Count unique subjects, sessions, and labels
+    unique_subjects = set()
+    unique_sessions = set()
+    unique_labels = set()
+
+    for subject_data in subjects_list:
+        metadata = subject_data.metadata
+        if "subject_id" in metadata:
+            unique_subjects.add(metadata["subject_id"])
+        if "session_id" in metadata:
+            unique_sessions.add(metadata["session_id"])
+        if "label" in metadata:
+            unique_labels.add(metadata["label"])
+
+    # Build summary message
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("DISCOVERY SUMMARY")
+    logger.info("=" * 60)
+    logger.info(f"  Total mask images: {len(subjects_list)}")
+    logger.info(f"  Unique subjects:   {len(unique_subjects)}")
+    if unique_sessions:
+        logger.info(f"  Unique sessions:   {len(unique_sessions)}")
+    if unique_labels:
+        logger.info(f"  Labels:            {', '.join(sorted(unique_labels))}")
+
+    # Log filters if any were applied
+    filters = []
+    if config.participant_label:
+        filters.append(f"subjects={config.participant_label}")
+    if config.session_id:
+        filters.append(f"sessions={config.session_id}")
+    if config.pattern:
+        filters.append(f"pattern='{config.pattern}'")
+
+    if filters:
+        logger.info(f"  Filters:           {', '.join(filters)}")
+
+    logger.info("=" * 60)
+    logger.info("")
+
+    # Log individual masks if verbose or small number
+    if len(subjects_list) <= 20:
+        logger.info("Masks to process:")
+        for i, subject_data in enumerate(subjects_list, 1):
+            logger.info(f"  {i:3d}. {_format_subject_id(subject_data)}")
+        logger.info("")
+
+
 def main(argv: list[str] | None = None) -> int:
     """
     Main CLI entry point.
@@ -284,7 +380,7 @@ def _run_workflow(config: CLIConfig) -> int:
                 logger.error(f"No subjects matching {config.participant_label} found")
                 return EXIT_BIDS_ERROR
 
-            logger.info(f"Loaded {len(all_subjects)} subject(s)")
+            _log_discovery_summary(all_subjects, config)
 
             # Process using batch or sequential mode
             if config.batch_size != 1 and steps:
@@ -342,7 +438,7 @@ def _run_workflow(config: CLIConfig) -> int:
                 subjects_dict = filtered_dict
 
             subjects_list = list(subjects_dict.values())
-            logger.info(f"Loaded {len(subjects_list)} subject(s)")
+            _log_discovery_summary(subjects_list, config)
 
             # Process subjects - use batch processing if batch_size != 1
             if len(subjects_list) > 1:
@@ -499,10 +595,15 @@ def _process_batch(
         batch_end = min(batch_start + actual_batch_size, n_subjects)
         batch = subjects_list[batch_start:batch_end]
 
+        # Log batch info with subject identifiers
+        batch_num = batch_start // actual_batch_size + 1
+        total_batches = (n_subjects + actual_batch_size - 1) // actual_batch_size
+
         if n_subjects > actual_batch_size:
-            logger.info(
-                f"Processing batch {batch_start // actual_batch_size + 1} ({batch_start + 1}-{batch_end} of {n_subjects})"
-            )
+            logger.info("")
+            logger.info(f"--- Batch {batch_num}/{total_batches} ({len(batch)} masks) ---")
+            for subject_data in batch:
+                logger.info(f"    • {_format_subject_id(subject_data)}")
 
         try:
             # Run each analysis in sequence using batch_process
