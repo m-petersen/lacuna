@@ -615,12 +615,18 @@ def _process_batch(
                     logger.info("")
                     logger.info(f"─── {analysis_name} ───")
 
+                # For vectorized analyses (FNM), batch_size controls lesion_batch_size
+                # which determines how many masks are processed together in memory.
+                # For parallel analyses, it has no effect (each mask is independent).
+                lesion_batch_size = None if batch_size == -1 else batch_size
+
                 current_data = batch_process(
                     inputs=current_data,
                     analysis=analysis,
                     n_jobs=config.n_procs,
                     show_progress=config.verbose,
                     strategy=None,  # Auto-select based on analysis.batch_strategy
+                    lesion_batch_size=lesion_batch_size,
                     progress_desc=analysis_name,
                 )
 

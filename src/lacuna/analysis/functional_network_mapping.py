@@ -423,7 +423,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 batch_timeseries = hf["timeseries"][:]
                 batch_n_subjects = batch_timeseries.shape[0]
 
-            self.logger.info(
+            self.logger.debug(
                 f"Extracting mask timeseries ({batch_n_subjects} subjects)", indent_level=1
             )
 
@@ -437,12 +437,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     batch_timeseries, mask_voxel_indices
                 )
 
-            self.logger.info("Computing correlation maps", indent_level=1)
+            self.logger.debug("Computing correlation maps", indent_level=1)
 
             # Compute correlation maps for this batch
             batch_r_maps = self._compute_correlation_maps_batch(mask_ts, batch_timeseries)
 
-            self.logger.info("Applying Fisher z-transform", indent_level=1)
+            self.logger.debug("Applying Fisher z-transform", indent_level=1)
 
             # Fisher z-transform
             batch_z_maps = np.arctanh(batch_r_maps)

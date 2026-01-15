@@ -174,7 +174,8 @@ class TestBuildParser:
         assert args.functional_connectome is None
         assert args.structural_tractogram is None
         assert args.parcel_atlases is None
-        assert args.nprocs == 1
+        assert args.nprocs == -1  # Default to all CPUs
+        assert args.batch_size == -1  # Default to all masks together
         assert args.verbose_count == 0
 
     def test_parser_custom_prog_name(self):

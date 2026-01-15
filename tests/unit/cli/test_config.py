@@ -46,7 +46,8 @@ class TestCLIConfigBasic:
         assert config.functional_connectome is None
         assert config.structural_connectome is None
         assert config.parcel_atlases is None
-        assert config.n_procs == 1
+        assert config.n_procs == -1  # Default to all CPUs
+        assert config.batch_size == -1  # Default to all masks together
         assert config.verbose_count == 0
 
 

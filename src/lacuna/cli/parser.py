@@ -177,19 +177,20 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     g_perf.add_argument(
         "--nprocs",
         type=int,
-        default=1,
+        default=-1,
         metavar="N",
-        help="Number of parallel processes (-1 for all CPUs)",
+        help="Number of parallel processes (-1 for all CPUs, default: -1)",
     )
     g_perf.add_argument(
         "--batch-size",
         type=int,
-        default=1,
+        default=-1,
         metavar="N",
         help=(
-            "Number of subjects to process together in vectorized mode. "
-            "Higher values improve FNM performance but use more memory. "
-            "Use -1 for all subjects at once. (default: 1 = sequential)"
+            "Number of masks to process together per batch. "
+            "Controls memory usage for vectorized analyses (FNM). "
+            "Use -1 for all masks at once (fastest, default). "
+            "Lower values (e.g., 10) reduce peak memory."
         ),
     )
     g_perf.add_argument(
@@ -540,19 +541,20 @@ def _add_bids_arguments(parser: ArgumentParser) -> None:
     g_perf.add_argument(
         "--nprocs",
         type=int,
-        default=1,
+        default=-1,
         metavar="N",
-        help="Number of parallel processes (-1 for all CPUs)",
+        help="Number of parallel processes (-1 for all CPUs, default: -1)",
     )
     g_perf.add_argument(
         "--batch-size",
         type=int,
-        default=1,
+        default=-1,
         metavar="N",
         help=(
-            "Number of subjects to process together in vectorized mode. "
-            "Higher values improve FNM performance but use more memory. "
-            "Use -1 for all subjects at once. (default: 1 = sequential)"
+            "Number of masks to process together per batch. "
+            "Controls memory usage for vectorized analyses (FNM). "
+            "Use -1 for all masks at once (fastest, default). "
+            "Lower values (e.g., 10) reduce peak memory."
         ),
     )
     g_perf.add_argument(

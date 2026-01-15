@@ -65,8 +65,7 @@ connectomes:
   # Example structural connectome (dTOR)
   # structural:
   #   path: /path/to/dTOR.tck
-  #   space: MNI152NLin6Asym
-  #   template_path: /path/to/template.nii.gz  # Optional, for output grid
+  #   space: MNI152NLin2009cAsym
 
 # =============================================================================
 # ANALYSES SECTION
@@ -105,8 +104,8 @@ analyses:
   # StructuralNetworkMapping:
   #   connectome: structural  # Reference to connectomes section
   #   output_resolution: 2  # Output resolution in mm (1 or 2) for TDI and final outputs
-  #   cache_tdi: true
-  #   n_jobs: 1
+  #   cache_tdi: true # Cache TDI maps to speed up repeated analyses
+  #   n_jobs: 1 # Number of parallel processes for MRtrix commands (-1 = all CPUs; separate from nprocs)
   #   keep_intermediate: false  # Include intermediate results (lesion tractogram, TDI)
   #   cleanup_temp_files: true  # Delete temp working directory after analysis
   #   return_in_input_space: true  # Transform outputs to input mask space
@@ -130,15 +129,20 @@ analyses:
   #   aggregation: mean  # mean, sum, percent, volume, median, std
   #   parcel_names:
   #     - Schaefer2018_100Parcels7Networks
-  #   # threshold: 0.5  # For probabilistic atlases
 
 # =============================================================================
 # PERFORMANCE OPTIONS
 # =============================================================================
-# Number of parallel processes for batch processing (-1 = all CPUs)
-# This controls how many subjects are processed simultaneously.
-# Note: StructuralNetworkMapping has its own n_jobs for MRtrix thread control.
-nprocs: 1
+# Number of parallel processes (-1 = all CPUs, default)
+# Controls how many masks are processed simultaneously for parallel analyses
+# (RegionalDamage, ParcelAggregation, StructuralNetworkMapping)
+nprocs: -1
+
+# Batch size: how many masks to process together (-1 = all, default)
+# Controls memory usage for vectorized analyses (FunctionalNetworkMapping).
+# Use -1 for fastest processing (all masks at once, highest memory).
+# Use lower values (e.g., 10-50) to reduce peak memory usage.
+batch_size: -1
 
 # Temporary directory for intermediate files
 tmp_dir: null

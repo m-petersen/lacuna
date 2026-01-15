@@ -123,6 +123,24 @@ class ConsoleLogger:
             self._log(title)
             self._log(separator)
 
+    def debug(self, message: str, indent_level: int = 0) -> None:
+        """
+        Print a debug message (only shown with -vv verbosity).
+
+        Parameters
+        ----------
+        message : str
+            Debug message
+        indent_level : int, default=0
+            Indentation level (0, 1, 2, ...)
+
+        Examples
+        --------
+        >>> logger.debug("Computing correlation maps")
+        """
+        indent = self.indent * indent_level
+        self._log(f"{indent}{message}", level=logging.DEBUG)
+
     def info(self, message: str, indent_level: int = 0) -> None:
         """
         Print an informational message.
