@@ -180,9 +180,7 @@ def test_single_subject_empty_mask_raises_error(tmp_path):
 
     # Should raise EmptyMaskError at load time
     with pytest.raises(EmptyMaskError, match="Empty mask"):
-        SubjectData.from_nifti(
-            lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-        )
+        SubjectData.from_nifti(lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
 def test_single_subject_metadata_persistence(tmp_path):

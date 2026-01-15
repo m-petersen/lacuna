@@ -50,7 +50,11 @@ class TestSubjectValidation:
         with pytest.raises(EmptyMaskError, match="sub-test-subject"):
             SubjectData(
                 mask_img=mask_img,
-                metadata={"subject_id": "sub-test-subject", "space": "MNI152NLin6Asym", "resolution": 2},
+                metadata={
+                    "subject_id": "sub-test-subject",
+                    "space": "MNI152NLin6Asym",
+                    "resolution": 2,
+                },
             )
 
     def test_validate_suspicious_voxel_size_no_warning(self):
