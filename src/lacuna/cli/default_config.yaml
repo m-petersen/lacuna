@@ -135,8 +135,10 @@ analyses:
 # =============================================================================
 # PERFORMANCE OPTIONS
 # =============================================================================
-# Number of parallel processes (-1 = all CPUs)
-n_jobs: 1
+# Number of parallel processes for batch processing (-1 = all CPUs)
+# This controls how many subjects are processed simultaneously.
+# Note: StructuralNetworkMapping has its own n_jobs for MRtrix thread control.
+nprocs: 1
 
 # Temporary directory for intermediate files
 tmp_dir: null

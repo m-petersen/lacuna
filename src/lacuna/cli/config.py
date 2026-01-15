@@ -383,7 +383,7 @@ class CLIConfig:
             parcel_atlases=parcel_atlases,
             skip_regional_damage=skip_rd,
             atlas_dir=getattr(args, "atlas_dir", None),
-            n_procs=getattr(args, "nprocs", None) or yaml_config.get("n_jobs", 1),
+            n_procs=getattr(args, "nprocs", None) or yaml_config.get("nprocs", 1),
             batch_size=getattr(args, "batch_size", None) or yaml_config.get("batch_size", 1),
             tmp_dir=tmp_dir,
             overwrite=getattr(args, "overwrite", False),
