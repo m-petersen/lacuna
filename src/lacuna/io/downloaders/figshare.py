@@ -156,7 +156,41 @@ class FigshareDownloader(BaseDownloader):
         except Exception as e:
             raise DownloadError(url=url, reason=str(e)) from e
 
+        # Check for WAF challenge responses (AWS WAF, Cloudflare, etc.)
+        content_type = response.headers.get("content-type", "")
         total_size = int(response.headers.get("content-length", 0))
+
+        # Detect HTML challenge pages masquerading as downloads
+        if "text/html" in content_type.lower():
+            raise DownloadError(
+                url=url,
+                reason=(
+                    "Figshare returned an HTML page instead of the file. "
+                    "This is likely due to AWS WAF anti-bot protection.\n\n"
+                    "Please download the file manually:\n"
+                    "  1. Open in browser: https://springernature.figshare.com/articles/dataset/"
+                    "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299\n"
+                    "  2. Click 'Download' to get the .trk file\n"
+                    f"  3. Save to: {output_file}\n"
+                    "  4. Run 'lacuna fetch dtor985' again to convert and register"
+                ),
+            )
+
+        # Validate file size - tractograms should be at least 1GB
+        expected_min_size = 1_000_000_000  # 1GB minimum for a full tractogram
+        if total_size > 0 and total_size < expected_min_size:
+            # Small file might be an error page or partial download
+            if total_size < 10_000:  # Less than 10KB is definitely wrong
+                raise DownloadError(
+                    url=url,
+                    reason=(
+                        f"Downloaded file is too small ({total_size} bytes). "
+                        "Expected a multi-GB tractogram file.\n\n"
+                        "Please download the file manually from:\n"
+                        "  https://springernature.figshare.com/articles/dataset/"
+                        "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299"
+                    ),
+                )
 
         # Use temp file for atomic write
         temp_file = output_file.with_suffix(output_file.suffix + ".tmp")
@@ -193,7 +227,74 @@ class FigshareDownloader(BaseDownloader):
             # Move to final location
             temp_file.rename(output_file)
 
+            # Validate downloaded file is not an HTML error page
+            self._validate_downloaded_file(output_file, url)
+
         except Exception:
             if temp_file.exists():
                 temp_file.unlink()
             raise
+
+    def _validate_downloaded_file(self, output_file: Path, url: str) -> None:
+        """
+        Validate that the downloaded file is actually a tractogram, not an error page.
+
+        Parameters
+        ----------
+        output_file : Path
+            Downloaded file to validate.
+        url : str
+            Original URL (for error messages).
+
+        Raises
+        ------
+        DownloadError
+            If file appears to be invalid.
+        """
+        # Check file size
+        file_size = output_file.stat().st_size
+        if file_size < 10_000:  # Less than 10KB
+            # Read first bytes to check if it's HTML
+            with open(output_file, "rb") as f:
+                header = f.read(1000)
+
+            # Check for HTML markers
+            if b"<!DOCTYPE" in header or b"<html" in header or b"AwsWaf" in header:
+                output_file.unlink()  # Remove invalid file
+                raise DownloadError(
+                    url=url,
+                    reason=(
+                        "Downloaded file is an HTML page, not the tractogram. "
+                        "Figshare's anti-bot protection blocked the download.\n\n"
+                        "Please download manually:\n"
+                        "  1. Open: https://springernature.figshare.com/articles/dataset/"
+                        "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299\n"
+                        "  2. Click 'Download' to get the .trk file\n"
+                        f"  3. Save to: {output_file}\n"
+                        "  4. Run 'lacuna fetch dtor985' again to convert and register"
+                    ),
+                )
+
+        # For .trk files, validate the header
+        if output_file.suffix == ".trk":
+            with open(output_file, "rb") as f:
+                # TrackVis header should start with "TRACK" magic bytes at offset 0
+                # or have header size of 1000 at bytes 996-1000
+                f.seek(996)
+                hdr_size_bytes = f.read(4)
+                if len(hdr_size_bytes) == 4:
+                    import struct
+
+                    hdr_size = struct.unpack("<i", hdr_size_bytes)[0]
+                    if hdr_size != 1000:
+                        output_file.unlink()
+                        raise DownloadError(
+                            url=url,
+                            reason=(
+                                f"Invalid .trk file: header size is {hdr_size} instead of 1000. "
+                                "The file may be corrupted or not a valid TrackVis tractogram.\n\n"
+                                "Please download manually from:\n"
+                                "  https://springernature.figshare.com/articles/dataset/"
+                                "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299"
+                            ),
+                        )
