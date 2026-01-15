@@ -162,9 +162,10 @@ def test_single_subject_validation_catches_issues(tmp_path):
         SubjectData.from_nifti(lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2})
 
 
-def test_single_subject_empty_mask_warning(tmp_path):
-    """Test that empty lesion mask triggers warning."""
+def test_single_subject_empty_mask_raises_error(tmp_path):
+    """Test that empty lesion mask raises EmptyMaskError."""
     from lacuna import SubjectData
+    from lacuna.core.exceptions import EmptyMaskError
 
     # Create empty lesion (all zeros)
     shape = (64, 64, 64)
@@ -177,12 +178,11 @@ def test_single_subject_empty_mask_warning(tmp_path):
     lesion_path = tmp_path / "empty_lesion.nii.gz"
     nib.save(mask_img, lesion_path)
 
-    # Should warn about empty mask
-    with pytest.warns(UserWarning, match="empty"):
-        mask_data = SubjectData.from_nifti(
+    # Should raise EmptyMaskError at load time
+    with pytest.raises(EmptyMaskError, match="Empty mask"):
+        SubjectData.from_nifti(
             lesion_path, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
         )
-        mask_data.validate()
 
 
 def test_single_subject_metadata_persistence(tmp_path):

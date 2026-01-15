@@ -966,10 +966,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Check if resampling is needed
         if input_shape != mask_shape:
-            self.logger.warning(
-                f"Resampling mask from {input_shape} to {mask_shape}", indent_level=1
-            )
-
             # Resample mask to connectome space
             from nilearn.image import resample_to_img
 
@@ -985,8 +981,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 copy_header=True,
             )
             resampled_mask = mask_img_resampled.get_fdata().astype(bool)
-
-            self.logger.success("Resampling complete", indent_level=2)
         else:
             mask_img_resampled = mask_img
             resampled_mask = mask_img.get_fdata().astype(bool)
@@ -1082,7 +1076,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         >>> strategy = VectorizedStrategy()
         >>> results = strategy.execute(mask_data_list, analysis)
         """
-        self.logger.info(f"Vectorized batch processing: {len(mask_data_list)} lesions together")
+        self.logger.info(f"Vectorized batch processing: {len(mask_data_list)} masks")
 
         # Validate all lesions first
         for mask_data in mask_data_list:
@@ -1097,25 +1091,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
             details={
                 "connectome_batches": len(connectome_files),
                 "mask_shape": mask_shape,
-                "n_lesions": len(mask_data_list),
+                "n_masks": len(mask_data_list),
             },
         )
 
         # Prepare all masks with resampling if needed
-        # Track valid masks - empty masks now raise errors instead of being skipped
         mask_batch = []
-        self.logger.info(f"Validating {len(mask_data_list)} masks...")
 
         for i, mask_data in enumerate(mask_data_list):
             subject_id = self._format_subject_id(mask_data)
-
-            # Check for empty mask BEFORE resampling
-            input_mask_data = mask_data.mask_img.get_fdata()
-            if not np.any(input_mask_data > 0):
-                raise ValidationError(
-                    f"Empty mask for {subject_id}: input mask has no non-zero voxels. "
-                    f"Please ensure mask files contain valid lesion data."
-                )
 
             voxel_indices, _ = self._get_mask_voxel_indices(mask_data)
 

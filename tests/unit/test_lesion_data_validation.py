@@ -13,9 +13,10 @@ import pytest
 class TestSubjectValidation:
     """Unit tests for SubjectData.validate() method."""
 
-    def test_validate_empty_mask_warning(self):
-        """Test that empty lesion masks trigger a warning."""
+    def test_empty_mask_raises_error_on_creation(self):
+        """Test that empty lesion masks raise EmptyMaskError at creation time."""
         from lacuna import SubjectData
+        from lacuna.core.exceptions import EmptyMaskError
 
         # Create empty mask (all zeros)
         shape = (64, 64, 64)
@@ -25,14 +26,32 @@ class TestSubjectValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        mask_data = SubjectData(
-            mask_img=mask_img,
-            metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
-        )
+        # Should raise EmptyMaskError at creation time
+        with pytest.raises(EmptyMaskError, match="Empty mask"):
+            SubjectData(
+                mask_img=mask_img,
+                metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
+            )
 
-        # Should warn about empty mask
-        with pytest.warns(UserWarning, match="empty"):
-            mask_data.validate()
+    def test_empty_mask_error_includes_subject_id(self):
+        """Test that EmptyMaskError includes subject_id in message."""
+        from lacuna import SubjectData
+        from lacuna.core.exceptions import EmptyMaskError
+
+        # Create empty mask (all zeros)
+        shape = (64, 64, 64)
+        data = np.zeros(shape, dtype=np.uint8)
+        affine = np.eye(4)
+        affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
+
+        mask_img = nib.Nifti1Image(data, affine)
+
+        # Should include subject_id in error message
+        with pytest.raises(EmptyMaskError, match="sub-test-subject"):
+            SubjectData(
+                mask_img=mask_img,
+                metadata={"subject_id": "sub-test-subject", "space": "MNI152NLin6Asym", "resolution": 2},
+            )
 
     def test_validate_suspicious_voxel_size_no_warning(self):
         """Test that unusual voxel sizes are allowed with correct resolution declaration.

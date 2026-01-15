@@ -15,6 +15,7 @@ from .exceptions import (
     AnalysisError,
     BIDSValidationError,
     CoordinateSpaceError,
+    EmptyMaskError,
     LacunaError,
     NiftiLoadError,
     ProvenanceError,
@@ -45,6 +46,7 @@ __all__ = [
     # Exceptions
     "LacunaError",
     "ValidationError",
+    "EmptyMaskError",
     "SpatialMismatchError",
     "CoordinateSpaceError",
     "BIDSValidationError",

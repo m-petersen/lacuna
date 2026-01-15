@@ -1,7 +1,6 @@
 """Unit tests for logging utilities."""
 
-import io
-from contextlib import redirect_stdout
+import logging
 
 from lacuna.utils.logging import (
     ConsoleLogger,
@@ -25,242 +24,196 @@ class TestConsoleLogger:
         assert logger.width == 80
         assert logger.indent == "    "
 
-    def test_logger_verbose_false(self):
+    def test_logger_verbose_false(self, caplog):
         """Test that verbose=False suppresses output."""
         logger = ConsoleLogger(verbose=False)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.info("This should not print")
             logger.success("Neither should this")
 
-        assert output.getvalue() == ""
+        assert len(caplog.records) == 0
 
-    def test_section_formatting(self):
+    def test_section_formatting(self, caplog):
         """Test section header formatting."""
         logger = ConsoleLogger(verbose=True, width=40)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.section("TEST SECTION")
 
-        result = output.getvalue()
-        assert "=" * 40 in result
-        assert "TEST SECTION" in result
-        assert result.count("=" * 40) == 2  # Top and bottom separator
+        # Should have 4 records: empty line, separator, title, separator
+        messages = [r.message for r in caplog.records]
+        assert "=" * 40 in messages
+        assert "TEST SECTION" in messages
 
-    def test_subsection_formatting(self):
+    def test_subsection_formatting(self, caplog):
         """Test subsection header formatting."""
         logger = ConsoleLogger(verbose=True, width=40)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.subsection("Test Subsection")
 
-        result = output.getvalue()
-        assert "-" * 40 in result
-        assert "Test Subsection" in result
-        assert result.count("-" * 40) == 2
+        messages = [r.message for r in caplog.records]
+        assert "-" * 40 in messages
+        assert "Test Subsection" in messages
 
-    def test_info_message(self):
+    def test_info_message(self, caplog):
         """Test info message formatting."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.info("Loading data...")
 
-        result = output.getvalue()
-        assert MessageType.INFO.value in result
-        assert "Loading data..." in result
+        assert "Loading data..." in caplog.text
 
-    def test_success_message_without_details(self):
+    def test_success_message_without_details(self, caplog):
         """Test success message without details."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.success("Analysis complete")
 
-        result = output.getvalue()
-        assert MessageType.SUCCESS.value in result
-        assert "Analysis complete" in result
+        assert "Analysis complete" in caplog.text
 
-    def test_success_message_with_details(self):
+    def test_success_message_with_details(self, caplog):
         """Test success message with details dictionary."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.success("Analysis complete", details={"time": 42.3, "subjects": 10})
 
-        result = output.getvalue()
-        assert MessageType.SUCCESS.value in result
-        assert "Analysis complete" in result
-        assert "time: 42.30" in result
-        assert "subjects: 10" in result
+        assert "Analysis complete" in caplog.text
+        assert "time: 42.30" in caplog.text
+        assert "subjects: 10" in caplog.text
 
-    def test_warning_message(self):
+    def test_warning_message(self, caplog):
         """Test warning message formatting."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
-            logger.warning("Lesion size smaller than expected")
+        with caplog.at_level(logging.WARNING):
+            logger.warning("Mask size smaller than expected")
 
-        result = output.getvalue()
-        assert MessageType.WARNING.value in result
-        assert "Lesion size smaller than expected" in result
+        assert "Mask size smaller than expected" in caplog.text
+        assert caplog.records[0].levelno == logging.WARNING
 
-    def test_error_message(self):
+    def test_error_message(self, caplog):
         """Test error message formatting."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.ERROR):
             logger.error("Failed to load connectome")
 
-        result = output.getvalue()
-        assert MessageType.ERROR.value in result
-        assert "Failed to load connectome" in result
+        assert "Failed to load connectome" in caplog.text
+        assert caplog.records[0].levelno == logging.ERROR
 
-    def test_progress_with_current_total(self):
+    def test_progress_with_current_total(self, caplog):
         """Test progress message with current/total."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.progress("Processing batch", current=3, total=10)
 
-        result = output.getvalue()
-        assert MessageType.PROGRESS.value in result
-        assert "Processing batch" in result
-        assert "[3/10]" in result
+        assert "Processing batch" in caplog.text
+        assert "[3/10]" in caplog.text
 
-    def test_progress_with_percent(self):
+    def test_progress_with_percent(self, caplog):
         """Test progress message with percentage."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.progress("Loading data", percent=65.5)
 
-        result = output.getvalue()
-        assert MessageType.PROGRESS.value in result
-        assert "Loading data" in result
-        assert "[65.5%]" in result
+        assert "Loading data" in caplog.text
+        assert "[65.5%]" in caplog.text
 
-    def test_result_summary(self):
+    def test_result_summary(self, caplog):
         """Test result summary formatting."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.result_summary(
                 "Analysis Results",
                 {"Mean correlation": 0.4523, "Std correlation": 0.1234, "Range": "[-0.45, 0.89]"},
             )
 
-        result = output.getvalue()
-        assert "Analysis Results:" in result
-        assert "Mean correlation: 0.4523" in result
-        assert "Std correlation: 0.1234" in result
-        assert "Range: [-0.45, 0.89]" in result
+        assert "Analysis Results:" in caplog.text
+        assert "Mean correlation: 0.4523" in caplog.text
+        assert "Std correlation: 0.1234" in caplog.text
+        assert "Range: [-0.45, 0.89]" in caplog.text
 
-    def test_indentation_levels(self):
+    def test_indentation_levels(self, caplog):
         """Test that indentation works correctly."""
         logger = ConsoleLogger(verbose=True, indent="  ")
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.info("Level 0", indent_level=0)
             logger.info("Level 1", indent_level=1)
             logger.info("Level 2", indent_level=2)
 
-        lines = output.getvalue().split("\n")
-        # Check that indentation increases
-        assert lines[0].startswith(MessageType.INFO.value)
-        assert lines[1].startswith("  " + MessageType.INFO.value)
-        assert lines[2].startswith("    " + MessageType.INFO.value)
+        messages = [r.message for r in caplog.records]
+        assert messages[0] == "Level 0"
+        assert messages[1] == "  Level 1"
+        assert messages[2] == "    Level 2"
 
-    def test_blank_line(self):
+    def test_blank_line(self, caplog):
         """Test blank line output."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.info("First")
             logger.blank_line()
             logger.info("Second")
 
-        result = output.getvalue()
-        assert "\n\n" in result  # Blank line creates extra newline
+        # Should have 3 records
+        assert len(caplog.records) == 3
 
 
 class TestConvenienceFunctions:
     """Tests for convenience logging functions."""
 
-    def test_log_section(self):
+    def test_log_section(self, caplog):
         """Test log_section convenience function."""
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             log_section("TEST", verbose=True)
 
-        result = output.getvalue()
-        assert "TEST" in result
-        assert "=" in result
+        assert "TEST" in caplog.text
 
-    def test_log_info(self):
+    def test_log_info(self, caplog):
         """Test log_info convenience function."""
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             log_info("Test message", verbose=True)
 
-        result = output.getvalue()
-        assert MessageType.INFO.value in result
-        assert "Test message" in result
+        assert "Test message" in caplog.text
 
-    def test_log_success(self):
+    def test_log_success(self, caplog):
         """Test log_success convenience function."""
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             log_success("Success message", details={"count": 5}, verbose=True)
 
-        result = output.getvalue()
-        assert MessageType.SUCCESS.value in result
-        assert "Success message" in result
-        assert "count: 5" in result
+        assert "Success message" in caplog.text
+        assert "count: 5" in caplog.text
 
-    def test_log_warning(self):
+    def test_log_warning(self, caplog):
         """Test log_warning convenience function."""
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.WARNING):
             log_warning("Warning message", verbose=True)
 
-        result = output.getvalue()
-        assert MessageType.WARNING.value in result
-        assert "Warning message" in result
+        assert "Warning message" in caplog.text
 
-    def test_log_error(self):
+    def test_log_error(self, caplog):
         """Test log_error convenience function."""
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.ERROR):
             log_error("Error message", verbose=True)
 
-        result = output.getvalue()
-        assert MessageType.ERROR.value in result
-        assert "Error message" in result
+        assert "Error message" in caplog.text
 
-    def test_log_progress(self):
+    def test_log_progress(self, caplog):
         """Test log_progress convenience function."""
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             log_progress("Processing", current=5, total=10, verbose=True)
 
-        result = output.getvalue()
-        assert MessageType.PROGRESS.value in result
-        assert "Processing" in result
-        assert "[5/10]" in result
+        assert "Processing" in caplog.text
+        assert "[5/10]" in caplog.text
 
 
 class TestMessageType:
@@ -268,11 +221,12 @@ class TestMessageType:
 
     def test_message_type_values(self):
         """Test that all message types have values."""
-        assert MessageType.INFO.value == "·"
-        assert MessageType.SUCCESS.value == "✓"
-        assert MessageType.WARNING.value == "⚡"
-        assert MessageType.ERROR.value == "✗"
-        assert MessageType.PROGRESS.value == "→"
+        # Symbols removed - now empty strings
+        assert MessageType.INFO.value == ""
+        assert MessageType.SUCCESS.value == ""
+        assert MessageType.WARNING.value == ""
+        assert MessageType.ERROR.value == ""
+        assert MessageType.PROGRESS.value == ""
         assert MessageType.SECTION.value == "="
         assert MessageType.SUBSECTION.value == "-"
 
@@ -280,36 +234,30 @@ class TestMessageType:
 class TestNumberFormatting:
     """Tests for number formatting in logger output."""
 
-    def test_float_formatting(self):
+    def test_float_formatting(self, caplog):
         """Test that floats are formatted correctly."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.success("Test", details={"value": 3.14159})
 
-        result = output.getvalue()
-        assert "value: 3.14" in result
+        assert "value: 3.14" in caplog.text
 
-    def test_large_int_formatting(self):
+    def test_large_int_formatting(self, caplog):
         """Test that large integers get comma separators."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.success("Test", details={"count": 1234567})
 
-        result = output.getvalue()
-        assert "count: 1,234,567" in result
+        assert "count: 1,234,567" in caplog.text
 
-    def test_small_int_no_separator(self):
+    def test_small_int_no_separator(self, caplog):
         """Test that small integers don't get separators."""
         logger = ConsoleLogger(verbose=True)
 
-        output = io.StringIO()
-        with redirect_stdout(output):
+        with caplog.at_level(logging.INFO):
             logger.success("Test", details={"count": 999})
 
-        result = output.getvalue()
-        assert "count: 999" in result
-        assert "," not in result
+        assert "count: 999" in caplog.text
+        assert "1," not in caplog.text  # No comma for 999

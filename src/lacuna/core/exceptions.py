@@ -19,6 +19,24 @@ class ValidationError(LacunaError, ValueError):
     pass
 
 
+class EmptyMaskError(ValidationError):
+    """Raised when a mask contains no non-zero voxels."""
+
+    def __init__(self, subject_id: str | None = None):
+        self.subject_id = subject_id
+        if subject_id:
+            message = (
+                f"Empty mask for '{subject_id}': mask contains no non-zero voxels. "
+                "Please ensure mask files contain valid lesion data."
+            )
+        else:
+            message = (
+                "Empty mask: mask contains no non-zero voxels. "
+                "Please ensure mask files contain valid lesion data."
+            )
+        super().__init__(message)
+
+
 class SpatialMismatchError(ValidationError):
     """Raised when spatial properties (affine, shape) don't match."""
 

@@ -610,6 +610,11 @@ def _process_batch(
             # batch_process auto-selects strategy based on analysis.batch_strategy
             current_data = batch
             for analysis_name, analysis in analyses:
+                # Log separator line for each analysis step
+                if config.verbose:
+                    logger.info("")
+                    logger.info(f"─── {analysis_name} ───")
+
                 current_data = batch_process(
                     inputs=current_data,
                     analysis=analysis,

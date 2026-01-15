@@ -104,7 +104,7 @@ def load_transform(name: str) -> Path:
     # tpl-{target}_from-{source}_mode-image_xfm.h5
     # The transform is stored under the target template
 
-    logger.info(
+    logger.debug(
         f"Loading transform: {from_space_normalized} → {to_space_normalized} "
         f"(original request: {name})"
     )
@@ -170,9 +170,7 @@ def load_transform(name: str) -> Path:
                             )
                         file_size = path.stat().st_size
 
-                    logger.info(
-                        f"✓ Transform loaded: {path.name} " f"({file_size / (1024**2):.1f} MB)"
-                    )
+                    logger.debug(f"Transform loaded: {path.name} ({file_size / (1024**2):.1f} MB)")
                     return path
 
     except Exception as e:

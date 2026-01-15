@@ -5,17 +5,18 @@ Provides a unified system for displaying progress, success, warnings, and errors
 to users with consistent formatting across all modules.
 """
 
+import logging
 from enum import Enum
 
 
 class MessageType(Enum):
     """Types of messages that can be displayed."""
 
-    INFO = "·"  # General information
-    SUCCESS = "✓"  # Operation completed successfully
-    WARNING = "⚡"  # Warning message
-    ERROR = "✗"  # Error message
-    PROGRESS = "→"  # Progress update
+    INFO = ""  # General information
+    SUCCESS = ""  # Operation completed successfully
+    WARNING = ""  # Warning message
+    ERROR = ""  # Error message
+    PROGRESS = ""  # Progress update
     SECTION = "="  # Section header
     SUBSECTION = "-"  # Subsection header
 
@@ -24,8 +25,8 @@ class ConsoleLogger:
     """
     Consistent console logger for user-facing messages.
 
-    Provides formatted output with consistent symbols, indentation, and styling
-    across all Lacuna modules.
+    Uses the standard Python logging module for output, ensuring consistent
+    formatting with timestamps and module names across all Lacuna modules.
 
     Parameters
     ----------
@@ -35,25 +36,24 @@ class ConsoleLogger:
         Width for section headers
     indent : str, default="  "
         Indentation string for nested messages
+    name : str, default="lacuna"
+        Logger name for the Python logging module
 
     Examples
     --------
     >>> logger = ConsoleLogger(verbose=True)
     >>> logger.section("PROCESSING DATA")
-    ===========================================
-    PROCESSING DATA
-    ===========================================
+    2026-01-15 10:00:00 - lacuna - INFO - ============================================
+    2026-01-15 10:00:00 - lacuna - INFO - PROCESSING DATA
+    2026-01-15 10:00:00 - lacuna - INFO - ============================================
 
     >>> logger.info("Loading connectome...")
-    ·  Loading connectome...
+    2026-01-15 10:00:00 - lacuna - INFO - Loading connectome...
 
     >>> logger.success("Analysis complete", details={"subjects": 10, "time": 42.3})
-    ✓ Analysis complete
-      - subjects: 10
-      - time: 42.3s
-
-    >>> logger.progress("Batch 3/10", percent=30)
-    → Batch 3/10 [30%]
+    2026-01-15 10:00:00 - lacuna - INFO - Analysis complete
+    2026-01-15 10:00:00 - lacuna - INFO -   subjects: 10
+    2026-01-15 10:00:00 - lacuna - INFO -   time: 42.3
     """
 
     def __init__(
@@ -61,23 +61,27 @@ class ConsoleLogger:
         verbose: bool = False,
         width: int = 70,
         indent: str = "  ",
+        name: str = "lacuna.analysis",
     ):
         """Initialize console logger."""
         self.verbose = verbose
         self.width = width
         self.indent = indent
+        self._logger = logging.getLogger(name)
 
-    def _print(self, message: str) -> None:
+    def _log(self, message: str, level: int = logging.INFO) -> None:
         """
-        Print message if verbose mode is enabled.
+        Log message if verbose mode is enabled.
 
         Parameters
         ----------
         message : str
-            Message to print
+            Message to log
+        level : int
+            Logging level (default: INFO)
         """
         if self.verbose:
-            print(message, flush=True)
+            self._logger.log(level, message)
 
     def section(self, title: str) -> None:
         """
@@ -94,9 +98,10 @@ class ConsoleLogger:
         """
         if self.verbose:
             separator = "=" * self.width
-            self._print(f"\n{separator}")
-            self._print(title)
-            self._print(separator)
+            self._log("")
+            self._log(separator)
+            self._log(title)
+            self._log(separator)
 
     def subsection(self, title: str) -> None:
         """
@@ -113,9 +118,10 @@ class ConsoleLogger:
         """
         if self.verbose:
             separator = "-" * self.width
-            self._print(f"\n{separator}")
-            self._print(title)
-            self._print(separator)
+            self._log("")
+            self._log(separator)
+            self._log(title)
+            self._log(separator)
 
     def info(self, message: str, indent_level: int = 0) -> None:
         """
@@ -131,10 +137,9 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.info("Loading mask information...")
-        ·  Loading mask information...
         """
         indent = self.indent * indent_level
-        self._print(f"{indent}{MessageType.INFO.value}  {message}")
+        self._log(f"{indent}{message}")
 
     def success(
         self,
@@ -157,12 +162,9 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.success("Analysis complete", details={"time": 42.3, "subjects": 10})
-        ✓ Analysis complete
-          - time: 42.3s
-          - subjects: 10
         """
         indent = self.indent * indent_level
-        self._print(f"{indent}{MessageType.SUCCESS.value} {message}")
+        self._log(f"{indent}{message}")
 
         if details and self.verbose:
             detail_indent = self.indent * (indent_level + 1)
@@ -175,7 +177,7 @@ class ConsoleLogger:
                 else:
                     formatted_value = str(value)
 
-                self._print(f"{detail_indent}- {key}: {formatted_value}")
+                self._log(f"{detail_indent}{key}: {formatted_value}")
 
     def warning(self, message: str, indent_level: int = 0) -> None:
         """
@@ -190,11 +192,10 @@ class ConsoleLogger:
 
         Examples
         --------
-        >>> logger.warning("Lesion size smaller than expected")
-        ⚡  Lesion size smaller than expected
+        >>> logger.warning("Mask size smaller than expected")
         """
         indent = self.indent * indent_level
-        self._print(f"{indent}{MessageType.WARNING.value}  {message}")
+        self._log(f"{indent}{message}", level=logging.WARNING)
 
     def error(self, message: str, indent_level: int = 0) -> None:
         """
@@ -210,10 +211,9 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.error("Failed to load connectome")
-        ✗ Failed to load connectome
         """
         indent = self.indent * indent_level
-        self._print(f"{indent}{MessageType.ERROR.value} {message}")
+        self._log(f"{indent}{message}", level=logging.ERROR)
 
     def progress(
         self,
@@ -242,20 +242,17 @@ class ConsoleLogger:
         Examples
         --------
         >>> logger.progress("Processing batch", current=3, total=10)
-        →  Processing batch [3/10]
-
         >>> logger.progress("Loading data", percent=65.5)
-        →  Loading data [65.5%]
         """
         indent = self.indent * indent_level
-        progress_str = f"{indent}{MessageType.PROGRESS.value}  {message}"
+        progress_str = f"{indent}{message}"
 
         if current is not None and total is not None:
             progress_str += f" [{current}/{total}]"
         elif percent is not None:
             progress_str += f" [{percent:.1f}%]"
 
-        self._print(progress_str)
+        self._log(progress_str)
 
     def result_summary(self, title: str, metrics: dict, indent_level: int = 0) -> None:
         """
@@ -277,13 +274,9 @@ class ConsoleLogger:
         ...     "Std correlation": 0.1234,
         ...     "Range": "[-0.45, 0.89]"
         ... })
-        Analysis Results:
-          - Mean correlation: 0.4523
-          - Std correlation: 0.1234
-          - Range: [-0.45, 0.89]
         """
         indent = self.indent * indent_level
-        self._print(f"{indent}{title}:")
+        self._log(f"{indent}{title}:")
 
         detail_indent = self.indent * (indent_level + 1)
         for key, value in metrics.items():
@@ -294,12 +287,12 @@ class ConsoleLogger:
             else:
                 formatted_value = str(value)
 
-            self._print(f"{detail_indent}- {key}: {formatted_value}")
+            self._log(f"{detail_indent}{key}: {formatted_value}")
 
     def blank_line(self) -> None:
         """Print a blank line for spacing."""
         if self.verbose:
-            print()
+            self._log("")
 
 
 # Convenience functions for quick logging without creating logger instance

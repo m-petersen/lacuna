@@ -156,6 +156,14 @@ class SubjectData:
                 "Please binarize your lesion mask before creating SubjectDataData."
             )
 
+        # Validate mask is not empty
+        if not np.any(mask_data > 0):
+            from lacuna.core.exceptions import EmptyMaskError
+
+            # Try to get subject_id from metadata for better error message
+            subject_id = metadata.get("subject_id") if metadata else None
+            raise EmptyMaskError(subject_id)
+
         # Store image
         self._mask_img = mask_img
 
@@ -529,12 +537,7 @@ class SubjectData:
         # Validate affine
         validate_affine(self._affine)
 
-        # Check lesion is not empty
-        mask_data = self._mask_img.get_fdata()
-        if not np.any(mask_data > 0):
-            import warnings
-
-            warnings.warn("Mask is empty (no non-zero voxels)", UserWarning, stacklevel=2)
+        # Note: Empty mask check is performed at __init__ time and raises EmptyMaskError
 
         return True
 

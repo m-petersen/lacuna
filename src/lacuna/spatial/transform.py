@@ -251,7 +251,7 @@ class TransformationStrategy:
         interp_method = self.select_interpolation(img, interpolation)
 
         # Apply transformation using nitransforms
-        logger.info(
+        logger.debug(
             f"Applying {direction} transformation: {source.identifier} "
             f"-> {target.identifier} using {interp_method.value} interpolation"
         )
@@ -319,7 +319,7 @@ class TransformationStrategy:
             else:
                 # 4D atlas with multiple volumes - transform each volume independently
                 n_volumes = img_data.shape[3]
-                logger.info(
+                logger.debug(
                     f"Transforming 4D image with {n_volumes} volumes from "
                     f"{source.identifier}@{source.resolution}mm to "
                     f"{target.identifier}@{target.resolution}mm (shape: {img.shape})"
@@ -373,7 +373,7 @@ class TransformationStrategy:
                     transformed_vol.header,
                 )
 
-                logger.info(
+                logger.debug(
                     f"4D transformation complete. Output shape: {transformed.shape}, "
                     f"dtype: {transformed.get_fdata().dtype}"
                 )
@@ -385,7 +385,7 @@ class TransformationStrategy:
             )
 
         # 3D image transformation (original logic)
-        logger.info(
+        logger.debug(
             f"Transforming image from {source.identifier}@{source.resolution}mm "
             f"to {target.identifier}@{target.resolution}mm (shape: {img.shape})"
         )
@@ -419,7 +419,7 @@ class TransformationStrategy:
                 else:
                     raise
 
-        logger.info(
+        logger.debug(
             f"Transformation complete. Output shape: {transformed.shape}, "
             f"dtype: {transformed.get_fdata().dtype}"
         )

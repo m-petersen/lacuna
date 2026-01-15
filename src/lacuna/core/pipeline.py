@@ -410,6 +410,14 @@ def analyze(
 
     # Handle batch vs single input
     if isinstance(data, list):
+        # Validate all inputs upfront before any processing
+        for i, item in enumerate(data):
+            if not isinstance(item, SubjectData):
+                raise TypeError(
+                    f"Item {i} in data list has unsupported type: {type(item).__name__}. "
+                    f"All items must be SubjectData instances."
+                )
+
         if n_jobs == 1:
             # Sequential processing
             if show_progress:

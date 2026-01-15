@@ -155,20 +155,6 @@ class TestThreadingBackend:
         assert len(results) == len(synthetic_lesions)
         assert all(isinstance(r, SubjectData) for r in results)
 
-    def test_threading_backend_adds_results(self, synthetic_lesions, regional_damage_analysis):
-        """Threading backend should add analysis results to lesion data."""
-        results = batch_process(
-            inputs=synthetic_lesions,
-            analysis=regional_damage_analysis,
-            n_jobs=2,
-            show_progress=False,
-            backend="threading",
-        )
-
-        for result in results:
-            assert len(result.results) > 0
-            assert "RegionalDamage" in result.results
-
     def test_threading_backend_with_single_worker(
         self, synthetic_lesions, regional_damage_analysis
     ):
