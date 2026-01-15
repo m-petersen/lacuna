@@ -476,6 +476,7 @@ def _register_gsp1000(
 def fetch_dtor985(
     output_dir: str | Path,
     *,
+    api_key: str | None = None,
     keep_original: bool = True,
     register: bool = True,
     register_name: str = "dTOR985",
@@ -494,6 +495,10 @@ def fetch_dtor985(
     ----------
     output_dir : str or Path
         Directory for output .tck file.
+    api_key : str, optional
+        Figshare API key for authenticated downloads. If not provided,
+        uses FIGSHARE_API_KEY environment variable. Get one from
+        https://figshare.com/account/applications.
     keep_original : bool, default=True
         Keep original .trk file after conversion.
     register : bool, default=True
@@ -515,14 +520,14 @@ def fetch_dtor985(
     Raises
     ------
     DownloadError
-        If download fails.
+        If download fails or API key is missing.
     ProcessingError
         If .trk to .tck conversion fails.
 
     Examples
     --------
     >>> from lacuna.io import fetch_dtor985
-    >>> result = fetch_dtor985("/data/connectomes/dtor985")
+    >>> result = fetch_dtor985("/data/connectomes/dtor985", api_key="YOUR_TOKEN")
     >>> print(result.output_files[0])  # Path to .tck file
     """
     from ..core.exceptions import DownloadError, ProcessingError
@@ -581,7 +586,7 @@ def fetch_dtor985(
                 )
             )
 
-        downloader = FigshareDownloader(source)
+        downloader = FigshareDownloader(source, api_key=api_key)
         downloaded_files = downloader.download(
             output_path=output_dir,
             progress_callback=progress_callback,

@@ -1,18 +1,17 @@
 """
 Figshare downloader implementation.
 
-Handles downloads from Figshare using cloudscraper to bypass
-Cloudflare protection.
+Handles downloads from Figshare using the authenticated API.
 """
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
-from urllib.parse import unquote, urlparse
 
-import cloudscraper
+import requests
 from tqdm import tqdm
 
 from ...core.exceptions import DownloadError
@@ -22,28 +21,37 @@ if TYPE_CHECKING:
     pass
 
 
+# Environment variable for Figshare API token
+FIGSHARE_API_KEY_ENV = "FIGSHARE_API_KEY"
+
+
 class FigshareDownloader(BaseDownloader):
     """
-    Downloader for Figshare files.
+    Downloader for Figshare files using authenticated API.
 
-    Uses cloudscraper to handle Cloudflare protection that blocks
-    standard requests library.
+    Uses Figshare API with authentication token to get download URLs
+    that bypass AWS WAF protection.
 
     Parameters
     ----------
     source : ConnectomeSource
         Configuration for the connectome source.
+    api_key : str, optional
+        Figshare API key. If not provided, uses FIGSHARE_API_KEY env var.
     """
 
-    def __init__(self, source: ConnectomeSource):
+    # Figshare API base URL
+    API_BASE = "https://api.figshare.com/v2"
+
+    def __init__(
+        self,
+        source: ConnectomeSource,
+        api_key: str | None = None,
+    ):
         super().__init__(source)
-        self.scraper = cloudscraper.create_scraper(
-            browser={
-                "browser": "chrome",
-                "platform": "linux",
-                "mobile": False,
-            }
-        )
+
+        # Get API key from param or environment
+        self.api_key = api_key or os.environ.get(FIGSHARE_API_KEY_ENV)
 
     def download(
         self,
@@ -51,7 +59,7 @@ class FigshareDownloader(BaseDownloader):
         progress_callback: Callable[[FetchProgress], None] | None = None,
     ) -> list[Path]:
         """
-        Download file from Figshare.
+        Download file from Figshare using authenticated API.
 
         Parameters
         ----------
@@ -68,23 +76,55 @@ class FigshareDownloader(BaseDownloader):
         Raises
         ------
         DownloadError
-            If download fails.
+            If download fails or API key is missing.
         """
-        if not self.source.download_url:
+        # Check for API key
+        if not self.api_key:
             raise DownloadError(
                 url="",
-                reason="No download_url configured for source",
+                reason=(
+                    f"Figshare API key required. Set via:\n"
+                    f"  - Environment variable: {FIGSHARE_API_KEY_ENV}\n"
+                    f"  - Command line: --api-key YOUR_KEY\n\n"
+                    f"Get a free API key from:\n"
+                    f"  https://figshare.com/account/applications\n"
+                    f"  (Create 'Personal token' under 'Applications')"
+                ),
+            )
+
+        # Check for article_id
+        if not self.source.article_id:
+            raise DownloadError(
+                url="",
+                reason="No article_id configured for Figshare source",
             )
 
         output_path = Path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # Extract filename from URL or use default
-        filename = self._get_filename_from_url(self.source.download_url)
-        if not filename:
-            filename = f"{self.source.name}.trk"
+        # Get file info from API
+        file_info = self._get_file_info()
+        filename = file_info["name"]
+        download_url = file_info["download_url"]
+        total_size = file_info.get("size", 0)
 
         output_file = output_path / filename
+
+        # Skip if already exists
+        if output_file.exists():
+            existing_size = output_file.stat().st_size
+            if existing_size == total_size and total_size > 0:
+                if progress_callback:
+                    progress_callback(
+                        FetchProgress(
+                            phase="download",
+                            current_file=filename,
+                            files_completed=1,
+                            files_total=1,
+                            message=f"Already downloaded: {filename}",
+                        )
+                    )
+                return [output_file]
 
         # Report progress
         if progress_callback:
@@ -98,17 +138,78 @@ class FigshareDownloader(BaseDownloader):
                 )
             )
 
-        # Download file
+        # Download file using authenticated URL
         self._download_file(
-            url=self.source.download_url,
+            url=download_url,
             output_file=output_file,
+            total_size=total_size,
             progress_callback=progress_callback,
         )
 
         return [output_file]
 
+    def _get_headers(self) -> dict[str, str]:
+        """Get request headers with API authentication."""
+        return {"Authorization": f"token {self.api_key}"}
+
+    def _get_file_info(self) -> dict:
+        """
+        Get file information from Figshare API.
+
+        Returns
+        -------
+        dict
+            File info including name, download_url, and size.
+
+        Raises
+        ------
+        DownloadError
+            If API request fails.
+        """
+        api_url = f"{self.API_BASE}/articles/{self.source.article_id}/files"
+
+        try:
+            response = requests.get(
+                api_url,
+                headers=self._get_headers(),
+                timeout=30,
+            )
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                raise DownloadError(
+                    url=api_url,
+                    reason=(
+                        "Figshare API authentication failed. "
+                        "Check that your API key is valid.\n\n"
+                        "Get a new API key from:\n"
+                        "  https://figshare.com/account/applications"
+                    ),
+                ) from e
+            raise DownloadError(
+                url=api_url,
+                reason=f"Figshare API error: {e}",
+            ) from e
+        except Exception as e:
+            raise DownloadError(
+                url=api_url,
+                reason=f"Failed to connect to Figshare API: {e}",
+            ) from e
+
+        files = response.json()
+        if not files:
+            raise DownloadError(
+                url=api_url,
+                reason="No files found in Figshare article",
+            )
+
+        # Get the first (and usually only) file
+        return files[0]
+
     def _get_filename_from_url(self, url: str) -> str | None:
-        """Extract filename from URL path."""
+        """Extract filename from URL path (kept for compatibility)."""
+        from urllib.parse import unquote, urlparse
+
         parsed = urlparse(url)
         path = unquote(parsed.path)
         if "/" in path:
@@ -121,6 +222,7 @@ class FigshareDownloader(BaseDownloader):
         self,
         url: str,
         output_file: Path,
+        total_size: int = 0,
         progress_callback: Callable[[FetchProgress], None] | None = None,
     ) -> None:
         """
@@ -129,9 +231,11 @@ class FigshareDownloader(BaseDownloader):
         Parameters
         ----------
         url : str
-            Download URL.
+            Authenticated download URL.
         output_file : Path
             Output file path.
+        total_size : int
+            Expected file size in bytes.
         progress_callback : callable, optional
             Progress callback function.
 
@@ -140,57 +244,36 @@ class FigshareDownloader(BaseDownloader):
         DownloadError
             If download fails.
         """
-        # Skip if already exists (basic caching)
-        if output_file.exists():
-            # Could add checksum verification here
-            return
-
         try:
-            response = self.scraper.get(url, stream=True, timeout=60)
+            response = requests.get(
+                url,
+                headers=self._get_headers(),
+                stream=True,
+                timeout=60,
+            )
             response.raise_for_status()
-        except cloudscraper.exceptions.CloudflareChallengeError as e:
+        except requests.exceptions.HTTPError as e:
             raise DownloadError(
                 url=url,
-                reason=f"Cloudflare challenge failed: {e}",
+                reason=f"Download failed: HTTP {e.response.status_code}",
             ) from e
         except Exception as e:
             raise DownloadError(url=url, reason=str(e)) from e
 
-        # Check for WAF challenge responses (AWS WAF, Cloudflare, etc.)
-        content_type = response.headers.get("content-type", "")
-        total_size = int(response.headers.get("content-length", 0))
+        # Get size from headers if not provided
+        if total_size == 0:
+            total_size = int(response.headers.get("content-length", 0))
 
-        # Detect HTML challenge pages masquerading as downloads
+        # Check for HTML response (should not happen with API auth, but be safe)
+        content_type = response.headers.get("content-type", "")
         if "text/html" in content_type.lower():
             raise DownloadError(
                 url=url,
                 reason=(
-                    "Figshare returned an HTML page instead of the file. "
-                    "This is likely due to AWS WAF anti-bot protection.\n\n"
-                    "Please download the file manually:\n"
-                    "  1. Open in browser: https://springernature.figshare.com/articles/dataset/"
-                    "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299\n"
-                    "  2. Click 'Download' to get the .trk file\n"
-                    f"  3. Save to: {output_file}\n"
-                    "  4. Run 'lacuna fetch dtor985' again to convert and register"
+                    "Received HTML instead of file data. "
+                    "The API token may have insufficient permissions."
                 ),
             )
-
-        # Validate file size - tractograms should be at least 1GB
-        expected_min_size = 1_000_000_000  # 1GB minimum for a full tractogram
-        if total_size > 0 and total_size < expected_min_size:
-            # Small file might be an error page or partial download
-            if total_size < 10_000:  # Less than 10KB is definitely wrong
-                raise DownloadError(
-                    url=url,
-                    reason=(
-                        f"Downloaded file is too small ({total_size} bytes). "
-                        "Expected a multi-GB tractogram file.\n\n"
-                        "Please download the file manually from:\n"
-                        "  https://springernature.figshare.com/articles/dataset/"
-                        "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299"
-                    ),
-                )
 
         # Use temp file for atomic write
         temp_file = output_file.with_suffix(output_file.suffix + ".tmp")
@@ -202,7 +285,7 @@ class FigshareDownloader(BaseDownloader):
                     unit="B",
                     unit_scale=True,
                     desc=output_file.name,
-                    disable=progress_callback is not None,  # Disable if using callback
+                    disable=progress_callback is not None,
                 ) as pbar:
                     bytes_downloaded = 0
                     for chunk in response.iter_content(chunk_size=1024 * 1024):
@@ -227,17 +310,22 @@ class FigshareDownloader(BaseDownloader):
             # Move to final location
             temp_file.rename(output_file)
 
-            # Validate downloaded file is not an HTML error page
-            self._validate_downloaded_file(output_file, url)
+            # Validate downloaded file
+            self._validate_downloaded_file(output_file, url, total_size)
 
         except Exception:
             if temp_file.exists():
                 temp_file.unlink()
             raise
 
-    def _validate_downloaded_file(self, output_file: Path, url: str) -> None:
+    def _validate_downloaded_file(
+        self,
+        output_file: Path,
+        url: str,
+        expected_size: int = 0,
+    ) -> None:
         """
-        Validate that the downloaded file is actually a tractogram, not an error page.
+        Validate that the downloaded file is valid.
 
         Parameters
         ----------
@@ -245,41 +333,42 @@ class FigshareDownloader(BaseDownloader):
             Downloaded file to validate.
         url : str
             Original URL (for error messages).
+        expected_size : int
+            Expected file size in bytes.
 
         Raises
         ------
         DownloadError
             If file appears to be invalid.
         """
-        # Check file size
         file_size = output_file.stat().st_size
-        if file_size < 10_000:  # Less than 10KB
-            # Read first bytes to check if it's HTML
+
+        # Check for size mismatch
+        if expected_size > 0 and file_size != expected_size:
+            output_file.unlink()
+            raise DownloadError(
+                url=url,
+                reason=(
+                    f"Downloaded file size ({file_size}) does not match "
+                    f"expected size ({expected_size}). Download may be incomplete."
+                ),
+            )
+
+        # Check for suspiciously small files
+        if file_size < 10_000:
             with open(output_file, "rb") as f:
                 header = f.read(1000)
 
-            # Check for HTML markers
-            if b"<!DOCTYPE" in header or b"<html" in header or b"AwsWaf" in header:
-                output_file.unlink()  # Remove invalid file
+            if b"<!DOCTYPE" in header or b"<html" in header:
+                output_file.unlink()
                 raise DownloadError(
                     url=url,
-                    reason=(
-                        "Downloaded file is an HTML page, not the tractogram. "
-                        "Figshare's anti-bot protection blocked the download.\n\n"
-                        "Please download manually:\n"
-                        "  1. Open: https://springernature.figshare.com/articles/dataset/"
-                        "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299\n"
-                        "  2. Click 'Download' to get the .trk file\n"
-                        f"  3. Save to: {output_file}\n"
-                        "  4. Run 'lacuna fetch dtor985' again to convert and register"
-                    ),
+                    reason="Downloaded file is an HTML page, not the expected data file.",
                 )
 
-        # For .trk files, validate the header
+        # Validate .trk files
         if output_file.suffix == ".trk":
             with open(output_file, "rb") as f:
-                # TrackVis header should start with "TRACK" magic bytes at offset 0
-                # or have header size of 1000 at bytes 996-1000
                 f.seek(996)
                 hdr_size_bytes = f.read(4)
                 if len(hdr_size_bytes) == 4:
@@ -291,10 +380,7 @@ class FigshareDownloader(BaseDownloader):
                         raise DownloadError(
                             url=url,
                             reason=(
-                                f"Invalid .trk file: header size is {hdr_size} instead of 1000. "
-                                "The file may be corrupted or not a valid TrackVis tractogram.\n\n"
-                                "Please download manually from:\n"
-                                "  https://springernature.figshare.com/articles/dataset/"
-                                "dTOR_Diffusion_Tensor_Open_Resource_985_Subject_Tracktogram/25058299"
+                                f"Invalid .trk file: header size is {hdr_size} "
+                                "instead of 1000. File may be corrupted."
                             ),
                         )

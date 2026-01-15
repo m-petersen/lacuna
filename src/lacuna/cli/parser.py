@@ -244,10 +244,10 @@ def build_fetch_parser(subparsers) -> None:
             "Download, process, and register connectomes for lesion network mapping.\n\n"
             "Available connectomes:\n"
             "  gsp1000  - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
-            "  dtor985  - dTOR985 structural tractogram (~10GB, no authentication needed)\n\n"
+            "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n\n"
             "Examples:\n"
             "  lacuna fetch gsp1000 --api-key $DATAVERSE_API_KEY --batches 50\n"
-            "  lacuna fetch dtor985 --output-dir /data/connectomes\n"
+            "  lacuna fetch dtor985 --api-key $FIGSHARE_API_KEY --output-dir /data/connectomes\n"
             "  lacuna fetch --list"
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -276,14 +276,37 @@ def build_fetch_parser(subparsers) -> None:
         help="Output directory for processed files (default: ~/.cache/lacuna/connectomes/<name>)",
     )
 
-    # GSP1000-specific options
-    g_gsp = fetch_parser.add_argument_group("GSP1000 options")
-    g_gsp.add_argument(
+    # Common options
+    g_common = fetch_parser.add_argument_group("Common options")
+    g_common.add_argument(
         "--api-key",
         type=str,
         metavar="KEY",
-        help="Harvard Dataverse API key (or set DATAVERSE_API_KEY env var)",
+        help=(
+            "API key for authenticated downloads.\n"
+            "For GSP1000: Dataverse API key (or set DATAVERSE_API_KEY env var)\n"
+            "For dTOR985: Figshare API key (or set FIGSHARE_API_KEY env var)\n"
+            "Get Figshare key from: https://figshare.com/account/applications"
+        ),
     )
+    g_common.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing files",
+    )
+    g_common.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Interactive guided setup wizard",
+    )
+    g_common.add_argument(
+        "--clean",
+        action="store_true",
+        help="Remove cached data for a specific connectome",
+    )
+
+    # GSP1000-specific options
+    g_gsp = fetch_parser.add_argument_group("GSP1000 options")
     g_gsp.add_argument(
         "--batches",
         type=int,
@@ -309,24 +332,6 @@ def build_fetch_parser(subparsers) -> None:
         "--no-keep-original",
         action="store_true",
         help="Remove original .trk file after conversion to save disk space",
-    )
-
-    # Common options
-    g_common = fetch_parser.add_argument_group("Common options")
-    g_common.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite existing files",
-    )
-    g_common.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Interactive guided setup wizard",
-    )
-    g_common.add_argument(
-        "--clean",
-        action="store_true",
-        help="Remove cached data for a specific connectome",
     )
     g_common.add_argument(
         "--clean-all",
@@ -357,7 +362,7 @@ def build_main_parser(prog: str | None = None) -> ArgumentParser:
     # Create main parser
     parser = ArgumentParser(
         prog=prog or "lacuna",
-        description=f"Lacuna: Lesion Network Mapping Analysis v{__version__}",
+        description=f"Lacuna: Lesion Analysis v{__version__}",
         formatter_class=ArgumentDefaultsHelpFormatter,
     )
 

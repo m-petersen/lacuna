@@ -145,6 +145,7 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
         output_dir = get_data_dir() / "connectomes" / "dtor985"
 
     # Get configuration
+    api_key = getattr(args, "api_key", None)
     keep_original = not getattr(args, "no_keep_original", False)
     force = getattr(args, "force", False)
 
@@ -156,6 +157,7 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
     try:
         result = fetch_dtor985(
             output_dir=output_dir,
+            api_key=api_key,
             keep_original=keep_original,
             register=False,  # Registration handled by analysis steps
             force=force,
@@ -168,6 +170,7 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
 
     except DownloadError as e:
         print(f"\n✗ Download error: {e}")
+        print("  Set FIGSHARE_API_KEY environment variable or use --api-key")
         return 1
     except ProcessingError as e:
         print(f"\n✗ Processing error: {e}")

@@ -51,7 +51,10 @@ class ConnectomeSource:
 
     # Figshare-specific
     download_url: str | None = None
-    """Direct download URL for Figshare files."""
+    """Direct download URL for Figshare files (deprecated, use article_id)."""
+
+    article_id: int | None = None
+    """Figshare article ID for API-based downloads."""
 
     # Processing
     default_batches: int = 10
@@ -342,6 +345,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
             "Provides structural connectivity template for structural network mapping."
         ),
         source_type="figshare",
+        article_id=25209947,
         download_url="https://springernature.figshare.com/ndownloader/files/44515847",
         n_subjects=985,
         space="MNI152NLin2009bAsym",

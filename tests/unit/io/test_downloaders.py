@@ -112,15 +112,43 @@ class TestDataverseDownloader:
 class TestFigshareDownloader:
     """Unit tests for FigshareDownloader."""
 
-    def test_figshare_downloader_creates_scraper(self):
-        """FigshareDownloader should create cloudscraper instance."""
+    def test_figshare_downloader_requires_api_key(self, tmp_path):
+        """FigshareDownloader should raise DownloadError without API key."""
+        from lacuna.core.exceptions import DownloadError
         from lacuna.io.downloaders import CONNECTOME_SOURCES
         from lacuna.io.downloaders.figshare import FigshareDownloader
 
         source = CONNECTOME_SOURCES["dtor985"]
-        downloader = FigshareDownloader(source)
 
-        assert downloader.scraper is not None
+        # Clear any env var that might be set
+        with patch.dict("os.environ", {}, clear=True):
+            downloader = FigshareDownloader(source, api_key=None)
+
+            with pytest.raises(DownloadError) as exc_info:
+                downloader.download(tmp_path)
+
+            assert "Figshare API key required" in str(exc_info.value)
+
+    def test_figshare_downloader_accepts_api_key(self):
+        """FigshareDownloader should accept API key via constructor."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.figshare import FigshareDownloader
+
+        source = CONNECTOME_SOURCES["dtor985"]
+        downloader = FigshareDownloader(source, api_key="test-key")
+
+        assert downloader.api_key == "test-key"
+
+    def test_figshare_downloader_uses_env_var(self):
+        """FigshareDownloader should use FIGSHARE_API_KEY env var."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.figshare import FigshareDownloader
+
+        source = CONNECTOME_SOURCES["dtor985"]
+
+        with patch.dict("os.environ", {"FIGSHARE_API_KEY": "env-key"}):
+            downloader = FigshareDownloader(source)
+            assert downloader.api_key == "env-key"
 
     def test_figshare_downloader_extracts_filename(self):
         """FigshareDownloader should extract filename from URL."""
@@ -128,7 +156,7 @@ class TestFigshareDownloader:
         from lacuna.io.downloaders.figshare import FigshareDownloader
 
         source = CONNECTOME_SOURCES["dtor985"]
-        downloader = FigshareDownloader(source)
+        downloader = FigshareDownloader(source, api_key="test-key")
 
         # Test URL with filename
         url = "https://figshare.com/ndownloader/files/12345/tractogram.trk"
@@ -140,8 +168,8 @@ class TestFigshareDownloader:
         filename = downloader._get_filename_from_url(url)
         assert filename is None
 
-    def test_figshare_download_requires_url(self, tmp_path):
-        """FigshareDownloader should raise DownloadError if no URL configured."""
+    def test_figshare_download_requires_article_id(self, tmp_path):
+        """FigshareDownloader should raise DownloadError if no article_id configured."""
         from lacuna.core.exceptions import DownloadError
         from lacuna.io.downloaders import ConnectomeSource
         from lacuna.io.downloaders.figshare import FigshareDownloader
@@ -152,44 +180,63 @@ class TestFigshareDownloader:
             type="structural",
             description="Test",
             source_type="figshare",
-            download_url=None,  # No URL
+            article_id=None,  # No article ID
         )
 
-        downloader = FigshareDownloader(source)
+        downloader = FigshareDownloader(source, api_key="test-key")
 
         with pytest.raises(DownloadError) as exc_info:
             downloader.download(tmp_path)
 
-        assert "No download_url configured" in str(exc_info.value)
+        assert "No article_id configured" in str(exc_info.value)
 
     def test_figshare_download_with_mock(self, tmp_path):
-        """FigshareDownloader should download file using cloudscraper."""
+        """FigshareDownloader should download file using API."""
+        import requests
+
         from lacuna.io.downloaders import CONNECTOME_SOURCES
         from lacuna.io.downloaders.figshare import FigshareDownloader
 
         source = CONNECTOME_SOURCES["dtor985"]
-        downloader = FigshareDownloader(source)
+        downloader = FigshareDownloader(source, api_key="test-key")
 
-        # Mock the scraper.get method with a large enough content-length
-        # to pass the size validation (needs to be > 10KB)
-        mock_response = MagicMock()
-        mock_response.headers = {
-            "content-length": "11000000000",  # 11GB - realistic tractogram size
+        # Mock API response for file info
+        mock_api_response = MagicMock()
+        mock_api_response.status_code = 200
+        mock_api_response.json.return_value = [
+            {
+                "name": "tractogram.trk",
+                "download_url": "https://figshare.com/download/12345",
+                "size": 11000000000,  # 11GB
+            }
+        ]
+
+        # Mock download response
+        mock_download_response = MagicMock()
+        mock_download_response.headers = {
+            "content-length": "11000000000",
             "content-type": "application/octet-stream",
         }
         # Create fake content that's larger than 10KB to pass validation
         fake_content = (
             b"TRACK" + b"\x00" * 995 + b"\xe8\x03\x00\x00"
         )  # Valid TRK header (1000 bytes at end)
-        mock_response.iter_content.return_value = [fake_content]
+        mock_download_response.iter_content.return_value = [fake_content]
 
-        with patch.object(downloader.scraper, "get", return_value=mock_response):
-            # Patch the validation method to skip .trk header check since our mock file is tiny
+        def mock_get(url, **kwargs):
+            if "api.figshare.com" in url:
+                return mock_api_response
+            else:
+                return mock_download_response
+
+        with patch.object(requests, "get", side_effect=mock_get):
+            # Patch validation to skip .trk header check since mock file is tiny
             with patch.object(downloader, "_validate_downloaded_file"):
                 files = downloader.download(tmp_path)
 
                 assert len(files) == 1
                 assert files[0].exists()
+                assert files[0].name == "tractogram.trk"
 
 
 class TestGetApiKey:
@@ -246,7 +293,7 @@ class TestConnectomeSources:
         assert dtor.name == "dtor985"
         assert dtor.type == "structural"
         assert dtor.source_type == "figshare"
-        assert dtor.download_url is not None
-        assert "figshare" in dtor.download_url
+        assert dtor.article_id == 25209947
+        assert dtor.n_subjects == 985
         assert dtor.n_subjects == 985
         assert dtor.estimated_size_gb > 0

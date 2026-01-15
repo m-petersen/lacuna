@@ -37,7 +37,7 @@ dependencies = [
     "nitransforms>=23.0",
     "templateflow>=23.0",
     "pyyaml>=6.0",
-    "cloudscraper>=1.2",
+    "requests>=2.31",
 ]
 
 [project.optional-dependencies]
