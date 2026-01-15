@@ -325,6 +325,14 @@ def build_fetch_parser(subparsers) -> None:
             "Verifies download, extraction, conversion, and registration work."
         ),
     )
+    g_gsp.add_argument(
+        "--skip-checksum",
+        action="store_true",
+        help=(
+            "Skip checksum verification during download.\n"
+            "Use if you get checksum mismatch errors (server metadata may be outdated)."
+        ),
+    )
 
     # dTOR985-specific options
     g_dtor = fetch_parser.add_argument_group("dTOR985 options")

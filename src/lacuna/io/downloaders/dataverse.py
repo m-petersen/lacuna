@@ -66,6 +66,7 @@ class DataverseDownloader(BaseDownloader):
         output_path: Path,
         progress_callback: Callable[[FetchProgress], None] | None = None,
         test_mode: bool = False,
+        skip_checksum: bool = False,
     ) -> list[Path]:
         """
         Download dataset files from Dataverse.
@@ -79,6 +80,9 @@ class DataverseDownloader(BaseDownloader):
         test_mode : bool, default=False
             If True, downloads only 1 tarball for testing the full pipeline.
             Metadata files (JSON, TXT, masks) are always downloaded.
+        skip_checksum : bool, default=False
+            If True, skip checksum verification. Use when server metadata
+            is outdated and causes false checksum mismatches.
 
         Returns
         -------
@@ -137,9 +141,9 @@ class DataverseDownloader(BaseDownloader):
                     )
                 )
 
-            # Skip if already downloaded and checksum matches
-            if output_file.exists() and checksum:
-                if self._verify_checksum(output_file, checksum):
+            # Skip if already downloaded and checksum matches (unless skipping)
+            if output_file.exists():
+                if skip_checksum or (checksum and self._verify_checksum(output_file, checksum)):
                     downloaded_files.append(output_file)
                     continue
 
@@ -147,7 +151,7 @@ class DataverseDownloader(BaseDownloader):
             self._download_file(
                 file_id=file_id,
                 output_file=output_file,
-                expected_checksum=checksum,
+                expected_checksum=None if skip_checksum else checksum,
                 progress_callback=progress_callback,
                 file_index=i,
                 total_files=len(files_info),

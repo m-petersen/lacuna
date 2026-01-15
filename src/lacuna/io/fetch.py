@@ -207,6 +207,7 @@ def fetch_gsp1000(
     api_key: str | None = None,
     batches: int = 10,
     test_mode: bool = False,
+    skip_checksum: bool = False,
     register: bool = True,
     register_name: str = "GSP1000",
     force: bool = False,
@@ -232,6 +233,8 @@ def fetch_gsp1000(
         Recommendations: 4GB RAM → 100, 8GB → 50, 16GB → 25, 32GB+ → 10.
     test_mode : bool, default=False
         If True, downloads only 1 tarball (~2GB) to test the full pipeline.
+    skip_checksum : bool, default=False
+        Skip checksum verification. Use when Dataverse metadata is outdated.
     register : bool, default=True
         Automatically register connectome after processing.
     register_name : str, default="GSP1000"
@@ -333,6 +336,7 @@ def fetch_gsp1000(
             output_path=raw_dir,
             progress_callback=progress_callback,
             test_mode=test_mode,
+            skip_checksum=skip_checksum,
         )
 
         download_time = time.time() - download_start

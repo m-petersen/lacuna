@@ -95,6 +95,7 @@ def _handle_gsp1000(args: argparse.Namespace) -> int:
     api_key = getattr(args, "api_key", None)
     batches = getattr(args, "batches", 10)
     test_mode = getattr(args, "test_mode", False)
+    skip_checksum = getattr(args, "skip_checksum", False)
     force = getattr(args, "force", False)
 
     print("Fetching GSP1000 functional connectome...")
@@ -103,6 +104,8 @@ def _handle_gsp1000(args: argparse.Namespace) -> int:
         print("  Mode: TEST (1 tarball only)")
     else:
         print(f"  Batches: {batches}")
+    if skip_checksum:
+        print("  Warning: Checksum verification disabled")
     print()
 
     try:
@@ -111,6 +114,7 @@ def _handle_gsp1000(args: argparse.Namespace) -> int:
             api_key=api_key,
             batches=batches,
             test_mode=test_mode,
+            skip_checksum=skip_checksum,
             register=False,  # Registration handled by analysis steps
             force=force,
         )
