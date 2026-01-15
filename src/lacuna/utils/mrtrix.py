@@ -554,7 +554,7 @@ def compute_whole_brain_tdi(
     compute_tdi_map : Lower-level function for custom TDI computation
     StructuralNetworkMapping : Analysis that uses whole-brain TDI as reference
     """
-    from lacuna.data import get_template_path
+    from lacuna.assets.templates import load_template
 
     if output_1mm is None and output_2mm is None:
         raise ValueError("At least one of output_1mm or output_2mm must be specified")
@@ -568,7 +568,7 @@ def compute_whole_brain_tdi(
     # Compute 1mm TDI if requested
     if output_1mm is not None:
         print("Computing 1mm whole-brain TDI...")
-        template_1mm = get_template_path(resolution=1)
+        template_1mm = load_template("MNI152NLin2009cAsym_res-1")
         output_1mm_path = Path(output_1mm)
 
         if output_1mm_path.exists() and not force:
@@ -588,7 +588,7 @@ def compute_whole_brain_tdi(
     # Compute 2mm TDI if requested
     if output_2mm is not None:
         print("Computing 2mm whole-brain TDI...")
-        template_2mm = get_template_path(resolution=2)
+        template_2mm = load_template("MNI152NLin2009cAsym_res-2")
         output_2mm_path = Path(output_2mm)
 
         if output_2mm_path.exists() and not force:

@@ -27,16 +27,12 @@ PosixPath('/path/to/lacuna/data/atlases')
 """
 
 from pathlib import Path
-from typing import Literal
 
 __all__ = [
     "get_bundled_atlas_dir",
     "list_bundled_atlases",
     "get_bundled_atlas",
     "get_atlas_citation",
-    "get_mni_template",
-    "get_template_path",
-    "list_templates",
 ]
 
 
@@ -233,149 +229,3 @@ https://doi.org/10.1038/s41593-020-00711-6""",
         return f"No citation available for '{name}'. Available: {', '.join(available)}"
 
     return citations[name]
-
-
-# =============================================================================
-# MNI152 Template Functions
-# =============================================================================
-
-# Path to templates directory
-TEMPLATES_DIR = Path(__file__).parent / "templates"
-
-
-def get_mni_template(resolution: Literal[1, 2] = 2):
-    """Get MNI152 T1-weighted template at specified resolution.
-
-    Parameters
-    ----------
-    resolution : {1, 2}, default=2
-        Template resolution in millimeters. Either 1mm or 2mm.
-        - 1mm: 182 x 218 x 182 voxels
-        - 2mm: 91 x 109 x 91 voxels
-
-    Returns
-    -------
-    nibabel.Nifti1Image
-        MNI152 T1-weighted brain template at requested resolution.
-
-    Raises
-    ------
-    ValueError
-        If resolution is not 1 or 2.
-    FileNotFoundError
-        If template file is missing from package installation.
-
-    Examples
-    --------
-    >>> from lacuna.data import get_mni_template
-    >>>
-    >>> # Get 2mm template (default)
-    >>> template_2mm = get_mni_template(resolution=2)
-    >>> template_2mm.shape
-    (91, 109, 91)
-    >>>
-    >>> # Get 1mm template
-    >>> template_1mm = get_mni_template(resolution=1)
-    >>> template_1mm.shape
-    (182, 218, 182)
-
-    Notes
-    -----
-    Templates are from the FSL MNI152 standard space (ICBM 152 Nonlinear
-    6th Generation). These are included in the package for reproducibility
-    and offline usage.
-
-    See Also
-    --------
-    get_template_path : Get path to template file without loading.
-    """
-    import nibabel as nib
-
-    if resolution not in (1, 2):
-        raise ValueError(
-            f"Resolution must be 1 or 2 (mm), got: {resolution}. "
-            f"Available templates: 1mm (182x218x182) and 2mm (91x109x91)."
-        )
-
-    template_path = get_template_path(resolution=resolution)
-
-    if not template_path.exists():
-        raise FileNotFoundError(
-            f"MNI152 template not found at: {template_path}. "
-            f"Your package installation may be incomplete. "
-            f"Try reinstalling: pip install --force-reinstall lesion-decoding-toolkit"
-        )
-
-    return nib.load(template_path)
-
-
-def get_template_path(resolution: Literal[1, 2] = 2) -> Path:
-    """Get path to MNI152 template file.
-
-    Parameters
-    ----------
-    resolution : {1, 2}, default=2
-        Template resolution in millimeters.
-
-    Returns
-    -------
-    Path
-        Absolute path to the template NIfTI file.
-
-    Raises
-    ------
-    ValueError
-        If resolution is not 1 or 2.
-
-    Examples
-    --------
-    >>> from lacuna.data import get_template_path
-    >>>
-    >>> path_2mm = get_template_path(resolution=2)
-    >>> print(path_2mm)
-    .../lacuna/data/templates/MNI152_T1_2mm.nii.gz
-    """
-    if resolution not in (1, 2):
-        raise ValueError(f"Resolution must be 1 or 2 (mm), got: {resolution}")
-
-    template_name = f"MNI152_T1_{resolution}mm.nii.gz"
-    return TEMPLATES_DIR / template_name
-
-
-def list_templates() -> dict[str, dict]:
-    """List all available MNI152 templates with metadata.
-
-    Returns
-    -------
-    dict
-        Dictionary mapping resolution to template metadata.
-        Keys: '1mm', '2mm'
-        Values: dict with 'path', 'shape', 'exists' keys
-
-    Examples
-    --------
-    >>> from lacuna.data import list_templates
-    >>>
-    >>> templates = list_templates()
-    >>> for res, info in templates.items():
-    ...     print(f"{res}: {info['shape']} - exists={info['exists']}")
-    1mm: (182, 218, 182) - exists=True
-    2mm: (91, 109, 91) - exists=True
-    """
-    templates = {}
-
-    for resolution in (1, 2):
-        path = get_template_path(resolution=resolution)
-        exists = path.exists()
-
-        # Standard dimensions for MNI152 templates
-        shape = (182, 218, 182) if resolution == 1 else (91, 109, 91)
-
-        templates[f"{resolution}mm"] = {
-            "path": path,
-            "shape": shape,
-            "exists": exists,
-            "resolution": f"{resolution}mm isotropic",
-        }
-
-    return templates
