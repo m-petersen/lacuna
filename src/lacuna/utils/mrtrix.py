@@ -217,9 +217,7 @@ def filter_tractogram_by_mask(
         mask_path = Path(temp_mask_file.name)
         nib.save(mask, mask_path)
     else:
-        raise TypeError(
-            f"mask must be str, Path, or nibabel.Nifti1Image, got {type(mask)}"
-        )
+        raise TypeError(f"mask must be str, Path, or nibabel.Nifti1Image, got {type(mask)}")
 
     # Determine output path
     if output_path is None:
@@ -447,9 +445,7 @@ def compute_disconnection_map(
         mask_tdi_path = Path(temp_mask_file.name)
         nib.save(mask_tdi, mask_tdi_path)
     else:
-        raise TypeError(
-            f"mask_tdi must be str, Path, or nibabel.Nifti1Image, got {type(mask_tdi)}"
-        )
+        raise TypeError(f"mask_tdi must be str, Path, or nibabel.Nifti1Image, got {type(mask_tdi)}")
 
     # Handle whole-brain TDI input
     wb_tdi_path = None

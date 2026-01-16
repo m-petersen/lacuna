@@ -876,7 +876,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Step 4: Optional - compute intact (post-disconnection) connectivity
         intact_matrix = None
         if self.compute_disconnectivity_matrix:
-            self.logger.info("Computing intact (post-disconnection) connectivity matrix", indent_level=1)
+            self.logger.info(
+                "Computing intact (post-disconnection) connectivity matrix", indent_level=1
+            )
 
             # Save mask temporarily for tckedit -exclude
             exclude_mask_path = temp_dir_path / f"{subject_id}_exclude_mask.nii.gz"

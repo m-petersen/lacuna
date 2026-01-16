@@ -57,7 +57,7 @@ def synthetic_lesions():
 @pytest.fixture
 def test_atlas_dir(tmp_path):
     """Create a minimal test atlas directory with only one small atlas.
-    
+
     Uses a unique atlas name based on tmp_path to avoid conflicts with
     pytest-xdist parallel execution.
     """
@@ -66,7 +66,7 @@ def test_atlas_dir(tmp_path):
 
     # Create unique atlas name based on tmp_path hash to avoid xdist conflicts
     atlas_name = f"test_atlas_{hash(str(tmp_path)) % 100000}"
-    
+
     # Create a minimal 10x10x10 atlas with 3 regions
     data = np.zeros((10, 10, 10), dtype=np.int32)
     data[0:3, 0:3, 0:3] = 1  # Region 1
@@ -91,7 +91,7 @@ def regional_damage_analysis(test_atlas_dir):
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     atlas_dir, atlas_name = test_atlas_dir
-    
+
     # Register the test atlas with resolution=1 to match synthetic_lesions fixture
     # (synthetic lesions use np.eye(4) affine = 1mm isotropic)
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=1)
