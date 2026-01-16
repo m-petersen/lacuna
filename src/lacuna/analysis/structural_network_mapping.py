@@ -330,6 +330,54 @@ class StructuralNetworkMapping(BaseAnalysis):
             verbose=self.show_mrtrix_output,
         )
 
+    def _ensure_tdi_cached(self, cache_path: Path) -> None:
+        """Ensure TDI is computed and cached, with file locking for parallel safety.
+
+        Uses file locking to prevent race conditions when multiple parallel
+        workers try to compute the same TDI simultaneously. The first worker
+        to acquire the lock computes the TDI; others wait and use the cached file.
+
+        Parameters
+        ----------
+        cache_path : Path
+            Cache file path from _get_tdi_cache_path()
+        """
+        import fcntl
+        import time
+
+        # Check if already cached (fast path, no lock needed)
+        if cache_path.exists():
+            self.logger.info(f"Using cached TDI: {cache_path}")
+            return
+
+        # Use a lock file to coordinate parallel workers
+        lock_path = cache_path.with_suffix(".lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(lock_path, "w") as lock_file:
+            self.logger.debug(f"Acquiring TDI cache lock: {lock_path}")
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                # Re-check after acquiring lock (another worker may have computed it)
+                if cache_path.exists():
+                    self.logger.info(f"Using cached TDI (computed by another process): {cache_path}")
+                    return
+
+                # We have the lock and TDI doesn't exist - compute it
+                self.logger.info(
+                    f"Computing whole-brain TDI at {self.output_resolution}mm resolution..."
+                )
+                self._compute_tdi_to_path(cache_path)
+                self.logger.info(f"Cached TDI to: {cache_path}")
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+        # Clean up lock file (best effort, ignore errors)
+        try:
+            lock_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
     def _compute_and_cache_tdi(self, cache_path: Path) -> None:
         """Compute whole-brain TDI and save to cache.
 
@@ -436,16 +484,10 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Compute or load TDI with caching (template must be set first!)
         if self.cache_tdi:
             tdi_cache_path = self._get_tdi_cache_path()
-            if tdi_cache_path.exists():
-                self.whole_brain_tdi = tdi_cache_path
-                self.logger.info(f"Using cached TDI: {tdi_cache_path}")
-            else:
-                # Compute TDI and cache it
-                self.logger.info(
-                    f"Computing whole-brain TDI at {self.output_resolution}mm resolution..."
-                )
-                self._compute_and_cache_tdi(tdi_cache_path)
-                self.whole_brain_tdi = tdi_cache_path
+            # Use file locking to prevent race conditions in parallel processing
+            # Multiple workers may try to compute the same TDI simultaneously
+            self._ensure_tdi_cached(tdi_cache_path)
+            self.whole_brain_tdi = tdi_cache_path
         else:
             # Compute TDI without caching (temporary file)
             temp_tdi = get_temp_dir(prefix="tdi_") / "whole_brain_tdi.nii.gz"
