@@ -835,7 +835,7 @@ class SubjectData:
         Returns dict mapping analysis namespace to result dict.
         Result dict maps result names to result objects.
 
-        Access pattern: results['AnalysisName']['result_name']
+        Access pattern: ``results['AnalysisName']['result_name']``
         """
         return copy.deepcopy(self._results)  # Deep copy for nested structures
 

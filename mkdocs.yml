@@ -1,0 +1,127 @@
+site_name: Lacuna Documentation
+site_description: A scientific Python package for neuroimaging lesion analysis
+site_url: https://lacuna.github.io/lacuna/
+repo_url: https://github.com/lacuna/lacuna
+repo_name: lacuna/lacuna
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - autorefs:
+      resolve_closest: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            docstring_section_style: spacy
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+            allow_inspection: true
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - tables
+
+nav:
+  - Home: index.md
+  
+  # TUTORIALS (Learning-oriented)
+  - Tutorials:
+    - tutorials/index.md
+    - Getting Started: tutorials/getting-started.md
+    - Your First Analysis: tutorials/first-analysis.md
+  
+  # HOW-TO GUIDES (Task-oriented)
+  - How-to Guides:
+    - how-to/index.md
+    - Installation: how-to/installation.md
+    - Setup MRtrix3: how-to/setup-mrtrix3.md
+    - Fetch Connectomes: how-to/fetch-connectomes.md
+    - Configure TemplateFlow: how-to/templateflow.md
+    - Run Functional LNM: how-to/run-flnm.md
+    - Run Structural LNM: how-to/run-slnm.md
+    - Regional Damage: how-to/regional-damage.md
+    - Batch Processing: how-to/batch-processing.md
+    - Export BIDS: how-to/export-bids.md
+    - Use Docker: how-to/docker.md
+    - Use Apptainer: how-to/apptainer.md
+  
+  # REFERENCE (Information-oriented)
+  - Reference:
+    - reference/index.md
+    - CLI:
+      - reference/cli/index.md
+      - BIDS-Apps Interface: reference/cli/bids-apps.md
+      - Fetch Command: reference/cli/fetch.md
+    - API Reference: reference/api/
+  
+  # EXPLANATION (Understanding-oriented)
+  - Explanation:
+    - explanation/index.md
+    - SubjectData Design: explanation/subject-data.md
+    - MaskData Validation: explanation/mask-data.md
+    - Coordinate Spaces: explanation/coordinate-spaces.md
+    - Registry Pattern: explanation/registries.md
+    - The analyze() Function: explanation/analyze.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/lacuna/lacuna
+  version:
+    provider: mike

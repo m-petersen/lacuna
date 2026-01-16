@@ -641,7 +641,7 @@ def transform_mask_data(
     Notes:
         To save intermediate warped images for QC, use analysis classes with
         keep_intermediate=True. The warped mask will be stored in the results
-        dictionary under the analysis namespace as 'warped_mask'.
+        dictionary under the analysis namespace as ``warped_mask``.
 
     Examples:
         >>> from lacuna.core.subject_data import SubjectData
@@ -651,12 +651,6 @@ def transform_mask_data(
         >>> # Transform to NLin2009c
         >>> target = CoordinateSpace("MNI152NLin2009cAsym", 2, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)])
         >>> transformed = transform_mask_data(lesion, target, image_name="lesion_001")
-        >>>
-        >>> # To save warped mask as intermediate, use analysis classes:
-        >>> from lacuna.analysis import RegionalDamage
-        >>> analysis = RegionalDamage(keep_intermediate=True)
-        >>> result = analysis.run(lesion)
-        >>> warped = result.results['RegionalDamage']['warped_mask']  # VoxelMap
     """
     # Import here to avoid circular imports
     from lacuna.core.provenance import TransformationRecord

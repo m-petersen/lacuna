@@ -91,7 +91,6 @@ notebooks/
 
 # Development directories (local only, removed from git history)
 scripts/
-docs/
 specs/
 
 # direnv
@@ -102,3 +101,5 @@ notes/
 
 # Cache directories
 *_cache
+# MkDocs
+site/
