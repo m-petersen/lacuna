@@ -92,6 +92,11 @@ local_scheme = "no-local-version"
     "templates/*.nii.gz",
     "templates/*.md",
 ]
+"lacuna.data.tutorials" = [
+    "*.json",
+    "*.tsv",
+    "sub-*/ses-*/anat/*.nii.gz",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -38,72 +38,120 @@ pip install -e .
 python -c "import lacuna; print(f'Lacuna {lacuna.__version__} installed successfully!')"
 ```
 
-## Step 2: Load your first mask
+## Step 2: Get the tutorial data
 
-Lacuna works with binary brain masks in NIfTI format. Let's load one:
+Lacuna includes a synthetic BIDS dataset with lesion masks for learning. You can access it directly or copy it to your working directory:
 
-```python
-import nibabel as nib
-from lacuna import SubjectData
+=== "Direct access (recommended)"
 
-# Load a NIfTI file (replace with your file path)
-mask_img = nib.load("path/to/your/mask.nii.gz")
-
-# Create a SubjectData object
-subject = SubjectData(
-    mask_img=mask_img,
-    space="MNI152NLin6Asym",  # Coordinate space
-    resolution=2.0,           # Resolution in mm
-    metadata={"subject_id": "sub-001"}
-)
-```
-
- pkill -f "mkdocs serve" 2>/dev/null; echo "Server stopped"! tip "What's SubjectData?"
+    ```python
+    from lacuna.data import get_tutorial_bids_dir, get_tutorial_subjects
     
-    `SubjectData` is Lacuna's core data container. It holds your brain mask along
-    with metadata about coordinate space, resolution, and processing history.
+    # Get path to bundled tutorial data
+    bids_dir = get_tutorial_bids_dir()
+    print(f"Tutorial data: {bids_dir}")
+    
+    # List available subjects
+    subjects = get_tutorial_subjects()
+    print(f"Subjects: {subjects}")
+    ```
 
-## Step 3: Inspect your data
+=== "Copy to working directory"
 
-Now let's verify the data loaded correctly:
+    ```python
+    from lacuna.data import setup_tutorial_data
+    
+    # Copy tutorial data to your own directory
+    tutorial_dir = setup_tutorial_data("./my_tutorial_data")
+    print(f"Tutorial data copied to: {tutorial_dir}")
+    ```
+
+!!! info "About the tutorial data"
+    
+    The synthetic dataset includes 3 subjects with binary lesion masks in
+    MNI152NLin6 space (1mm resolution). These are artificial lesions designed
+    for learning purposes only.
+
+## Step 3: Load your first mask
+
+Now let's load a lesion mask from the tutorial data:
 
 ```python
-# Check basic properties
-print(f"Subject ID: {subject.metadata.get('subject_id', 'unknown')}")
-print(f"Coordinate space: {subject.space}")
-print(f"Resolution: {subject.resolution} mm")
+from lacuna.data import get_subject_mask_path
+from lacuna.core import SubjectData
 
-# Calculate mask statistics
-volume_mm3 = subject.get_volume_mm3()
-print(f"Mask volume: {volume_mm3:.1f} mm³")
+# Get path to a subject's mask
+mask_path = get_subject_mask_path("sub-01")
+print(f"Loading: {mask_path}")
 
-# Get the underlying NumPy array
-mask_array = subject.mask_data.get_data()
-print(f"Data shape: {mask_array.shape}")
-print(f"Non-zero voxels: {(mask_array > 0).sum()}")
+# Load as SubjectData (validates binary mask automatically)
+subject = SubjectData.from_nifti(
+    mask_path,
+    space="MNI152NLin6Asym",
+    metadata={"subject_id": "sub-01", "session_id": "ses-01"}
+)
+print(f"Loaded successfully!")
+print(f"Subject ID: {subject.metadata['subject_id']}")
 ```
 
-## Step 4: Validate your mask
+!!! tip "What's SubjectData?"
+    
+    `SubjectData` is Lacuna's core container for lesion data. It automatically
+    validates that your mask is binary (0 and 1 values only) and tracks
+    metadata like coordinate space and subject ID.
 
-Lacuna expects binary masks (values of 0 and 1 only). Let's verify:
+## Step 4: Inspect your data
+
+Let's explore the mask properties:
 
 ```python
 import numpy as np
 
-mask_data = subject.mask_data.get_data()
-unique_values = np.unique(mask_data)
-print(f"Unique values: {unique_values}")
+# Get the mask data
+mask_data = subject.mask_img.get_fdata()
 
-# Check if binary
-is_binary = set(unique_values).issubset({0, 1})
-print(f"Is binary mask: {is_binary}")
+# Basic properties
+print(f"Shape: {mask_data.shape}")
+print(f"Total voxels: {np.prod(mask_data.shape)}")
+print(f"Lesion voxels: {int((mask_data > 0).sum())}")
+
+# Calculate volume in mm³
+voxel_sizes = subject.mask_img.header.get_zooms()
+voxel_volume = np.prod(voxel_sizes)
+lesion_volume = (mask_data > 0).sum() * voxel_volume
+print(f"Lesion volume: {lesion_volume:.1f} mm³")
 ```
 
- pkill -f "mkdocs serve" 2>/dev/null; echo "Server stopped"! warning "Non-binary masks"
+## Step 5: Load all tutorial subjects
+
+Let's load all three subjects from the tutorial dataset:
+
+```python
+from lacuna.data import get_tutorial_subjects, get_subject_mask_path
+from lacuna.core import SubjectData
+
+subjects = []
+for sub_id in get_tutorial_subjects():
+    mask_path = get_subject_mask_path(sub_id)
+    subject = SubjectData.from_nifti(
+        mask_path,
+        space="MNI152NLin6Asym",
+        metadata={"subject_id": sub_id}
+    )
     
-    If your mask contains values other than 0 and 1, you'll need to binarize it
-    before running analyses. This typically happens with probability maps or
-    lesion segmentation outputs.
+    voxels = int((subject.mask_img.get_fdata() > 0).sum())
+    print(f"{sub_id}: {voxels} lesion voxels")
+    subjects.append(subject)
+
+print(f"\nLoaded {len(subjects)} subjects")
+```
+
+!!! tip "SubjectData immutability"
+    
+    `SubjectData` is immutable — operations return new instances rather than
+    modifying the original. This ensures reproducibility and safe parallel
+    processing. See the [SubjectData Design](../explanation/subject-data.md)
+    explanation for details.
 
 ## What's next?
 

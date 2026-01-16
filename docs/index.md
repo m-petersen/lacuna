@@ -1,20 +1,20 @@
 # Lacuna
 
-**Lacuna** is a Python package for lesion-network mapping in neuroimaging research.
+**Lacuna** is a scientific Python package for neuroimaging lesion analysis.
 
 ## What is Lacuna?
 
-Lacuna provides tools for analyzing how brain lesions affect neural networks. It supports:
+Lacuna provides functionality for analyzing how lesions affect the brain. It supports:
 
-- **Functional Lesion Network Mapping (fLNM)** — Map lesion effects using resting-state connectivity
-- **Structural Lesion Network Mapping (sLNM)** — Map lesion effects using diffusion tractography
-- **Regional Damage Quantification** — Measure damage across brain atlas regions
+- **Functional Lesion Network Mapping (fLNM)** — Map the functional brain circuitry linked to the lesion using resting-state connectivity
+- **Structural Lesion Network Mapping (sLNM)** — Map the structural embedding of a lesion using diffusion tractography
+- **Regional Damage Quantification** — Measure involvement of brain atlas regions
 
 ## Quick Start
 
 ```bash
 # Install Lacuna
-pip install lacuna
+pip install git+https://github.com/m-petersen/lacuna
 
 # Run a basic analysis
 lacuna /bids/input /output participant --analysis flnm
@@ -70,4 +70,3 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework:
 ## Getting Help
 
 - [GitHub Issues](https://github.com/lacuna/lacuna/issues) — Bug reports and feature requests
-- [Discussions](https://github.com/lacuna/lacuna/discussions) — Questions and community support

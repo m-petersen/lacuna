@@ -6,6 +6,7 @@ In this tutorial, you'll run your first lesion network mapping analysis with Lac
 
 **What you'll learn**:
 
+- Load subjects from the tutorial dataset
 - Run functional lesion network mapping (fLNM)
 - Interpret the output connectivity map
 - Save results to disk
@@ -13,7 +14,6 @@ In this tutorial, you'll run your first lesion network mapping analysis with Lac
 ## Prerequisites
 
 - Completed the [Getting Started](getting-started.md) tutorial
-- A binary lesion mask in MNI space
 - Basic Python knowledge
 
 ## Overview
@@ -24,80 +24,84 @@ Lesion Network Mapping (LNM) identifies brain networks that are functionally or 
 - Network-level consequences of focal brain damage
 - Potential relationships between lesion location and symptoms
 
-## Step 1: Set up your analysis
+## Step 1: Load the tutorial data
 
-First, let's import the necessary modules and load a lesion mask:
-
-```python
-import nibabel as nib
-from lacuna import SubjectData
-from lacuna.analysis import FunctionalNetworkMapping
-
-# Load your lesion mask
-mask_img = nib.load("path/to/lesion.nii.gz")
-subject = SubjectData(
-    mask_img=mask_img,
-    space="MNI152NLin6Asym",
-    resolution=2.0,
-    metadata={"subject_id": "sub-001"}
-)
-
-print(f"Loaded lesion for {subject.metadata['subject_id']}")
-print(f"Lesion volume: {subject.get_volume_mm3():.1f} mm³")
-```
-
-## Step 2: Register a connectome
-
-Functional LNM requires a normative functional connectome. You'll need to register one before running the analysis:
+Let's start by loading a subject from the bundled tutorial dataset:
 
 ```python
-from lacuna.assets.connectomes import register_functional_connectome
+from lacuna.core import SubjectData
+from lacuna.data import get_subject_mask_path, get_tutorial_subjects
+import numpy as np
 
-# Register your connectome (download instructions in How-to guides)
-register_functional_connectome(
-    name="HCP_S1200",
+# See available subjects
+subjects = get_tutorial_subjects()
+print(f"Available subjects: {subjects}")
+
+# Load the first subject
+mask_path = get_subject_mask_path("sub-01")
+subject = SubjectData.from_nifti(
+    mask_path,
     space="MNI152NLin6Asym",
-    resolution=2.0,
-    data_path="/path/to/connectome/directory",
-    n_subjects=1000
+    metadata={"subject_id": "sub-01", "session_id": "ses-01"}
 )
+
+lesion_voxels = int((subject.mask_img.get_fdata() > 0).sum())
+print(f"Loaded: {subject.metadata['subject_id']}")
+print(f"Lesion voxels: {lesion_voxels}")
 ```
 
-!!! note "Getting connectomes"
+## Step 2: Fetch a connectome
+
+Functional LNM requires a normative functional connectome. Let's fetch the HCP connectome:
+
+```python
+from lacuna.cli.fetch_cmd import fetch_connectome
+
+# Download the HCP functional connectome (first time only)
+fetch_connectome(connectome_type="functional", name="HCP_S1200")
+```
+
+!!! note "First-time download"
     
-    See the How-to Guides section for the Fetch Connectomes guide with
-    instructions on downloading pre-built normative connectomes.
+    The connectome download is ~2GB and only needs to be done once. Subsequent
+    runs will use the cached data. See the [Fetch Connectomes](../how-to/fetch-connectomes.md)
+    guide for more options.
 
 ## Step 3: Run functional network mapping
 
-Now let's run the analysis:
+## Step 3: Run functional network mapping
+
+Now let's run the analysis using Lacuna's `analyze` function:
 
 ```python
-# Initialize the analysis
-fnm = FunctionalNetworkMapping(
-    connectome_name="HCP_S1200",
-    method="boes"  # Default method
-)
+from lacuna import analyze
 
-# Run analysis
-result = fnm.run(subject)
+# Run functional LNM
+subject = analyze(subject, analysis="flnm", connectome="HCP_S1200")
 print("Analysis complete!")
+
+# Check results
+print(f"Results available: {list(subject.results.keys())}")
 ```
 
 The analysis computes functional connectivity between your lesion and every voxel in the brain using the normative connectome.
 
 ## Step 4: Access the results
 
-Results are stored in the `results` dictionary:
+Results are stored in the subject's `results` dictionary:
 
 ```python
 # Get the connectivity map
-conn_map = result.results["FunctionalNetworkMapping"]["correlation_map"]
+flnm_result = subject.results["flnm"]
 
 # Check the output
-print(f"Result type: {type(conn_map)}")
-print(f"Data shape: {conn_map.get_data().shape}")
-print(f"Value range: [{conn_map.get_data().min():.3f}, {conn_map.get_data().max():.3f}]")
+print(f"Result type: {type(flnm_result)}")
+print(f"Data shape: {flnm_result.shape}")
+
+# Get value range
+import numpy as np
+data = flnm_result.get_fdata()
+print(f"Value range: [{data.min():.3f}, {data.max():.3f}]")
 ```
 
 The connectivity map shows correlation values:
@@ -111,37 +115,55 @@ The connectivity map shows correlation values:
 Save the connectivity map as a NIfTI file:
 
 ```python
-# Get the underlying NIfTI image
-conn_nifti = conn_map.to_nifti()
+import nibabel as nib
+from pathlib import Path
 
-# Save to disk
-conn_nifti.to_filename("output/sub-001_connectivity.nii.gz")
-print("Saved connectivity map!")
+# Create output directory
+output_dir = Path("output")
+output_dir.mkdir(exist_ok=True)
+
+# Save the connectivity map
+output_path = output_dir / f"{subject.subject_id}_desc-flnm_connectivity.nii.gz"
+nib.save(flnm_result, output_path)
+print(f"Saved: {output_path}")
 ```
 
 You can view this file in any neuroimaging viewer (FSLeyes, MRIcron, etc.).
 
-## Step 6: Export BIDS derivatives (optional)
+## Step 6: Process multiple subjects
 
-For reproducibility, export results in BIDS format:
+Let's run the analysis on all tutorial subjects:
 
 ```python
-from lacuna.io.bids import export_bids_derivatives
+from lacuna.core import SubjectData
+from lacuna.data import get_tutorial_subjects, get_subject_mask_path
+from lacuna import analyze
+import numpy as np
 
-export_bids_derivatives(
-    subject_data=result,
-    output_dir="derivatives/lacuna"
-)
-print("Exported BIDS derivatives!")
+results = []
+for subject_id in get_tutorial_subjects():
+    # Load subject
+    mask_path = get_subject_mask_path(subject_id)
+    subject = SubjectData.from_nifti(
+        mask_path,
+        space="MNI152NLin6Asym",
+        metadata={"subject_id": subject_id}
+    )
+    
+    # Run analysis
+    subject = analyze(subject, analysis="flnm", connectome="HCP_S1200")
+    results.append(subject)
+    
+    print(f"Completed: {subject_id}")
+
+print(f"\nProcessed {len(results)} subjects")
 ```
-
-This creates standardized output files with proper naming conventions.
 
 ## Understanding the output
 
 ### Interpreting connectivity maps
 
-The connectivity map represents "functional connectivity fingerprint" of your lesion:
+The connectivity map represents the "functional connectivity fingerprint" of your lesion:
 
 | Value Range | Interpretation |
 |-------------|----------------|
@@ -151,43 +173,44 @@ The connectivity map represents "functional connectivity fingerprint" of your le
 | -0.5 to -0.1 | Moderate negative connectivity |
 | -1.0 to -0.5 | Strong negative connectivity |
 
-### Provenance tracking
+### What the results mean
 
-Lacuna automatically tracks all processing steps:
+High connectivity values indicate brain regions that are functionally "wired" to your lesion location in the normative population. These regions may show:
 
-```python
-# View processing history
-for step in result.provenance:
-    print(f"- {step['operation']}: {step.get('details', '')}")
-```
+- Similar activation patterns during rest
+- Co-activation during tasks
+- Potential remote effects of the lesion
 
 ## What's next?
 
 Now that you've run your first analysis, explore more in the How-to Guides:
 
-- **Run Structural LNM** — Tractography-based network mapping
-- **Regional Damage Analysis** — Quantify damage by brain region
-- **Batch Processing** — Process multiple subjects
+- [Run Structural LNM](../how-to/run-slnm.md) — Tractography-based network mapping
+- [Regional Damage Analysis](../how-to/regional-damage.md) — Quantify damage by brain region
+- [Batch Processing](../how-to/batch-processing.md) — Process many subjects efficiently
 
 ## Troubleshooting
 
 ??? question "Error: Connectome not found"
     
-    Make sure you've registered your connectome before running the analysis.
-    See the How-to Guides section for the Fetch Connectomes guide.
+    Make sure you've fetched the connectome before running the analysis:
+    
+    ```bash
+    lacuna fetch --connectome functional --name HCP_S1200
+    ```
 
 ??? question "My connectivity values seem wrong"
     
     Check that your lesion mask is:
     
     1. Binary (0s and 1s only)
-    2. In the correct coordinate space (MNI152NLin6Asym)
-    3. At the correct resolution (matching the connectome)
+    2. In the correct coordinate space (MNI152NLin6)
+    3. Contains valid lesion voxels
 
 ??? question "Analysis is very slow"
     
     Functional LNM can be memory-intensive. Try:
     
-    1. Using a lower resolution (4mm instead of 2mm)
-    2. Closing other applications to free RAM
-    3. Running on a machine with more memory
+    1. Running on a machine with more RAM
+    2. Processing fewer subjects at once
+    3. Using Docker/Apptainer on an HPC cluster

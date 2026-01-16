@@ -33,7 +33,20 @@ __all__ = [
     "list_bundled_atlases",
     "get_bundled_atlas",
     "get_atlas_citation",
+    # Tutorial data
+    "get_tutorial_bids_dir",
+    "get_tutorial_subjects",
+    "get_subject_mask_path",
+    "setup_tutorial_data",
 ]
+
+# Re-export tutorial data functions
+from lacuna.data.tutorials import (
+    get_subject_mask_path,
+    get_tutorial_bids_dir,
+    get_tutorial_subjects,
+    setup_tutorial_data,
+)
 
 
 def get_bundled_atlas_dir() -> Path:
