@@ -4,26 +4,35 @@ Bundled reference data for lesion decoding toolkit.
 This module provides access to lightweight reference atlases bundled with the
 package, enabling zero-configuration usage for common analyses.
 
+All bundled atlases use BIDS-compliant naming:
+- Template: ``tpl-{template}_res-{resolution}``
+- Atlas: ``atlas-{name}_desc-{description}``
+- Suffix: ``_dseg`` (discrete segmentation) or ``_probseg`` (probabilistic)
+
+Available atlases:
+    - Schaefer 2018 cortical parcellation (100, 200, 400, 1000 parcels)
+    - Tian subcortical atlas (3 scales)
+    - HCP1065 white matter tracts
+
 Examples
 --------
 >>> from lacuna.data import get_bundled_atlas_dir, list_bundled_atlases
 >>>
 >>> # List all bundled atlases
 >>> atlases = list_bundled_atlases()
->>> print(atlases)
-['schaefer2018-100parcels-7networks', ...]
+>>> print(atlases[:2])
+['tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg', ...]
 >>>
 >>> # Get the bundled atlas directory
 >>> atlas_dir = get_bundled_atlas_dir()
->>> print(atlas_dir)
-PosixPath('/path/to/lacuna/data/atlases')
 >>>
 >>> # Use bundled atlases in analysis (default behavior)
 >>> from lacuna.analysis import RegionalDamage
 >>> analysis = RegionalDamage()  # Automatically uses bundled atlases!
 >>>
 >>> # Get specific atlas files
->>> img_path, labels_path = get_bundled_atlas('schaefer2018-100parcels-7networks')
+>>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'
+>>> img_path, labels_path = get_bundled_atlas(schaefer)
 """
 
 from pathlib import Path
@@ -81,10 +90,10 @@ def list_bundled_atlases() -> list[str]:
     --------
     >>> from lacuna.data import list_bundled_atlases
     >>> atlases = list_bundled_atlases()
-    >>> print(atlases)
-    ['harvard-oxford-cortical', 'schaefer2018-100parcels-7networks']
-    >>> print(len(atlases))
-    3
+    >>> print(atlases[0])  # First Schaefer atlas
+    'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg'
+    >>> print(len(atlases))  # Schaefer (4) + Tian (3) + HCP1065 (1)
+    8
     """
     atlas_dir = get_bundled_atlas_dir()
 
@@ -122,9 +131,10 @@ def get_bundled_atlas(name: str) -> tuple[Path, Path]:
     Examples
     --------
     >>> from lacuna.data import get_bundled_atlas
-    >>> img, labels = get_bundled_atlas('schaefer2018-100parcels-7networks')
-    >>> print(img.name, labels.name)
-    schaefer2018-100parcels-7networks.nii.gz schaefer2018-100parcels-7networks_labels.txt
+    >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'
+    >>> img, labels = get_bundled_atlas(schaefer)
+    >>> print(img.name)
+    'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg.nii.gz'
     >>>
     >>> # Check files exist
     >>> print(img.exists(), labels.exists())
@@ -178,14 +188,14 @@ def get_atlas_citation(name: str) -> str:
     Examples
     --------
     >>> from lacuna.data import get_atlas_citation
-    >>> citation = get_atlas_citation('HCP1065_thr0p1')
-    >>> print(citation)
-    HCP1065 White Matter Tracts:
-    Data were provided by the Human Connectome Project...
+    >>> hcp = 'tpl-MNI152Nlin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg'
+    >>> citation = get_atlas_citation(hcp)
+    >>> print(citation[:30])
+    'HCP1065 White Matter Tracts...'
     """
-    # Citation database
+    # Citation database - keys match actual bundled atlas names
     citations = {
-        "HCP1065_thr0p1": """HCP1065 White Matter Tracts: Yeh, F.-C., (2022).
+        "tpl-MNI152Nlin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg": """HCP1065 White Matter Tracts: Yeh, F.-C., (2022).
 Population-based tract-to-region connectome of the human brain and its hierarchical topology.
 *Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4.
 Data were provided by the Human Connectome Project, WU-Minn Consortium
@@ -193,43 +203,43 @@ Data were provided by the Human Connectome Project, WU-Minn Consortium
 funded by the 16 NIH Institutes and Centers that support the NIH Blueprint
 for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience
 at Washington University.""",
-        "Schaefer2018_100Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (100 parcels, 7 networks):
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg": """Schaefer 2018 Atlas (100 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
 Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
 Functional Connectivity MRI.
 Cerebral Cortex, 28(9), 3095-3114.
 https://doi.org/10.1093/cercor/bhx179""",
-        "Schaefer2018_200Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (200 parcels, 7 networks):
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-200Parcels7Networks_dseg": """Schaefer 2018 Atlas (200 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
 Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
 Functional Connectivity MRI.
 Cerebral Cortex, 28(9), 3095-3114.
 https://doi.org/10.1093/cercor/bhx179""",
-        "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (400 parcels, 7 networks):
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-400Parcels7Networks_dseg": """Schaefer 2018 Atlas (400 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
 Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
 Functional Connectivity MRI.
 Cerebral Cortex, 28(9), 3095-3114.
 https://doi.org/10.1093/cercor/bhx179""",
-        "Schaefer2018_1000Parcels_7Networks_order_FSLMNI152_1mm": """Schaefer 2018 Atlas (1000 parcels, 7 networks):
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg": """Schaefer 2018 Atlas (1000 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
 Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
 Functional Connectivity MRI.
 Cerebral Cortex, 28(9), 3095-3114.
 https://doi.org/10.1093/cercor/bhx179""",
-        "Tian_Subcortex_S1_3T_2009cAsym": """Tian Subcortical Atlas - Scale 1 (16 regions):
+        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg": """Tian Subcortical Atlas - Scale 1 (16 regions):
 Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
 Topographic organization of the human subcortex unveiled with functional
 connectivity gradients.
 Nature Neuroscience, 23, 1516-1528.
 https://doi.org/10.1038/s41593-020-00711-6""",
-        "Tian_Subcortex_S2_3T_2009cAsym": """Tian Subcortical Atlas - Scale 2 (32 regions):
+        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS2_dseg": """Tian Subcortical Atlas - Scale 2 (32 regions):
 Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
 Topographic organization of the human subcortex unveiled with functional
 connectivity gradients.
 Nature Neuroscience, 23, 1516-1528.
 https://doi.org/10.1038/s41593-020-00711-6""",
-        "Tian_Subcortex_S3_3T_2009cAsym": """Tian Subcortical Atlas - Scale 3 (54 regions):
+        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS3_dseg": """Tian Subcortical Atlas - Scale 3 (54 regions):
 Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
 Topographic organization of the human subcortex unveiled with functional
 connectivity gradients.
