@@ -173,8 +173,10 @@ class StructuralNetworkMapping(BaseAnalysis):
     RegionalDamage : Atlas-based regional overlap quantification
     """
 
-    #: Preferred batch processing strategy
-    batch_strategy: str = "parallel"
+    #: Preferred batch processing strategy - sequential because MRtrix3's tckedit
+    #: uses internal parallelization (-nthreads) and running multiple instances
+    #: in parallel causes resource contention and memory-mapping conflicts
+    batch_strategy: str = "sequential"
 
     def __init__(
         self,

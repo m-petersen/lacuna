@@ -12,7 +12,12 @@ import warnings
 from collections.abc import Callable
 
 from lacuna.analysis.base import BaseAnalysis
-from lacuna.batch.strategies import BatchStrategy, ParallelStrategy, VectorizedStrategy
+from lacuna.batch.strategies import (
+    BatchStrategy,
+    ParallelStrategy,
+    SequentialStrategy,
+    VectorizedStrategy,
+)
 
 
 def select_strategy(
@@ -65,6 +70,8 @@ def select_strategy(
 
         if force_strategy == "parallel":
             return ParallelStrategy(n_jobs=n_jobs, backend=backend)
+        elif force_strategy == "sequential":
+            return SequentialStrategy(n_jobs=n_jobs)
         elif force_strategy == "vectorized":
             return VectorizedStrategy(
                 n_jobs=n_jobs,
@@ -74,7 +81,7 @@ def select_strategy(
         else:
             raise ValueError(
                 f"Unknown strategy '{force_strategy}'. "
-                f"Available strategies: 'parallel', 'vectorized'"
+                f"Available strategies: 'parallel', 'sequential', 'vectorized'"
             )
 
     # Get strategy from analysis class attribute
@@ -87,6 +94,8 @@ def select_strategy(
             lesion_batch_size=lesion_batch_size,
             batch_result_callback=batch_result_callback,
         )
+    elif preferred_strategy == "sequential":
+        return SequentialStrategy(n_jobs=n_jobs)
     elif preferred_strategy == "parallel":
         return ParallelStrategy(n_jobs=n_jobs, backend=backend)
     else:

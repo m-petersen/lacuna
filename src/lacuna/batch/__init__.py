@@ -9,6 +9,7 @@ Key Components
 - **batch_process()**: Main entry point for batch processing
 - **BatchStrategy**: Abstract base class for processing strategies
 - **ParallelStrategy**: Multi-core parallelization using joblib
+- **SequentialStrategy**: Sequential processing for analyses with internal parallelization
 - **VectorizedStrategy**: Batch matrix operations for connectome analyses
 - **select_strategy()**: Automatic strategy selection logic
 
@@ -33,7 +34,12 @@ Examples
 from lacuna.batch.api import batch_process
 from lacuna.batch.extract import extract
 from lacuna.batch.selection import select_strategy
-from lacuna.batch.strategies import BatchStrategy, ParallelStrategy, VectorizedStrategy
+from lacuna.batch.strategies import (
+    BatchStrategy,
+    ParallelStrategy,
+    SequentialStrategy,
+    VectorizedStrategy,
+)
 
 __all__ = [
     "batch_process",
@@ -41,5 +47,6 @@ __all__ = [
     "select_strategy",
     "BatchStrategy",
     "ParallelStrategy",
+    "SequentialStrategy",
     "VectorizedStrategy",
 ]

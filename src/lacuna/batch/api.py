@@ -114,8 +114,9 @@ def batch_process(
     strategy : str or None, default=None
         Force specific strategy:
         - None: Automatic selection based on analysis.batch_strategy
-        - "parallel": Force parallel processing
-        - "vectorized": Force vectorized processing
+        - "parallel": Force parallel processing (joblib multiprocessing)
+        - "sequential": Force sequential processing (one at a time)
+        - "vectorized": Force vectorized processing (batch matrix operations)
     backend : str, default='loky'
         Joblib backend for parallel processing:
     lesion_batch_size : int or None, default=None

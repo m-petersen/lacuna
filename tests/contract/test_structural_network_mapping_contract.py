@@ -291,11 +291,16 @@ def test_mrtrix_commands_are_printed(capsys):
 # ============================================================================
 
 
-def test_batch_strategy_is_parallel():
-    """Test that StructuralNetworkMapping declares parallel batch strategy."""
+def test_batch_strategy_is_sequential():
+    """Test that StructuralNetworkMapping declares sequential batch strategy.
+
+    Sequential processing is required because MRtrix3's tckedit uses internal
+    parallelization (-nthreads), and running multiple instances in parallel
+    causes resource contention and memory-mapping conflicts.
+    """
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    assert StructuralNetworkMapping.batch_strategy == "parallel"
+    assert StructuralNetworkMapping.batch_strategy == "sequential"
 
 
 @pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")

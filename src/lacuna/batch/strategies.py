@@ -270,6 +270,91 @@ class ParallelStrategy(BatchStrategy):
         return "parallel"
 
 
+class SequentialStrategy(BatchStrategy):
+    """
+    Sequential batch processing for analyses that should not run in parallel.
+
+    Best for analyses with external dependencies that don't benefit from
+    parallel execution (e.g., StructuralNetworkMapping with MRtrix3).
+
+    This strategy processes each subject one at a time, regardless of the
+    n_jobs parameter. It's designed for analyses where:
+    - External tools handle their own internal parallelization (e.g., tckedit -nthreads)
+    - Running multiple instances in parallel causes resource contention
+    - Memory-mapped files or shared resources would conflict
+
+    Parameters
+    ----------
+    n_jobs : int, default=-1
+        Not used for sequential processing. Kept for interface compatibility.
+        The analysis itself may use internal parallelization (e.g., MRtrix3's -nthreads).
+
+    Examples
+    --------
+    >>> from lacuna.batch.strategies import SequentialStrategy
+    >>> from lacuna.analysis import StructuralNetworkMapping
+    >>>
+    >>> strategy = SequentialStrategy()
+    >>> results = strategy.execute(masks, StructuralNetworkMapping(...))
+    """
+
+    def __init__(self, n_jobs: int = -1):
+        super().__init__(n_jobs)
+
+    def execute(
+        self,
+        inputs: list[SubjectData],
+        analysis: BaseAnalysis,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> list[SubjectData]:
+        """
+        Execute sequential batch processing.
+
+        Processes subjects one at a time. Failures are caught and reported
+        as warnings without stopping the entire batch.
+
+        Parameters
+        ----------
+        inputs : list[SubjectData]
+            Subjects to process
+        analysis : BaseAnalysis
+            Analysis to apply
+        progress_callback : callable or None
+            Progress reporting function
+
+        Returns
+        -------
+        list[SubjectData]
+            Successfully processed subjects (failures are filtered out)
+        """
+        results = []
+        for i, lesion in enumerate(inputs):
+            idx, result = _process_one_subject(lesion, i, analysis)
+            results.append((idx, result))
+            if progress_callback:
+                progress_callback(i)
+
+        # Sort by original index and filter out failures
+        results = sorted(results, key=lambda x: x[0])
+        successful_results = [r[1] for r in results if r[1] is not None]
+
+        # Warn if any subjects failed
+        n_failed = len(inputs) - len(successful_results)
+        if n_failed > 0:
+            warnings.warn(
+                f"{n_failed} out of {len(inputs)} subjects failed processing. "
+                "Check warnings above for details.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
+        return successful_results
+
+    @property
+    def name(self) -> str:
+        return "sequential"
+
+
 class VectorizedStrategy(BatchStrategy):
     """
     Vectorized batch processing using batched NumPy operations.
