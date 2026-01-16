@@ -359,7 +359,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             try:
                 # Re-check after acquiring lock (another worker may have computed it)
                 if cache_path.exists():
-                    self.logger.info(f"Using cached TDI (computed by another process): {cache_path}")
+                    self.logger.info(
+                        f"Using cached TDI (computed by another process): {cache_path}"
+                    )
                     return
 
                 # We have the lock and TDI doesn't exist - compute it
