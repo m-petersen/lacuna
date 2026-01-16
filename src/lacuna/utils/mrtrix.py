@@ -21,6 +21,40 @@ class MRtrixError(Exception):
     pass
 
 
+def _get_nthreads_args(n_jobs: int | None) -> list[str]:
+    """
+    Convert Python n_jobs convention to MRtrix3 -nthreads arguments.
+
+    MRtrix3 behavior:
+    - Omit -nthreads: Use all available CPUs (default)
+    - -nthreads 0: Disable multi-threading
+    - -nthreads N (N > 0): Use N threads
+
+    Python convention (joblib-style):
+    - n_jobs = None or -1: Use all available CPUs
+    - n_jobs = 0: Invalid (we treat as "all CPUs")
+    - n_jobs > 0: Use that many threads
+
+    Parameters
+    ----------
+    n_jobs : int or None
+        Number of threads in Python convention (-1 or None = all CPUs)
+
+    Returns
+    -------
+    list[str]
+        Arguments to append to MRtrix3 command. Empty list for "use all CPUs".
+    """
+    if n_jobs is None or n_jobs == -1 or n_jobs == 0:
+        # Let MRtrix3 use its default (all available CPUs)
+        return []
+    elif n_jobs > 0:
+        return ["-nthreads", str(n_jobs)]
+    else:
+        # Negative values other than -1 are invalid, use default
+        return []
+
+
 def check_mrtrix_available() -> bool:
     """
     Check if MRtrix3 commands are available in the system PATH.
@@ -208,9 +242,8 @@ def filter_tractogram_by_lesion(
             str(output_path),
             "-include",
             str(lesion_mask_path),
-            "-nthreads",
-            str(n_jobs),
         ]
+        cmd.extend(_get_nthreads_args(n_jobs))
 
         if force:
             cmd.append("-force")
@@ -328,9 +361,8 @@ def compute_tdi_map(
             str(template_path),
             str(tractogram_path),
             str(output_path),
-            "-nthreads",
-            str(n_jobs),
         ]
+        cmd.extend(_get_nthreads_args(n_jobs))
 
         if force:
             cmd.append("-force")

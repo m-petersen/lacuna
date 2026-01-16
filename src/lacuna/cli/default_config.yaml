@@ -103,9 +103,9 @@ analyses:
   # Uncomment and provide a connectome reference to enable
   # StructuralNetworkMapping:
   #   connectome: structural  # Reference to connectomes section
+  #   n_jobs: -1  # MRtrix3 threads for tckedit/tckmap (-1 = all CPUs)
   #   output_resolution: 2  # Output resolution in mm (1 or 2) for TDI and final outputs
-  #   cache_tdi: true # Cache TDI maps to speed up repeated analyses
-  #   n_jobs: 1 # Number of parallel processes for MRtrix commands (-1 = all CPUs; separate from nprocs)
+  #   cache_tdi: true  # Cache TDI maps to speed up repeated analyses
   #   keep_intermediate: false  # Include intermediate results (lesion tractogram, TDI)
   #   cleanup_temp_files: true  # Delete temp working directory after analysis
   #   return_in_input_space: true  # Transform outputs to input mask space
@@ -147,9 +147,15 @@ tmp_dir: null
 # =============================================================================
 # PERFORMANCE OPTIONS
 # =============================================================================
-# Number of parallel processes (-1 = all CPUs, default)
-# Controls how many masks are processed simultaneously for parallel analyses
-# (RegionalDamage, ParcelAggregation, StructuralNetworkMapping)
+# Number of parallel processes for mask-level parallelization (-1 = all CPUs)
+# Applies to analyses that process masks independently in parallel:
+#   - RegionalDamage
+#   - ParcelAggregation
+#
+# Does NOT apply to:
+#   - FunctionalNetworkMapping: Uses vectorized batch processing (see batch_size)
+#   - StructuralNetworkMapping: Runs masks sequentially; uses internal MRtrix3
+#     parallelization via n_jobs in the analysis config (controls -nthreads)
 nprocs: -1
 
 # Batch size: how many masks to process together (-1 = all, default)

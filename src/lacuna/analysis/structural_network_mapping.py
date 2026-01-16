@@ -33,6 +33,7 @@ from lacuna.utils.cache import get_tdi_cache_dir, get_temp_dir
 from lacuna.utils.logging import ConsoleLogger
 from lacuna.utils.mrtrix import (
     MRtrixError,
+    _get_nthreads_args,
     check_mrtrix_available,
     compute_disconnection_map,
     compute_tdi_map,
@@ -889,10 +890,9 @@ class StructuralNetworkMapping(BaseAnalysis):
                 str(lesioned_tck_path),
                 "-exclude",
                 str(lesion_mask_path),
-                "-nthreads",
-                str(self.n_jobs),
                 "-force",
             ]
+            command.extend(_get_nthreads_args(self.n_jobs))
             run_mrtrix_command(command, verbose=self.show_mrtrix_output)
 
             # Compute lesioned connectivity matrix
@@ -1079,10 +1079,9 @@ class StructuralNetworkMapping(BaseAnalysis):
                 str(output_csv),
                 "-symmetric",
                 "-zero_diagonal",
-                "-nthreads",
-                str(self.n_jobs),
                 "-force",
             ]
+            command.extend(_get_nthreads_args(self.n_jobs))
 
             run_mrtrix_command(command, verbose=self.show_mrtrix_output)
 
