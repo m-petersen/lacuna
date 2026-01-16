@@ -82,8 +82,9 @@ def regional_damage_analysis(test_atlas_dir):
     """Create RegionalDamage analysis instance with minimal test atlas."""
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-    # Register the test atlas
-    register_parcellations_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=2)
+    # Register the test atlas with resolution=1 to match synthetic_lesions fixture
+    # (synthetic lesions use np.eye(4) affine = 1mm isotropic)
+    register_parcellations_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=1)
 
     # Create analysis with explicit parcel_names to avoid bundled atlases that require TemplateFlow
     return RegionalDamage(parcel_names=["test_atlas"])

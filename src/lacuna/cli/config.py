@@ -240,7 +240,7 @@ class CLIConfig:
     atlas_dir: Path | None = None
 
     # Performance options
-    n_procs: int = 1
+    n_procs: int = -1
     batch_size: int = -1
     tmp_dir: Path = field(default_factory=lambda: Path("tmp"))
 

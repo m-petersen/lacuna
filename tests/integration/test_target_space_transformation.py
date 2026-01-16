@@ -246,9 +246,12 @@ def test_error_when_lesion_missing_space_metadata():
 def test_provenance_records_target_space():
     """Test that transformation to target space is recorded in provenance."""
     analysis = TestAnalysis2mm()
+    # Create mask with at least one non-zero voxel to avoid EmptyMaskError
+    mask_data = np.zeros((91, 109, 91))
+    mask_data[45, 54, 45] = 1  # Single voxel in center
     lesion = SubjectData(
         mask_img=nib.Nifti1Image(
-            np.zeros((91, 109, 91)),
+            mask_data,
             np.array(
                 [
                     [-2.0, 0.0, 0.0, 90.0],
