@@ -56,10 +56,17 @@ def synthetic_lesions():
 
 @pytest.fixture
 def test_atlas_dir(tmp_path):
-    """Create a minimal test atlas directory with only one small atlas."""
+    """Create a minimal test atlas directory with only one small atlas.
+    
+    Uses a unique atlas name based on tmp_path to avoid conflicts with
+    pytest-xdist parallel execution.
+    """
     atlas_dir = tmp_path / "test_atlases"
     atlas_dir.mkdir()
 
+    # Create unique atlas name based on tmp_path hash to avoid xdist conflicts
+    atlas_name = f"test_atlas_{hash(str(tmp_path)) % 100000}"
+    
     # Create a minimal 10x10x10 atlas with 3 regions
     data = np.zeros((10, 10, 10), dtype=np.int32)
     data[0:3, 0:3, 0:3] = 1  # Region 1
@@ -68,13 +75,14 @@ def test_atlas_dir(tmp_path):
 
     affine = np.eye(4)
     atlas_img = nib.Nifti1Image(data, affine)
-    nib.save(atlas_img, atlas_dir / "test_atlas.nii.gz")
+    nib.save(atlas_img, atlas_dir / f"{atlas_name}.nii.gz")
 
     # Create labels file
-    labels_file = atlas_dir / "test_atlas_labels.txt"
+    labels_file = atlas_dir / f"{atlas_name}_labels.txt"
     labels_file.write_text("1\tRegion1\n2\tRegion2\n3\tRegion3\n")
 
-    return atlas_dir
+    # Return both the directory and the atlas name
+    return atlas_dir, atlas_name
 
 
 @pytest.fixture
@@ -82,12 +90,14 @@ def regional_damage_analysis(test_atlas_dir):
     """Create RegionalDamage analysis instance with minimal test atlas."""
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
+    atlas_dir, atlas_name = test_atlas_dir
+    
     # Register the test atlas with resolution=1 to match synthetic_lesions fixture
     # (synthetic lesions use np.eye(4) affine = 1mm isotropic)
-    register_parcellations_from_directory(test_atlas_dir, space="MNI152NLin6Asym", resolution=1)
+    register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=1)
 
     # Create analysis with explicit parcel_names to avoid bundled atlases that require TemplateFlow
-    return RegionalDamage(parcel_names=["test_atlas"])
+    return RegionalDamage(parcel_names=[atlas_name])
 
 
 # ==== Loky-specific fixtures ====
