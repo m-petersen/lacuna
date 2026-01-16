@@ -242,7 +242,8 @@ class CLIConfig:
     # Performance options
     n_procs: int = -1
     batch_size: int = -1
-    tmp_dir: Path = field(default_factory=lambda: Path("tmp"))
+    cache_dir: Path | None = None  # Base cache dir (env: LACUNA_CACHE_DIR)
+    tmp_dir: Path | None = None  # Temp dir, defaults to cache_dir/tmp
 
     # Output options
     overwrite: bool = False
@@ -362,12 +363,17 @@ class CLIConfig:
             if sessions == []:
                 sessions = None
 
-        # Get tmp_dir from CLI or YAML (also supports legacy work_dir)
-        tmp_dir = args.tmp_dir
-        if yaml_config.get("tmp_dir"):
+        # Get cache_dir: CLI > YAML > env var > None (use default)
+        cache_dir = getattr(args, "cache_dir", None)
+        if cache_dir is None and yaml_config.get("cache_dir"):
+            cache_dir = Path(yaml_config["cache_dir"])
+        # Note: env var fallback is handled by cache.py when cache_dir is None
+
+        # Get tmp_dir: CLI > YAML > None (defaults to cache_dir/tmp)
+        tmp_dir = getattr(args, "tmp_dir", None)
+        if tmp_dir is None and yaml_config.get("tmp_dir"):
             tmp_dir = Path(yaml_config["tmp_dir"])
-        elif yaml_config.get("work_dir"):  # Legacy support
-            tmp_dir = Path(yaml_config["work_dir"])
+        # Note: if tmp_dir is still None, cache.py will use cache_dir/tmp
 
         return cls(
             bids_dir=args.bids_dir,
@@ -385,6 +391,7 @@ class CLIConfig:
             atlas_dir=getattr(args, "atlas_dir", None),
             n_procs=getattr(args, "nprocs", None) or yaml_config.get("nprocs", -1),
             batch_size=getattr(args, "batch_size", None) or yaml_config.get("batch_size", -1),
+            cache_dir=cache_dir,
             tmp_dir=tmp_dir,
             overwrite=getattr(args, "overwrite", False),
             verbose_count=getattr(args, "verbose_count", 0) or yaml_config.get("verbosity", 0),

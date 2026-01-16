@@ -1,9 +1,19 @@
 """
 Unified cache and temp directory management for Lacuna.
 
-Provides consistent cache and temp locations that can be configured via
-environment variables. This is particularly important for HPC environments
-where /tmp may not be writable or has limited space.
+Provides consistent cache and temp locations that can be configured via:
+1. CLI config file (cache_dir, tmp_dir in YAML)
+2. Environment variables (LACUNA_CACHE_DIR, LACUNA_TMP_DIR)
+3. Platform-specific defaults
+
+This is particularly important for HPC environments where /tmp may not be
+writable or has limited space.
+
+Configuration Priority (highest to lowest)
+------------------------------------------
+1. CLI config file (cache_dir/tmp_dir in YAML)
+2. Environment variable (LACUNA_CACHE_DIR/LACUNA_TMP_DIR)
+3. Platform-specific default (~/.cache/lacuna)
 
 Environment Variables
 ---------------------
@@ -11,25 +21,56 @@ LACUNA_CACHE_DIR : str
     Base directory for all Lacuna cache files (downloads, transforms, etc.)
     Default: ~/.cache/lacuna (Linux/macOS), %LOCALAPPDATA%/lacuna/cache (Windows)
 
-LACUNA_TEMP_DIR : str
+LACUNA_TMP_DIR : str
     Base directory for temporary files created during analysis.
-    Default: Falls back to LACUNA_CACHE_DIR/tmp if not set.
+    Default: Falls back to cache_dir/tmp if not set.
     This is useful for HPC systems where /tmp is not writable.
 """
+
+from __future__ import annotations
 
 import os
 import tempfile
 from pathlib import Path
 
+# Module-level overrides that can be set from CLI config
+# These take precedence over environment variables
+_cache_dir_override: Path | None = None
+_tmp_dir_override: Path | None = None
+
+
+def configure_cache(cache_dir: Path | None = None, tmp_dir: Path | None = None) -> None:
+    """Configure cache and temp directories from CLI config.
+
+    Call this at CLI startup to set cache locations from the config file.
+    These settings take precedence over environment variables.
+
+    Parameters
+    ----------
+    cache_dir : Path, optional
+        Base cache directory. If None, uses env var or platform default.
+    tmp_dir : Path, optional
+        Temp directory. If None, uses cache_dir/tmp.
+
+    Examples
+    --------
+    >>> from lacuna.utils.cache import configure_cache
+    >>> configure_cache(cache_dir=Path("/data/lacuna_cache"))
+    """
+    global _cache_dir_override, _tmp_dir_override
+    _cache_dir_override = cache_dir
+    _tmp_dir_override = tmp_dir
+
 
 def get_cache_dir() -> Path:
     """Get the Lacuna cache directory.
 
-    The cache directory can be configured via the LACUNA_CACHE_DIR environment
-    variable. If not set, defaults to:
-    - $XDG_CACHE_HOME/lacuna on Linux/macOS (typically ~/.cache/lacuna)
-    - %LOCALAPPDATA%/lacuna/cache on Windows
-    - /tmp/lacuna_cache as fallback
+    The cache directory is determined by (in order of priority):
+    1. CLI config file (set via configure_cache())
+    2. LACUNA_CACHE_DIR environment variable
+    3. Platform-specific default:
+       - $XDG_CACHE_HOME/lacuna on Linux/macOS (typically ~/.cache/lacuna)
+       - %LOCALAPPDATA%/lacuna/cache on Windows
 
     Returns
     -------
@@ -45,8 +86,11 @@ def get_cache_dir() -> Path:
     >>> from lacuna.utils.cache import get_cache_dir
     >>> cache_dir = get_cache_dir()
     """
-    # Check environment variable first
-    if cache_dir_env := os.environ.get("LACUNA_CACHE_DIR"):
+    # Check CLI config override first
+    if _cache_dir_override is not None:
+        cache_dir = _cache_dir_override
+    # Then check environment variable
+    elif cache_dir_env := os.environ.get("LACUNA_CACHE_DIR"):
         cache_dir = Path(cache_dir_env)
     else:
         # Platform-specific default
@@ -114,12 +158,15 @@ def get_temp_base_dir() -> Path:
     Configure custom temp location for HPC:
 
     >>> import os
-    >>> os.environ['LACUNA_TEMP_DIR'] = '/scratch/user/tmp'
+    >>> os.environ['LACUNA_TMP_DIR'] = '/scratch/user/tmp'
     >>> from lacuna.utils.cache import get_temp_base_dir
     >>> temp_dir = get_temp_base_dir()
     """
-    # Check environment variable first
-    if temp_dir_env := os.environ.get("LACUNA_TEMP_DIR"):
+    # Check CLI config override first
+    if _tmp_dir_override is not None:
+        temp_base = _tmp_dir_override
+    # Then check environment variable (support both TMP and TEMP spellings)
+    elif temp_dir_env := os.environ.get("LACUNA_TMP_DIR") or os.environ.get("LACUNA_TEMP_DIR"):
         temp_base = Path(temp_dir_env)
     else:
         # Fall back to cache dir / tmp

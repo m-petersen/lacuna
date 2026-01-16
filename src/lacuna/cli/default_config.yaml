@@ -131,6 +131,20 @@ analyses:
   #     - Schaefer2018_100Parcels7Networks
 
 # =============================================================================
+# PATHS AND CACHING
+# =============================================================================
+# Base cache directory for downloads, transforms, and intermediate files.
+# Defaults to ~/.cache/lacuna (Linux/macOS).
+# Can also be set via LACUNA_CACHE_DIR environment variable.
+cache_dir: null
+
+# Temporary directory for intermediate files during analysis.
+# Defaults to cache_dir/tmp. For HPC environments, you may want to set this
+# to fast local scratch storage (e.g., /scratch/$USER/lacuna_tmp).
+# Can also be set via LACUNA_TMP_DIR environment variable.
+tmp_dir: null
+
+# =============================================================================
 # PERFORMANCE OPTIONS
 # =============================================================================
 # Number of parallel processes (-1 = all CPUs, default)
@@ -143,9 +157,6 @@ nprocs: -1
 # Use -1 for fastest processing (all masks at once, highest memory).
 # Use lower values (e.g., 10-50) to reduce peak memory usage.
 batch_size: -1
-
-# Temporary directory for intermediate files
-tmp_dir: null
 
 # =============================================================================
 # LOGGING
