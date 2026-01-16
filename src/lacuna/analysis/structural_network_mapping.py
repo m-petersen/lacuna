@@ -343,7 +343,6 @@ class StructuralNetworkMapping(BaseAnalysis):
             Cache file path from _get_tdi_cache_path()
         """
         import fcntl
-        import time
 
         # Check if already cached (fast path, no lock needed)
         if cache_path.exists():
