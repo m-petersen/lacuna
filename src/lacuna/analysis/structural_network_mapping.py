@@ -37,7 +37,7 @@ from lacuna.utils.mrtrix import (
     check_mrtrix_available,
     compute_disconnection_map,
     compute_tdi_map,
-    filter_tractogram_by_lesion,
+    filter_tractogram_by_mask,
     run_mrtrix_command,
 )
 
@@ -613,16 +613,16 @@ class StructuralNetworkMapping(BaseAnalysis):
             Dictionary mapping result names to results:
             - 'disconnection_map': VoxelMapResult for disconnection map
             - 'summary_statistics': MiscResult for summary statistics
-            - 'lesion_tractogram': TractogramResult (if keep_intermediate=True)
-            - 'lesion_tdi': VoxelMapResult (if keep_intermediate=True)
+            - 'mask_tractogram': TractogramResult (if keep_intermediate=True)
+            - 'mask_tdi': VoxelMapResult (if keep_intermediate=True)
             - Connectivity results (if atlas provided): see _compute_connectivity_matrices
 
         Notes
         -----
         Processing steps:
-        1. Filter tractogram to streamlines passing through lesion (tckedit)
+        1. Filter tractogram to streamlines passing through mask (tckedit)
         2. Compute TDI from filtered tractogram (tckmap)
-        3. Compute disconnection as ratio of lesion TDI to whole-brain TDI (mrcalc)
+        3. Compute disconnection as ratio of mask TDI to whole-brain TDI (mrcalc)
         """
         # Get subject ID for informative output
         subject_id = mask_data.metadata.get("subject_id", "unknown")
@@ -637,26 +637,26 @@ class StructuralNetworkMapping(BaseAnalysis):
             self.logger.info(f"Intermediate files will be saved to: {temp_dir_path}")
 
         try:
-            # Step 1: Filter tractogram by lesion
-            lesion_tck_path = temp_dir_path / "lesion_streamlines.tck"
-            filter_tractogram_by_lesion(
+            # Step 1: Filter tractogram by mask
+            mask_tck_path = temp_dir_path / "mask_streamlines.tck"
+            filter_tractogram_by_mask(
                 tractogram_path=self.tractogram_path,
-                lesion_mask=mask_data.mask_img,
-                output_path=lesion_tck_path,
+                mask=mask_data.mask_img,
+                output_path=mask_tck_path,
                 n_jobs=self.n_jobs,
                 force=True,
                 verbose=self.show_mrtrix_output,
             )
             self.logger.success("Tractogram filtered")
 
-            # Step 2: Compute TDI from lesion-filtered tractogram
+            # Step 2: Compute TDI from mask-filtered tractogram
             self.logger.info("Computing track-density image (TDI)...")
             # Use anatomical template to define output grid
-            lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
+            mask_tdi_path = temp_dir_path / "mask_tdi.nii.gz"
             compute_tdi_map(
-                tractogram_path=lesion_tck_path,
+                tractogram_path=mask_tck_path,
                 template=self.template,  # Use anatomical template
-                output_path=lesion_tdi_path,
+                output_path=mask_tdi_path,
                 n_jobs=self.n_jobs,
                 force=True,
                 verbose=self.show_mrtrix_output,
@@ -666,7 +666,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             self.logger.info("Computing disconnection map...")
             disconn_map_path = temp_dir_path / "disconnection_map.nii.gz"
             compute_disconnection_map(
-                lesion_tdi=lesion_tdi_path,
+                mask_tdi=mask_tdi_path,
                 whole_brain_tdi=self.whole_brain_tdi,
                 output_path=disconn_map_path,
                 force=True,
@@ -684,9 +684,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             # Free memory immediately after computing statistics
             del disconn_array
 
-            # Count streamlines in lesion tractogram (from TDI sum)
-            lesion_tdi = nib.load(lesion_tdi_path, mmap=True)
-            lesion_streamline_count = int(np.sum(lesion_tdi.get_fdata()))
+            # Count streamlines in mask tractogram (from TDI sum)
+            mask_tdi = nib.load(mask_tdi_path, mmap=True)
+            mask_streamline_count = int(np.sum(mask_tdi.get_fdata()))
 
             # Load disconnection map into memory
             # This ensures results are independent of temp directory lifecycle
@@ -719,7 +719,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 name="summarystatistics",
                 data={
                     "mean_disconnection": mean_disconnection,
-                    "lesion_streamline_count": lesion_streamline_count,
+                    "mask_streamline_count": mask_streamline_count,
                 },
                 metadata={
                     "tractogram": str(self.tractogram_path),
@@ -729,33 +729,33 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # Add intermediate results if keep_intermediate=True
             if self.keep_intermediate:
-                # Add lesion tractogram as TractogramResult
-                lesion_tractogram_result = Tractogram(
-                    name="lesion_tractogram",
+                # Add mask tractogram as TractogramResult
+                mask_tractogram_result = Tractogram(
+                    name="mask_tractogram",
                     streamlines=None,  # Not loading into memory
-                    tractogram_path=lesion_tck_path,
+                    tractogram_path=mask_tck_path,
                     metadata={
-                        "description": "Tractogram filtered by lesion mask",
+                        "description": "Tractogram filtered by mask",
                         "temp_directory": str(temp_dir_path),
                     },
                 )
-                results["lesion_tractogram"] = lesion_tractogram_result
+                results["mask_tractogram"] = mask_tractogram_result
 
-                # Add lesion TDI as VoxelMapResult
-                lesion_tdi_path = temp_dir_path / "lesion_tdi.nii.gz"
-                if lesion_tdi_path.exists():
-                    lesion_tdi_img = nib.load(lesion_tdi_path)
-                    lesion_tdi_result = VoxelMap(
-                        name="lesion_tdi",
-                        data=lesion_tdi_img,
+                # Add mask TDI as VoxelMapResult
+                mask_tdi_path = temp_dir_path / "mask_tdi.nii.gz"
+                if mask_tdi_path.exists():
+                    mask_tdi_img = nib.load(mask_tdi_path)
+                    mask_tdi_result = VoxelMap(
+                        name="mask_tdi",
+                        data=mask_tdi_img,
                         space=self.tractogram_space,
                         resolution=self.output_resolution,
                         metadata={
-                            "description": "Track density image for lesion-filtered tractogram",
+                            "description": "Track density image for mask-filtered tractogram",
                             "temp_directory": str(temp_dir_path),
                         },
                     )
-                    results["lesion_tdi"] = lesion_tdi_result
+                    results["mask_tdi"] = mask_tdi_result
 
                 # Add warped atlas if atlas was transformed
                 if self._parcellation_resolved is not None and getattr(
@@ -785,7 +785,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 self.logger.info("Computing connectivity matrices...")
                 connectivity_results = self._compute_connectivity_matrices(
                     mask_data=mask_data,
-                    lesion_tck_path=lesion_tck_path,
+                    mask_tck_path=mask_tck_path,
                     temp_dir_path=temp_dir_path,
                     subject_id=subject_id,
                 )
@@ -808,14 +808,14 @@ class StructuralNetworkMapping(BaseAnalysis):
             else:
                 self.logger.success(f"Temp files preserved in: {temp_dir_path}")
                 self.logger.info("Files saved:", indent_level=1)
-                self.logger.info("- lesion_streamlines.tck", indent_level=2)
-                self.logger.info("- lesion_tdi.nii.gz", indent_level=2)
+                self.logger.info("- mask_streamlines.tck", indent_level=2)
+                self.logger.info("- mask_tdi.nii.gz", indent_level=2)
                 self.logger.info("- disconnection_map.nii.gz", indent_level=2)
 
     def _compute_connectivity_matrices(
         self,
         mask_data: SubjectData,
-        lesion_tck_path: Path,
+        mask_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
     ) -> dict[str, "AnalysisResult"]:
@@ -824,9 +824,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         Parameters
         ----------
         mask_data : SubjectData
-            Lesion data with mask image
-        lesion_tck_path : Path
-            Path to lesion-filtered tractogram
+            Subject data with mask image
+        mask_tck_path : Path
+            Path to mask-filtered tractogram
         temp_dir_path : Path
             Temporary directory for intermediate files
         subject_id : str
@@ -836,10 +836,10 @@ class StructuralNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary containing:
-            - 'lesion_connectivity_matrix': ConnectivityMatrixResult
+            - 'mask_connectivity_matrix': ConnectivityMatrixResult
             - 'disconnectivity_percent': ConnectivityMatrixResult
             - 'full_connectivity_matrix': ConnectivityMatrixResult
-            - 'lesioned_connectivity_matrix': ConnectivityMatrixResult (if compute_disconnectivity_matrix=True)
+            - 'intact_connectivity_matrix': ConnectivityMatrixResult (if compute_disconnectivity_matrix=True)
             - 'roi_disconnection': ParcelData (if compute_disconnectivity_matrix=True)
             - 'matrix_statistics': MiscResult
         """
@@ -858,55 +858,55 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         full_matrix = self._full_connectivity_matrix
 
-        # Step 2: Compute lesion connectivity matrix
-        self.logger.info("Computing lesion connectivity matrix", indent_level=1)
-        lesion_matrix = self._compute_connectivity_matrix(
-            tractogram_path=lesion_tck_path,
-            matrix_name=f"{subject_id}_lesion_connectivity",
+        # Step 2: Compute mask connectivity matrix
+        self.logger.info("Computing mask connectivity matrix", indent_level=1)
+        mask_matrix = self._compute_connectivity_matrix(
+            tractogram_path=mask_tck_path,
+            matrix_name=f"{subject_id}_mask_connectivity",
         )
 
         # Step 3: Compute disconnectivity percentage
         self.logger.info("Computing disconnectivity percentage", indent_level=1)
         with np.errstate(divide="ignore", invalid="ignore"):
-            disconn_pct = (lesion_matrix / full_matrix) * 100
+            disconn_pct = (mask_matrix / full_matrix) * 100
 
         # Handle division by zero
         disconn_pct = np.nan_to_num(disconn_pct, nan=0.0, posinf=0.0, neginf=0.0)
 
-        # Step 4: Optional - compute lesioned (intact) connectivity
-        lesioned_matrix = None
+        # Step 4: Optional - compute intact (post-disconnection) connectivity
+        intact_matrix = None
         if self.compute_disconnectivity_matrix:
-            self.logger.info("Computing lesioned (intact) connectivity matrix", indent_level=1)
+            self.logger.info("Computing intact (post-disconnection) connectivity matrix", indent_level=1)
 
-            # Save lesion mask temporarily for tckedit -exclude
-            lesion_mask_path = temp_dir_path / f"{subject_id}_lesion_mask.nii.gz"
-            nib.save(mask_data.mask_img, lesion_mask_path)
+            # Save mask temporarily for tckedit -exclude
+            exclude_mask_path = temp_dir_path / f"{subject_id}_exclude_mask.nii.gz"
+            nib.save(mask_data.mask_img, exclude_mask_path)
 
-            # Filter tractogram to EXCLUDE streamlines through lesion
-            lesioned_tck_path = temp_dir_path / f"{subject_id}_lesioned.tck"
+            # Filter tractogram to EXCLUDE streamlines through mask
+            intact_tck_path = temp_dir_path / f"{subject_id}_intact.tck"
             command = [
                 "tckedit",
                 str(self.tractogram_path),
-                str(lesioned_tck_path),
+                str(intact_tck_path),
                 "-exclude",
-                str(lesion_mask_path),
+                str(exclude_mask_path),
                 "-force",
             ]
             command.extend(_get_nthreads_args(self.n_jobs))
             run_mrtrix_command(command, verbose=self.show_mrtrix_output)
 
-            # Compute lesioned connectivity matrix
-            lesioned_matrix = self._compute_connectivity_matrix(
-                tractogram_path=lesioned_tck_path,
-                matrix_name=f"{subject_id}_lesioned_connectivity",
+            # Compute intact connectivity matrix
+            intact_matrix = self._compute_connectivity_matrix(
+                tractogram_path=intact_tck_path,
+                matrix_name=f"{subject_id}_intact_connectivity",
             )
 
         # Step 5: Compute summary statistics
         matrix_stats = self._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=lesioned_matrix,
+            intact_matrix=intact_matrix,
         )
 
         # Build results dict
@@ -914,16 +914,16 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Get atlas labels for ConnectivityMatrixResult
         # Convert dict[int, str] to list[str] ordered by region ID
-        atlas_labels = [f"region_{i}" for i in range(lesion_matrix.shape[0])]
+        atlas_labels = [f"region_{i}" for i in range(mask_matrix.shape[0])]
         if hasattr(self, "_atlas_labels") and self._atlas_labels is not None:
             # Sort by region ID and extract names
             sorted_regions = sorted(self._atlas_labels.items())
             atlas_labels = [name for region_id, name in sorted_regions]
 
-        # ConnectivityMatrixResult for lesion connectivity
-        lesion_connectivity_result = ConnectivityMatrix(
-            name="lesion_connectivity_matrix",
-            matrix=lesion_matrix,
+        # ConnectivityMatrixResult for mask connectivity
+        mask_connectivity_result = ConnectivityMatrix(
+            name="mask_connectivity_matrix",
+            matrix=mask_matrix,
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
@@ -931,12 +931,12 @@ class StructuralNetworkMapping(BaseAnalysis):
                 "tractogram": str(self.tractogram_path),
             },
         )
-        lesion_conn_key = build_result_key(
+        mask_conn_key = build_result_key(
             atlas=self.parcellation_name,
             source="StructuralNetworkMapping",
-            desc="lesion_connectivity_matrix",
+            desc="mask_connectivity_matrix",
         )
-        results[lesion_conn_key] = lesion_connectivity_result
+        results[mask_conn_key] = mask_connectivity_result
 
         # ConnectivityMatrixResult for disconnectivity percentage
         disconn_result = ConnectivityMatrix(
@@ -946,7 +946,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             matrix_type="structural",
             metadata={
                 "atlas": self.parcellation_name,
-                "description": "Percentage of streamlines disconnected by lesion",
+                "description": "Percentage of streamlines disconnected by mask",
             },
         )
         disconn_pct_key = build_result_key(
@@ -974,33 +974,33 @@ class StructuralNetworkMapping(BaseAnalysis):
         )
         results[full_conn_key] = full_connectivity_result
 
-        # Optional: lesioned (intact) connectivity matrix
-        if lesioned_matrix is not None:
-            lesioned_result = ConnectivityMatrix(
-                name="lesioned_connectivity_matrix",
-                matrix=lesioned_matrix,
+        # Optional: intact (post-disconnection) connectivity matrix
+        if intact_matrix is not None:
+            intact_result = ConnectivityMatrix(
+                name="intact_connectivity_matrix",
+                matrix=intact_matrix,
                 region_labels=atlas_labels,
                 matrix_type="structural",
                 metadata={
                     "atlas": self.parcellation_name,
-                    "description": "Intact connectivity excluding lesion streamlines",
+                    "description": "Intact connectivity excluding disconnected streamlines",
                 },
             )
-            lesioned_conn_key = build_result_key(
+            intact_conn_key = build_result_key(
                 atlas=self.parcellation_name,
                 source="StructuralNetworkMapping",
-                desc="lesioned_connectivity_matrix",
+                desc="intact_connectivity_matrix",
             )
-            results[lesioned_conn_key] = lesioned_result
+            results[intact_conn_key] = intact_result
 
             # Compute per-ROI disconnection percentage
             # For each ROI: (streamlines through mask connecting ROI) / (all streamlines connecting ROI)
             # Sum rows to get total streamlines per ROI (row sum = degree weighted by streamline count)
             full_roi_streamlines = np.sum(full_matrix, axis=1)
-            lesion_roi_streamlines = np.sum(lesion_matrix, axis=1)
+            mask_roi_streamlines = np.sum(mask_matrix, axis=1)
 
             with np.errstate(divide="ignore", invalid="ignore"):
-                roi_disconnection_pct = (lesion_roi_streamlines / full_roi_streamlines) * 100
+                roi_disconnection_pct = (mask_roi_streamlines / full_roi_streamlines) * 100
 
             # Handle division by zero
             roi_disconnection_pct = np.nan_to_num(
@@ -1093,9 +1093,9 @@ class StructuralNetworkMapping(BaseAnalysis):
     def _compute_matrix_statistics(
         self,
         full_matrix: np.ndarray,
-        lesion_matrix: np.ndarray,
+        mask_matrix: np.ndarray,
         disconn_pct: np.ndarray,
-        lesioned_matrix: np.ndarray | None,
+        intact_matrix: np.ndarray | None,
     ) -> dict:
         """Compute summary statistics for connectivity matrices.
 
@@ -1103,12 +1103,12 @@ class StructuralNetworkMapping(BaseAnalysis):
         ----------
         full_matrix : np.ndarray
             Full connectivity matrix
-        lesion_matrix : np.ndarray
-            Lesion connectivity matrix
+        mask_matrix : np.ndarray
+            Connectivity matrix from streamlines passing through mask
         disconn_pct : np.ndarray
             Disconnectivity percentage matrix
-        lesioned_matrix : np.ndarray | None
-            Lesioned (intact) connectivity matrix
+        intact_matrix : np.ndarray | None
+            Intact connectivity matrix (excluding disconnected streamlines)
 
         Returns
         -------
@@ -1117,15 +1117,15 @@ class StructuralNetworkMapping(BaseAnalysis):
         """
         # Edge-wise statistics
         n_edges = int(np.sum(full_matrix > 0))
-        n_affected_edges = int(np.sum(lesion_matrix > 0))
+        n_affected_edges = int(np.sum(mask_matrix > 0))
         mean_disconnection_pct = (
             float(np.mean(disconn_pct[full_matrix > 0])) if n_edges > 0 else 0.0
         )
 
         # Node-wise statistics (degree)
         full_degree = np.sum(full_matrix > 0, axis=1)
-        lesion_degree = np.sum(lesion_matrix > 0, axis=1)
-        degree_reduction = full_degree - lesion_degree
+        mask_degree = np.sum(mask_matrix > 0, axis=1)
+        degree_reduction = full_degree - mask_degree
 
         stats = {
             "n_parcels": full_matrix.shape[0],
@@ -1141,13 +1141,13 @@ class StructuralNetworkMapping(BaseAnalysis):
             "most_affected_parcel": int(np.argmax(degree_reduction)),
         }
 
-        # Add lesioned matrix statistics if computed
-        if lesioned_matrix is not None:
-            lesioned_degree = np.sum(lesioned_matrix > 0, axis=1)
-            stats["lesioned_mean_degree"] = float(np.mean(lesioned_degree))
+        # Add intact matrix statistics if computed
+        if intact_matrix is not None:
+            intact_degree = np.sum(intact_matrix > 0, axis=1)
+            stats["intact_mean_degree"] = float(np.mean(intact_degree))
 
-            # Quality control: lesion + lesioned should approximately equal full
-            combined = lesion_matrix + lesioned_matrix
+            # Quality control: mask + intact should approximately equal full
+            combined = mask_matrix + intact_matrix
             preservation = np.sum(combined > 0) / n_edges if n_edges > 0 else 0
             stats["connectivity_preservation_ratio"] = float(preservation)
 

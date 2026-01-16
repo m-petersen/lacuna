@@ -51,16 +51,16 @@ class TestConnectivityMatrixComputation:
         """Test basic matrix statistics computation."""
         # Create simple test matrices
         full_matrix = np.array([[0, 10, 5], [10, 0, 8], [5, 8, 0]])
-        lesion_matrix = np.array([[0, 3, 2], [3, 0, 4], [2, 4, 0]])
+        mask_matrix = np.array([[0, 3, 2], [3, 0, 4], [2, 4, 0]])
         with np.errstate(divide="ignore", invalid="ignore"):
-            disconn_pct = (lesion_matrix / full_matrix) * 100
+            disconn_pct = (mask_matrix / full_matrix) * 100
         disconn_pct = np.nan_to_num(disconn_pct)
 
         stats = mock_analysis._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=None,
+            intact_matrix=None,
         )
 
         # Verify statistics
@@ -74,24 +74,24 @@ class TestConnectivityMatrixComputation:
         assert "max_degree_reduction" in stats
         assert "most_affected_parcel" in stats
 
-    def test_compute_matrix_statistics_with_lesioned(self, mock_analysis):
-        """Test statistics computation with lesioned matrix."""
+    def test_compute_matrix_statistics_with_intact(self, mock_analysis):
+        """Test statistics computation with intact matrix."""
         full_matrix = np.array([[0, 10, 5], [10, 0, 8], [5, 8, 0]])
-        lesion_matrix = np.array([[0, 3, 2], [3, 0, 4], [2, 4, 0]])
-        lesioned_matrix = np.array([[0, 7, 3], [7, 0, 4], [3, 4, 0]])
+        mask_matrix = np.array([[0, 3, 2], [3, 0, 4], [2, 4, 0]])
+        intact_matrix = np.array([[0, 7, 3], [7, 0, 4], [3, 4, 0]])
         with np.errstate(divide="ignore", invalid="ignore"):
-            disconn_pct = (lesion_matrix / full_matrix) * 100
+            disconn_pct = (mask_matrix / full_matrix) * 100
         disconn_pct = np.nan_to_num(disconn_pct)
 
         stats = mock_analysis._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=lesioned_matrix,
+            intact_matrix=intact_matrix,
         )
 
-        # Should have lesioned statistics
-        assert "lesioned_mean_degree" in stats
+        # Should have intact statistics
+        assert "intact_mean_degree" in stats
         assert "connectivity_preservation_ratio" in stats
 
         # QC check
@@ -102,11 +102,11 @@ class TestConnectivityMatrixComputation:
         """Test that disconnectivity calculation handles zero values correctly."""
         # Matrix with some zero edges
         full_matrix = np.array([[0, 10, 0], [10, 0, 5], [0, 5, 0]])
-        lesion_matrix = np.array([[0, 3, 0], [3, 0, 2], [0, 2, 0]])
+        mask_matrix = np.array([[0, 3, 0], [3, 0, 2], [0, 2, 0]])
 
         # Simulate the disconnectivity calculation
         with np.errstate(divide="ignore", invalid="ignore"):
-            disconn_pct = (lesion_matrix / full_matrix) * 100
+            disconn_pct = (mask_matrix / full_matrix) * 100
         disconn_pct = np.nan_to_num(disconn_pct, nan=0.0, posinf=0.0, neginf=0.0)
 
         # Should have no NaN or Inf
@@ -133,16 +133,16 @@ class TestConnectivityMatrixComputation:
     def test_no_negative_values_in_statistics(self, mock_analysis):
         """Test that statistics don't produce negative values inappropriately."""
         full_matrix = np.array([[0, 10, 5], [10, 0, 8], [5, 8, 0]])
-        lesion_matrix = np.array([[0, 3, 2], [3, 0, 4], [2, 4, 0]])
+        mask_matrix = np.array([[0, 3, 2], [3, 0, 4], [2, 4, 0]])
         with np.errstate(divide="ignore", invalid="ignore"):
-            disconn_pct = (lesion_matrix / full_matrix) * 100
+            disconn_pct = (mask_matrix / full_matrix) * 100
         disconn_pct = np.nan_to_num(disconn_pct)
 
         stats = mock_analysis._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=None,
+            intact_matrix=None,
         )
 
         # These should never be negative
@@ -154,17 +154,17 @@ class TestConnectivityMatrixComputation:
         assert stats["mean_degree_reduction"] >= 0
         assert stats["max_degree_reduction"] >= 0
 
-    def test_empty_lesion_matrix(self, mock_analysis):
-        """Test handling of empty lesion matrix (no disconnection)."""
+    def test_empty_mask_matrix(self, mock_analysis):
+        """Test handling of empty mask matrix (no disconnection)."""
         full_matrix = np.array([[0, 10, 5], [10, 0, 8], [5, 8, 0]])
-        lesion_matrix = np.zeros_like(full_matrix)
+        mask_matrix = np.zeros_like(full_matrix)
         disconn_pct = np.zeros_like(full_matrix)
 
         stats = mock_analysis._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=None,
+            intact_matrix=None,
         )
 
         # Should handle gracefully
@@ -174,17 +174,17 @@ class TestConnectivityMatrixComputation:
         assert stats["max_disconnection_percent"] == 0.0
 
     def test_full_disconnection(self, mock_analysis):
-        """Test when lesion disconnects all streamlines."""
+        """Test when mask disconnects all streamlines."""
         full_matrix = np.array([[0, 10, 5], [10, 0, 8], [5, 8, 0]])
-        lesion_matrix = full_matrix.copy()  # All streamlines go through lesion
+        mask_matrix = full_matrix.copy()  # All streamlines go through mask
         disconn_pct = np.ones_like(full_matrix) * 100
         disconn_pct[full_matrix == 0] = 0
 
         stats = mock_analysis._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=None,
+            intact_matrix=None,
         )
 
         # Should be 100% affected
@@ -369,18 +369,18 @@ class TestMatrixDimensions:
         full_matrix = (full_matrix + full_matrix.T) / 2  # Make symmetric
         full_matrix[full_matrix < 0.5] = 0  # Sparsify
 
-        lesion_matrix = full_matrix * np.random.rand(n_parcels, n_parcels) * 0.3
-        lesion_matrix = (lesion_matrix + lesion_matrix.T) / 2  # Make symmetric
+        mask_matrix = full_matrix * np.random.rand(n_parcels, n_parcels) * 0.3
+        mask_matrix = (mask_matrix + mask_matrix.T) / 2  # Make symmetric
 
         disconn_pct = np.zeros_like(full_matrix)
         mask = full_matrix > 0
-        disconn_pct[mask] = (lesion_matrix[mask] / full_matrix[mask]) * 100
+        disconn_pct[mask] = (mask_matrix[mask] / full_matrix[mask]) * 100
 
         stats = analysis._compute_matrix_statistics(
             full_matrix=full_matrix,
-            lesion_matrix=lesion_matrix,
+            mask_matrix=mask_matrix,
             disconn_pct=disconn_pct,
-            lesioned_matrix=None,
+            intact_matrix=None,
         )
 
         # Verify basic properties

@@ -1,8 +1,8 @@
 """
-MRtrix3 command wrappers for tractography-based lesion network mapping.
+MRtrix3 command wrappers for tractography-based network mapping.
 
 Provides Python wrappers around MRtrix3 commands (tckedit, tckmap, mrcalc)
-for filtering tractograms by lesion masks and computing disconnection maps.
+for filtering tractograms by masks and computing disconnection maps.
 """
 
 import os
@@ -142,26 +142,26 @@ def run_mrtrix_command(
         raise MRtrixError(f"MRtrix3 command failed: {' '.join(command)}\n{e.stderr}") from e
 
 
-def filter_tractogram_by_lesion(
+def filter_tractogram_by_mask(
     tractogram_path: str | Path,
-    lesion_mask: str | Path | nib.Nifti1Image,
+    mask: str | Path | nib.Nifti1Image,
     output_path: str | Path | None = None,
     n_jobs: int = 1,
     force: bool = False,
     verbose: bool = False,
 ) -> Path:
     """
-    Filter a whole-brain tractogram to streamlines passing through a lesion mask.
+    Filter a whole-brain tractogram to streamlines passing through a mask.
 
     Uses MRtrix3's tckedit with -include to extract only streamlines that
-    intersect with the lesion mask.
+    intersect with the mask region.
 
     Parameters
     ----------
     tractogram_path : str or Path
         Path to whole-brain tractogram (.tck file)
-    lesion_mask : str, Path, or nibabel.Nifti1Image
-        Lesion mask image or path to NIfTI file
+    mask : str, Path, or nibabel.Nifti1Image
+        Binary mask image or path to NIfTI file
     output_path : str, Path, or None
         Output path for filtered tractogram. If None, creates temp file.
     n_jobs : int, default=1
@@ -185,40 +185,40 @@ def filter_tractogram_by_lesion(
 
     Examples
     --------
-    >>> from lacuna.utils.mrtrix import filter_tractogram_by_lesion
-    >>> filtered_tck = filter_tractogram_by_lesion(
+    >>> from lacuna.utils.mrtrix import filter_tractogram_by_mask
+    >>> filtered_tck = filter_tractogram_by_mask(
     ...     tractogram_path="whole_brain.tck",
-    ...     lesion_mask="lesion.nii.gz",
-    ...     output_path="lesion_streamlines.tck",
+    ...     mask="roi_mask.nii.gz",
+    ...     output_path="filtered_streamlines.tck",
     ...     n_jobs=8
     ... )
 
     Notes
     -----
-    - Input tractogram must be in same coordinate space as lesion mask (typically MNI152)
-    - Output is a .tck file containing only streamlines passing through lesion
+    - Input tractogram must be in same coordinate space as mask (typically MNI152)
+    - Output is a .tck file containing only streamlines passing through mask
     - For large tractograms, this operation can be slow (minutes to hours)
     """
     tractogram_path = Path(tractogram_path)
     if not tractogram_path.exists():
         raise FileNotFoundError(f"Tractogram file not found: {tractogram_path}")
 
-    # Handle lesion mask - save to temp file if needed
-    lesion_mask_path = None
-    temp_lesion_file = None
+    # Handle mask - save to temp file if needed
+    mask_path = None
+    temp_mask_file = None
 
-    if isinstance(lesion_mask, (str, Path)):
-        lesion_mask_path = Path(lesion_mask)
-        if not lesion_mask_path.exists():
-            raise FileNotFoundError(f"Lesion mask not found: {lesion_mask_path}")
-    elif isinstance(lesion_mask, nib.Nifti1Image):
+    if isinstance(mask, (str, Path)):
+        mask_path = Path(mask)
+        if not mask_path.exists():
+            raise FileNotFoundError(f"Mask not found: {mask_path}")
+    elif isinstance(mask, nib.Nifti1Image):
         # Save to temporary file
-        temp_lesion_file = make_temp_file(suffix=".nii.gz", delete=False)
-        lesion_mask_path = Path(temp_lesion_file.name)
-        nib.save(lesion_mask, lesion_mask_path)
+        temp_mask_file = make_temp_file(suffix=".nii.gz", delete=False)
+        mask_path = Path(temp_mask_file.name)
+        nib.save(mask, mask_path)
     else:
         raise TypeError(
-            f"lesion_mask must be str, Path, or nibabel.Nifti1Image, got {type(lesion_mask)}"
+            f"mask must be str, Path, or nibabel.Nifti1Image, got {type(mask)}"
         )
 
     # Determine output path
@@ -241,7 +241,7 @@ def filter_tractogram_by_lesion(
             str(tractogram_path),
             str(output_path),
             "-include",
-            str(lesion_mask_path),
+            str(mask_path),
         ]
         cmd.extend(_get_nthreads_args(n_jobs))
 
@@ -254,10 +254,10 @@ def filter_tractogram_by_lesion(
         return output_path
 
     finally:
-        # Clean up temporary lesion file if created
-        if temp_lesion_file is not None:
+        # Clean up temporary mask file if created
+        if temp_mask_file is not None:
             try:
-                os.unlink(lesion_mask_path)
+                os.unlink(mask_path)
             except Exception:
                 pass
 
@@ -307,9 +307,9 @@ def compute_tdi_map(
     --------
     >>> from lacuna.utils.mrtrix import compute_tdi_map
     >>> tdi = compute_tdi_map(
-    ...     tractogram_path="lesion_streamlines.tck",
+    ...     tractogram_path="filtered_streamlines.tck",
     ...     template="MNI152_T1_2mm.nii.gz",
-    ...     output_path="lesion_tdi.nii.gz",
+    ...     output_path="tdi_map.nii.gz",
     ...     n_jobs=8
     ... )
 
@@ -382,22 +382,22 @@ def compute_tdi_map(
 
 
 def compute_disconnection_map(
-    lesion_tdi: str | Path | nib.Nifti1Image,
+    mask_tdi: str | Path | nib.Nifti1Image,
     whole_brain_tdi: str | Path | nib.Nifti1Image,
     output_path: str | Path | None = None,
     force: bool = False,
     verbose: bool = False,
 ) -> Path:
     """
-    Compute disconnection map as ratio of lesion TDI to whole-brain TDI.
+    Compute disconnection map as ratio of mask TDI to whole-brain TDI.
 
-    Uses MRtrix3's mrcalc to divide lesion TDI by whole-brain TDI, producing
+    Uses MRtrix3's mrcalc to divide mask TDI by whole-brain TDI, producing
     a voxel-wise disconnection probability map.
 
     Parameters
     ----------
-    lesion_tdi : str, Path, or nibabel.Nifti1Image
-        TDI from lesion-filtered tractogram
+    mask_tdi : str, Path, or nibabel.Nifti1Image
+        TDI from mask-filtered tractogram
     whole_brain_tdi : str, Path, or nibabel.Nifti1Image
         TDI from whole-brain tractogram (reference)
     output_path : str, Path, or None
@@ -423,7 +423,7 @@ def compute_disconnection_map(
     --------
     >>> from lacuna.utils.mrtrix import compute_disconnection_map
     >>> disconn_map = compute_disconnection_map(
-    ...     lesion_tdi="lesion_tdi.nii.gz",
+    ...     mask_tdi="mask_tdi.nii.gz",
     ...     whole_brain_tdi="whole_brain_tdi.nii.gz",
     ...     output_path="disconnection_map.nii.gz"
     ... )
@@ -431,23 +431,24 @@ def compute_disconnection_map(
     Notes
     -----
     - Values range from 0 (no disconnection) to 1 (complete disconnection)
-    - Voxels with zero whole-brain TDI are handled gracefully (set to 0)
+    - The output is limited to white matter regions where the tractogram has streamlines
+    - Voxels with zero whole-brain TDI (outside white matter) are set to 0
     """
-    # Handle lesion TDI input
-    lesion_tdi_path = None
-    temp_lesion_file = None
+    # Handle mask TDI input
+    mask_tdi_path = None
+    temp_mask_file = None
 
-    if isinstance(lesion_tdi, (str, Path)):
-        lesion_tdi_path = Path(lesion_tdi)
-        if not lesion_tdi_path.exists():
-            raise FileNotFoundError(f"Lesion TDI not found: {lesion_tdi_path}")
-    elif isinstance(lesion_tdi, nib.Nifti1Image):
-        temp_lesion_file = make_temp_file(suffix=".nii.gz", delete=False)
-        lesion_tdi_path = Path(temp_lesion_file.name)
-        nib.save(lesion_tdi, lesion_tdi_path)
+    if isinstance(mask_tdi, (str, Path)):
+        mask_tdi_path = Path(mask_tdi)
+        if not mask_tdi_path.exists():
+            raise FileNotFoundError(f"Mask TDI not found: {mask_tdi_path}")
+    elif isinstance(mask_tdi, nib.Nifti1Image):
+        temp_mask_file = make_temp_file(suffix=".nii.gz", delete=False)
+        mask_tdi_path = Path(temp_mask_file.name)
+        nib.save(mask_tdi, mask_tdi_path)
     else:
         raise TypeError(
-            f"lesion_tdi must be str, Path, or nibabel.Nifti1Image, got {type(lesion_tdi)}"
+            f"mask_tdi must be str, Path, or nibabel.Nifti1Image, got {type(mask_tdi)}"
         )
 
     # Handle whole-brain TDI input
@@ -484,7 +485,7 @@ def compute_disconnection_map(
         # Build mrcalc command
         cmd = [
             "mrcalc",
-            str(lesion_tdi_path),
+            str(mask_tdi_path),
             str(wb_tdi_path),
             "-divide",
             str(output_path),
@@ -501,7 +502,7 @@ def compute_disconnection_map(
     finally:
         # Clean up temporary files if created
         for temp_file, temp_path in [
-            (temp_lesion_file, lesion_tdi_path),
+            (temp_mask_file, mask_tdi_path),
             (temp_wb_file, wb_tdi_path),
         ]:
             if temp_file is not None:
