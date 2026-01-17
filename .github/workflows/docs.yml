@@ -58,7 +58,9 @@ jobs:
 
   deploy:
     # Only deploy on push to main (not PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # DISABLED: Added '&& false' to prevent going live after merge
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && false
     needs: build
     runs-on: ubuntu-latest
     environment:
