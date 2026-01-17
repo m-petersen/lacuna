@@ -10,6 +10,8 @@ import nibabel as nib
 import numpy as np
 import pytest
 
+from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
+
 
 def _check_mrtrix_available():
     """Check if MRtrix3 is available for tests."""
@@ -90,9 +92,92 @@ requires_templateflow_skipif = pytest.mark.skipif(
 )
 
 
+# =============================================================================
+# Tutorial Data Fixtures (MNI152NLin6Asym, 1mm resolution)
+# =============================================================================
+# These use the bundled tutorial BIDS dataset with real MNI-space masks.
+# Preferred for integration tests that need realistic data dimensions.
+
+
+@pytest.fixture
+def tutorial_mask_img():
+    """Load a tutorial subject's lesion mask as a NIfTI image.
+
+    Returns a 182×218×182 binary mask in MNI152NLin6Asym space (1mm).
+    Use this for tests that need real MNI-space data dimensions.
+    """
+    subjects = get_tutorial_subjects()
+    mask_path = get_subject_mask_path(subjects[0])
+    return nib.load(mask_path)
+
+
+@pytest.fixture
+def tutorial_mask_data():
+    """Create a SubjectData object from tutorial lesion mask.
+
+    Returns a SubjectData with:
+    - Shape: (182, 218, 182)
+    - Space: MNI152NLin6Asym
+    - Resolution: 1mm
+    """
+    from lacuna.core.subject_data import SubjectData
+
+    subjects = get_tutorial_subjects()
+    mask_path = get_subject_mask_path(subjects[0])
+    mask_img = nib.load(mask_path)
+
+    return SubjectData(
+        mask_img=mask_img,
+        space="MNI152NLin6Asym",
+        resolution=1.0,
+        metadata={"subject_id": subjects[0]},
+    )
+
+
+@pytest.fixture
+def tutorial_mask_data_list():
+    """Create list of SubjectData objects from all tutorial subjects.
+
+    Returns 3 SubjectData objects (sub-01, sub-02, sub-03) with:
+    - Shape: (182, 218, 182)
+    - Space: MNI152NLin6Asym
+    - Resolution: 1mm
+
+    Use for batch processing tests that need realistic MNI-space data.
+    """
+    from lacuna.core.subject_data import SubjectData
+
+    subjects = get_tutorial_subjects()
+    mask_data_list = []
+
+    for subject_id in subjects:
+        mask_path = get_subject_mask_path(subject_id)
+        mask_img = nib.load(mask_path)
+        mask_data = SubjectData(
+            mask_img=mask_img,
+            space="MNI152NLin6Asym",
+            resolution=1.0,
+            metadata={"subject_id": subject_id},
+        )
+        mask_data_list.append(mask_data)
+
+    return mask_data_list
+
+
+# =============================================================================
+# Synthetic Data Fixtures (small dimensions for fast tests)
+# =============================================================================
+# These create minimal synthetic data for fast unit tests and edge cases.
+# Use when you need specific data properties or very fast execution.
+
+
 @pytest.fixture
 def synthetic_mask_img():
-    """Create a synthetic 3D lesion mask for testing."""
+    """Create a synthetic 3D lesion mask for testing.
+
+    Returns a 64×64×64 binary mask with 2mm voxels.
+    Use for fast unit tests where MNI dimensions aren't needed.
+    """
     shape = (64, 64, 64)
     data = np.zeros(shape, dtype=np.uint8)
 
@@ -116,7 +201,11 @@ def synthetic_mask_img():
 
 @pytest.fixture
 def synthetic_anatomical_img():
-    """Create a synthetic anatomical (T1w) image for testing."""
+    """Create a synthetic anatomical (T1w) image for testing.
+
+    Returns a 64×64×64 image with 2mm voxels.
+    Use for fast unit tests.
+    """
     shape = (64, 64, 64)
     # Create brain-like structure with higher intensity in center
     data = np.random.rand(*shape).astype(np.float32) * 100
@@ -144,7 +233,10 @@ def synthetic_anatomical_img():
 
 @pytest.fixture
 def synthetic_4d_img():
-    """Create a synthetic 4D image (should be rejected by validation)."""
+    """Create a synthetic 4D image (should be rejected by validation).
+
+    Returns a 64×64×64×10 image for testing 4D rejection.
+    """
     shape = (64, 64, 64, 10)
     data = np.random.rand(*shape).astype(np.float32)
     affine = np.eye(4)
@@ -269,7 +361,13 @@ def multisession_bids_dataset(tmp_path):
 
 @pytest.fixture
 def synthetic_mask_data(synthetic_mask_img):
-    """Create a SubjectData object from synthetic lesion image."""
+    """Create a SubjectData object from synthetic lesion image.
+
+    Returns a SubjectData with 64×64×64 shape and 2mm voxels.
+    Use for fast unit tests where MNI dimensions aren't needed.
+
+    For tests needing real MNI-space data, use tutorial_mask_data instead.
+    """
     import sys
 
     sys.path.insert(0, "/home/marvin/projects/lacuna/src")
@@ -288,7 +386,13 @@ def synthetic_mask_data(synthetic_mask_img):
 
 @pytest.fixture
 def batch_mask_data_list(synthetic_mask_img):
-    """Create a list of SubjectData objects for batch testing."""
+    """Create a list of SubjectData objects for batch testing.
+
+    Returns 3 SubjectData objects with 64×64×64 shape and 2mm voxels.
+    Use for fast batch tests where MNI dimensions aren't needed.
+
+    For tests needing real MNI-space data, use tutorial_mask_data_list instead.
+    """
     import sys
 
     sys.path.insert(0, "/home/marvin/projects/lacuna/src")

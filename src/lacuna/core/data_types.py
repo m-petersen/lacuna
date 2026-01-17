@@ -44,6 +44,27 @@ class DataContainer(ABC):
         Additional metadata about the data
     data_type : str
         Type identifier for the container (set by subclasses)
+
+    Examples
+    --------
+    Subclasses are used to store analysis results:
+
+    >>> # VoxelMap for brain maps
+    >>> voxel_result = VoxelMap(
+    ...     name="rmap",
+    ...     data=nifti_img,
+    ...     space="MNI152NLin6Asym",
+    ...     resolution=2.0
+    ... )
+    >>> print(voxel_result.summary())
+
+    >>> # ParcelData for region-level data
+    >>> parcel_result = ParcelData(
+    ...     name="damage_scores",
+    ...     data={"V1": 0.8, "V2": 0.6},
+    ...     aggregation_method="mean"
+    ... )
+    >>> top_regions = parcel_result.get_top_regions(n=5)
     """
 
     def __init__(self, name: str, metadata: dict[str, Any] | None = None):
@@ -111,6 +132,24 @@ class VoxelMap(DataContainer):
         Resolution in mm (e.g., 1.0, 2.0)
     metadata : dict
         Additional metadata about the output
+
+    Examples
+    --------
+    >>> import nibabel as nib
+    >>> import numpy as np
+    >>> # Create a sample brain map
+    >>> data = np.random.randn(91, 109, 91)
+    >>> img = nib.Nifti1Image(data, np.eye(4) * 2)
+
+    >>> voxel_map = VoxelMap(
+    ...     name="functional_connectivity",
+    ...     data=img,
+    ...     space="MNI152NLin6Asym",
+    ...     resolution=2.0,
+    ...     metadata={"seed": "PCC"}
+    ... )
+    >>> print(voxel_map.summary())
+    functional_connectivity: (91, 109, 91) voxels, space=MNI152NLin6Asym, resolution=2.0mm
     """
 
     name: str
@@ -161,6 +200,28 @@ class ParcelData(DataContainer):
         Method used for aggregation (e.g., "mean", "percent")
     metadata : dict
         Additional metadata about the output
+
+    Examples
+    --------
+    >>> # Create parcel data from atlas-based analysis
+    >>> parcel_data = ParcelData(
+    ...     name="damage_scores",
+    ...     data={
+    ...         "Visual_V1": 0.85,
+    ...         "Motor_Primary": 0.42,
+    ...         "Prefrontal_DLPFC": 0.15
+    ...     },
+    ...     parcel_names=["Schaefer100"],
+    ...     aggregation_method="percent"
+    ... )
+
+    >>> # Get top damaged regions
+    >>> top = parcel_data.get_top_regions(n=2)
+    >>> print(top)
+    {'Visual_V1': 0.85, 'Motor_Primary': 0.42}
+
+    >>> print(parcel_data.summary())
+    damage_scores: 3 regions from 1 atlases, method=percent
     """
 
     name: str
@@ -219,6 +280,25 @@ class ConnectivityMatrix(DataContainer):
         Type of connectivity ("structural", "functional")
     metadata : dict
         Additional metadata about the output
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create a structural connectivity matrix
+    >>> conn_matrix = np.array([
+    ...     [1.0, 0.8, 0.3],
+    ...     [0.8, 1.0, 0.5],
+    ...     [0.3, 0.5, 1.0]
+    ... ])
+
+    >>> conn = ConnectivityMatrix(
+    ...     name="structural_connectivity",
+    ...     matrix=conn_matrix,
+    ...     region_labels=["V1", "V2", "MT"],
+    ...     matrix_type="structural"
+    ... )
+    >>> print(conn.summary())
+    structural_connectivity: 3x3, type=structural
     """
 
     name: str

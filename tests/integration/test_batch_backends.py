@@ -2,7 +2,7 @@
 Integration tests for batch processing with different backends.
 
 These tests verify that batch processing works correctly with threading and loky
-backends using real (synthetic) lesion data.
+backends using real lesion data from the bundled tutorial dataset.
 
 NOTE on loky backend tests:
 --------------------------
@@ -12,7 +12,7 @@ with bundled parcellations (like Schaefer atlases) because workers can
 discover and load them from the package paths.
 
 Threading backend tests use dynamically registered test atlases (faster).
-Loky backend tests use bundled Schaefer atlas (works across processes).
+Loky backend tests use bundled Schaefer atlas with tutorial data (real MNI space).
 """
 
 import sys
@@ -26,8 +26,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from lacuna import SubjectData, batch_process
 from lacuna.analysis import RegionalDamage
-from lacuna.assets.parcellations import load_parcellation
 from lacuna.batch.strategies import ParallelStrategy
+from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
 
 
 @pytest.fixture
@@ -101,37 +101,35 @@ def regional_damage_analysis(test_atlas_dir):
 
 
 # ==== Loky-specific fixtures ====
-# Loky tests use bundled atlases since dynamically registered ones don't
-# transfer to worker processes. These fixtures create data matching the
-# bundled Schaefer atlas dimensions.
+# Loky tests use bundled tutorial data (real MNI-space masks) with bundled
+# Schaefer atlas. Tutorial data is in MNI152NLin6Asym 1mm space, matching
+# the bundled atlases.
 
 
 @pytest.fixture
-def mni_synthetic_lesions():
-    """Create synthetic lesion data matching MNI152NLin6Asym space.
+def tutorial_lesions():
+    """Load tutorial lesion data for loky backend tests.
 
-    Uses 1mm resolution to match bundled Schaefer atlases.
-    Shape: (182, 218, 182) with same affine as Schaefer atlases.
+    Uses the bundled tutorial BIDS dataset which provides:
+    - 3 subjects (sub-01, sub-02, sub-03)
+    - MNI152NLin6Asym space, 1mm resolution
+    - Shape: (182, 218, 182) matching bundled Schaefer atlases
+
+    This is preferred over synthetic data for integration tests as it
+    uses real MNI-space data that matches bundled atlas dimensions.
     """
-    # Get the actual atlas affine and shape for matching
-    parcel = load_parcellation("Schaefer2018_100Parcels7Networks")
-    shape = parcel.image.shape
-    affine = parcel.image.affine
-
+    subjects = get_tutorial_subjects()
     lesions = []
-    for i in range(3):
-        # Create lesion data matching atlas dimensions
-        data = np.zeros(shape, dtype=np.float32)
-        # Create a lesion in different locations for each subject
-        # Centering around a common brain region
-        cx, cy, cz = shape[0] // 2, shape[1] // 2, shape[2] // 2
-        offset = i * 5
-        data[cx - 5 + offset : cx + 5 + offset, cy - 5 : cy + 5, cz - 5 : cz + 5] = 1
 
-        img = nib.Nifti1Image(data, affine)
+    for subject_id in subjects:
+        mask_path = get_subject_mask_path(subject_id)
+        mask_img = nib.load(mask_path)
+
         lesion = SubjectData(
-            img,
-            metadata={"subject_id": f"sub-{i:03d}", "space": "MNI152NLin6Asym", "resolution": 1},
+            mask_img,
+            space="MNI152NLin6Asym",
+            resolution=1.0,
+            metadata={"subject_id": subject_id},
         )
         lesions.append(lesion)
 
@@ -196,29 +194,30 @@ class TestThreadingBackend:
 class TestLokyBackend:
     """Test loky backend for standalone scripts.
 
-    These tests use bundled Schaefer atlas which loky workers can discover
-    and load from package paths. This is the real-world use case for loky.
+    These tests use bundled Schaefer atlas with tutorial data (real MNI-space
+    masks). Loky workers can discover and load bundled atlases from package
+    paths. This is the real-world use case for loky.
     """
 
     def test_loky_backend_processes_all_subjects(
-        self, mni_synthetic_lesions, bundled_atlas_analysis
+        self, tutorial_lesions, bundled_atlas_analysis
     ):
         """Loky backend should process all subjects successfully."""
         results = batch_process(
-            inputs=mni_synthetic_lesions,
+            inputs=tutorial_lesions,
             analysis=bundled_atlas_analysis,
             n_jobs=2,
             show_progress=False,
             backend="loky",
         )
 
-        assert len(results) == len(mni_synthetic_lesions)
+        assert len(results) == len(tutorial_lesions)
         assert all(isinstance(r, SubjectData) for r in results)
 
-    def test_loky_backend_adds_results(self, mni_synthetic_lesions, bundled_atlas_analysis):
+    def test_loky_backend_adds_results(self, tutorial_lesions, bundled_atlas_analysis):
         """Loky backend should add analysis results to lesion data."""
         results = batch_process(
-            inputs=mni_synthetic_lesions,
+            inputs=tutorial_lesions,
             analysis=bundled_atlas_analysis,
             n_jobs=2,
             show_progress=False,
@@ -229,17 +228,17 @@ class TestLokyBackend:
             assert len(result.results) > 0
             assert "RegionalDamage" in result.results
 
-    def test_loky_backend_is_default(self, mni_synthetic_lesions, bundled_atlas_analysis):
+    def test_loky_backend_is_default(self, tutorial_lesions, bundled_atlas_analysis):
         """Loky should be the default backend."""
         # Don't specify backend - should default to loky
         results = batch_process(
-            inputs=mni_synthetic_lesions,
+            inputs=tutorial_lesions,
             analysis=bundled_atlas_analysis,
             n_jobs=2,
             show_progress=False,
         )
 
-        assert len(results) == len(mni_synthetic_lesions)
+        assert len(results) == len(tutorial_lesions)
 
 
 class TestMultiprocessingBackend:
@@ -262,14 +261,15 @@ class TestMultiprocessingBackend:
 class TestBackendComparison:
     """Compare results across different backends."""
 
-    def test_backends_produce_same_results(self, mni_synthetic_lesions, bundled_atlas_analysis):
+    def test_backends_produce_same_results(self, tutorial_lesions, bundled_atlas_analysis):
         """Different backends should produce equivalent results.
 
-        Uses bundled atlas so both threading and loky can access it.
+        Uses tutorial data with bundled atlas so both threading and loky
+        can access it.
         """
         # Process with threading
         results_threading = batch_process(
-            inputs=mni_synthetic_lesions,
+            inputs=tutorial_lesions,
             analysis=bundled_atlas_analysis,
             n_jobs=1,  # Use 1 to ensure deterministic order
             show_progress=False,
@@ -278,7 +278,7 @@ class TestBackendComparison:
 
         # Process with loky
         results_loky = batch_process(
-            inputs=mni_synthetic_lesions,
+            inputs=tutorial_lesions,
             analysis=bundled_atlas_analysis,
             n_jobs=1,  # Use 1 to ensure deterministic order
             show_progress=False,
@@ -304,15 +304,15 @@ class TestParallelStrategyBackend:
         assert len(results) == len(synthetic_lesions)
         assert strategy.backend == "threading"
 
-    def test_parallel_strategy_loky_backend(self, mni_synthetic_lesions, bundled_atlas_analysis):
+    def test_parallel_strategy_loky_backend(self, tutorial_lesions, bundled_atlas_analysis):
         """ParallelStrategy should work with loky backend.
 
-        Uses bundled atlas so loky workers can access it.
+        Uses tutorial data with bundled atlas so loky workers can access it.
         """
         strategy = ParallelStrategy(n_jobs=2, backend="loky")
-        results = strategy.execute(inputs=mni_synthetic_lesions, analysis=bundled_atlas_analysis)
+        results = strategy.execute(inputs=tutorial_lesions, analysis=bundled_atlas_analysis)
 
-        assert len(results) == len(mni_synthetic_lesions)
+        assert len(results) == len(tutorial_lesions)
         assert strategy.backend == "loky"
 
 

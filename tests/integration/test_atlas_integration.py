@@ -2,6 +2,9 @@
 
 Tests the complete workflow of atlas loading, discovery, and usage
 in analysis modules.
+
+Uses bundled tutorial data (MNI152NLin6Asym 1mm) which matches the
+bundled Schaefer atlases for realistic integration testing.
 """
 
 import nibabel as nib
@@ -12,26 +15,31 @@ from lacuna import SubjectData
 from lacuna.analysis import ParcelAggregation, RegionalDamage
 from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import list_parcellations
+from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
 
 
 @pytest.fixture
-def sample_mask_data():
-    """Create a sample SubjectData for testing."""
-    mask_data = np.zeros((91, 109, 91))
-    mask_data[45:50, 54:59, 45:50] = 1
-    mask_img = nib.Nifti1Image(mask_data.astype(np.float32), np.eye(4))
+def tutorial_mask_data():
+    """Load a tutorial subject's mask as SubjectData for testing.
+
+    Uses bundled tutorial data in MNI152NLin6Asym 1mm space, which matches
+    the bundled Schaefer atlases for realistic integration testing.
+    """
+    subjects = get_tutorial_subjects()
+    mask_path = get_subject_mask_path(subjects[0])
+    mask_img = nib.load(mask_path)
     return SubjectData(
         mask_img=mask_img,
         space="MNI152NLin6Asym",
         resolution=1.0,
-        metadata={"subject_id": "test001"},
+        metadata={"subject_id": subjects[0]},
     )
 
 
 class TestMultiAtlasAnalysisWorkflow:
     """Test multi-atlas analysis workflow."""
 
-    def test_regional_damage_with_single_atlas(self, sample_mask_data):
+    def test_regional_damage_with_single_atlas(self, tutorial_mask_data):
         """RegionalDamage can use a single named atlas."""
         # Use specific parcellation by name
         analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"])
@@ -40,7 +48,7 @@ class TestMultiAtlasAnalysisWorkflow:
         assert analysis.parcel_names == ["Schaefer2018_100Parcels7Networks"]
         assert analysis.aggregation == "percent"
 
-    def test_regional_damage_with_multiple_atlases(self, sample_mask_data):
+    def test_regional_damage_with_multiple_atlases(self, tutorial_mask_data):
         """RegionalDamage can use multiple named atlases."""
         # Use multiple parcellations by name
         analysis = RegionalDamage(
@@ -55,7 +63,7 @@ class TestMultiAtlasAnalysisWorkflow:
         assert "Schaefer2018_100Parcels7Networks" in analysis.parcel_names
         assert "Schaefer2018_200Parcels7Networks" in analysis.parcel_names
 
-    def test_parcel_aggregation_with_named_atlas(self, sample_mask_data):
+    def test_parcel_aggregation_with_named_atlas(self, tutorial_mask_data):
         """ParcelAggregation can use named parcellation from registry."""
         # Use parcellation by name with different aggregation
         analysis = ParcelAggregation(
@@ -68,7 +76,7 @@ class TestMultiAtlasAnalysisWorkflow:
         assert analysis.parcel_names == ["TianSubcortex_3TS2"]
         assert analysis.aggregation == "mean"
 
-    def test_regional_damage_default_parcellations(self, sample_mask_data):
+    def test_regional_damage_default_parcellations(self, tutorial_mask_data):
         """RegionalDamage with None uses all available parcellations."""
         analysis = RegionalDamage(parcel_names=None)
         assert analysis.parcel_names is None

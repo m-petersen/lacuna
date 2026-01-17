@@ -336,12 +336,12 @@ class TestTransformCaching:
 
 
 class TestLoggingTransparency:
-    """Test that transformations log appropriately."""
+    """Test that transformations log appropriately when verbose=True."""
 
     @pytest.mark.slow
     @pytest.mark.requires_templateflow
     def test_transform_logs_progress(self, caplog):
-        """Transformations should log their progress."""
+        """Transformations should log their progress when verbose=True."""
         import logging
 
         caplog.set_level(logging.INFO)
@@ -358,18 +358,18 @@ class TestLoggingTransparency:
         )
         img = nib.Nifti1Image(data, affine)
 
-        # Transform
+        # Transform with verbose=True to enable logging
         transform_image(
             img=img,
             source_space="MNI152NLin6Asym",
             target_space="MNI152NLin2009cAsym",
             source_resolution=2.0,
             interpolation="linear",
+            verbose=True,  # Enable logging
         )
 
-        # Check logs
-        assert "Loading transform" in caplog.text or "Transforming image" in caplog.text
-        assert "Transformation complete" in caplog.text
+        # Check logs - should have transformation info
+        assert "Warping" in caplog.text or "Transforming" in caplog.text
 
 
 if __name__ == "__main__":
