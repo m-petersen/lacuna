@@ -1,41 +1,60 @@
 # Fetch Command
 
-The `lacuna fetch` command downloads pre-built connectomes and other assets.
+The `lacuna fetch` command downloads and sets up connectomes for lesion network mapping analysis.
 
 ## Synopsis
 
 ```
-lacuna fetch [--connectome TYPE] [--name NAME] [options]
+lacuna fetch [connectome] [options]
+lacuna fetch --list
+lacuna fetch --interactive
 ```
 
 ## Description
 
-The fetch command downloads and caches normative connectomes required for lesion network mapping analyses. Downloaded files are stored in the Lacuna cache directory.
+The fetch command downloads, processes, and registers normative connectomes required for lesion network mapping analyses. Downloaded and processed files are cached in the Lacuna cache directory (`~/.cache/lacuna/connectomes/`).
+
+## Available Connectomes
+
+| Name | Type | Description | Size | Source |
+|------|------|-------------|------|--------|
+| `gsp1000` | Functional | GSP1000 functional connectome | ~100GB | Dataverse |
+| `dtor985` | Structural | dTOR985 structural tractogram | ~10GB | Figshare |
 
 ## Options
 
-### Asset selection
+### Positional argument
 
-| Option | Description |
-|--------|-------------|
-| `--connectome {functional,structural}` | Type of connectome to download |
-| `--name NAME` | Name of the specific connectome |
-| `--list` | List available connectomes without downloading |
-
-### Download options
-
-| Option | Description |
-|--------|-------------|
-| `--output DIR` | Custom output directory (default: cache) |
-| `--force` | Re-download even if cached |
-| `--verify` | Verify checksums after download |
+| Argument | Description |
+|----------|-------------|
+| `connectome` | Connectome to fetch: `gsp1000` or `dtor985` |
 
 ### Display options
 
 | Option | Description |
 |--------|-------------|
-| `--verbose` | Show detailed progress |
-| `--quiet` | Suppress all output except errors |
+| `--list` | List available connectomes without downloading |
+| `--interactive` | Interactive guided setup wizard |
+
+### Output options
+
+| Option | Description |
+|--------|-------------|
+| `--output-dir PATH` | Output directory for processed files (default: `~/.cache/lacuna/connectomes/<name>`) |
+
+### Common options
+
+| Option | Description |
+|--------|-------------|
+| `--api-key KEY` | API key for authenticated downloads (or use env vars) |
+| `--force` | Overwrite existing files |
+| `--clean` | Remove cached data for a specific connectome |
+
+### GSP1000-specific options
+
+| Option | Description |
+|--------|-------------|
+| `--batches N` | Number of HDF5 batch files to create (default: 10). More batches = lower RAM usage. Recommendations: 16GB RAM → 100, 32GB+ RAM → 50 |
 
 ## Examples
 
@@ -45,98 +64,109 @@ The fetch command downloads and caches normative connectomes required for lesion
 lacuna fetch --list
 ```
 
-Output:
-
-```
-Available connectomes:
-
-Functional:
-  - HCP_S1200 (MNI152NLin6Asym, 2mm, 1000 subjects)
-  
-Structural:
-  - HCP_Tractogram (MNI152NLin2009cAsym, 2mm, 985 subjects)
-```
-
-### Download functional connectome
+### Interactive setup wizard
 
 ```bash
-lacuna fetch --connectome functional --name HCP_S1200
+lacuna fetch --interactive
 ```
 
-### Download structural connectome
+### Download GSP1000 functional connectome
 
 ```bash
-lacuna fetch --connectome structural --name HCP_Tractogram
+# Using environment variable (recommended)
+export DATAVERSE_API_KEY="your-key-here"
+lacuna fetch gsp1000
+
+# Or pass key directly
+lacuna fetch gsp1000 --api-key YOUR_DATAVERSE_KEY
+```
+
+### Download with optimized batching for 16GB RAM
+
+```bash
+lacuna fetch gsp1000 --api-key YOUR_KEY --batches 100
+```
+
+### Download dTOR985 structural tractogram
+
+```bash
+export FIGSHARE_API_KEY="your-key-here"
+lacuna fetch dtor985
+
+# Or pass key directly
+lacuna fetch dtor985 --api-key YOUR_FIGSHARE_KEY
 ```
 
 ### Download to custom directory
 
 ```bash
-lacuna fetch --connectome functional --name HCP_S1200 \
-    --output /data/connectomes
+lacuna fetch gsp1000 --api-key YOUR_KEY --output-dir /data/connectomes
 ```
 
 ### Force re-download
 
 ```bash
-lacuna fetch --connectome functional --name HCP_S1200 --force
+lacuna fetch gsp1000 --api-key YOUR_KEY --force
 ```
 
-## Cache location
+### Clean cached data
 
-Downloaded files are stored in:
+```bash
+lacuna fetch gsp1000 --clean
+```
 
-| OS | Default path |
-|----|--------------|
-| Linux | `~/.cache/lacuna/` |
-| macOS | `~/Library/Caches/lacuna/` |
-| Windows | `%LOCALAPPDATA%\lacuna\cache\` |
+## API Keys
 
-Override with the `LACUNA_CACHE` environment variable:
+### Dataverse (GSP1000)
+
+The GSP1000 functional connectome is hosted on Harvard Dataverse and requires an API key:
+
+1. Create account at [Harvard Dataverse](https://dataverse.harvard.edu/)
+2. Go to your account settings → API Token
+3. Generate or copy your API token
+
+Set via environment variable (recommended):
+
+```bash
+export DATAVERSE_API_KEY="your-token-here"
+```
+
+### Figshare (dTOR985)
+
+The dTOR985 structural tractogram is hosted on Figshare and requires an API key:
+
+1. Go to [Figshare Applications](https://figshare.com/account/applications)
+2. Create a new personal token
+3. Copy the token
+
+Set via environment variable (recommended):
+
+```bash
+export FIGSHARE_API_KEY="your-token-here"
+```
+
+## Cache Location
+
+Downloaded and processed files are stored in:
+
+```
+~/.cache/lacuna/connectomes/
+├── gsp1000/
+│   ├── GSP1000_batch_0.h5
+│   ├── GSP1000_batch_1.h5
+│   └── ...
+└── dtor985/
+    └── dtor985.tck
+```
+
+Override the base cache directory with the `LACUNA_CACHE` environment variable:
 
 ```bash
 export LACUNA_CACHE=/path/to/custom/cache
-lacuna fetch --connectome functional --name HCP_S1200
+lacuna fetch gsp1000 --api-key YOUR_KEY
 ```
 
-## File structure
-
-After download:
-
-```
-~/.cache/lacuna/
-├── functional/
-│   └── HCP_S1200/
-│       ├── connectivity.h5
-│       ├── mask.nii.gz
-│       └── metadata.json
-└── structural/
-    └── HCP_Tractogram/
-        ├── tractogram.tck
-        └── metadata.json
-```
-
-## Verification
-
-Downloaded files are verified against known checksums:
-
-```bash
-lacuna fetch --connectome functional --name HCP_S1200 --verify
-```
-
-If verification fails, use `--force` to re-download.
-
-## Proxy configuration
-
-For environments behind a proxy:
-
-```bash
-export HTTP_PROXY=http://proxy.example.com:8080
-export HTTPS_PROXY=http://proxy.example.com:8080
-lacuna fetch --connectome functional --name HCP_S1200
-```
-
-## Exit codes
+## Exit Codes
 
 | Code | Meaning |
 |------|---------|
