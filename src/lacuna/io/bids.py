@@ -1353,9 +1353,7 @@ def aggregate_parcelstats(
 
                     rows.append(row_data)
                 else:
-                    skipped_files.append(
-                        f"{tsv_file.name} (missing 'region'/'value' columns)"
-                    )
+                    skipped_files.append(f"{tsv_file.name} (missing 'region'/'value' columns)")
             except Exception as e:
                 warnings.warn(f"Failed to read {tsv_file}: {e}", stacklevel=2)
                 continue
