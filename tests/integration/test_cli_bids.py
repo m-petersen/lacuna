@@ -283,7 +283,14 @@ class TestRunCommandAliases:
         parser = build_parser()
         # Should not raise
         args = parser.parse_args(
-            ["run", "rd", str(minimal_bids_dataset), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            [
+                "run",
+                "rd",
+                str(minimal_bids_dataset),
+                str(output_dir),
+                "--parcel-atlases",
+                "Schaefer100",
+            ]
         )
         assert args.analysis == "rd"
 

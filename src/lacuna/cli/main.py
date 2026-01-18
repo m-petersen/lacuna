@@ -253,13 +253,15 @@ def _handle_collect_command(args: Namespace) -> int:
     overwrite = getattr(args, "overwrite", False)
     pattern = getattr(args, "pattern", None)
 
-    # Build glob pattern
+    # Build glob pattern - if user provides pattern, wrap it to match parcelstats files
     if pattern:
-        # User-provided pattern - ensure it ends with parcelstats.tsv
-        if not pattern.endswith("_parcelstats.tsv"):
-            glob_pattern = f"{pattern}*_parcelstats.tsv"
-        else:
+        # User provides a pattern fragment to match within parcelstats filenames
+        # e.g., "*400*inputmask*" -> "*400*inputmask*_parcelstats.tsv"
+        if "_parcelstats.tsv" in pattern:
             glob_pattern = pattern
+        else:
+            # Ensure pattern ends with _parcelstats.tsv
+            glob_pattern = f"*{pattern.strip('*')}*_parcelstats.tsv"
     else:
         glob_pattern = "*_parcelstats.tsv"
 

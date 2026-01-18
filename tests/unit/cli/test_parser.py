@@ -167,7 +167,16 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "--nprocs", "8"]
+            [
+                "run",
+                "rd",
+                str(bids_dir),
+                str(output_dir),
+                "--parcel-atlases",
+                "Schaefer100",
+                "--nprocs",
+                "8",
+            ]
         )
 
         assert args.nprocs == 8
@@ -243,7 +252,14 @@ class TestRunAliases:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "regionaldamage", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            [
+                "run",
+                "regionaldamage",
+                str(bids_dir),
+                str(output_dir),
+                "--parcel-atlases",
+                "Schaefer100",
+            ]
         )
 
         # Argparse uses the subcommand name as-is, alias maps to full name
@@ -315,7 +331,8 @@ class TestCollectSubcommand:
             ["collect", str(bids_dir), str(output_dir), "--pattern", "*lesion*"]
         )
 
-        assert args.pattern == "*regionaldamage*lesion*"
+        # Parser stores pattern as-is; main.py transforms it for glob matching
+        assert args.pattern == "*lesion*"
 
 
 class TestInfoSubcommand:
