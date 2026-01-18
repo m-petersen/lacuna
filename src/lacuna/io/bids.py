@@ -52,6 +52,7 @@ def load_bids_dataset(
     recursive: bool = True,
     space: str | None = None,
     resolution: float | None = None,
+    subjects: list[str] | None = None,
 ) -> dict[str, SubjectData]:
     """
     Load mask files from a BIDS dataset using pattern matching.
@@ -87,6 +88,10 @@ def load_bids_dataset(
     resolution : float or None, default=None
         Voxel resolution in mm. If None, attempts to detect from filename
         (_res-X) or sidecar JSON.
+    subjects : list of str, optional
+        List of subject IDs to include (without 'sub-' prefix). If provided,
+        only files from these subjects will be loaded. This is more efficient
+        than loading all subjects and filtering afterward.
 
     Returns
     -------
@@ -178,9 +183,34 @@ def load_bids_dataset(
         ):
             matching_files.append(filepath)
 
+    # Filter by subject IDs if specified (before loading for efficiency)
+    if subjects:
+        # Normalize subject IDs (handle with/without 'sub-' prefix)
+        normalized_subjects = set()
+        for subj in subjects:
+            if subj.startswith("sub-"):
+                normalized_subjects.add(subj)
+            else:
+                normalized_subjects.add(f"sub-{subj}")
+
+        filtered_files = []
+        for filepath in matching_files:
+            # Extract subject ID from path or filename
+            path_str = str(filepath)
+            # Look for sub-XXX pattern in path
+            import re
+
+            match = re.search(r"sub-([^/_]+)", path_str)
+            if match:
+                file_subject = f"sub-{match.group(1)}"
+                if file_subject in normalized_subjects:
+                    filtered_files.append(filepath)
+        matching_files = filtered_files
+
     if not matching_files:
+        subject_msg = f" for subjects {subjects}" if subjects else ""
         raise BidsError(
-            f"No files matching pattern '{pattern}' with suffix '{suffix}' "
+            f"No files matching pattern '{pattern}' with suffix '{suffix}'{subject_msg} "
             f"found in: {bids_root}\n"
             f"Searched {'recursively' if recursive else 'non-recursively'}."
         )
@@ -1300,6 +1330,7 @@ def aggregate_parcelstats(
 
         # Collect data from all subjects
         rows = []
+        skipped_files = []
         for tsv_file, entities in files_with_entities:
             try:
                 df = pd.read_csv(tsv_file, sep="\t")
@@ -1321,12 +1352,28 @@ def aggregate_parcelstats(
                         row_data[region_name] = region_row["value"]
 
                     rows.append(row_data)
+                else:
+                    skipped_files.append(
+                        f"{tsv_file.name} (missing 'region'/'value' columns)"
+                    )
             except Exception as e:
                 warnings.warn(f"Failed to read {tsv_file}: {e}", stacklevel=2)
                 continue
 
         if not rows:
-            warnings.warn(f"No valid data for output type: {output_type}", stacklevel=2)
+            # Provide more context about why no valid data
+            if skipped_files:
+                warnings.warn(
+                    f"No valid data for '{output_type}': "
+                    f"{len(skipped_files)} file(s) skipped due to incompatible format. "
+                    f"Files need 'region' and 'value' columns.",
+                    stacklevel=2,
+                )
+            else:
+                warnings.warn(
+                    f"No valid data for '{output_type}': all files were empty or failed to parse.",
+                    stacklevel=2,
+                )
             continue
 
         # Create group DataFrame

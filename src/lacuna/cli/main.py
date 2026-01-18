@@ -585,7 +585,6 @@ def _run_analysis_workflow(config: RunConfig) -> int:
         else:
             # BIDS dataset mode
             pattern = _build_pattern(
-                config.participant_label,
                 config.session_id,
                 config.pattern,
             )
@@ -594,6 +593,7 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                 pattern=pattern,
                 space=config.space,
                 resolution=None,  # Auto-detect
+                subjects=config.participant_label,  # Filter at file discovery level
             )
 
             if not subjects_dict:
@@ -601,15 +601,6 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                 return EXIT_BIDS_ERROR
 
             subjects_list = list(subjects_dict.values())
-
-            # Filter by participant labels if specified
-            if config.participant_label:
-                subjects_list = _filter_by_participants(subjects_list, config.participant_label)
-                if not subjects_list:
-                    logger.error(
-                        f"No subjects found matching participant labels: {config.participant_label}"
-                    )
-                    return EXIT_BIDS_ERROR
 
             _log_discovery_summary(subjects_list, config)
 
@@ -774,25 +765,14 @@ def _process_batch(
 
 
 def _build_pattern(
-    subjects: list[str] | None,
     sessions: list[str] | None,
     extra_pattern: str | None,
 ) -> str:
-    """Build a glob pattern from filters.
+    """Build a glob pattern from session and extra pattern filters.
 
-    Note: For multiple subjects, this returns a broad pattern.
-    Filtering by specific subjects is done in _filter_by_participants().
+    Note: Subject filtering is now handled by load_bids_dataset's subjects param.
     """
-    pattern_parts = []
-
-    if subjects:
-        if len(subjects) == 1:
-            pattern_parts.append(f"*sub-{subjects[0]}*")
-        else:
-            # Multiple subjects - use broad pattern, filter later
-            pattern_parts.append("*sub-*")
-    else:
-        pattern_parts.append("*")
+    pattern_parts = ["*"]  # Start with wildcard
 
     if sessions:
         if len(sessions) == 1:
