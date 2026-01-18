@@ -143,8 +143,7 @@ def get_subject_mask_path(
     masks = list(anat_dir.glob("*_mask.nii.gz"))
     if not masks:
         raise FileNotFoundError(
-            f"No mask file found in {anat_dir}. "
-            f"Expected pattern: *_mask.nii.gz"
+            f"No mask file found in {anat_dir}. " f"Expected pattern: *_mask.nii.gz"
         )
 
     # Return first match (typically only one per session)
@@ -203,8 +202,7 @@ def setup_tutorial_data(
     if target.exists():
         if not overwrite:
             raise FileExistsError(
-                f"Target directory already exists: {target}. "
-                "Use overwrite=True to replace it."
+                f"Target directory already exists: {target}. " "Use overwrite=True to replace it."
             )
         shutil.rmtree(target)
 
