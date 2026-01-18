@@ -110,8 +110,8 @@ class RunConfig:
             analysis_options["return_in_input_space"] = False
 
         # SNM-specific options
-        if hasattr(args, "parcellation") and args.parcellation:
-            analysis_options["parcellation_name"] = args.parcellation
+        if hasattr(args, "parcel_atlas") and args.parcel_atlas:
+            analysis_options["parcellation_name"] = args.parcel_atlas
         if hasattr(args, "compute_roi_disconnection") and args.compute_roi_disconnection:
             analysis_options["compute_disconnectivity_matrix"] = True
         # Handle --no-cache-tdi flag (default is to cache)

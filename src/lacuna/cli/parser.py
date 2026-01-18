@@ -529,7 +529,7 @@ def _build_snm_parser(subparsers) -> None:
         help="Path to .tck tractogram file (from 'lacuna fetch dtor985')",
     )
     g_snm.add_argument(
-        "--parcellation",
+        "--parcel-atlas",
         type=str,
         metavar="NAME",
         help="Atlas for connectivity matrices. Use 'lacuna info atlases' to list.",
