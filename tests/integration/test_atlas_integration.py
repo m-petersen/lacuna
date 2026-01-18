@@ -8,7 +8,6 @@ bundled Schaefer atlases for realistic integration testing.
 """
 
 import nibabel as nib
-import numpy as np
 import pytest
 
 from lacuna import SubjectData

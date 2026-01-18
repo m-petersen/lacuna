@@ -199,9 +199,7 @@ class TestLokyBackend:
     paths. This is the real-world use case for loky.
     """
 
-    def test_loky_backend_processes_all_subjects(
-        self, tutorial_lesions, bundled_atlas_analysis
-    ):
+    def test_loky_backend_processes_all_subjects(self, tutorial_lesions, bundled_atlas_analysis):
         """Loky backend should process all subjects successfully."""
         results = batch_process(
             inputs=tutorial_lesions,
