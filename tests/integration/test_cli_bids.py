@@ -98,16 +98,25 @@ class TestCLIWorkflow:
 
         assert exc_info.value.code == 0
 
-    def test_cli_invalid_bids_returns_error(self, tmp_path, output_dir):
+    def test_cli_run_rd_invalid_bids_returns_error(self, tmp_path, output_dir):
         """Test that invalid BIDS directory returns error code."""
         from lacuna.cli import main
 
         # Non-existent BIDS directory
-        result = main([str(tmp_path / "nonexistent"), str(output_dir), "participant"])
+        result = main(
+            [
+                "run",
+                "rd",
+                str(tmp_path / "nonexistent"),
+                str(output_dir),
+                "--parcel-atlases",
+                "Schaefer100",
+            ]
+        )
 
         assert result == 2  # EXIT_INVALID_ARGS
 
-    def test_cli_missing_dataset_description_returns_error(self, tmp_path, output_dir):
+    def test_cli_run_rd_missing_dataset_description_returns_error(self, tmp_path, output_dir):
         """Test that BIDS without dataset_description.json returns error."""
         from lacuna.cli import main
 
@@ -115,7 +124,9 @@ class TestCLIWorkflow:
         bids_dir = tmp_path / "bad_bids"
         bids_dir.mkdir()
 
-        result = main([str(bids_dir), str(output_dir), "participant"])
+        result = main(
+            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+        )
 
         # Should return BIDS error
         assert result in [2, 64]  # EXIT_INVALID_ARGS or EXIT_BIDS_ERROR
@@ -133,7 +144,10 @@ class TestCLIModuleEntry:
         )
 
         assert result.returncode == 0
-        assert "bids_dir" in result.stdout.lower() or "usage" in result.stdout.lower()
+        # Check for new subcommand structure
+        assert (
+            "fetch" in result.stdout or "run" in result.stdout or "usage" in result.stdout.lower()
+        )
 
     def test_module_entry_version(self):
         """Test that `python -m lacuna --version` works."""
@@ -149,17 +163,19 @@ class TestCLIModuleEntry:
 class TestCLIWithMockedAnalysis:
     """Tests for CLI with mocked analysis to avoid heavy computation."""
 
-    def test_cli_creates_output_directory(self, minimal_bids_dataset, output_dir, tmp_dir):
-        """Test that CLI creates output directory."""
+    def test_cli_run_rd_creates_output_directory(self, minimal_bids_dataset, output_dir, tmp_dir):
+        """Test that CLI run creates output directory."""
         from lacuna.cli import main
 
-        # This will fail at BIDS loading stage but should still check args
-        # Since we need proper BIDS loading, we'll just test arg validation
+        # Run with minimal BIDS dataset
         main(
             [
+                "run",
+                "rd",
                 str(minimal_bids_dataset),
                 str(output_dir),
-                "participant",
+                "--parcel-atlases",
+                "Schaefer100",
                 "--tmp-dir",
                 str(tmp_dir),
             ]
@@ -168,16 +184,19 @@ class TestCLIWithMockedAnalysis:
         # Even if analysis fails, output dir should be created
         assert output_dir.exists()
 
-    def test_cli_respects_participant_label(self, minimal_bids_dataset, output_dir, tmp_dir):
+    def test_cli_run_rd_respects_participant_label(self, minimal_bids_dataset, output_dir, tmp_dir):
         """Test that CLI respects --participant-label filtering."""
         from lacuna.cli import main
 
         # Filter to just one subject
         main(
             [
+                "run",
+                "rd",
                 str(minimal_bids_dataset),
                 str(output_dir),
-                "participant",
+                "--parcel-atlases",
+                "Schaefer100",
                 "--participant-label",
                 "001",
                 "--tmp-dir",
@@ -194,9 +213,12 @@ class TestCLIWithMockedAnalysis:
         parser = build_parser()
         args = parser.parse_args(
             [
+                "run",
+                "rd",
                 str(minimal_bids_dataset),
                 str(output_dir),
-                "participant",
+                "--parcel-atlases",
+                "Schaefer100",
                 "-vv",
             ]
         )
@@ -205,49 +227,118 @@ class TestCLIWithMockedAnalysis:
         assert args.verbose_count == 2
 
 
-class TestCLIConfiguration:
-    """Tests for CLI configuration from command-line arguments."""
+class TestInfoCommand:
+    """Tests for 'lacuna info' command."""
 
-    def test_config_from_args(self, minimal_bids_dataset, output_dir, tmp_dir):
-        """Test that CLIConfig is created correctly from args."""
-        from lacuna.cli.config import CLIConfig
+    def test_info_atlases_shows_available_atlases(self):
+        """Test that 'lacuna info atlases' shows available atlases."""
+        from lacuna.cli import main
+
+        result = main(["info", "atlases"])
+        assert result == 0
+
+    def test_info_connectomes_shows_available_connectomes(self):
+        """Test that 'lacuna info connectomes' shows available connectomes."""
+        from lacuna.cli import main
+
+        result = main(["info", "connectomes"])
+        assert result == 0
+
+
+class TestCollectCommand:
+    """Tests for 'lacuna collect' command."""
+
+    def test_collect_with_nonexistent_dir_returns_error(self, tmp_path):
+        """Test that collect with non-existent output dir returns error."""
+        from lacuna.cli import main
+
+        # Create bids_dir but not output_dir
+        bids_dir = tmp_path / "bids"
+        bids_dir.mkdir()
+        result = main(["collect", str(bids_dir), str(tmp_path / "nonexistent")])
+        assert result != 0
+
+    def test_collect_with_empty_dir(self, tmp_path):
+        """Test that collect with empty dir handles gracefully."""
+        from lacuna.cli import main
+
+        bids_dir = tmp_path / "bids"
+        bids_dir.mkdir()
+        output_dir = tmp_path / "empty_derivatives"
+        output_dir.mkdir()
+
+        # Should handle empty dir gracefully (no parcelstats files found)
+        main(["collect", str(bids_dir), str(output_dir)])
+        # May return error or success depending on implementation
+        # Just verify it doesn't crash
+
+
+class TestRunCommandAliases:
+    """Tests for analysis command aliases."""
+
+    def test_run_rd_alias_works(self, minimal_bids_dataset, output_dir):
+        """Test that 'run rd' alias works."""
+        from lacuna.cli.parser import build_parser
+
+        parser = build_parser()
+        # Should not raise
+        args = parser.parse_args(
+            ["run", "rd", str(minimal_bids_dataset), str(output_dir), "--parcel-atlases", "Schaefer100"]
+        )
+        assert args.analysis == "rd"
+
+    def test_run_regionaldamage_alias_works(self, minimal_bids_dataset, output_dir):
+        """Test that 'run regionaldamage' alias works."""
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
         args = parser.parse_args(
             [
+                "run",
+                "regionaldamage",
                 str(minimal_bids_dataset),
                 str(output_dir),
-                "participant",
-                "--tmp-dir",
-                str(tmp_dir),
-                "--nprocs",
-                "4",
+                "--parcel-atlases",
+                "Schaefer100",
             ]
         )
+        # Alias keeps the name used (argparse behavior)
+        assert args.analysis == "regionaldamage"
 
-        config = CLIConfig.from_args(args)
-
-        assert config.bids_dir == minimal_bids_dataset
-        assert config.output_dir == output_dir
-        assert config.tmp_dir == tmp_dir
-        assert config.n_procs == 4
-
-    def test_config_validates_paths(self, tmp_path, output_dir):
-        """Test that CLIConfig validates BIDS path exists."""
-        from lacuna.cli.config import CLIConfig
+    def test_run_fnm_alias_works(self, minimal_bids_dataset, output_dir, tmp_path):
+        """Test that 'run fnm' alias works (requires --connectome-path)."""
         from lacuna.cli.parser import build_parser
 
+        conn_path = tmp_path / "gsp1000.h5"
         parser = build_parser()
         args = parser.parse_args(
             [
-                str(tmp_path / "nonexistent"),
+                "run",
+                "fnm",
+                "--connectome-path",
+                str(conn_path),
+                str(minimal_bids_dataset),
                 str(output_dir),
-                "participant",
             ]
         )
+        assert args.analysis == "fnm"
+        assert args.connectome_path == conn_path
 
-        config = CLIConfig.from_args(args)
+    def test_run_snm_alias_works(self, minimal_bids_dataset, output_dir, tmp_path):
+        """Test that 'run snm' alias works (requires --connectome-path)."""
+        from lacuna.cli.parser import build_parser
 
-        with pytest.raises(ValueError, match="does not exist"):
-            config.validate()
+        conn_path = tmp_path / "dtor985.tck"
+        parser = build_parser()
+        args = parser.parse_args(
+            [
+                "run",
+                "snm",
+                "--connectome-path",
+                str(conn_path),
+                str(minimal_bids_dataset),
+                str(output_dir),
+            ]
+        )
+        assert args.analysis == "snm"
+        assert args.connectome_path == conn_path
