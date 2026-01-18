@@ -591,8 +591,7 @@ def _build_collect_parser(subparsers) -> None:
             "them into group-level TSV files.\n\n"
             "Examples:\n"
             "  lacuna collect /bids /output\n"
-            "  lacuna collect /bids /output --label lesion\n"
-            "  lacuna collect /bids /output --analysis RegionalDamage"
+            "  lacuna collect /bids /output --pattern '*acuteinfarct*'"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -612,16 +611,10 @@ def _build_collect_parser(subparsers) -> None:
     # Filtering options
     g_filter = collect_parser.add_argument_group("Filtering options")
     g_filter.add_argument(
-        "--label",
+        "--pattern",
         type=str,
-        metavar="NAME",
-        help="Filter by lesion label (e.g., 'lesion', 'WMH')",
-    )
-    g_filter.add_argument(
-        "--analysis",
-        type=str,
-        metavar="NAME",
-        help="Filter by analysis type (e.g., 'RegionalDamage', 'FunctionalNetworkMapping')",
+        metavar="GLOB",
+        help="Glob pattern to filter parcelstats files (e.g., '*acuteinfarct*', '*lesion*')",
     )
 
     # Output options

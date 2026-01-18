@@ -305,15 +305,17 @@ class TestCollectSubcommand:
         assert args.bids_dir == bids_dir
         assert args.output_dir == output_dir
 
-    def test_collect_with_label_filter(self, tmp_path):
-        """Test collect with --label option."""
+    def test_collect_with_pattern_filter(self, tmp_path):
+        """Test collect with --pattern option."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
 
-        args = parser.parse_args(["collect", str(bids_dir), str(output_dir), "--label", "lesion"])
+        args = parser.parse_args(
+            ["collect", str(bids_dir), str(output_dir), "--pattern", "*lesion*"]
+        )
 
-        assert args.label == "lesion"
+        assert args.pattern == "*regionaldamage*lesion*"
 
 
 class TestInfoSubcommand:

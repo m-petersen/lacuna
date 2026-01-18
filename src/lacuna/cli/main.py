@@ -251,24 +251,28 @@ def _handle_collect_command(args: Namespace) -> int:
 
     output_dir = args.output_dir
     overwrite = getattr(args, "overwrite", False)
-    label_filter = getattr(args, "label", None)
-    analysis_filter = getattr(args, "analysis", None)
+    pattern = getattr(args, "pattern", None)
+
+    # Build glob pattern
+    if pattern:
+        # User-provided pattern - ensure it ends with parcelstats.tsv
+        if not pattern.endswith("_parcelstats.tsv"):
+            glob_pattern = f"{pattern}*_parcelstats.tsv"
+        else:
+            glob_pattern = pattern
+    else:
+        glob_pattern = "*_parcelstats.tsv"
 
     logger.info("Running collect (group-level aggregation)")
     logger.info(f"Scanning derivatives directory: {output_dir}")
-
-    if label_filter:
-        logger.info(f"Filtering by label: {label_filter}")
-    if analysis_filter:
-        logger.info(f"Filtering by analysis: {analysis_filter}")
+    logger.info(f"Pattern: {glob_pattern}")
 
     try:
         created_files = aggregate_parcelstats(
             derivatives_dir=output_dir,
             output_dir=output_dir,
+            pattern=glob_pattern,
             overwrite=overwrite,
-            label_filter=label_filter,
-            analysis_filter=analysis_filter,
         )
 
         if not created_files:
@@ -546,13 +550,13 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
     # For FNM with parcel atlases, add parcel aggregation as second step
     if fnm_parcel_names:
-        # Aggregate FNM output maps (correlation, z-score, t-score, p-value maps)
+        # Aggregate FNM output maps (r, z, t maps)
         steps["ParcelAggregation"] = {
             "source": {
                 "FunctionalNetworkMapping": [
-                    "correlation_map",
-                    "zscore_map",
-                    "tscore_map",
+                    "rmap",
+                    "zmap",
+                    "tmap",
                 ]
             },
             "aggregation": "mean",
