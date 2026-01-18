@@ -700,8 +700,10 @@ class ParcelAggregation(BaseAnalysis):
 
             raise ValueError(error_msg)
 
-        # Load atlases from registry
-        self.atlases = self._load_parcellations_from_registry()
+        # Load atlases from registry (only if not already loaded)
+        # This enables thread-safe reuse of the analysis instance
+        if not self.atlases:
+            self.atlases = self._load_parcellations_from_registry()
 
         if not self.atlases:
             if self.parcel_names is not None:
