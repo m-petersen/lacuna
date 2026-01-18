@@ -1165,6 +1165,8 @@ def aggregate_parcelstats(
     output_dir: str | Path | None = None,
     pattern: str = "*_parcelstats.tsv",
     overwrite: bool = False,
+    label_filter: str | None = None,
+    analysis_filter: str | None = None,
 ) -> dict[str, Path]:
     """
     Aggregate subject-level parcelstats TSV files into group-level DataFrames.
@@ -1186,6 +1188,10 @@ def aggregate_parcelstats(
         Glob pattern to match parcelstats files.
     overwrite : bool, default=False
         Overwrite existing group-level files.
+    label_filter : str, optional
+        Filter by mask label (e.g., 'lesion', 'WMH').
+    analysis_filter : str, optional
+        Filter by analysis type (e.g., 'RegionalDamage', 'FunctionalNetworkMapping').
 
     Returns
     -------
@@ -1230,6 +1236,34 @@ def aggregate_parcelstats(
 
     if not parcelstats_files:
         raise BidsError(f"No parcelstats files found matching '{pattern}' in {derivatives_dir}")
+
+    # Apply filters if specified
+    if label_filter:
+        parcelstats_files = [
+            f
+            for f in parcelstats_files
+            if f"label-{label_filter}" in f.name or f"_label-{label_filter}_" in f.name
+        ]
+        if not parcelstats_files:
+            raise BidsError(f"No parcelstats files found with label '{label_filter}'")
+
+    if analysis_filter:
+        # Map common analysis names to pattern keywords
+        analysis_patterns = {
+            "regionaldamage": ["rd", "regionaldamage"],
+            "rd": ["rd", "regionaldamage"],
+            "functionalnetworkmapping": ["fnm", "functionalnetworkmapping", "rmap", "tmap", "zmap"],
+            "fnm": ["fnm", "functionalnetworkmapping", "rmap", "tmap", "zmap"],
+            "structuralnetworkmapping": ["snm", "structuralnetworkmapping", "disconnection"],
+            "snm": ["snm", "structuralnetworkmapping", "disconnection"],
+        }
+        filter_lower = analysis_filter.lower()
+        keywords = analysis_patterns.get(filter_lower, [filter_lower])
+        parcelstats_files = [
+            f for f in parcelstats_files if any(kw in f.name.lower() for kw in keywords)
+        ]
+        if not parcelstats_files:
+            raise BidsError(f"No parcelstats files found for analysis '{analysis_filter}'")
 
     # Group files by their output type (everything after label- entity)
     # Example: sub-CAS001_ses-01_label-acuteinfarct_atlas-schaefer2018_..._parcelstats.tsv
