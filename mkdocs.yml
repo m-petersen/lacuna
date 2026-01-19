@@ -1,22 +1,26 @@
-site_name: Lacuna Documentation
+site_name: Lacuna documentation
 site_description: A scientific Python package for neuroimaging lesion analysis
 site_url: https://lacuna.github.io/lacuna/
-repo_url: https://github.com/lacuna/lacuna
-repo_name: lacuna/lacuna
+repo_url: https://github.com/m-petersen/lacuna
+repo_name: m-petersen/lacuna
 edit_uri: edit/main/docs/
 
 theme:
   name: material
+  custom_dir: overrides
   features:
     - navigation.tabs
     - navigation.sections
     - navigation.expand
     - navigation.top
     - navigation.indexes
+    - navigation.tracking
     - search.suggest
     - search.highlight
+    - search.share
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
   palette:
     - scheme: default
       primary: indigo
@@ -32,6 +36,8 @@ theme:
         name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
+    logo: assets/logo
+    favicon: assets/logo
 
 plugins:
   - search
@@ -76,17 +82,21 @@ markdown_extensions:
   - attr_list
   - md_in_html
   - tables
+  # --- UPDATED EMOJI CONFIGURATION ---
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
   - Home: index.md
   
-  # TUTORIALS (Learning-oriented)
+  # TUTORIALS
   - Tutorials:
     - tutorials/index.md
     - Getting Started: tutorials/getting-started.md
     - Your First Analysis: tutorials/first-analysis.md
   
-  # HOW-TO GUIDES (Task-oriented)
+  # HOW-TO GUIDES
   - How-to Guides:
     - how-to/index.md
     - Installation: how-to/installation.md
@@ -101,7 +111,7 @@ nav:
     - Use Docker: how-to/docker.md
     - Use Apptainer: how-to/apptainer.md
   
-  # REFERENCE (Information-oriented)
+  # REFERENCE
   - Reference:
     - reference/index.md
     - CLI:
@@ -110,7 +120,7 @@ nav:
       - Fetch Command: reference/cli/fetch.md
     - API Reference: reference/api/
   
-  # EXPLANATION (Understanding-oriented)
+  # EXPLANATION
   - Explanation:
     - explanation/index.md
     - SubjectData Design: explanation/subject-data.md
@@ -122,6 +132,9 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/lacuna/lacuna
+      link: https://github.com/m-petersen/lacuna
   version:
     provider: mike
+
+extra_css:
+  - stylesheets/extra.css

@@ -184,6 +184,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_collect_command(args)
     elif args.command == "info":
         return _handle_info_command(args)
+    elif args.command == "bidsify":
+        return _handle_bidsify_command(args)
     else:
         # No command specified - show help
         parser.print_help()
@@ -390,6 +392,54 @@ def _show_connectomes_info() -> int:
     print()
 
     return EXIT_SUCCESS
+
+
+def _handle_bidsify_command(args: Namespace) -> int:
+    """Handle the bidsify subcommand."""
+    from lacuna.io.bidsify import bidsify
+
+    try:
+        input_dir = args.input_dir
+        output_dir = args.output_dir
+        space = args.space
+        session = getattr(args, "session", None)
+        label = getattr(args, "label", None)
+        verbose = getattr(args, "verbose", False)
+
+        if verbose:
+            print(f"Converting NIfTI files from {input_dir} to BIDS format...")
+            print(f"Output directory: {output_dir}")
+            print(f"Space: {space}")
+            if session:
+                print(f"Session: {session}")
+            if label:
+                print(f"Label: {label}")
+
+        result_dir = bidsify(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            space=space,
+            session=session,
+            label=label,
+        )
+
+        if verbose:
+            print(f"\nBIDS dataset created at: {result_dir}")
+            # Count subjects
+            subjects = list(result_dir.glob("sub-*"))
+            print(f"Converted {len(subjects)} subject(s)")
+
+        return EXIT_SUCCESS
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return EXIT_IO_ERROR
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return EXIT_INVALID_ARGS
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        return EXIT_GENERAL_ERROR
 
 
 def _register_connectome_from_path(

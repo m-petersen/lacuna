@@ -86,6 +86,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     _build_run_parser(subparsers)
     _build_collect_parser(subparsers)
     _build_info_parser(subparsers)
+    _build_bidsify_parser(subparsers)
 
     return parser
 
@@ -101,13 +102,15 @@ def _build_fetch_parser(subparsers) -> None:
     """
     fetch_parser = subparsers.add_parser(
         "fetch",
-        help="Download and setup connectomes for analysis",
+        help="Download and setup connectomes or tutorial data",
         description=(
             "Download, process, and register connectomes for lesion network mapping.\n\n"
-            "Available connectomes:\n"
+            "Available resources:\n"
+            "  tutorial - Tutorial BIDS dataset with synthetic lesion masks\n"
             "  gsp1000  - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
             "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n\n"
             "Examples:\n"
+            "  lacuna fetch tutorial --output-dir ./my_tutorial\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY --batches 50\n"
             "  lacuna fetch dtor985 --api-key \\$FIGSHARE_API_KEY --output-dir /data/connectomes\n"
             "  lacuna fetch --list"
@@ -119,8 +122,8 @@ def _build_fetch_parser(subparsers) -> None:
     fetch_parser.add_argument(
         "connectome",
         nargs="?",
-        choices=["gsp1000", "dtor985"],
-        help="Connectome to fetch",
+        choices=["tutorial", "gsp1000", "dtor985"],
+        help="Resource to fetch (tutorial, gsp1000, or dtor985)",
     )
 
     # List flag
@@ -662,4 +665,77 @@ def _build_info_parser(subparsers) -> None:
         "topic",
         choices=["atlases", "connectomes"],
         help="Topic to display information about",
+    )
+
+
+def _build_bidsify_parser(subparsers) -> None:
+    """
+    Add the bidsify subcommand parser.
+
+    Parameters
+    ----------
+    subparsers : argparse._SubParsersAction
+        Subparsers object to add bidsify parser to.
+    """
+    bidsify_parser = subparsers.add_parser(
+        "bidsify",
+        help="Convert NIfTI files to BIDS format",
+        description=(
+            "Convert a directory of NIfTI mask files to BIDS format.\n\n"
+            "Input filenames become subject IDs (special characters removed).\n"
+            "For example: patient_001.nii.gz -> sub-patient001/\n\n"
+            "Examples:\n"
+            "  lacuna bidsify /raw/masks /bids --space MNI152NLin6Asym\n"
+            "  lacuna bidsify /raw /bids --space MNI152NLin6Asym --session 01 --label lesion\n"
+            "  lacuna bidsify ./masks ./bids_masks --space MNI152NLin2009cAsym"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    # Required positional arguments
+    bidsify_parser.add_argument(
+        "input_dir",
+        type=Path,
+        help="Directory containing NIfTI mask files (.nii or .nii.gz)",
+    )
+    bidsify_parser.add_argument(
+        "output_dir",
+        type=Path,
+        help="Output directory for BIDS dataset",
+    )
+
+    # Required space argument
+    bidsify_parser.add_argument(
+        "--space",
+        "-s",
+        type=str,
+        required=True,
+        choices=["MNI152NLin6Asym", "MNI152NLin2009cAsym"],
+        help="Coordinate space of the masks (MNI152NLin6Asym or MNI152NLin2009cAsym)",
+    )
+
+    # Optional arguments
+    g_opts = bidsify_parser.add_argument_group("Optional BIDS entities")
+    g_opts.add_argument(
+        "--session",
+        "-ses",
+        type=str,
+        metavar="LABEL",
+        help="Session label (e.g., '01', 'baseline'). Creates ses-<label> subdirectory.",
+    )
+    g_opts.add_argument(
+        "--label",
+        "-l",
+        type=str,
+        metavar="NAME",
+        help="Label for the mask entity (e.g., 'lesion', 'tumor')",
+    )
+
+    # Other options
+    g_other = bidsify_parser.add_argument_group("Other options")
+    g_other.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print progress messages",
     )
