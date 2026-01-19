@@ -54,15 +54,17 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         formatter_class=RawDescriptionHelpFormatter,
         epilog=(
             "Commands:\n"
-            "  fetch    Download and setup connectomes for analysis\n"
-            "  run      Run lesion network mapping analyses\n"
-            "  collect  Aggregate results across subjects\n"
-            "  info     Display available resources (atlases, connectomes)\n\n"
+            "  fetch     Download and setup connectomes for analysis\n"
+            "  run       Run lesion network mapping analyses\n"
+            "  collect   Aggregate results across subjects\n"
+            "  info      Display available resources (atlases, connectomes)\n"
+            "  tutorial  Setup tutorial data for learning Lacuna\n\n"
             "Examples:\n"
+            "  lacuna tutorial ./my_tutorial\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
             "  lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches\n"
-            "  lacuna collect /bids /output\n"
+            "  lacuna collect /output\n"
             "  lacuna info atlases\n"
         ),
     )
@@ -87,6 +89,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     _build_collect_parser(subparsers)
     _build_info_parser(subparsers)
     _build_bidsify_parser(subparsers)
+    _build_tutorial_parser(subparsers)
 
     return parser
 
@@ -102,15 +105,13 @@ def _build_fetch_parser(subparsers) -> None:
     """
     fetch_parser = subparsers.add_parser(
         "fetch",
-        help="Download and setup connectomes or tutorial data",
+        help="Download and setup connectomes",
         description=(
             "Download, process, and register connectomes for lesion network mapping.\n\n"
-            "Available resources:\n"
-            "  tutorial - Tutorial BIDS dataset with synthetic lesion masks\n"
+            "Available connectomes:\n"
             "  gsp1000  - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
             "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n\n"
             "Examples:\n"
-            "  lacuna fetch tutorial --output-dir ./my_tutorial\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY --batches 50\n"
             "  lacuna fetch dtor985 --api-key \\$FIGSHARE_API_KEY --output-dir /data/connectomes\n"
             "  lacuna fetch --list"
@@ -122,8 +123,8 @@ def _build_fetch_parser(subparsers) -> None:
     fetch_parser.add_argument(
         "connectome",
         nargs="?",
-        choices=["tutorial", "gsp1000", "dtor985"],
-        help="Resource to fetch (tutorial, gsp1000, or dtor985)",
+        choices=["gsp1000", "dtor985"],
+        help="Connectome to fetch (gsp1000 or dtor985)",
     )
 
     # List flag
@@ -203,13 +204,18 @@ def _build_fetch_parser(subparsers) -> None:
             "Use if you get checksum mismatch errors (server metadata may be outdated)."
         ),
     )
+    g_gsp.add_argument(
+        "--no-keep-original",
+        action="store_true",
+        help="Remove original files after HDF5 conversion to save disk space",
+    )
 
     # dTOR985-specific options
     g_dtor = fetch_parser.add_argument_group("dTOR985 options")
     g_dtor.add_argument(
-        "--no-keep-original",
+        "--no-keep-original-trk",
         action="store_true",
-        help="Remove original .trk file after conversion to save disk space",
+        help="Remove original .trk file after conversion to .tck to save disk space",
     )
 
 
@@ -738,4 +744,46 @@ def _build_bidsify_parser(subparsers) -> None:
         "--verbose",
         action="store_true",
         help="Print progress messages",
+    )
+
+
+def _build_tutorial_parser(subparsers) -> None:
+    """
+    Add the tutorial subcommand parser.
+
+    Parameters
+    ----------
+    subparsers : argparse._SubParsersAction
+        Subparsers object to add tutorial parser to.
+    """
+    tutorial_parser = subparsers.add_parser(
+        "tutorial",
+        help="Setup tutorial data for learning Lacuna",
+        description=(
+            "Copy the bundled tutorial dataset to a directory.\n\n"
+            "The tutorial dataset includes:\n"
+            "  - 3 synthetic subjects (sub-01, sub-02, sub-03)\n"
+            "  - Binary lesion masks in MNI152NLin6Asym space\n"
+            "  - BIDS-compliant structure ready for analysis\n\n"
+            "Examples:\n"
+            "  lacuna tutorial ./my_tutorial\n"
+            "  lacuna tutorial /data/lacuna_tutorial --force"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    # Optional positional argument for output directory
+    tutorial_parser.add_argument(
+        "output_dir",
+        type=Path,
+        nargs="?",
+        help="Output directory for tutorial data (default: ./lacuna_tutorial)",
+    )
+
+    # Options
+    tutorial_parser.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Overwrite existing directory if it exists",
     )

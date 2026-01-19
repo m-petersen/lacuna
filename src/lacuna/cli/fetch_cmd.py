@@ -59,8 +59,6 @@ def handle_fetch_command(args: argparse.Namespace) -> int:
         return _handle_gsp1000(args)
     elif connectome == "dtor985":
         return _handle_dtor985(args)
-    elif connectome == "tutorial":
-        return _handle_tutorial(args)
     else:
         print(f"Error: Unknown connectome '{connectome}'")
         return 1
@@ -152,7 +150,7 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
 
     # Get configuration
     api_key = getattr(args, "api_key", None)
-    keep_original = not getattr(args, "no_keep_original", False)
+    keep_original = not getattr(args, "no_keep_original_trk", False)
     force = getattr(args, "force", False)
 
     print("Fetching dTOR985 structural tractogram...")
@@ -345,41 +343,4 @@ def _handle_clean_all(args: argparse.Namespace) -> int:
 
     except Exception as e:
         print(f"Error removing data: {e}")
-        return 1
-
-
-def _handle_tutorial(args: argparse.Namespace) -> int:
-    """Handle tutorial data fetch."""
-    from pathlib import Path
-
-    from lacuna.data.tutorials import setup_tutorial_data
-
-    # Get output directory
-    output_dir = getattr(args, "output_dir", None)
-    if output_dir is None:
-        output_dir = Path.cwd() / "lacuna_tutorial"
-    else:
-        output_dir = Path(output_dir)
-
-    force = getattr(args, "force", False)
-
-    print(f"\nSetting up tutorial data at: {output_dir}")
-
-    try:
-        result_dir = setup_tutorial_data(output_dir, overwrite=force)
-        print(f"✓ Tutorial data copied to: {result_dir}")
-        print("\nThe tutorial dataset includes:")
-        print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
-        print("  - Binary lesion masks in MNI152NLin6Asym space")
-        print("  - BIDS-compliant structure")
-        print("\nNext steps:")
-        print(f"  lacuna run rd {result_dir} ./output")
-        return 0
-
-    except FileExistsError:
-        print(f"Error: Directory already exists: {output_dir}")
-        print("       Use --force to overwrite, or choose a different location.")
-        return 1
-    except Exception as e:
-        print(f"Error setting up tutorial data: {e}")
         return 1

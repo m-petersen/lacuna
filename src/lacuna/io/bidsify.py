@@ -211,7 +211,6 @@ def _create_dataset_description(output_dir: Path) -> None:
     """Create BIDS dataset_description.json file."""
     description = {
         "Name": "Lacuna BIDSified Dataset",
-        "BIDSVersion": "1.8.0",
         "DatasetType": "derivative",
         "GeneratedBy": [
             {

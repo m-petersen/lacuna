@@ -250,20 +250,21 @@ class TestBidsifyFunctionality:
         assert result.returncode != 0
 
 
-class TestFetchTutorialContract:
-    """Test fetch tutorial subcommand."""
+class TestTutorialCommandContract:
+    """Test tutorial subcommand."""
 
-    def test_fetch_tutorial_help_shows_tutorial_option(self):
-        """lacuna fetch --help should mention tutorial option."""
+    def test_tutorial_help_exits_zero(self):
+        """lacuna tutorial --help should exit with code 0."""
         result = subprocess.run(
-            [sys.executable, "-m", "lacuna", "fetch", "--help"],
+            [sys.executable, "-m", "lacuna", "tutorial", "--help"],
             capture_output=True,
             text=True,
         )
+        assert result.returncode == 0
         assert "tutorial" in result.stdout.lower()
 
-    def test_fetch_tutorial_copies_to_directory(self, tmp_path):
-        """lacuna fetch tutorial should copy tutorial data to specified directory."""
+    def test_tutorial_copies_to_directory(self, tmp_path):
+        """lacuna tutorial should copy tutorial data to specified directory."""
         output_dir = tmp_path / "tutorial_data"
 
         result = subprocess.run(
@@ -271,9 +272,7 @@ class TestFetchTutorialContract:
                 sys.executable,
                 "-m",
                 "lacuna",
-                "fetch",
                 "tutorial",
-                "--output-dir",
                 str(output_dir),
             ],
             capture_output=True,
@@ -287,8 +286,8 @@ class TestFetchTutorialContract:
         # Should have subjects
         assert len(list(output_dir.glob("sub-*"))) >= 1
 
-    def test_fetch_tutorial_without_output_uses_current_dir(self, tmp_path, monkeypatch):
-        """lacuna fetch tutorial without --output-dir should use current directory."""
+    def test_tutorial_without_output_uses_default(self, tmp_path, monkeypatch):
+        """lacuna tutorial without output_dir should use lacuna_tutorial in current directory."""
         # Change to tmp_path
         monkeypatch.chdir(tmp_path)
 
@@ -297,7 +296,6 @@ class TestFetchTutorialContract:
                 sys.executable,
                 "-m",
                 "lacuna",
-                "fetch",
                 "tutorial",
             ],
             capture_output=True,
@@ -306,9 +304,9 @@ class TestFetchTutorialContract:
         )
 
         assert result.returncode == 0
-        # Tutorial data should be in a subdirectory
-        tutorial_dirs = list(tmp_path.glob("*tutorial*")) + list(tmp_path.glob("sub-*"))
-        assert len(tutorial_dirs) >= 1 or (tmp_path / "dataset_description.json").exists()
+        # Tutorial data should be in lacuna_tutorial subdirectory
+        tutorial_dir = tmp_path / "lacuna_tutorial"
+        assert tutorial_dir.exists() or (tmp_path / "dataset_description.json").exists()
 
 
 if __name__ == "__main__":

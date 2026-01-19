@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 EXIT_SUCCESS = 0
 EXIT_GENERAL_ERROR = 1
 EXIT_INVALID_ARGS = 2
+EXIT_IO_ERROR = 74
 EXIT_BIDS_ERROR = 64
 EXIT_ANALYSIS_ERROR = 65
 
@@ -186,6 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_info_command(args)
     elif args.command == "bidsify":
         return _handle_bidsify_command(args)
+    elif args.command == "tutorial":
+        return _handle_tutorial_command(args)
     else:
         # No command specified - show help
         parser.print_help()
@@ -439,6 +442,43 @@ def _handle_bidsify_command(args: Namespace) -> int:
         return EXIT_INVALID_ARGS
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
+        return EXIT_GENERAL_ERROR
+
+
+def _handle_tutorial_command(args: Namespace) -> int:
+    """Handle the tutorial subcommand."""
+    from pathlib import Path
+
+    from lacuna.data.tutorials import setup_tutorial_data
+
+    # Get output directory
+    output_dir = getattr(args, "output_dir", None)
+    if output_dir is None:
+        output_dir = Path.cwd() / "lacuna_tutorial"
+    else:
+        output_dir = Path(output_dir)
+
+    force = getattr(args, "force", False)
+
+    print(f"\nSetting up tutorial data at: {output_dir}")
+
+    try:
+        result_dir = setup_tutorial_data(output_dir, overwrite=force)
+        print(f"✓ Tutorial data copied to: {result_dir}")
+        print("\nThe tutorial dataset includes:")
+        print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
+        print("  - Binary lesion masks in MNI152NLin6Asym space")
+        print("  - BIDS-compliant structure")
+        print("\nNext steps:")
+        print(f"  lacuna run rd {result_dir} ./output")
+        return EXIT_SUCCESS
+
+    except FileExistsError:
+        print(f"Error: Directory already exists: {output_dir}")
+        print("       Use --force to overwrite, or choose a different location.")
+        return EXIT_GENERAL_ERROR
+    except Exception as e:
+        print(f"Error setting up tutorial data: {e}")
         return EXIT_GENERAL_ERROR
 
 
