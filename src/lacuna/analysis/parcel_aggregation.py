@@ -39,6 +39,7 @@ Examples
 >>> final = agg.run(result)
 """
 
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -267,8 +268,22 @@ class ParcelAggregation(BaseAnalysis):
                     "parcel_names cannot be an empty list (use None to process all atlases)"
                 )
 
-        # Will be populated in _validate_inputs
+        # Will be populated in _validate_inputs (thread-safe)
         self.atlases = []
+        self._atlases_lock = threading.Lock()
+
+    def __getstate__(self):
+        """Exclude non-picklable lock from serialization for multiprocessing."""
+        state = self.__dict__.copy()
+        # Remove the lock - it can't be pickled
+        state.pop("_atlases_lock", None)
+        return state
+
+    def __setstate__(self, state):
+        """Recreate lock after unpickling for multiprocessing."""
+        self.__dict__.update(state)
+        # Recreate the lock in the new process
+        self._atlases_lock = threading.Lock()
 
     def _normalize_sources(self, source: str | list[str] | dict[str, str | list[str]]) -> list[str]:
         """
@@ -700,10 +715,12 @@ class ParcelAggregation(BaseAnalysis):
 
             raise ValueError(error_msg)
 
-        # Load atlases from registry (only if not already loaded)
-        # This enables thread-safe reuse of the analysis instance
-        if not self.atlases:
-            self.atlases = self._load_parcellations_from_registry()
+        # Load atlases from registry (thread-safe)
+        # Use lock to prevent race condition where multiple threads
+        # simultaneously check 'if not self.atlases' and all try to load
+        with self._atlases_lock:
+            if not self.atlases:
+                self.atlases = self._load_parcellations_from_registry()
 
         if not self.atlases:
             if self.parcel_names is not None:
