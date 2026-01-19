@@ -89,8 +89,8 @@ class ParcelAggregation(BaseAnalysis):
         Resolution is determined from the input data. Atlases are transformed to
         match the input resolution, then nilearn resamples for precise alignment.
     batch_strategy : str
-        Batch processing strategy. Set to "parallel" as atlas aggregation
-        is independent per subject and benefits from parallel processing.
+        Batch processing strategy. Set to "sequential" to avoid race conditions
+        with threading backends when accessing shared atlas resources.
 
     Parameters
     ----------
@@ -191,8 +191,8 @@ class ParcelAggregation(BaseAnalysis):
     TARGET_SPACE = None
     #: Resolution is determined from the input data
     TARGET_RESOLUTION = None
-    #: Preferred batch processing strategy
-    batch_strategy: str = "parallel"
+    #: Preferred batch processing strategy (sequential to avoid threading race conditions)
+    batch_strategy: str = "sequential"
 
     VALID_AGGREGATIONS = ["mean", "sum", "percent", "volume", "median", "std"]
     VALID_SOURCES = ["maskimg"]

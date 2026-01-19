@@ -38,8 +38,8 @@ class RegionalDamage(ParcelAggregation):
     Attributes
     ----------
     batch_strategy : str
-        Batch processing strategy. Set to "parallel" as regional damage
-        analysis is independent per subject and benefits from parallel processing.
+        Batch processing strategy. Set to "sequential" to avoid race conditions
+        with threading backends when accessing shared atlas resources.
 
     Parameters
     ----------
@@ -90,8 +90,8 @@ class RegionalDamage(ParcelAggregation):
     ParcelAggregation : More flexible aggregation with custom sources/methods
     """
 
-    #: Preferred batch processing strategy
-    batch_strategy: str = "parallel"
+    #: Preferred batch processing strategy (sequential to avoid threading race conditions)
+    batch_strategy: str = "sequential"
 
     def __init__(
         self,
