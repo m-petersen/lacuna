@@ -33,12 +33,8 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  
-  # --- CORRECTED LOGO LOCATION ---
   logo: assets/logo.svg
   favicon: assets/logo.svg
-
-  # --- ICON SECTION (Repo icon only) ---
   icon:
     repo: fontawesome/brands/github
 
@@ -52,15 +48,8 @@ plugins:
           paths: [src]
           options:
             docstring_style: numpy
-            docstring_section_style: spacy
             show_source: true
             show_root_heading: true
-            show_root_full_path: false
-            members_order: source
-            merge_init_into_class: true
-            show_signature_annotations: true
-            separate_signature: true
-            allow_inspection: true
   - gen-files:
       scripts:
         - docs/gen_ref_pages.py
@@ -68,12 +57,11 @@ plugins:
       nav_file: SUMMARY.md
   - section-index
   - mkdocs-jupyter:
-      execute:
-        enabled: false
-        include_source: true
-        remove_tag_config:
-          remove_cell_tags:
-            - remove_cell
+      execute: false
+      include_source: true
+      remove_tag_config:
+        remove_cell_tags:
+          - remove_cell
 
 markdown_extensions:
   - admonition
@@ -95,49 +83,6 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-
-nav:
-  - Home: index.md
-  
-  # TUTORIALS
-  - Tutorials:
-    - tutorials/index.md
-    - Getting Started: tutorials/getting-started.ipynb
-    - Getting Started 2: tutorials/getting-started.md
-    - Your First Analysis: tutorials/first-analysis.ipynb
-  
-  # HOW-TO GUIDES
-  - How-to Guides:
-    - how-to/index.md
-    - Installation: how-to/installation.md
-    - Setup MRtrix3: how-to/setup-mrtrix3.md
-    - Fetch Connectomes: how-to/fetch-connectomes.md
-    - Configure TemplateFlow: how-to/templateflow.md
-    - Run Functional LNM: how-to/run-flnm.md
-    - Run Structural LNM: how-to/run-slnm.md
-    - Regional Damage: how-to/regional-damage.md
-    - Batch Processing: how-to/batch-processing.md
-    - Export BIDS: how-to/export-bids.md
-    - Use Docker: how-to/docker.md
-    - Use Apptainer: how-to/apptainer.md
-  
-  # REFERENCE
-  - Reference:
-    - reference/index.md
-    - CLI:
-      - reference/cli/index.md
-      - BIDS-Apps Interface: reference/cli/bids-apps.md
-      - Fetch Command: reference/cli/fetch.md
-    - API Reference: reference/api/
-  
-  # EXPLANATION
-  - Explanation:
-    - explanation/index.md
-    - SubjectData Design: explanation/subject-data.md
-    - MaskData Validation: explanation/mask-data.md
-    - Coordinate Spaces: explanation/coordinate-spaces.md
-    - Registry Pattern: explanation/registries.md
-    - The analyze() Function: explanation/analyze.md
 
 extra:
   social:

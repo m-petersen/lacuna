@@ -229,4 +229,4 @@ plotting.plot_roi(mask)
 
 - [SubjectData Design](subject-data.md) — How masks fit in the data model
 - [Coordinate Spaces](coordinate-spaces.md) — Spatial requirements for masks
-- Tutorial: [Getting Started](../tutorials/getting-started.md) — Loading your first mask
+- Tutorial: [Getting Started](../tutorials/getting-started.ipynb) — Loading your first mask

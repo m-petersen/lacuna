@@ -13,7 +13,7 @@ In this tutorial, you'll run your first lesion network mapping analysis with Lac
 
 ## Prerequisites
 
-- Completed the [Getting Started](getting-started.md) tutorial
+- Completed the [Getting Started](getting-started.ipynb) tutorial
 - Basic Python knowledge
 
 ## Overview
