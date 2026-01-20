@@ -120,9 +120,6 @@ class ParcelAggregation(BaseAnalysis):
         - "volume": Volume (in mm³) of non-zero voxels in ROI
         - "median": Median value across ROI voxels
         - "std": Standard deviation across ROI voxels
-    threshold : float or None, default=None
-        For probabilistic atlases: minimum probability to consider a voxel
-        as belonging to a region (0.0-1.0). If None, no thresholding is applied.
     parcel_names : list of str or None, default=None
         Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
         If None, all registered atlases are processed.
@@ -201,7 +198,6 @@ class ParcelAggregation(BaseAnalysis):
         self,
         source: str | list[str] | dict[str, str | list[str]] = "maskimg",
         aggregation: str = "mean",
-        threshold: float | None = None,
         parcel_names: list[str] | None = None,
         verbose: bool = False,
         keep_intermediate: bool = False,
@@ -214,8 +210,6 @@ class ParcelAggregation(BaseAnalysis):
             Source of data to aggregate.
         aggregation : str, default="mean"
             Aggregation method to use.
-        threshold : float or None, default=None
-            For probabilistic atlases: minimum probability to consider.
         parcel_names : list of str or None, default=None
             Names of atlases from the registry to process.
         verbose : bool, default=False
@@ -235,7 +229,6 @@ class ParcelAggregation(BaseAnalysis):
         self.sources = self._normalize_sources(source)
         self.source = source  # Keep original for compatibility
         self.aggregation = aggregation
-        self.threshold = threshold
         self.parcel_names = parcel_names
 
         # Validate aggregation method
@@ -549,7 +542,6 @@ class ParcelAggregation(BaseAnalysis):
             aggregation_method=self.aggregation,
             metadata={
                 "source": "Nifti1Image",
-                "threshold": self.threshold,
                 "n_regions": len(all_roi_data),
                 "space": input_space,
                 "resolution": input_resolution,
@@ -661,7 +653,6 @@ class ParcelAggregation(BaseAnalysis):
             metadata={
                 "source": "VoxelMap",
                 "source_name": voxel_map.name,
-                "threshold": self.threshold,
                 "n_regions": len(all_roi_data),
                 "space": input_space,
                 "resolution": input_resolution,
@@ -1029,7 +1020,6 @@ class ParcelAggregation(BaseAnalysis):
                         "source": source,
                         "source_class": source_class,
                         "source_key": source_key,
-                        "threshold": self.threshold,
                         "n_regions": len(atlas_results),
                     },
                 )
@@ -1241,9 +1231,8 @@ class ParcelAggregation(BaseAnalysis):
             # Get probability map for this region
             prob_map = atlas_data[:, :, :, region_idx]
 
-            # Threshold to create binary mask (default to 0 if threshold is None)
-            threshold_value = self.threshold if self.threshold is not None else 0.0
-            region_mask = prob_map >= threshold_value
+            # Create binary mask from non-zero probability values
+            region_mask = prob_map > 0
 
             # Get values in this region
             region_values = source_data[region_mask]
@@ -1404,7 +1393,6 @@ class ParcelAggregation(BaseAnalysis):
         return {
             "source": self.source,
             "aggregation": self.aggregation,
-            "threshold": self.threshold,
             "parcel_names": self.parcel_names,
             "num_atlases": len(self.atlases) if hasattr(self, "atlases") else None,
             "verbose": self.verbose,

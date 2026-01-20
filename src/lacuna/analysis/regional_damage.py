@@ -96,7 +96,6 @@ class RegionalDamage(ParcelAggregation):
     def __init__(
         self,
         parcel_names: list[str] | None = None,
-        threshold: float | None = None,
         verbose: bool = False,
         keep_intermediate: bool = False,
     ):
@@ -105,7 +104,7 @@ class RegionalDamage(ParcelAggregation):
 
         This is equivalent to:
         ParcelAggregation(source="maskimg",
-                        aggregation="percent", threshold=threshold,
+                        aggregation="percent",
                         parcel_names=parcel_names,
                         verbose=verbose,
                         keep_intermediate=keep_intermediate)
@@ -114,8 +113,6 @@ class RegionalDamage(ParcelAggregation):
         ----------
         parcel_names : list[str] | None, optional
             List of specific parcellation names to use. If None, uses all available.
-        threshold : float | None, default=None
-            Threshold for binary lesion conversion. If None, no thresholding is applied.
         verbose : bool, default=False
             If True, print progress messages. If False, run silently.
         keep_intermediate : bool, default=False
@@ -125,7 +122,6 @@ class RegionalDamage(ParcelAggregation):
         super().__init__(
             source="maskimg",
             aggregation="percent",
-            threshold=threshold,
             parcel_names=parcel_names,
             verbose=verbose,
             keep_intermediate=keep_intermediate,
