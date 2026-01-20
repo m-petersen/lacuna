@@ -77,7 +77,7 @@ class TestBIDSStyleResultKeys:
         )
 
         # Run analysis
-        analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"], threshold=0.5)
+        analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"])
 
         result = analysis.run(mask_data)
 

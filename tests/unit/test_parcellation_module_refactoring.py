@@ -238,21 +238,21 @@ class TestRegionalDamageLogLevel:
         from lacuna.analysis import RegionalDamage
 
         # Should not raise
-        analysis = RegionalDamage(threshold=0.5, verbose=False)
+        analysis = RegionalDamage(verbose=False)
         assert analysis.verbose is False
 
     def test_regional_damage_verbose_defaults_to_false(self):
         """Test RegionalDamage verbose defaults to False."""
         from lacuna.analysis import RegionalDamage
 
-        analysis = RegionalDamage(threshold=0.5)
+        analysis = RegionalDamage()
         assert analysis.verbose is False
 
     def test_regional_damage_passes_verbose_to_parent(self):
         """Test RegionalDamage passes verbose to ParcelAggregation."""
         from lacuna.analysis import RegionalDamage
 
-        analysis = RegionalDamage(threshold=0.5, verbose=False)
+        analysis = RegionalDamage(verbose=False)
         # Verify it's accessible (ParcelAggregation inherits from BaseAnalysis)
         assert hasattr(analysis, "verbose")
         assert analysis.verbose is False

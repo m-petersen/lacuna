@@ -340,34 +340,31 @@ class TestRegionalDamageRepr:
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
-        analysis = RegionalDamage(threshold=0.5)
+        analysis = RegionalDamage()
 
         repr_str = repr(analysis)
 
         assert "RegionalDamage(" in repr_str
-        assert "threshold=" in repr_str
         assert "analysis_type='RegionalDamage'" in repr_str
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
         analysis = RegionalDamage(
-            threshold=0.3, parcel_names=["TianSubcortex_3TS1", "Schaefer2018_100Parcels7Networks"]
+            parcel_names=["TianSubcortex_3TS1", "Schaefer2018_100Parcels7Networks"]
         )
 
         repr_str = repr(analysis)
 
-        assert "threshold=" in repr_str
         assert "parcel_names=" in repr_str
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
-        analysis = RegionalDamage(threshold=0.5)
+        analysis = RegionalDamage()
 
         str_output = str(analysis)
 
         assert "RegionalDamage Analysis" in str_output
         assert "Configuration:" in str_output
-        assert "threshold: 0.5" in str_output
         assert "analysis_type: RegionalDamage" in str_output
 
 
@@ -376,14 +373,13 @@ class TestParcelAggregationRepr:
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
-        analysis = ParcelAggregation(source="maskimg", aggregation="mean", threshold=0.3)
+        analysis = ParcelAggregation(source="maskimg", aggregation="mean")
 
         repr_str = repr(analysis)
 
         assert "ParcelAggregation(" in repr_str
         assert "source='maskimg'" in repr_str
         assert "aggregation='mean'" in repr_str
-        assert "threshold=0.3" in repr_str
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
@@ -458,7 +454,7 @@ class TestReprConsistency:
             analyses = [
                 FunctionalNetworkMapping("test_all_repr_func", "boes"),
                 StructuralNetworkMapping("test_all_repr_struct", check_dependencies=False),
-                RegionalDamage(threshold=0.5),
+                RegionalDamage(),
                 ParcelAggregation(source="maskimg", aggregation="mean"),
             ]
 
@@ -521,7 +517,7 @@ class TestReprConsistency:
             analyses = [
                 FunctionalNetworkMapping("test_all_str_func", "boes"),
                 StructuralNetworkMapping("test_all_str_struct", check_dependencies=False),
-                RegionalDamage(threshold=0.5),
+                RegionalDamage(),
                 ParcelAggregation(source="maskimg", aggregation="mean"),
             ]
 

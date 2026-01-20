@@ -242,7 +242,7 @@ class TestAtlasTransformation:
 
         # Run analysis - should automatically transform atlas to match
         # Note: This is an integration test that requires actual atlases
-        analysis = RegionalDamage(threshold=0.5)
+        analysis = RegionalDamage()
 
         # Should not raise error even with space mismatch
         result = analysis.run(lesion)

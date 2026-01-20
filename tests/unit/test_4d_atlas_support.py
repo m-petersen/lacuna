@@ -395,7 +395,7 @@ class Test4DParcelAggregation:
             register_parcellation(metadata)
 
             # Run RegionalDamage with 4D atlas
-            analysis = RegionalDamage(parcel_names=["Test4DAtlas_Aggregation"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["Test4DAtlas_Aggregation"])
 
             result = analysis.run(lesion)
 
@@ -458,7 +458,7 @@ class Test4DParcelAggregation:
             )
             register_parcellation(metadata)
 
-            analysis = RegionalDamage(parcel_names=["Test4D_VaryingOverlap"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["Test4D_VaryingOverlap"])
 
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
@@ -544,7 +544,7 @@ class TestMixed3DAnd4DAtlases:
             register_parcellation(metadata_4d)
 
             # Run with both atlases
-            analysis = RegionalDamage(parcel_names=["Mixed3D", "Mixed4D"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["Mixed3D", "Mixed4D"])
 
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]
@@ -607,7 +607,7 @@ class TestRegionalDamageOutputAPI:
             )
             register_parcellation(metadata)
 
-            analysis = RegionalDamage(parcel_names=["TestOutputAPI"], threshold=0.0)
+            analysis = RegionalDamage(parcel_names=["TestOutputAPI"])
 
             result = analysis.run(lesion)
             damage_results = result.results["RegionalDamage"]

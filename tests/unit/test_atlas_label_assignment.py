@@ -97,7 +97,6 @@ class TestAtlasLabelAssignment:
             analysis = ParcelAggregation(
                 source="maskimg",
                 aggregation="percent",
-                threshold=0.5,
                 parcel_names=["test_4d_atlas"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
@@ -190,7 +189,6 @@ class TestAtlasLabelAssignment:
             analysis = ParcelAggregation(
                 source="maskimg",
                 aggregation="percent",
-                threshold=0.5,
                 parcel_names=["atlas_1indexed"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)
@@ -269,7 +267,6 @@ class TestAtlasLabelAssignment:
             analysis = ParcelAggregation(
                 source="maskimg",
                 aggregation="percent",
-                threshold=0.5,
                 parcel_names=["atlas_3d"],  # Explicitly use only this test's atlas
             )
             result = analysis.run(mask_data_obj)

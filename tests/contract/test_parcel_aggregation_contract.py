@@ -425,48 +425,6 @@ def test_atlas_aggregation_cross_analysis_source_syntax(synthetic_mask_img, loca
     assert "ParcelAggregation" in result.results
 
 
-def test_atlas_aggregation_threshold_accepts_any_float(synthetic_mask_img, local_test_atlas):
-    """Test that threshold accepts any float value (not restricted to 0.0-1.0).
-
-    Contract: T054 - Flexible thresholds
-    """
-    from lacuna import SubjectData
-    from lacuna.analysis.parcel_aggregation import ParcelAggregation
-
-    mask_data = SubjectData(
-        mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
-    )
-
-    # Should accept negative values (e.g., z-score thresholds)
-    analysis_negative = ParcelAggregation(
-        source="maskimg",
-        aggregation="mean",
-        threshold=-2.5,
-        parcel_names=[local_test_atlas],
-    )
-    assert analysis_negative.threshold == -2.5
-    result = analysis_negative.run(mask_data)
-    assert result is not None
-
-    # Should accept zero
-    analysis_zero = ParcelAggregation(
-        source="maskimg",
-        aggregation="mean",
-        threshold=0.0,
-        parcel_names=[local_test_atlas],
-    )
-    assert analysis_zero.threshold == 0.0
-
-    # Should accept values > 1.0
-    analysis_high = ParcelAggregation(
-        source="maskimg",
-        aggregation="mean",
-        threshold=5.0,
-        parcel_names=[local_test_atlas],
-    )
-    assert analysis_high.threshold == 5.0
-
-
 def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img, local_test_atlas):
     """Test that result keys include source context for traceability.
 
