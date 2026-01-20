@@ -23,10 +23,6 @@ import json
 import re
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from os import PathLike
 
 __all__ = ["bidsify", "sanitize_subject_id"]
 
@@ -147,9 +143,7 @@ def bidsify(
 
     # Validate space
     if space not in VALID_SPACES:
-        raise ValueError(
-            f"Invalid space '{space}'. Must be one of: {', '.join(VALID_SPACES)}"
-        )
+        raise ValueError(f"Invalid space '{space}'. Must be one of: {', '.join(VALID_SPACES)}")
 
     # Find NIfTI files
     nifti_files = list(input_dir.glob("*.nii.gz")) + list(input_dir.glob("*.nii"))
@@ -211,6 +205,7 @@ def _create_dataset_description(output_dir: Path) -> None:
     """Create BIDS dataset_description.json file."""
     description = {
         "Name": "Lacuna BIDSified Dataset",
+        "BIDSVersion": "1.8.0",
         "DatasetType": "derivative",
         "GeneratedBy": [
             {

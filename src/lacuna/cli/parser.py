@@ -54,6 +54,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         formatter_class=RawDescriptionHelpFormatter,
         epilog=(
             "Commands:\n"
+            "  bidsify   Convert NIfTI files to BIDS format\n"
             "  fetch     Download and setup connectomes for analysis\n"
             "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
@@ -192,7 +193,7 @@ def _build_fetch_parser(subparsers) -> None:
         "--test-mode",
         action="store_true",
         help=(
-            "Download only 1 tarball (~2GB) to test the full pipeline.\n"
+            "Download only 1 tarball (~10GB) to test the full pipeline.\n"
             "Verifies download, extraction, conversion, and registration work."
         ),
     )
@@ -240,7 +241,7 @@ def _build_run_parser(subparsers) -> None:
             "Examples:\n"
             "  lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
-            "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --mrtrix-threads 4"
+            "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -319,7 +320,7 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
         type=int,
         default=-1,
         metavar="N",
-        help="Number of parallel processes (-1 for all CPUs)",
+        help="Number of parallel processes (-1 for all CPUs). Also used for MRtrix3 thread count in SNM.",
     )
     g_perf.add_argument(
         "--batch-size",
@@ -396,12 +397,6 @@ def _build_rd_parser(subparsers) -> None:
         required=True,
         metavar="ATLAS",
         help="Atlas names to use. Use 'lacuna info atlases' to list available atlases.",
-    )
-    g_rd.add_argument(
-        "--threshold",
-        type=float,
-        metavar="VALUE",
-        help="Threshold for binary mask conversion (for probabilistic masks)",
     )
     g_rd.add_argument(
         "--custom-parcellation",
@@ -520,7 +515,7 @@ def _build_snm_parser(subparsers) -> None:
             "Download a tractogram with 'lacuna fetch dtor985' first.\n\n"
             "Examples:\n"
             "  lacuna run snm /bids /output --connectome-path ~/.cache/lacuna/dtor985/tractogram.tck\n"
-            "  lacuna run snm /bids /output --connectome-path /data/dtor985.tck --mrtrix-threads 4"
+            "  lacuna run snm /bids /output --connectome-path /data/dtor985.tck --nprocs 4"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -561,14 +556,6 @@ def _build_snm_parser(subparsers) -> None:
         action="store_true",
         dest="no_cache_tdi",
         help="Disable TDI caching (enabled by default)",
-    )
-    g_snm.add_argument(
-        "--mrtrix-threads",
-        type=int,
-        default=1,
-        metavar="N",
-        dest="mrtrix_threads",
-        help="Number of threads for MRtrix3 commands (default: 1)",
     )
     g_snm.add_argument(
         "--no-return-input-space",

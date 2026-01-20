@@ -83,8 +83,6 @@ class RunConfig:
         # Common analysis options
         if hasattr(args, "parcel_atlases") and args.parcel_atlases:
             analysis_options["parcel_names"] = args.parcel_atlases
-        if hasattr(args, "threshold") and args.threshold is not None:
-            analysis_options["threshold"] = args.threshold
         if hasattr(args, "custom_parcellation") and args.custom_parcellation:
             analysis_options["custom_parcellation"] = args.custom_parcellation
         if hasattr(args, "keep_intermediate") and args.keep_intermediate:
@@ -118,8 +116,10 @@ class RunConfig:
         # Handle --no-cache-tdi flag (default is to cache)
         if hasattr(args, "no_cache_tdi") and args.no_cache_tdi:
             analysis_options["cache_tdi"] = False
-        if hasattr(args, "mrtrix_threads"):
-            analysis_options["n_jobs"] = args.mrtrix_threads
+        # Use nprocs for MRtrix threading in SNM
+        nprocs = getattr(args, "nprocs", -1)
+        if nprocs > 0 and args.analysis in ("snm", "structuralnetworkmapping"):
+            analysis_options["n_jobs"] = nprocs
         if hasattr(args, "show_mrtrix_output") and args.show_mrtrix_output:
             analysis_options["show_mrtrix_output"] = True
 
@@ -469,8 +469,6 @@ def _handle_tutorial_command(args: Namespace) -> int:
         print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
         print("  - Binary lesion masks in MNI152NLin6Asym space")
         print("  - BIDS-compliant structure")
-        print("\nNext steps:")
-        print(f"  lacuna run rd {result_dir} ./output")
         return EXIT_SUCCESS
 
     except FileExistsError:
