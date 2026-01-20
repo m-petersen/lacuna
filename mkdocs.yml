@@ -7,7 +7,6 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  # custom_dir: overrides  <-- REMOVED (Not needed for colored logos)
   features:
     - navigation.tabs
     - navigation.sections
@@ -68,6 +67,13 @@ plugins:
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index
+  - mkdocs-jupyter:
+      execute:
+        enabled: false
+        include_source: true
+        remove_tag_config:
+          remove_cell_tags:
+            - remove_cell
 
 markdown_extensions:
   - admonition
@@ -96,8 +102,9 @@ nav:
   # TUTORIALS
   - Tutorials:
     - tutorials/index.md
-    - Getting Started: tutorials/getting-started.md
-    - Your First Analysis: tutorials/first-analysis.md
+    - Getting Started: tutorials/getting-started.ipynb
+    - Getting Started 2: tutorials/getting-started.md
+    - Your First Analysis: tutorials/first-analysis.ipynb
   
   # HOW-TO GUIDES
   - How-to Guides:
