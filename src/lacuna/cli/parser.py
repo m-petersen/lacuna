@@ -50,12 +50,12 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     # Create main parser
     parser = ArgumentParser(
         prog=prog or "lacuna",
-        description=f"Lacuna: Lesion Network Mapping Analysis v{__version__}",
+        description=f"Lacuna v{__version__}",
         formatter_class=RawDescriptionHelpFormatter,
         epilog=(
             "Commands:\n"
             "  fetch     Download and setup connectomes for analysis\n"
-            "  run       Run lesion network mapping analyses\n"
+            "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
             "  info      Display available resources (atlases, connectomes)\n"
             "  tutorial  Setup tutorial data for learning Lacuna\n\n"
