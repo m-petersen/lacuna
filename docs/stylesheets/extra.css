@@ -24,3 +24,19 @@
   height: 48px; /* Adjust this value to fit your preference */
   width: auto;  /* Maintains aspect ratio */
 }
+
+/* Hide the execution count prompts (e.g. [1]:) */
+.jp-InputPrompt, 
+.jp-OutputPrompt {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+}
+
+/* Reclaim the whitespace on the left */
+.jp-Cell-inputWrapper, 
+.jp-Cell-outputWrapper {
+    display: flex;
+    flex-direction: column; /* Stacks code above output without the side gap */
+}
