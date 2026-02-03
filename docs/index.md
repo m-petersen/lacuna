@@ -5,7 +5,7 @@ hide:
 
 ## Lacuna: a scientific Python package for neuroimaging lesion analysis.
 
-Lacuna bridges the gap between individual lesion masks and normative brain data, e.g. connectomes. It provides a reproducible, BIDS-compatible workflow that currently covers three primary modes of analysis:
+Lacuna bridges the gap between individual lesion masks and normative brain data, e.g. connectomes. It provides a reproducible, BIDS-compatible workflow that currently covers the following primary modes of analysis:
 
 <div class="grid cards" markdown>
 
@@ -43,7 +43,7 @@ Get up and running in minutes.
 
 === "2. Setup tutorial data"
 
-    Setup dataset with 3 synthetic lesion masks in MNI space.
+    Setup tutorial dataset with 3 synthetic lesion masks in MNI space.
 
     ```bash
     lacuna tutorial bids_tutorial
@@ -80,7 +80,7 @@ This documentation is organized by the [Diátaxis](https://diataxis.fr/) framewo
 
     ---
 
-    Step-by-step lessons to help you start learning.
+    Step-by-step lessons to introduce you to the package.
 
     [:octicons-arrow-right-24: Start learning](tutorials/index.md)
 
@@ -88,7 +88,7 @@ This documentation is organized by the [Diátaxis](https://diataxis.fr/) framewo
 
     ---
 
-    Recipes and solutions for specific analysis goals.
+    Solutions for specific analysis goals.
 
     [:octicons-arrow-right-24: Find a guide](how-to/index.md)
 
@@ -116,5 +116,5 @@ This documentation is organized by the [Diátaxis](https://diataxis.fr/) framewo
 | :--- | :--- |
 | **BIDS-native** | Designed to work seamlessly with BIDS-formatted datasets out of the box. |
 | **Reproducible** | Fully containerized workflows available via Docker and Apptainer. |
+| **Efficient** | Implementations optimized for fast analyses. |
 | **Extensible** | Plugin architecture allows for custom analyses and atlas integration. |
-| **Parallelized** | Optimized for speed with parallel processing of multiple subjects. |

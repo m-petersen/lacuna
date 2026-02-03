@@ -1,29 +1,36 @@
 # Tutorials
 
-Welcome to the Lacuna tutorials! These learning-oriented guides will take you through your first steps with Lacuna.
+Welcome to the Lacuna tutorials! These learning-oriented guides will teach you how to work with Lacuna.
 
-The tutorials are self-contained and provided as Jupyter notebooks. You can run them on your local infrastructure or via the Colab links provided in the tutorial pages. 
+The tutorials are self-contained Jupyter notebooks. You can run them locally or via the Colab links provided in each tutorial.
 
-## Tutorial Series
+## First steps
+
+We recommend following these tutorials in order. They provide a high-level overview of analyses to introduce you to the package:
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch:{ .lg .middle } **Getting Started**
+-   :material-console:{ .lg .middle } **Getting started with the CLI**
 
     ---
 
-    Install Lacuna and load your first lesion mask.
+    Fetch sample data, and run your first analysis using the command-line interface.
 
-    [:octicons-arrow-right-24: Getting Started](getting-started.ipynb)
+    [:octicons-arrow-right-24: CLI Tutorial](getting-started-cli.ipynb)
 
--   :material-brain:{ .lg .middle } **Your First Analysis**
+-   :material-language-python:{ .lg .middle } **Getting started with the API**
 
     ---
 
-    Run functional lesion network mapping and interpret results.
+    Learn the Python API: load masks, run analyses, and access results programmatically.
 
-    [:octicons-arrow-right-24: First Analysis](first-analysis.md)
+    [:octicons-arrow-right-24: API Tutorial](getting-started-api.ipynb)
 
 </div>
+
+## CLI
+
+
+## API
 
 
