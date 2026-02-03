@@ -689,8 +689,7 @@ def _register_dtor985(
             name=register_name,
             space=source.space,
             tractogram_path=tck_path,
-            n_subjects=source.n_subjects,
-            description=source.description or "Downloaded via fetch_dtor985",
+            description=source.description or f"Downloaded via fetch_dtor985 ({source.n_subjects} subjects)",
         )
         return True
     except Exception as e:
