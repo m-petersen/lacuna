@@ -59,13 +59,11 @@ plugins:
   - mkdocs-jupyter:
       execute: false
       include_source: true
-      TagRemovePreprocessor:
-        enabled: true
-        remove_cell_tags: ["remove_cell"]
-        remove_all_outputs_tags: ["remove_output"]
-      # remove_tag_config:
-      #   remove_cell_tags:
-      #     - remove_cell
+      remove_tag_config:
+        remove_cell_tags:
+          - remove_cell
+      remove_all_outputs_tags:
+        - remove_output
 
 markdown_extensions:
   - admonition
