@@ -27,7 +27,7 @@ Lacuna provides researchers with an end-to-end pipeline for:
 - ✅ **Batch Processing**: Parallel processing with progress tracking
 
 **Architecture:**
-- **Three-Tier API**: `analyze()` for simplicity → `Pipeline` for control → direct chaining for flexibility
+- **Flexible Usage**: Full-featured CLI for batch processing + Python API for custom workflows
 - **Standardized Data Handling**: Consistent `SubjectData` API across all pipeline stages
 - **Provenance Tracking**: Automatic recording of all transformations for reproducibility
 - **Spatial Correctness**: Built on validated neuroimaging libraries (nibabel, nilearn, templateflow)
@@ -55,7 +55,32 @@ pip install -e .
 
 ## Quick Start
 
-### Load a Single Mask
+Lacuna can be used via the **command-line interface (CLI)** for standard workflows or the **Python API** for programmatic control.
+
+### Command-Line Interface
+
+```bash
+# 1. Setup tutorial data (3 synthetic lesions in MNI space)
+lacuna tutorial bids_tutorial
+
+# 2. Download a normative connectome (requires Figshare API key)
+lacuna fetch dtor985 --output-dir conn --api-key YOUR_KEY
+
+# 3. Run structural network mapping
+lacuna run snm bids_tutorial output --connectome-path conn/dTOR_full_tractogram.tck
+
+# 4. Run functional network mapping  
+lacuna run fnm bids_tutorial output --connectome-path conn/gsp1000
+
+# 5. Run regional damage analysis
+lacuna run rd bids_tutorial output --atlas Schaefer2018_100Parcels7Networks
+```
+
+See `lacuna --help` for all available commands.
+
+### Python API
+
+#### Load a Single Mask
 
 ```python
 import nibabel as nib
@@ -76,7 +101,7 @@ print(f"Resolution: {subject.resolution}mm")
 print(f"Volume: {subject.get_volume_mm3():.1f} mm³")
 ```
 
-### Load a BIDS Dataset
+#### Load a BIDS Dataset
 
 ```python
 from lacuna.io import load_bids_dataset
@@ -89,7 +114,7 @@ for subject_id, mask in dataset.items():
     print(f"Processing {subject_id}: space={mask.space}, resolution={mask.resolution}mm")
 ```
 
-### Functional Network Mapping
+#### Functional Network Mapping
 
 ```python
 from lacuna.analysis import FunctionalNetworkMapping
@@ -118,7 +143,7 @@ corr_map = result.results['FunctionalNetworkMapping']['correlation_map']
 print(f"Correlation map shape: {corr_map.get_data().shape}")
 ```
 
-### Structural Network Mapping
+#### Structural Network Mapping
 
 ```python
 from lacuna.analysis import StructuralNetworkMapping
@@ -143,7 +168,7 @@ snm = StructuralNetworkMapping(
 result = snm.run(mask)
 ```
 
-### Batch Processing
+#### Batch Processing
 
 ```python
 from lacuna import batch_process
@@ -169,7 +194,7 @@ df = extract_parcel_table(results, "RegionalDamage")
 print(df.head())
 ```
 
-### Save Results
+#### Save Results
 
 ```python
 from lacuna.io.bids import export_bids_derivatives
@@ -182,51 +207,6 @@ export_bids_derivatives(
     export_voxelmaps=True,
     export_parcel_data=True
 )
-```
-
-## Three-Tier API
-
-Lacuna provides three levels of API for different use cases:
-
-### Tier 1: `analyze()` - Simple One-Liner
-
-```python
-from lacuna import analyze
-
-# Single call runs standard analysis pipeline
-result = analyze(
-    subject,
-    functional_connectome="GSP1000",
-    parcel_atlases=["Schaefer100"]
-)
-```
-
-### Tier 2: `Pipeline` - Custom Workflows
-
-```python
-from lacuna import Pipeline
-from lacuna.analysis import RegionalDamage, FunctionalNetworkMapping
-
-# Build custom pipeline with configured analyses
-pipeline = (
-    Pipeline(name="My Analysis")
-    .add(RegionalDamage())
-    .add(FunctionalNetworkMapping(connectome_name="GSP1000"))
-)
-
-result = pipeline.run(subject)
-```
-
-### Tier 3: Direct Chaining - Maximum Control
-
-```python
-from lacuna.analysis import RegionalDamage, FunctionalNetworkMapping
-
-# Chain analyses manually
-analysis1 = RegionalDamage()
-analysis2 = FunctionalNetworkMapping(connectome_name="GSP1000")
-
-result = analysis2.run(analysis1.run(subject))
 ```
 
 ## Requirements
