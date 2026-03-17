@@ -45,13 +45,14 @@ pip install git+https://github.com/m-petersen/lacuna
 ### From Source
 
 ```bash
-git clone https://github.com/lacuna/lacuna.git
+git clone https://github.com/m-petersen/lacuna.git
 cd lacuna
 pip install -e .
 ```
 
-## Docker & Singularity coming soon
+## Containers
 
+Lacuna is available as a Docker and Apptainer container with all dependencies pre-installed. See the [Docker](https://lacuna.readthedocs.io/how-to/docker/) and [Apptainer](https://lacuna.readthedocs.io/how-to/apptainer/) guides.
 
 ## Quick Start
 
@@ -218,8 +219,6 @@ export_bids_derivatives(
 - scipy >= 1.10
 - pandas >= 2.0
 - templateflow >= 24.0
-
-## Documentation coming soon
 
 ## License
 

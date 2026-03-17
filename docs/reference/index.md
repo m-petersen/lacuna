@@ -28,19 +28,19 @@ Technical reference documentation for Lacuna.
 
 ### Core Modules
 
-- `lacuna.analyze` — Main analysis interface
-- `lacuna.core` — Core data structures
-- `lacuna.registry` — Registry system
+- `lacuna.core` — Core data structures (`SubjectData`, `MaskData`)
+- `lacuna.analysis` — Analysis modules (fLNM, sLNM, RegionalDamage)
+- `lacuna.spatial` — Spatial operations and transformations
 
-### Data Types
+### Assets
 
-- `MaskData` — Lesion mask handling
-- `SubjectData` — Subject data management
+- `lacuna.assets.connectomes` — Connectome management and registration
+- `lacuna.assets.parcellations` — Brain parcellation atlases
 
-### Analysis
+### I/O & Processing
 
-- `lacuna.connectome` — Connectome operations
-- `lacuna.atlas` — Atlas management
+- `lacuna.io` — BIDS dataset loading and export
+- `lacuna.batch` — Parallel batch processing
 
 ## About This Reference
 

@@ -18,9 +18,10 @@ Run Lacuna on HPC systems or restricted environments where Docker is not availab
 # Pull the container image
 apptainer pull docker://ghcr.io/lacuna/lacuna:latest
 
-# Run an analysis
+# Run a regional damage analysis
 apptainer run lacuna_latest.sif \
-    lacuna /path/to/bids /path/to/output participant
+    run rd /path/to/bids /path/to/output \
+    --parcel-atlases Schaefer2018_100Parcels7Networks
 ```
 
 ## Converting from Docker
@@ -42,13 +43,15 @@ For custom builds:
 apptainer build lacuna.sif lacuna.def
 ```
 
-## BIDS-Apps usage
+## Running analyses
+
+The container entrypoint is `lacuna`, so pass subcommands directly:
 
 ```bash
 apptainer run lacuna_latest.sif \
-    lacuna /bids /output participant \
-    --participant_label sub-001 \
-    --analysis flnm
+    run fnm /bids /output \
+    --connectome-path /connectomes/gsp1000 \
+    --participant-label 001
 ```
 
 ## Bind paths
@@ -60,7 +63,8 @@ apptainer run \
     --bind /data/study:/bids:ro \
     --bind /results:/output \
     lacuna_latest.sif \
-    lacuna /bids /output participant
+    run rd /bids /output \
+    --parcel-atlases Schaefer2018_100Parcels7Networks
 ```
 
 ### Default bind paths
@@ -80,7 +84,8 @@ apptainer run \
     --bind /scratch:/scratch \
     --bind /projects/connectomes:/connectomes:ro \
     lacuna_latest.sif \
-    lacuna /data/bids /scratch/output participant
+    run snm /data/bids /scratch/output \
+    --connectome-path /connectomes/dtor985.tck
 ```
 
 ## HPC job scripts
@@ -102,9 +107,10 @@ apptainer run \
     --bind /data/my_study:/bids:ro \
     --bind /scratch/$USER/output:/output \
     /containers/lacuna_latest.sif \
-    lacuna /bids /output participant \
-    --participant_label ${SLURM_ARRAY_TASK_ID} \
-    --n_jobs ${SLURM_CPUS_PER_TASK}
+    run rd /bids /output \
+    --participant-label ${SLURM_ARRAY_TASK_ID} \
+    --parcel-atlases Schaefer2018_100Parcels7Networks \
+    --nprocs ${SLURM_CPUS_PER_TASK}
 ```
 
 ### PBS/Torque example
@@ -122,7 +128,8 @@ singularity run \
     --bind /data/my_study:/bids:ro \
     --bind /scratch/$USER/output:/output \
     /containers/lacuna_latest.sif \
-    lacuna /bids /output participant
+    run rd /bids /output \
+    --parcel-atlases Schaefer2018_100Parcels7Networks
 ```
 
 ## Environment variables
@@ -134,7 +141,8 @@ apptainer run \
     --env LACUNA_CACHE=/connectomes \
     --bind /shared/connectomes:/connectomes:ro \
     lacuna_latest.sif \
-    lacuna /bids /output participant
+    run fnm /bids /output \
+    --connectome-path /connectomes/gsp1000
 ```
 
 ## Writable containers
@@ -146,7 +154,8 @@ For development or saving cache:
 apptainer run \
     --overlay my_overlay.img \
     lacuna_latest.sif \
-    lacuna /bids /output participant
+    run rd /bids /output \
+    --parcel-atlases Schaefer2018_100Parcels7Networks
 ```
 
 ## Comparison with Docker
@@ -161,43 +170,43 @@ apptainer run \
 ## Troubleshooting
 
 ??? question "Cannot find libraries"
-    
+
     Ensure you're using the containerized commands:
-    
+
     ```bash
     # Wrong: calling system Python
     python -c "import lacuna"
-    
+
     # Right: calling container Python
     apptainer exec lacuna_latest.sif python -c "import lacuna"
     ```
 
 ??? question "Permission denied"
-    
+
     Check if the bind paths are accessible:
-    
+
     ```bash
     ls -la /path/to/data
     # Ensure read permissions for your user
     ```
 
 ??? question "Out of memory in /tmp"
-    
+
     Set a different temporary directory:
-    
+
     ```bash
     export APPTAINER_TMPDIR=/scratch/tmp
     apptainer run lacuna_latest.sif ...
     ```
 
 ??? question "Singularity vs Apptainer"
-    
+
     Apptainer is the new name for Singularity. Most commands are compatible:
-    
+
     ```bash
     # Singularity syntax
     singularity run lacuna_latest.sif ...
-    
+
     # Apptainer syntax
     apptainer run lacuna_latest.sif ...
     ```
@@ -206,4 +215,3 @@ apptainer run \
 
 - [Apptainer Documentation](https://apptainer.org/docs/)
 - [Singularity Hub](https://singularity-hub.org/)
-- [BIDS-Apps Specification](https://bids-apps.neuroimaging.io/)

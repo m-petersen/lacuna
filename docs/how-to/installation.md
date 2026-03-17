@@ -5,48 +5,28 @@ This guide covers all installation options for Lacuna.
 ## Quick install
 
 ```bash
-pip install lacuna
+pip install git+https://github.com/m-petersen/lacuna
 ```
 
 ## Requirements
 
 - **Python**: 3.10 or higher
 - **Operating System**: Linux, macOS, Windows
-- **Memory**: 8GB RAM minimum (16GB recommended for large connectomes)
+- **Memory**: 16GB RAM recommended
 
 ## Installation options
 
-### From PyPI
-
-The simplest way to install Lacuna:
+### From GitHub
 
 ```bash
-pip install lacuna
+pip install git+https://github.com/m-petersen/lacuna
 ```
 
-### From source
 
-For development or to get the latest features:
-
-```bash
-git clone https://github.com/lacuna/lacuna.git
-cd lacuna
-pip install -e .
-```
 
 ### With optional dependencies
 
-Install with visualization support:
 
-```bash
-pip install "lacuna[viz]"
-```
-
-Install with all development tools:
-
-```bash
-pip install "lacuna[dev]"
-```
 
 ## Virtual environment (recommended)
 
@@ -64,7 +44,7 @@ We recommend using a virtual environment to avoid dependency conflicts:
     lacuna-env\Scripts\activate     # Windows
     
     # Install Lacuna
-    pip install lacuna
+    pip install git+https://github.com/m-petersen/lacuna
     ```
 
 === "conda"
@@ -77,7 +57,7 @@ We recommend using a virtual environment to avoid dependency conflicts:
     conda activate lacuna
     
     # Install Lacuna
-    pip install lacuna
+    pip install git+https://github.com/m-petersen/lacuna
     ```
 
 ## Verify installation
@@ -111,7 +91,7 @@ Some analyses require external tools:
 To upgrade to the latest version:
 
 ```bash
-pip install --upgrade lacuna
+pip install --upgrade git+https://github.com/m-petersen/lacuna
 ```
 
 ## Troubleshooting
@@ -125,7 +105,7 @@ pip install --upgrade lacuna
     ```bash
     python -m venv fresh-env
     source fresh-env/bin/activate
-    pip install lacuna
+    pip install git+https://github.com/m-petersen/lacuna
     ```
 
 ??? question "Import error: missing module"
@@ -142,13 +122,13 @@ pip install --upgrade lacuna
     Use `--user` flag or install in a virtual environment:
     
     ```bash
-    pip install --user lacuna
+    pip install --user git+https://github.com/m-petersen/lacuna
     ```
 
 ### Getting help
 
 If you encounter issues:
 
-1. Check the [GitHub Issues](https://github.com/lacuna/lacuna/issues)
+1. Check the [GitHub Issues](https://github.com/m-petersen/lacuna/issues)
 2. Search existing discussions
 3. Open a new issue with your error message and Python version

@@ -56,7 +56,7 @@ RUN pip install build && python -m build --wheel
 FROM python:3.11-slim AS production
 
 LABEL org.opencontainers.image.title="Lacuna"
-LABEL org.opencontainers.image.source="https://github.com/lacuna/lacuna"
+LABEL org.opencontainers.image.source="https://github.com/m-petersen/lacuna"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Install runtime dependencies

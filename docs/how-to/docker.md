@@ -18,45 +18,56 @@ Run Lacuna without local installation, using a pre-built Docker container with a
 # Pull the Lacuna image
 docker pull ghcr.io/lacuna/lacuna:latest
 
-# Run a basic analysis
+# Run a regional damage analysis
 docker run --rm \
-    -v /path/to/data:/data \
+    -v /path/to/bids:/bids:ro \
     -v /path/to/output:/output \
     ghcr.io/lacuna/lacuna:latest \
-    lacuna /data /output participant --analysis flnm
+    run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks
 ```
 
-## BIDS-Apps interface
+## Running analyses
 
-Lacuna follows the BIDS-Apps specification:
+The container entrypoint is `lacuna`, so you pass subcommands directly:
 
 ```bash
 docker run --rm \
     -v /path/to/bids:/bids:ro \
     -v /path/to/output:/output \
     ghcr.io/lacuna/lacuna:latest \
-    lacuna /bids /output participant
+    run fnm /bids /output --connectome-path /home/lacuna/.cache/lacuna/connectomes/gsp1000
 ```
 
-### Required arguments
-
-| Argument | Description |
-|----------|-------------|
-| `bids_dir` | Path to BIDS dataset (inside container) |
-| `output_dir` | Path for outputs (inside container) |
-| `analysis_level` | `participant` or `group` |
-
-### Analysis options
+### Analysis examples
 
 ```bash
+# Regional damage
 docker run --rm \
     -v /path/to/bids:/bids:ro \
     -v /path/to/output:/output \
     ghcr.io/lacuna/lacuna:latest \
-    lacuna /bids /output participant \
-    --participant_label sub-001 sub-002 \
-    --analysis flnm slnm \
-    --n_jobs 4
+    run rd /bids /output \
+    --participant-label 001 002 \
+    --parcel-atlases Schaefer2018_100Parcels7Networks
+
+# Functional network mapping
+docker run --rm \
+    -v /path/to/bids:/bids:ro \
+    -v /path/to/output:/output \
+    -v ~/.cache/lacuna:/home/lacuna/.cache/lacuna \
+    ghcr.io/lacuna/lacuna:latest \
+    run fnm /bids /output \
+    --connectome-path /home/lacuna/.cache/lacuna/connectomes/gsp1000 \
+    --nprocs 4
+
+# Structural network mapping
+docker run --rm \
+    -v /path/to/bids:/bids:ro \
+    -v /path/to/output:/output \
+    -v /path/to/tractogram.tck:/connectomes/tractogram.tck:ro \
+    ghcr.io/lacuna/lacuna:latest \
+    run snm /bids /output \
+    --connectome-path /connectomes/tractogram.tck
 ```
 
 ## Volume mounts
@@ -86,7 +97,8 @@ docker run --rm \
     -v /path/to/bids:/bids:ro \
     -v /path/to/output:/output \
     ghcr.io/lacuna/lacuna:latest \
-    lacuna /bids /output participant --analysis flnm
+    run fnm /bids /output \
+    --connectome-path /home/lacuna/.cache/lacuna/connectomes/gsp1000
 ```
 
 ## Resource limits
@@ -100,7 +112,7 @@ docker run --rm \
     -v /path/to/bids:/bids:ro \
     -v /path/to/output:/output \
     ghcr.io/lacuna/lacuna:latest \
-    lacuna /bids /output participant
+    run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks
 ```
 
 ## Interactive mode
@@ -163,7 +175,7 @@ python
 To build the image from source:
 
 ```bash
-git clone https://github.com/lacuna/lacuna.git
+git clone https://github.com/m-petersen/lacuna.git
 cd lacuna
 docker build -t lacuna:local .
 ```

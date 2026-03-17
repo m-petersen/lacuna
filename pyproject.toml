@@ -72,10 +72,10 @@ all = [
 lacuna = "lacuna.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/lacuna/lacuna"
+Homepage = "https://github.com/m-petersen/lacuna"
 Documentation = "https://lacuna.readthedocs.io"
-Repository = "https://github.com/lacuna/lacuna"
-"Bug Tracker" = "https://github.com/lacuna/lacuna/issues"
+Repository = "https://github.com/m-petersen/lacuna"
+"Bug Tracker" = "https://github.com/m-petersen/lacuna/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

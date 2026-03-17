@@ -28,9 +28,4 @@ We recommend following these tutorials in order. They provide a high-level overv
 
 </div>
 
-## CLI
-
-
-## API
-
 

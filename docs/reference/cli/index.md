@@ -4,23 +4,25 @@ Command-line interface documentation for Lacuna.
 
 ## Overview
 
-Lacuna provides a BIDS-Apps compatible command-line interface for running
-lesion network mapping analyses directly from the terminal.
+Lacuna provides a subcommand-based CLI for running lesion network mapping analyses, managing connectomes, and working with BIDS datasets.
+
+```
+lacuna <command> [options]
+```
 
 ## Commands
 
 <div class="grid cards" markdown>
 
--   :material-application-braces:{ .lg .middle } **BIDS-Apps Interface**
+-   :material-play:{ .lg .middle } **Run**
 
     ---
 
-    Main entry point for participant and group analyses following BIDS-Apps
-    conventions.
+    Run lesion analyses (regional damage, functional and structural network mapping).
 
-    [:octicons-arrow-right-24: BIDS-Apps](bids-apps.md)
+    [:octicons-arrow-right-24: Run](run.md)
 
--   :material-download:{ .lg .middle } **Fetch Command**
+-   :material-download:{ .lg .middle } **Fetch**
 
     ---
 
@@ -28,20 +30,60 @@ lesion network mapping analyses directly from the terminal.
 
     [:octicons-arrow-right-24: Fetch](fetch.md)
 
+-   :material-table:{ .lg .middle } **Collect**
+
+    ---
+
+    Aggregate subject-level parcelstats into group-level tables.
+
+    [:octicons-arrow-right-24: Collect](collect.md)
+
+-   :material-information:{ .lg .middle } **Info**
+
+    ---
+
+    Display available resources (atlases, connectomes).
+
+    [:octicons-arrow-right-24: Info](info.md)
+
+-   :material-file-swap:{ .lg .middle } **Bidsify**
+
+    ---
+
+    Convert a directory of NIfTI mask files to BIDS format.
+
+    [:octicons-arrow-right-24: Bidsify](bidsify.md)
+
+-   :material-school:{ .lg .middle } **Tutorial**
+
+    ---
+
+    Setup tutorial data for learning Lacuna.
+
+    [:octicons-arrow-right-24: Tutorial](tutorial.md)
+
 </div>
 
 ## Quick Usage
 
 ```bash
-# Basic BIDS-Apps usage
-lacuna /bids/input /output participant
+# Setup tutorial data
+lacuna tutorial ./my_tutorial
 
-# Run specific analysis
-lacuna /bids/input /output participant --analysis flnm
+# Fetch a connectome
+lacuna fetch gsp1000 --api-key $DATAVERSE_API_KEY
 
-# Fetch connectomes
-lacuna fetch --list
-lacuna fetch --connectome functional --name HCP_S1200
+# Run regional damage analysis
+lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks
+
+# Run functional network mapping
+lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches
+
+# Aggregate results across subjects
+lacuna collect /bids /output
+
+# List available atlases
+lacuna info atlases
 ```
 
 ## Getting Help
@@ -51,6 +93,8 @@ lacuna fetch --connectome functional --name HCP_S1200
 lacuna --help
 
 # Command-specific help
+lacuna run --help
+lacuna run fnm --help
 lacuna fetch --help
 ```
 
@@ -58,3 +102,4 @@ lacuna fetch --help
 
 - [Installation Guide](../../how-to/installation.md) — Setting up Lacuna
 - [Docker Guide](../../how-to/docker.md) — Running via containers
+- [Apptainer Guide](../../how-to/apptainer.md) — Running on HPC clusters
