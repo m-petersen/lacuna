@@ -190,7 +190,7 @@ class TestSetupTutorialRawMasks:
         setup_tutorial_raw_masks(target)
 
         nifti_files = sorted(f.name for f in target.glob("*.nii.gz"))
-        assert nifti_files == ["sub-01.nii.gz", "sub-02.nii.gz", "sub-03.nii.gz"]
+        assert nifti_files == ["01.nii.gz", "02.nii.gz", "03.nii.gz"]
 
     def test_no_subdirectories(self, tmp_path):
         """Raw masks directory has no subdirectories."""
@@ -225,7 +225,8 @@ class TestSetupTutorialRawMasks:
 
         for subject_id in get_tutorial_subjects():
             original = nib.load(get_subject_mask_path(subject_id))
-            raw = nib.load(target / f"{subject_id}.nii.gz")
+            numeric_id = subject_id.removeprefix("sub-")
+            raw = nib.load(target / f"{numeric_id}.nii.gz")
             np.testing.assert_array_equal(
                 original.get_fdata(), raw.get_fdata()
             )
@@ -247,4 +248,4 @@ class TestSetupTutorialRawMasks:
         setup_tutorial_raw_masks(target, overwrite=True)
 
         assert not (target / "old_file.txt").exists()
-        assert (target / "sub-01.nii.gz").exists()
+        assert (target / "01.nii.gz").exists()

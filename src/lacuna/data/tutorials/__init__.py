@@ -246,7 +246,7 @@ def setup_tutorial_raw_masks(
     >>> from lacuna.data.tutorials import setup_tutorial_raw_masks
     >>> raw_dir = setup_tutorial_raw_masks("~/raw_masks")
     >>> sorted(f.name for f in raw_dir.glob("*.nii.gz"))
-    ['sub-01.nii.gz', 'sub-02.nii.gz', 'sub-03.nii.gz']
+    ['01.nii.gz', '02.nii.gz', '03.nii.gz']
 
     Use with ``bidsify()`` to convert to BIDS format:
 
@@ -260,9 +260,13 @@ def setup_tutorial_raw_masks(
     ::
 
         target_dir/
-        ├── sub-01.nii.gz
-        ├── sub-02.nii.gz
-        └── sub-03.nii.gz
+        ├── 01.nii.gz
+        ├── 02.nii.gz
+        └── 03.nii.gz
+
+    File names use numeric IDs only (without the ``sub-`` prefix) so that
+    ``bidsify()`` produces correct BIDS subject directories (``sub-01/``,
+    etc.) without duplicating the prefix.
 
     These files are identical to the masks in the bundled BIDS dataset,
     but stripped of BIDS structure and naming conventions.
@@ -281,6 +285,8 @@ def setup_tutorial_raw_masks(
 
     for subject_id in get_tutorial_subjects():
         mask_path = get_subject_mask_path(subject_id)
-        shutil.copy2(mask_path, target / f"{subject_id}.nii.gz")
+        # Strip "sub-" prefix so bidsify produces "sub-01" not "sub-sub01"
+        numeric_id = subject_id.removeprefix("sub-")
+        shutil.copy2(mask_path, target / f"{numeric_id}.nii.gz")
 
     return target

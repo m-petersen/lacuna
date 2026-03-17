@@ -468,7 +468,7 @@ def _handle_tutorial_command(args: Namespace) -> int:
             result_dir = setup_tutorial_raw_masks(output_dir, overwrite=force)
             print(f"✓ Raw mask files copied to: {result_dir}")
             print("\nThe directory contains flat NIfTI mask files:")
-            print("  - sub-01.nii.gz, sub-02.nii.gz, sub-03.nii.gz")
+            print("  - 01.nii.gz, 02.nii.gz, 03.nii.gz")
             print("\nNext step — convert to BIDS format:")
             print(f"  lacuna bidsify {result_dir} <output_dir> --space MNI152NLin6Asym")
         else:
