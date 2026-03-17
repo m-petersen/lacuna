@@ -1,6 +1,6 @@
 # Tutorials
 
-Welcome to the Lacuna tutorials! These learning-oriented guides will teach you how to work with Lacuna.
+Welcome to the tutorials! These learning-oriented guides will teach you how to work with Lacuna.
 
 The tutorials are self-contained Jupyter notebooks. You can run them locally or via the Colab links provided in each tutorial.
 

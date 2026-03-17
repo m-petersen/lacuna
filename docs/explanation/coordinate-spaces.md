@@ -4,6 +4,9 @@ Understanding MNI spaces and why spatial normalization matters for Lacuna.
 
 ## Overview
 
+Lacuna simplifies analysis by managing coordinate spaces for you. It supports both MNI152NLin6Asym and MNI152NLin2009cAsym. Instead of requiring you to manually register your lesions, atlases, and connectomes to a single space, Lacuna uses [TemplateFlow](https://www.templateflow.org/) to handle these transformations internally. You only need to transform your lesion mask data to one of the two supported MNI spaces and define it in the commands; the toolbox ensures all other data is brought into alignment automatically.
+
+
 Lesion network mapping requires that lesion masks and normative connectomes
 share the same **coordinate space**. This document explains what coordinate
 spaces are, why they matter, and how Lacuna handles them.
