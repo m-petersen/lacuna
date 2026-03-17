@@ -449,7 +449,7 @@ def _handle_tutorial_command(args: Namespace) -> int:
     """Handle the tutorial subcommand."""
     from pathlib import Path
 
-    from lacuna.data.tutorials import setup_tutorial_data
+    from lacuna.data.tutorials import setup_tutorial_data, setup_tutorial_raw_masks
 
     # Get output directory
     output_dir = getattr(args, "output_dir", None)
@@ -459,16 +459,25 @@ def _handle_tutorial_command(args: Namespace) -> int:
         output_dir = Path(output_dir)
 
     force = getattr(args, "force", False)
+    raw = getattr(args, "raw", False)
 
     print(f"\nSetting up tutorial data at: {output_dir}")
 
     try:
-        result_dir = setup_tutorial_data(output_dir, overwrite=force)
-        print(f"✓ Tutorial data copied to: {result_dir}")
-        print("\nThe tutorial dataset includes:")
-        print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
-        print("  - Binary lesion masks in MNI152NLin6Asym space")
-        print("  - BIDS-compliant structure")
+        if raw:
+            result_dir = setup_tutorial_raw_masks(output_dir, overwrite=force)
+            print(f"✓ Raw mask files copied to: {result_dir}")
+            print("\nThe directory contains flat NIfTI mask files:")
+            print("  - sub-01.nii.gz, sub-02.nii.gz, sub-03.nii.gz")
+            print("\nNext step — convert to BIDS format:")
+            print(f"  lacuna bidsify {result_dir} <output_dir> --space MNI152NLin6Asym")
+        else:
+            result_dir = setup_tutorial_data(output_dir, overwrite=force)
+            print(f"✓ Tutorial data copied to: {result_dir}")
+            print("\nThe tutorial dataset includes:")
+            print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
+            print("  - Binary lesion masks in MNI152NLin6Asym space")
+            print("  - BIDS-compliant structure")
         return EXIT_SUCCESS
 
     except FileExistsError:

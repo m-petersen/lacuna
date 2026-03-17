@@ -488,8 +488,12 @@ class BaseAnalysis(ABC):
                 f"Got space='{current_space}' but resolution=None"
             )
 
-        # Check if transformation needed
-        needs_space_transform = current_space != target_space
+        # Import here to avoid circular imports
+        from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace, spaces_are_equivalent
+        from lacuna.spatial.transform import transform_mask_data
+
+        # Check if transformation needed (use space equivalence, not raw string match)
+        needs_space_transform = not spaces_are_equivalent(current_space, target_space)
         needs_resolution_change = (
             target_resolution is not None
             and current_resolution is not None
@@ -499,10 +503,6 @@ class BaseAnalysis(ABC):
         if not needs_space_transform and not needs_resolution_change:
             # Already in target space
             return mask_data
-
-        # Import here to avoid circular imports
-        from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
-        from lacuna.spatial.transform import transform_mask_data
 
         # Determine target resolution (use current if not specified)
         final_resolution = (

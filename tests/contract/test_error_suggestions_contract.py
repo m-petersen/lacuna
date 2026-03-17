@@ -46,7 +46,7 @@ class TestErrorMessageSuggestionsContract:
 
         error_msg = str(exc_info.value)
         assert "MNI152NLin6Asym" in error_msg
-        assert "MNI152NLin2009aAsym" in error_msg
+        assert "MNI152NLin2009cAsym" in error_msg
 
 
 class TestParcelAggregationErrorSuggestionsContract:

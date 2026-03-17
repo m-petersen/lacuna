@@ -88,7 +88,6 @@ def test_supported_spaces_error_message(synthetic_mask_img):
     error_msg = str(exc_info.value)
     # Should mention supported spaces
     assert "MNI152NLin6Asym" in error_msg
-    assert "MNI152NLin2009aAsym" in error_msg
     assert "MNI152NLin2009cAsym" in error_msg
 
 

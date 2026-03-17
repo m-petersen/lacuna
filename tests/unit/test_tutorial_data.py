@@ -12,6 +12,7 @@ from lacuna.data.tutorials import (
     get_tutorial_bids_dir,
     get_tutorial_subjects,
     setup_tutorial_data,
+    setup_tutorial_raw_masks,
 )
 
 
@@ -169,3 +170,81 @@ class TestSetupTutorialData:
         assert not (target / "old_file.txt").exists()
         # New data should be present
         assert (target / "dataset_description.json").exists()
+
+
+class TestSetupTutorialRawMasks:
+    """Test setup_tutorial_raw_masks function."""
+
+    def test_creates_flat_directory(self, tmp_path):
+        """setup_tutorial_raw_masks() creates a flat directory of masks."""
+        target = tmp_path / "raw_masks"
+        result = setup_tutorial_raw_masks(target)
+
+        assert result.exists()
+        assert result.is_dir()
+        assert result == target
+
+    def test_contains_expected_files(self, tmp_path):
+        """Raw masks directory contains one .nii.gz per subject."""
+        target = tmp_path / "raw_masks"
+        setup_tutorial_raw_masks(target)
+
+        nifti_files = sorted(f.name for f in target.glob("*.nii.gz"))
+        assert nifti_files == ["sub-01.nii.gz", "sub-02.nii.gz", "sub-03.nii.gz"]
+
+    def test_no_subdirectories(self, tmp_path):
+        """Raw masks directory has no subdirectories."""
+        target = tmp_path / "raw_masks"
+        setup_tutorial_raw_masks(target)
+
+        subdirs = [d for d in target.iterdir() if d.is_dir()]
+        assert subdirs == []
+
+    def test_no_bids_metadata(self, tmp_path):
+        """Raw masks directory has no BIDS metadata files."""
+        target = tmp_path / "raw_masks"
+        setup_tutorial_raw_masks(target)
+
+        assert not (target / "dataset_description.json").exists()
+        assert not (target / "participants.tsv").exists()
+
+    def test_masks_are_valid_nifti(self, tmp_path):
+        """Raw mask files are valid NIfTI images."""
+        target = tmp_path / "raw_masks"
+        setup_tutorial_raw_masks(target)
+
+        for nifti_file in target.glob("*.nii.gz"):
+            img = nib.load(nifti_file)
+            assert img is not None
+            assert len(img.shape) == 3
+
+    def test_masks_match_originals(self, tmp_path):
+        """Raw masks are identical to the BIDS originals."""
+        target = tmp_path / "raw_masks"
+        setup_tutorial_raw_masks(target)
+
+        for subject_id in get_tutorial_subjects():
+            original = nib.load(get_subject_mask_path(subject_id))
+            raw = nib.load(target / f"{subject_id}.nii.gz")
+            np.testing.assert_array_equal(
+                original.get_fdata(), raw.get_fdata()
+            )
+
+    def test_existing_directory_raises_error(self, tmp_path):
+        """setup_tutorial_raw_masks() raises error if target exists."""
+        target = tmp_path / "raw_masks"
+        target.mkdir()
+
+        with pytest.raises(FileExistsError):
+            setup_tutorial_raw_masks(target)
+
+    def test_overwrite_replaces_existing(self, tmp_path):
+        """setup_tutorial_raw_masks(overwrite=True) replaces existing."""
+        target = tmp_path / "raw_masks"
+        target.mkdir()
+        (target / "old_file.txt").write_text("old content")
+
+        setup_tutorial_raw_masks(target, overwrite=True)
+
+        assert not (target / "old_file.txt").exists()
+        assert (target / "sub-01.nii.gz").exists()

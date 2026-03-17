@@ -461,7 +461,9 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Validate coordinate space matches tractogram space
         # (should already be transformed by _ensure_target_space)
-        if mask_data.space != self.TARGET_SPACE:
+        from lacuna.core.spaces import spaces_are_equivalent
+
+        if not spaces_are_equivalent(mask_data.space, self.TARGET_SPACE):
             raise ValueError(
                 f"Mask space '{mask_data.space}' does not match tractogram space "
                 f"'{self.TARGET_SPACE}'. This is unexpected - space transformation "

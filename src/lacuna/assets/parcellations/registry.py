@@ -194,18 +194,6 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         citation="Tian et al. (2020), Nature Neuroscience, 23(11), 1421-1432",
         n_regions=54,
     ),
-    # HCP White Matter Tracts
-    "HCP1065_thr0p1": ParcellationMetadata(
-        name="HCP1065_thr0p1",
-        space="MNI152NLin2009aAsym",
-        resolution=1,
-        description="HCP-1065 white matter tract atlas — 64 tracts, probability threshold >= 0.1 (4D probabilistic)",
-        parcellation_filename="tpl-MNI152NLin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg.nii.gz",
-        labels_filename="tpl-MNI152NLin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg.txt",
-        citation="Yeh et al. (2022), Nature Communications, 13(1), 4933",
-        n_regions=64,  # 64 white matter tracts (one per volume)
-        is_4d=True,  # 4D parcellation with one tract per volume
-    ),
     # Schaefer 2018 - 17 Networks variants
     "Schaefer2018_100Parcels17Networks": ParcellationMetadata(
         name="Schaefer2018_100Parcels17Networks",

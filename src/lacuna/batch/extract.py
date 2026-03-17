@@ -27,19 +27,24 @@ def _get_identifier(subject: SubjectData) -> str:
     Includes subject_id, session_id, and label for proper disambiguation
     when processing multiple lesion types for the same subject.
 
-    Args:
-        subject: The subject to get the identifier of.
+    Parameters
+    ----------
+    subject : SubjectData
+        The subject to get the identifier of.
 
-    Returns:
+    Returns
+    -------
+    str
         The identifier of the subject. Uses BIDS entities from metadata
         (subject_id, session_id, label) if present, otherwise falls back
         to a string representation.
 
-    Examples:
-        - "sub-001" (only subject_id)
-        - "sub-001_ses-01" (subject + session)
-        - "sub-001_ses-01_label-WMH" (subject + session + label)
-        - "sub-001_label-acuteinfarct" (subject + label, no session)
+    Examples
+    --------
+    - "sub-001" (only subject_id)
+    - "sub-001_ses-01" (subject + session)
+    - "sub-001_ses-01_label-WMH" (subject + session + label)
+    - "sub-001_label-acuteinfarct" (subject + label, no session)
     """
     if not hasattr(subject, "metadata") or not subject.metadata:
         return f"subject_{id(subject)}"
@@ -70,10 +75,14 @@ def _get_identifier(subject: SubjectData) -> str:
 def _unwrap_value(val: Any) -> Any:
     """Unwrap a value by calling get_data() if available.
 
-    Args:
-        val: The value to unwrap.
+    Parameters
+    ----------
+    val : Any
+        The value to unwrap.
 
-    Returns:
+    Returns
+    -------
+    Any
         The unwrapped value, or the original value if no get_data() method.
     """
     # Skip nibabel images - they're already "raw" data
@@ -99,38 +108,53 @@ def extract(
     `extract_parcel_table()`, and `extract_scalars()` functions. Provides
     flexible filtering using glob patterns.
 
-    Args:
-        batch_results: The batch results to extract from. Can be either:
-            - list[SubjectData]: Direct output from batch_process()
-            - dict[SubjectData, dict]: BatchResults format with {subject: results}
-        analysis: Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
-            "RegionalDamage"). This filters by the top-level namespace in results.
-        pattern: Glob pattern to match result keys (e.g., "*rmap*",
-            "parc-Schaefer*_desc-*"). Supports fnmatch-style wildcards:
-            - ``*`` matches any sequence of characters
-            - ``?`` matches any single character
-            - ``[seq]`` matches any character in seq
-        unwrap: If True, call `get_data()` on result objects to return raw values.
-            If False (default), return wrapper objects (VoxelMap, ParcelData, etc.).
+    Parameters
+    ----------
+    batch_results : BatchResults or list
+        The batch results to extract from. Can be either:
 
-    Returns:
+        - list[SubjectData]: Direct output from batch_process()
+        - dict[SubjectData, dict]: BatchResults format with {subject: results}
+    analysis : str or None
+        Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
+        "RegionalDamage"). This filters by the top-level namespace in results.
+    pattern : str or None
+        Glob pattern to match result keys (e.g., "*rmap*",
+        "parc-Schaefer*_desc-*"). Supports fnmatch-style wildcards:
+
+        - ``*`` matches any sequence of characters
+        - ``?`` matches any single character
+        - ``[seq]`` matches any character in seq
+    unwrap : bool
+        If True, call ``get_data()`` on result objects to return raw values.
+        If False (default), return wrapper objects (VoxelMap, ParcelData, etc.).
+
+    Returns
+    -------
+    dict[str, Any]
         Dictionary mapping subject identifiers to extracted values.
         If only one result key matches per subject, returns {subject: value}.
         If multiple keys match, returns {subject: {key: value}}.
 
-    Examples:
-        Extract using glob pattern:
-        >>> results = extract(batch_results, analysis="FunctionalNetworkMapping",
-        ...                   pattern="*rmap*")
+    Raises
+    ------
+    ValueError
+        If batch_results is empty or no results match the filters.
 
-        Extract with pattern matching parcellation:
-        >>> results = extract(batch_results, pattern="*Schaefer*")
+    Examples
+    --------
+    Extract using glob pattern:
 
-        Extract with unwrapping (raw values):
-        >>> results = extract(batch_results, pattern="*Schaefer*", unwrap=True)
+    >>> results = extract(batch_results, analysis="FunctionalNetworkMapping",
+    ...                   pattern="*rmap*")
 
-    Raises:
-        ValueError: If batch_results is empty or no results match the filters.
+    Extract with pattern matching parcellation:
+
+    >>> results = extract(batch_results, pattern="*Schaefer*")
+
+    Extract with unwrapping (raw values):
+
+    >>> results = extract(batch_results, pattern="*Schaefer*", unwrap=True)
     """
     if not batch_results:
         msg = "batch_results is empty"

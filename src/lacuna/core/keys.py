@@ -293,8 +293,8 @@ def to_bids_label(value: str) -> str:
     >>> to_bids_label("r_map")
     'rmap'
 
-    >>> to_bids_label("HCP1065")
-    'hcp1065'
+    >>> to_bids_label("Schaefer2018")
+    'schaefer2018'
 
     >>> to_bids_label("mask_img")
     'maskimg'
@@ -330,11 +330,8 @@ def split_atlas_name(name: str) -> tuple[str, str | None]:
     >>> split_atlas_name("TianSubcortex_3TS1")
     ('tiansubcortex', '3ts1')
 
-    >>> split_atlas_name("HCP1065_thr0p1")
-    ('hcp1065', 'thr0p1')
-
-    >>> split_atlas_name("HCP1065")
-    ('hcp1065', None)
+    >>> split_atlas_name("TianSubcortex_3TS2")
+    ('tiansubcortex', '3ts2')
 
     >>> split_atlas_name("Schaefer2018_1000Parcels7Networks")
     ('schaefer2018', '1000parcels7networks')
@@ -397,12 +394,6 @@ def format_bids_export_filename(
 
     >>> format_bids_export_filename("rmap", "map")
     'desc-fnm_rmap'
-
-    >>> format_bids_export_filename(
-    ...     "atlas-HCP1065_thr0p1_source-InputMask",
-    ...     "values"
-    ... )
-    'atlas-hcp1065_desc-thr0p1_source-inputmask_parcelstats'
 
     For FNM/SNM outputs without parcellation (VoxelMaps), the desc-{source}
     is prepended to identify the analysis:

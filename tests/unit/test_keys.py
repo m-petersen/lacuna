@@ -87,9 +87,9 @@ class TestParseResultKey:
 
     def test_parse_desc_with_underscore(self):
         """Parse key when description contains underscore."""
-        result = parse_result_key("atlas-HCP1065_source-RegionalDamage_desc-damagescore")
+        result = parse_result_key("atlas-TianSubcortex_source-RegionalDamage_desc-damagescore")
         assert result == {
-            "atlas": "HCP1065",
+            "atlas": "TianSubcortex",
             "source": "RegionalDamage",
             "desc": "damagescore",
         }
@@ -200,7 +200,7 @@ class TestToBidsLabel:
 
     def test_no_underscore_lowercased(self):
         """Values without underscores are just lowercased."""
-        assert to_bids_label("HCP1065") == "hcp1065"
+        assert to_bids_label("Schaefer2018") == "schaefer2018"
 
     def test_empty_string(self):
         """Empty string is unchanged."""
@@ -232,16 +232,10 @@ class TestSplitAtlasName:
         assert atlas == "tiansubcortex"
         assert desc == "3ts1"
 
-    def test_hcp_thresholded(self):
-        """HCP1065_thr0p1 splits correctly."""
-        atlas, desc = split_atlas_name("HCP1065_thr0p1")
-        assert atlas == "hcp1065"
-        assert desc == "thr0p1"
-
     def test_simple_name_no_underscore(self):
-        """HCP1065 returns None for description (no underscore)."""
-        atlas, desc = split_atlas_name("HCP1065")
-        assert atlas == "hcp1065"
+        """Simple name returns None for description (no underscore)."""
+        atlas, desc = split_atlas_name("Schaefer2018")
+        assert atlas == "schaefer2018"
         assert desc is None
 
     def test_multiple_underscores_combines_rest(self):
@@ -302,12 +296,6 @@ class TestFormatBidsExportFilename:
         # No underscores in values
         assert "2018_100" not in result
 
-    def test_hcp_atlas_splits_correctly(self):
-        """HCP1065_thr0p1 splits into atlas-hcp1065_desc-thr0p1."""
-        result = format_bids_export_filename("atlas-HCP1065_thr0p1_source-InputMask", "values")
-        assert "atlas-hcp1065" in result
-        assert "desc-thr0p1" in result
-
     def test_tian_atlas_splits_correctly(self):
         """TianSubcortex_3TS1 splits into atlas-tiansubcortex_desc-3ts1."""
         result = format_bids_export_filename("atlas-TianSubcortex_3TS1_source-InputMask", "values")
@@ -317,11 +305,11 @@ class TestFormatBidsExportFilename:
     def test_fnm_parcelstats_includes_source_and_desc(self):
         """FNM parcelstats includes source-fnm and desc to identify analysis and map."""
         result = format_bids_export_filename(
-            "atlas-HCP1065_source-FunctionalNetworkMapping_desc-rmap", "values"
+            "atlas-TianSubcortex_3TS1_source-FunctionalNetworkMapping_desc-rmap", "values"
         )
         # For parcelstats, include source-fnm to identify the analysis
         # and desc-rmap to identify the specific map being aggregated
-        assert result == "atlas-hcp1065_source-fnm_desc-rmap_parcelstats"
+        assert result == "atlas-tiansubcortex_desc-3ts1_source-fnm_desc-rmap_parcelstats"
         assert "source-fnm" in result
         assert "desc-rmap" in result
 
@@ -347,7 +335,7 @@ class TestFormatBidsExportFilename:
         """Verify underscores only appear between BIDS key-value pairs."""
         test_cases = [
             ("atlas-Schaefer2018_100Parcels7Networks_source-InputMask", "values", "parcelstats"),
-            ("atlas-HCP1065_source-RegionalDamage_desc-damage_score", "values", "parcelstats"),
+            ("atlas-TianSubcortex_3TS1_source-RegionalDamage_desc-damage_score", "values", "parcelstats"),
         ]
 
         # BIDS entity pattern: key-value where key is lowercase letters, value is alphanumeric

@@ -79,10 +79,10 @@ class SpatialAssetMetadata(AssetMetadata):
         ValueError
             If space or resolution is invalid
         """
-        from lacuna.core.spaces import SPACE_ALIASES, SUPPORTED_SPACES
+        from lacuna.core.spaces import SUPPORTED_SPACES
 
-        # Check if space is supported (either directly or as alias)
-        if self.space not in SUPPORTED_SPACES and self.space not in SPACE_ALIASES:
+        # Check if space is supported
+        if self.space not in SUPPORTED_SPACES:
             raise ValueError(f"Unsupported space: {self.space}. " f"Supported: {SUPPORTED_SPACES}")
 
         # Check resolution

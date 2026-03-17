@@ -113,7 +113,7 @@ class Test4DAtlasDetection:
 
     def test_register_4d_atlas_sets_is_4d_true(self, tmp_path):
         """Registering 4D atlas should set is_4d=True."""
-        # Create 4D atlas (e.g., HCP1065 with 64 tracts)
+        # Create 4D atlas (e.g., probabilistic atlas with 64 regions)
         atlas_data = np.random.randint(0, 2, size=(10, 10, 10, 64), dtype=np.int16)
         atlas_img = nib.Nifti1Image(atlas_data, affine=np.eye(4))
         atlas_path = tmp_path / "atlas_4d.nii.gz"
@@ -155,9 +155,9 @@ class Test4DAtlasTransformation:
     @pytest.mark.slow
     @pytest.mark.requires_templateflow
     def test_transform_4d_atlas_real_world_scenario(self, tmp_path):
-        """Test transformation with realistic 4D atlas scenario (like HCP1065)."""
+        """Test transformation with realistic 4D atlas scenario."""
         # This test mimics the actual error scenario:
-        # MNI152NLin2009aAsym (1mm) atlas transformed to MNI152NLin6Asym (2mm)
+        # MNI152NLin2009bAsym (2mm) atlas transformed to MNI152NLin6Asym (2mm)
 
         # Create 4D atlas with realistic dimensions
         atlas_data = np.zeros((91, 109, 91, 4), dtype=np.int16)
@@ -166,11 +166,11 @@ class Test4DAtlasTransformation:
         atlas_data[50:60, 60:70, 50:60, 2] = 1  # Tract 3
         atlas_data[35:45, 45:55, 35:45, 3] = 1  # Tract 4
 
-        # Source affine (MNI152NLin2009aAsym, 2mm)
+        # Source affine (MNI152NLin2009bAsym, 2mm)
         source_affine = np.array(
             [
-                [-2.0, 0.0, 0.0, 90.0],
-                [0.0, 2.0, 0.0, -126.0],
+                [-2.0, 0.0, 0.0, 98.0],
+                [0.0, 2.0, 0.0, -134.0],
                 [0.0, 0.0, 2.0, -72.0],
                 [0.0, 0.0, 0.0, 1.0],
             ]
@@ -193,7 +193,7 @@ class Test4DAtlasTransformation:
         # Transform - this should work without UnboundLocalError
         result = transform_image(
             img=atlas_img,
-            source_space="MNI152NLin2009aAsym",
+            source_space="MNI152NLin2009bAsym",
             target_space=target_space,
             source_resolution=2.0,
             interpolation="nearest",

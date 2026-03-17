@@ -306,9 +306,11 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
     g_space.add_argument(
         "--mask-space",
         type=str,
+        choices=["MNI152NLin6Asym", "MNI152NLin2009cAsym"],
         metavar="SPACE",
         help=(
-            "Coordinate space of input masks (e.g., 'MNI152NLin6Asym'). "
+            "Coordinate space of input masks "
+            "(MNI152NLin6Asym or MNI152NLin2009cAsym). "
             "Required if not detectable from filename or sidecar JSON."
         ),
     )
@@ -752,9 +754,14 @@ def _build_tutorial_parser(subparsers) -> None:
             "  - 3 synthetic subjects (sub-01, sub-02, sub-03)\n"
             "  - Binary lesion masks in MNI152NLin6Asym space\n"
             "  - BIDS-compliant structure ready for analysis\n\n"
+            "Use --raw to output a flat directory of NIfTI mask files\n"
+            "(named by subject ID) instead of the BIDS structure.\n"
+            "This is useful for demonstrating the bidsify workflow:\n"
+            "  lacuna tutorial -> lacuna bidsify -> lacuna fetch -> lacuna run\n\n"
             "Examples:\n"
             "  lacuna tutorial ./my_tutorial\n"
-            "  lacuna tutorial /data/lacuna_tutorial --force"
+            "  lacuna tutorial /data/lacuna_tutorial --force\n"
+            "  lacuna tutorial ./raw_masks --raw"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -773,4 +780,13 @@ def _build_tutorial_parser(subparsers) -> None:
         "-f",
         action="store_true",
         help="Overwrite existing directory if it exists",
+    )
+
+    tutorial_parser.add_argument(
+        "--raw",
+        action="store_true",
+        help=(
+            "Output raw NIfTI mask files in a flat directory (no BIDS structure). "
+            "Use this to practice the bidsify workflow."
+        ),
     )

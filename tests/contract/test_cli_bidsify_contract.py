@@ -308,6 +308,69 @@ class TestTutorialCommandContract:
         tutorial_dir = tmp_path / "lacuna_tutorial"
         assert tutorial_dir.exists() or (tmp_path / "dataset_description.json").exists()
 
+    def test_tutorial_help_shows_raw_option(self):
+        """lacuna tutorial --help should show --raw option."""
+        result = subprocess.run(
+            [sys.executable, "-m", "lacuna", "tutorial", "--help"],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert "--raw" in result.stdout
+
+    def test_tutorial_raw_creates_flat_directory(self, tmp_path):
+        """lacuna tutorial --raw should create flat directory of NIfTI masks."""
+        output_dir = tmp_path / "raw_masks"
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "lacuna",
+                "tutorial",
+                str(output_dir),
+                "--raw",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0
+        assert output_dir.exists()
+        # Should have flat NIfTI files
+        nifti_files = sorted(f.name for f in output_dir.glob("*.nii.gz"))
+        assert len(nifti_files) >= 1
+        # Should NOT have BIDS metadata
+        assert not (output_dir / "dataset_description.json").exists()
+        assert not (output_dir / "participants.tsv").exists()
+        # Should NOT have subdirectories
+        subdirs = [d for d in output_dir.iterdir() if d.is_dir()]
+        assert subdirs == []
+
+    def test_tutorial_raw_without_output_uses_default(self, tmp_path, monkeypatch):
+        """lacuna tutorial --raw without output_dir should use default directory."""
+        monkeypatch.chdir(tmp_path)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "lacuna",
+                "tutorial",
+                "--raw",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+        )
+
+        assert result.returncode == 0
+        tutorial_dir = tmp_path / "lacuna_tutorial"
+        assert tutorial_dir.exists()
+        # Should contain flat NIfTI files, not BIDS structure
+        nifti_files = list(tutorial_dir.glob("*.nii.gz"))
+        assert len(nifti_files) >= 1
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

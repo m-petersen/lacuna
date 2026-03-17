@@ -12,7 +12,6 @@ All bundled atlases use BIDS-compliant naming:
 Available atlases:
     - Schaefer 2018 cortical parcellation (100, 200, 400, 1000 parcels)
     - Tian subcortical atlas (3 scales)
-    - HCP1065 white matter tracts
 
 Examples
 --------
@@ -92,8 +91,8 @@ def list_bundled_atlases() -> list[str]:
     >>> atlases = list_bundled_atlases()
     >>> print(atlases[0])  # First Schaefer atlas
     'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg'
-    >>> print(len(atlases))  # Schaefer (4) + Tian (3) + HCP1065 (1)
-    8
+    >>> print(len(atlases))  # Schaefer (4) + Tian (3)
+    7
     """
     atlas_dir = get_bundled_atlas_dir()
 
@@ -188,21 +187,13 @@ def get_atlas_citation(name: str) -> str:
     Examples
     --------
     >>> from lacuna.data import get_atlas_citation
-    >>> hcp = 'tpl-MNI152Nlin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg'
-    >>> citation = get_atlas_citation(hcp)
-    >>> print(citation[:30])
-    'HCP1065 White Matter Tracts...'
+    >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'
+    >>> citation = get_atlas_citation(schaefer)
+    >>> print(citation[:20])
+    'Schaefer 2018 Atlas'
     """
     # Citation database - keys match actual bundled atlas names
     citations = {
-        "tpl-MNI152Nlin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg": """HCP1065 White Matter Tracts: Yeh, F.-C., (2022).
-Population-based tract-to-region connectome of the human brain and its hierarchical topology.
-*Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4.
-Data were provided by the Human Connectome Project, WU-Minn Consortium
-(Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657)
-funded by the 16 NIH Institutes and Centers that support the NIH Blueprint
-for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience
-at Washington University.""",
         "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg": """Schaefer 2018 Atlas (100 parcels, 7 networks):
 Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
 Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic

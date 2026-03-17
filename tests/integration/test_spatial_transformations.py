@@ -5,7 +5,7 @@ Tests the complete transformation pipeline including:
 - TemplateFlow integrity checking
 - 3D/4D image handling
 - Asyncio compatibility in Jupyter environments
-- Space variant canonicalization
+- TemplateFlow space variant canonicalization (bAsym → cAsym for file lookup)
 """
 
 from pathlib import Path
@@ -15,7 +15,9 @@ import numpy as np
 import pytest
 
 from lacuna.core.spaces import CoordinateSpace
+from lacuna.core.spaces import REFERENCE_AFFINES
 from lacuna.spatial.transform import (
+    TransformationStrategy,
     _canonicalize_space_variant,
     can_transform_between,
     transform_image,
@@ -38,20 +40,6 @@ class TestTransformLoading:
         assert path.exists()
         assert path.suffix == ".h5"
         assert path.stat().st_size > 1024  # At least 1KB
-
-    @pytest.mark.slow
-    @pytest.mark.requires_templateflow
-    def test_transform_with_space_variant_aliasing(self):
-        """Transform should work with space variants (aAsym/bAsym → cAsym)."""
-        from lacuna.assets.transforms.loader import load_transform
-
-        # Request with aAsym variant
-        transform_name = "MNI152NLin2009aAsym_to_MNI152NLin6Asym"
-        path = load_transform(transform_name)
-
-        assert path.exists()
-        # Should normalize to cAsym internally
-        assert "MNI152NLin2009cAsym" in str(path) or "cAsym" in str(path)
 
     @pytest.mark.slow
     @pytest.mark.requires_templateflow
@@ -166,27 +154,138 @@ class TestImageDimensionHandling:
 
 
 class TestSpaceVariantCanonicalization:
-    """Test space variant canonicalization."""
+    """Test TemplateFlow canonicalization function.
 
-    def test_aAsym_canonicalizes_to_cAsym(self):
-        """aAsym variant should canonicalize to cAsym."""
-        result = _canonicalize_space_variant("MNI152NLin2009aAsym")
-        assert result == "MNI152NLin2009cAsym"
+    TemplateFlow canonicalization maps 2009 variants → 2009c for file lookup.
+    The core spaces module no longer has canonicalize_space_variant.
+    """
 
-    def test_bAsym_canonicalizes_to_cAsym(self):
-        """bAsym variant should canonicalize to cAsym."""
-        result = _canonicalize_space_variant("MNI152NLin2009bAsym")
-        assert result == "MNI152NLin2009cAsym"
+    # --- TemplateFlow canonicalization (transform.py) ---
 
-    def test_cAsym_unchanged(self):
-        """cAsym variant should remain unchanged."""
-        result = _canonicalize_space_variant("MNI152NLin2009cAsym")
-        assert result == "MNI152NLin2009cAsym"
+    def test_templateflow_bAsym_to_cAsym(self):
+        """TemplateFlow: bAsym → cAsym."""
+        assert _canonicalize_space_variant("MNI152NLin2009bAsym") == "MNI152NLin2009cAsym"
 
-    def test_non_variant_space_unchanged(self):
-        """Non-variant spaces should remain unchanged."""
-        result = _canonicalize_space_variant("MNI152NLin6Asym")
-        assert result == "MNI152NLin6Asym"
+    def test_templateflow_cAsym_unchanged(self):
+        """TemplateFlow: cAsym stays cAsym."""
+        assert _canonicalize_space_variant("MNI152NLin2009cAsym") == "MNI152NLin2009cAsym"
+
+    def test_templateflow_NLin6_unchanged(self):
+        """TemplateFlow: NLin6 is unchanged."""
+        assert _canonicalize_space_variant("MNI152NLin6Asym") == "MNI152NLin6Asym"
+
+
+class TestDetermineDirection:
+    """Test TransformationStrategy.determine_direction() for all direction types."""
+
+    def _make_space(self, identifier, resolution=2):
+        affine = REFERENCE_AFFINES.get((identifier, resolution), np.eye(4))
+        return CoordinateSpace(identifier=identifier, resolution=resolution, reference_affine=affine)
+
+    def test_none_same_space_same_resolution(self):
+        source = self._make_space("MNI152NLin6Asym", 2)
+        target = self._make_space("MNI152NLin6Asym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "none"
+
+    def test_resample_same_space_different_resolution(self):
+        source = self._make_space("MNI152NLin2009cAsym", 1)
+        target = self._make_space("MNI152NLin2009cAsym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "resample"
+
+    def test_regrid_bAsym_to_cAsym(self):
+        """2009b → 2009c requires regrid (different voxel grids, same world coords)."""
+        source = self._make_space("MNI152NLin2009bAsym", 2)
+        target = self._make_space("MNI152NLin2009cAsym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "regrid"
+
+    def test_regrid_cAsym_to_bAsym(self):
+        """2009c → 2009b requires regrid."""
+        source = self._make_space("MNI152NLin2009cAsym", 2)
+        target = self._make_space("MNI152NLin2009bAsym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "regrid"
+
+    def test_forward_NLin6_to_2009c(self):
+        source = self._make_space("MNI152NLin6Asym", 2)
+        target = self._make_space("MNI152NLin2009cAsym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "forward"
+
+    def test_reverse_2009c_to_NLin6(self):
+        source = self._make_space("MNI152NLin2009cAsym", 2)
+        target = self._make_space("MNI152NLin6Asym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "reverse"
+
+    def test_chain_forward_NLin6_to_bAsym(self):
+        """NLin6 → 2009b chains: NLin6→2009c (warp) → 2009b (regrid)."""
+        source = self._make_space("MNI152NLin6Asym", 2)
+        target = self._make_space("MNI152NLin2009bAsym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "chain_forward"
+
+    def test_chain_reverse_bAsym_to_NLin6(self):
+        """2009b → NLin6 chains: 2009b→2009c (regrid) → NLin6 (warp)."""
+        source = self._make_space("MNI152NLin2009bAsym", 2)
+        target = self._make_space("MNI152NLin6Asym", 2)
+        assert TransformationStrategy().determine_direction(source, target) == "chain_reverse"
+
+
+class TestRegridOperation:
+    """Test regrid (affine-aware resampling between 2009b and 2009c)."""
+
+    def test_regrid_preserves_world_coordinates(self):
+        """A point at a known MNI coordinate should map to the same mm location after regrid."""
+        from lacuna.core.spaces import REFERENCE_SHAPES
+
+        # Create a test image in 2009cAsym with a single bright voxel
+        affine_c = REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)]
+        shape_c = REFERENCE_SHAPES[("MNI152NLin2009cAsym", 2)]
+        data_c = np.zeros(shape_c, dtype=np.float32)
+
+        # Place a point at voxel center — compute its world coordinate
+        vox_ijk = np.array([48, 57, 48])  # Near center of 2009c 2mm grid
+        world_xyz = affine_c[:3, :3] @ vox_ijk + affine_c[:3, 3]
+
+        # Set a small sphere around that voxel
+        data_c[vox_ijk[0], vox_ijk[1], vox_ijk[2]] = 1.0
+        img_c = nib.Nifti1Image(data_c, affine_c)
+
+        # Regrid to 2009bAsym
+        target = CoordinateSpace(
+            identifier="MNI152NLin2009bAsym",
+            resolution=2,
+            reference_affine=REFERENCE_AFFINES[("MNI152NLin2009bAsym", 2)],
+        )
+        strategy = TransformationStrategy()
+        result = strategy.apply_regrid(img_c, target, interpolation=None)
+
+        # Find the peak voxel in the result
+        result_data = result.get_fdata()
+        peak_vox = np.unravel_index(np.argmax(result_data), result_data.shape)
+        result_world = result.affine[:3, :3] @ np.array(peak_vox) + result.affine[:3, 3]
+
+        # World coordinates should be within one voxel (2mm) of the original
+        assert np.allclose(world_xyz, result_world, atol=2.0), (
+            f"World coordinate mismatch: original {world_xyz}, regridded {result_world}"
+        )
+
+    def test_regrid_output_shape_matches_reference(self):
+        """Regridded image should have the target space's reference shape."""
+        from lacuna.core.spaces import REFERENCE_SHAPES
+
+        affine_b = REFERENCE_AFFINES[("MNI152NLin2009bAsym", 2)]
+        shape_b = REFERENCE_SHAPES[("MNI152NLin2009bAsym", 2)]
+        data = np.ones(shape_b, dtype=np.float32)
+        img_b = nib.Nifti1Image(data, affine_b)
+
+        target = CoordinateSpace(
+            identifier="MNI152NLin2009cAsym",
+            resolution=2,
+            reference_affine=REFERENCE_AFFINES[("MNI152NLin2009cAsym", 2)],
+        )
+        result = TransformationStrategy().apply_regrid(img_b, target)
+
+        expected_shape = REFERENCE_SHAPES[("MNI152NLin2009cAsym", 2)]
+        assert result.shape == expected_shape, (
+            f"Expected shape {expected_shape}, got {result.shape}"
+        )
 
 
 class TestAtlasTransformation:
@@ -323,15 +422,6 @@ class TestTransformCaching:
 
         # Should return True for available transform
         result = can_transform_between(source, target)
-        assert result is True
-
-        # Test with space variants
-        source_variant = CoordinateSpace(
-            identifier="MNI152NLin2009aAsym", resolution=2.0, reference_affine=np.eye(4)
-        )
-
-        # Should return True (aAsym canonicalizes to cAsym)
-        result = can_transform_between(source_variant, target)
         assert result is True
 
 

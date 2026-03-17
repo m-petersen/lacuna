@@ -64,8 +64,8 @@ def test_atlas_registry_has_bundled_atlases():
     assert "TianSubcortex_3TS2" in PARCELLATION_REGISTRY
     assert "TianSubcortex_3TS3" in PARCELLATION_REGISTRY
 
-    # Check for HCP atlas (actual name with threshold)
-    assert "HCP1065_thr0p1" in PARCELLATION_REGISTRY
+    # HCP1065 was removed — verify it's not in the registry
+    assert "HCP1065_thr0p1" not in PARCELLATION_REGISTRY
 
 
 def test_atlas_registry_metadata_validity():
@@ -214,19 +214,6 @@ def test_tian_atlas_metadata():
     assert tian_s2.resolution == 1
     assert tian_s2.n_regions == 32
     assert tian_s2.parcellation_filename is not None
-
-
-def test_hcp_atlas_metadata():
-    """Test HCP1065 atlas metadata."""
-    hcp = PARCELLATION_REGISTRY["HCP1065_thr0p1"]
-
-    assert hcp.name == "HCP1065_thr0p1"
-    assert "HCP" in hcp.parcellation_filename or "White Matter" in hcp.parcellation_filename
-    assert hcp.space == "MNI152NLin2009aAsym"
-    assert hcp.resolution == 1
-    assert hcp.n_regions == 64  # HCP white matter atlas has 64 tracts
-    assert hcp.parcellation_filename is not None
-    assert hcp.is_4d is True  # HCP is a 4D probabilistic atlas
 
 
 if __name__ == "__main__":

@@ -19,16 +19,6 @@ Each atlas uses BIDS-style naming:
 
 ## Included Atlases
 
-### HCP1065 White Matter Tracts (Atlas)
-- **File**: `tpl-MNI152Nlin2009aAsym_res-01_atlas-HCP1065_desc-thr0p1_probseg.nii.gz`
-- **Space**: MNI152NLin2009aAsym (1mm)
-- **Type**: Probabilistic (4D)
-- **Coverage**: White matter tracts
-- **Threshold**: 0.1 (10% probability threshold applied)
-- **Source**: Human Connectome Project
-- **Citation**: Yeh et al. (2022), Nature Communications, 22;13(1):4933
-- **License**: CC BY-SA 4.0
-
 ### Schaefer 2018 Atlas - 100 Parcels (7 Networks)
 - **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
@@ -191,12 +181,9 @@ All bundled atlases are available for non-commercial research use. If you use th
 
 2. **Tian Subcortical Atlas**: Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020). Topographic organization of the human subcortex unveiled with functional connectivity gradients. *Nature Neuroscience*, 23, 1516-1528. https://doi.org/10.1038/s41593-020-00711-6
 
-3. **HCP1065**: Yeh, F.-C., (2022). Population-based tract-to-region connectome of the human brain and its hierarchical topology. *Nature communications*, 22;13(1):4933. https://doi.org/10.1038/s41467-022-32595-4. Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research.
-
 ## Size Information
 
-- **Total size**: ~2.3 MB (compressed)
-- **HCP1065**: ~1.1 MB
+- **Total size**: ~1.2 MB (compressed)
 - **Schaefer-100**: ~229 KB
 - **Schaefer-200**: ~253 KB
 - **Schaefer-400**: ~289 KB

@@ -72,6 +72,30 @@ Different MNI variants use different:
 
 The differences are subtle (1-2mm) but can affect voxel-level analyses.
 
+### MNI152NLin2009 Variant Handling
+
+The MNI152NLin2009 template comes in three variants (a, b, c) with
+increasing refinement. Lacuna supports two of them:
+
+| Variant | Resolution | Origin (mm) | Role in Lacuna |
+|---------|-----------|-------------|----------------|
+| 2009bAsym | 0.5mm | (-98, -134, -72) | Internal (dTOR985 tractogram) |
+| 2009cAsym | 1mm | (-96, -132, -78) | User-facing, TemplateFlow canonical |
+
+**Key distinctions:**
+
+- **2009b ↔ 2009c**: Share MNI world coordinates but have different voxel
+  grids (origins differ by 2–6mm). Lacuna uses **affine-aware regridding**
+  to convert between them — no nonlinear warp needed.
+- **NLin6 ↔ 2009c**: Different registration pipelines. Lacuna applies
+  nonlinear warp transforms from TemplateFlow.
+- **NLin6 ↔ 2009b**: Chained automatically — NLin6 → 2009c (warp) → 2009b
+  (regrid).
+
+Users should provide masks in **NLin6Asym** or **2009cAsym** space.
+2009bAsym is used internally for the dTOR985 structural connectome and
+is not accepted as user input.
+
 ## Checking Your Space
 
 ### From File Headers

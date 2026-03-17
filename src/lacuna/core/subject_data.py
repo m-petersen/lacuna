@@ -180,11 +180,10 @@ class SubjectData:
         if "subject_id" not in metadata:
             metadata["subject_id"] = "sub-unknown"
 
-        # Define supported template spaces (MNI152 variants only)
-        # Note: aAsym, bAsym, cAsym are anatomically identical (different preprocessing pipelines)
+        # Supported template spaces
+        # NLin6 and 2009c are user-facing; 2009b is internal (dTOR985 tractogram)
         SUPPORTED_TEMPLATE_SPACES = [
             "MNI152NLin6Asym",
-            "MNI152NLin2009aAsym",
             "MNI152NLin2009bAsym",
             "MNI152NLin2009cAsym",
         ]

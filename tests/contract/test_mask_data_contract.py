@@ -173,7 +173,7 @@ class TestSpaceInference:
 
         with pytest.raises(
             ValueError,
-            match="MNI152NLin6Asym.*MNI152NLin2009aAsym.*MNI152NLin2009cAsym",
+            match="MNI152NLin6Asym.*MNI152NLin2009cAsym",
         ):
             SubjectData(
                 mask_img=mask_img,

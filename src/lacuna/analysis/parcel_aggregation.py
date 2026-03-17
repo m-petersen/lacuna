@@ -125,7 +125,7 @@ class ParcelAggregation(BaseAnalysis):
         If None, all registered atlases are processed.
         Use register_parcellation() or register_parcellationes_from_directory() to add custom atlases.
         If None, all parcellations found in atlas_dir will be processed.
-        Example: ["HCP1065", "Schaefer2018_400Parcels_7Networks_order_FSLMNI152_1mm"]
+        Example: ["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
 
     Raises
     ------

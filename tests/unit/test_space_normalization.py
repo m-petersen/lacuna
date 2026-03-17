@@ -1,7 +1,11 @@
-"""Unit tests for space variant canonicalization and validation utilities.
+"""Unit tests for space variant validation utilities.
 
-Tests consistent handling of space aliases (e.g., MNI152NLin2009aAsym → cAsym)
-across the codebase to avoid unnecessary transformations.
+Tests consistent handling of coordinate spaces across the codebase.
+
+Key design:
+- Supported spaces: MNI152NLin6Asym, MNI152NLin2009cAsym, MNI152NLin2009bAsym (internal)
+- No space aliases — spaces_are_equivalent is strict equality
+- 2009b and 2009c are distinct spaces (different voxel grids, require regridding)
 """
 
 import nibabel as nib
@@ -9,73 +13,15 @@ import numpy as np
 import pytest
 
 
-class TestCanonicalizeSpaceVariant:
-    """Test canonicalize_space_variant function."""
-
-    def test_normalizes_aAsym_to_cAsym(self):
-        """MNI152NLin2009aAsym should canonicalize to cAsym (canonical form)."""
-        from lacuna.core.spaces import canonicalize_space_variant
-
-        result = canonicalize_space_variant("MNI152NLin2009aAsym")
-        assert result == "MNI152NLin2009cAsym"
-
-    def test_normalizes_bAsym_to_cAsym(self):
-        """MNI152NLin2009bAsym should canonicalize to cAsym (canonical form)."""
-        from lacuna.core.spaces import canonicalize_space_variant
-
-        result = canonicalize_space_variant("MNI152NLin2009bAsym")
-        assert result == "MNI152NLin2009cAsym"
-
-    def test_cAsym_is_identity(self):
-        """cAsym is already canonical - should return unchanged."""
-        from lacuna.core.spaces import canonicalize_space_variant
-
-        result = canonicalize_space_variant("MNI152NLin2009cAsym")
-        assert result == "MNI152NLin2009cAsym"
-
-    def test_other_spaces_unchanged(self):
-        """Non-aliased spaces should return unchanged."""
-        from lacuna.core.spaces import canonicalize_space_variant
-
-        # MNI152NLin6Asym is not an alias
-        result = canonicalize_space_variant("MNI152NLin6Asym")
-        assert result == "MNI152NLin6Asym"
-
-        # Custom/native spaces unchanged
-        result = canonicalize_space_variant("native")
-        assert result == "native"
-
-    def test_case_sensitive(self):
-        """Space identifiers are case-sensitive."""
-        from lacuna.core.spaces import canonicalize_space_variant
-
-        # Should not match due to case
-        result = canonicalize_space_variant("mni152nlin2009aasym")
-        assert result == "mni152nlin2009aasym"  # Unchanged
-
-
 class TestSpacesAreEquivalent:
-    """Test spaces_are_equivalent helper for comparing spaces with aliases."""
+    """Test spaces_are_equivalent helper for comparing spaces."""
 
-    def test_aAsym_equals_cAsym(self):
-        """aAsym and cAsym are anatomically equivalent."""
+    def test_bAsym_not_equal_cAsym(self):
+        """bAsym and cAsym have different voxel grids — NOT equivalent."""
         from lacuna.core.spaces import spaces_are_equivalent
 
-        assert spaces_are_equivalent("MNI152NLin2009aAsym", "MNI152NLin2009cAsym")
-        assert spaces_are_equivalent("MNI152NLin2009cAsym", "MNI152NLin2009aAsym")
-
-    def test_bAsym_equals_cAsym(self):
-        """bAsym and cAsym are anatomically equivalent."""
-        from lacuna.core.spaces import spaces_are_equivalent
-
-        assert spaces_are_equivalent("MNI152NLin2009bAsym", "MNI152NLin2009cAsym")
-        assert spaces_are_equivalent("MNI152NLin2009cAsym", "MNI152NLin2009bAsym")
-
-    def test_aAsym_equals_bAsym(self):
-        """aAsym and bAsym are anatomically equivalent (both normalize to cAsym)."""
-        from lacuna.core.spaces import spaces_are_equivalent
-
-        assert spaces_are_equivalent("MNI152NLin2009aAsym", "MNI152NLin2009bAsym")
+        assert not spaces_are_equivalent("MNI152NLin2009bAsym", "MNI152NLin2009cAsym")
+        assert not spaces_are_equivalent("MNI152NLin2009cAsym", "MNI152NLin2009bAsym")
 
     def test_identical_spaces_equal(self):
         """Identical space strings are equivalent."""
@@ -83,6 +29,7 @@ class TestSpacesAreEquivalent:
 
         assert spaces_are_equivalent("MNI152NLin6Asym", "MNI152NLin6Asym")
         assert spaces_are_equivalent("MNI152NLin2009cAsym", "MNI152NLin2009cAsym")
+        assert spaces_are_equivalent("MNI152NLin2009bAsym", "MNI152NLin2009bAsym")
 
     def test_different_spaces_not_equal(self):
         """Different spaces (NLin6 vs NLin2009c) are not equivalent."""
@@ -101,15 +48,6 @@ class TestSpacesAreEquivalent:
 class TestValidateSpaceCompatibility:
     """Test validate_space_compatibility helper for consistent validation."""
 
-    def test_accepts_equivalent_spaces(self):
-        """Should accept equivalent spaces without error."""
-        from lacuna.core.spaces import validate_space_compatibility
-
-        # Should not raise
-        validate_space_compatibility(
-            actual_space="MNI152NLin2009aAsym", expected_space="MNI152NLin2009cAsym", context="test"
-        )
-
     def test_accepts_identical_spaces(self):
         """Should accept identical spaces."""
         from lacuna.core.spaces import validate_space_compatibility
@@ -118,6 +56,17 @@ class TestValidateSpaceCompatibility:
         validate_space_compatibility(
             actual_space="MNI152NLin6Asym", expected_space="MNI152NLin6Asym", context="test"
         )
+
+    def test_rejects_bAsym_vs_cAsym(self):
+        """bAsym and cAsym have different voxel grids — should raise."""
+        from lacuna.core.spaces import validate_space_compatibility
+
+        with pytest.raises(ValueError, match="Space mismatch"):
+            validate_space_compatibility(
+                actual_space="MNI152NLin2009bAsym",
+                expected_space="MNI152NLin2009cAsym",
+                context="test",
+            )
 
     def test_rejects_incompatible_spaces(self):
         """Should raise error for incompatible spaces."""
@@ -204,11 +153,11 @@ class TestValidateSpaceAndResolution:
 
 
 class TestParcelAggregationSpaceHandling:
-    """Test that ParcelAggregation correctly handles space aliases."""
+    """Test that ParcelAggregation correctly handles space differences."""
 
     @pytest.fixture
-    def mask_data_aAsym(self):
-        """Create SubjectData in MNI152NLin2009aAsym space."""
+    def mask_data_bAsym(self):
+        """Create SubjectData in MNI152NLin2009bAsym space."""
         from lacuna.core.subject_data import SubjectData
 
         # 2mm MNI affine
@@ -223,7 +172,7 @@ class TestParcelAggregationSpaceHandling:
         img = nib.Nifti1Image(np.ones((91, 109, 91)), affine)
 
         return SubjectData(
-            mask_img=img, metadata={"space": "MNI152NLin2009aAsym", "resolution": 2.0}
+            mask_img=img, metadata={"space": "MNI152NLin2009bAsym", "resolution": 2.0}
         )
 
     @pytest.fixture
@@ -244,55 +193,39 @@ class TestParcelAggregationSpaceHandling:
 
         return nib.Nifti1Image(data, affine)
 
-    def test_no_transformation_for_equivalent_spaces(
-        self, mask_data_aAsym, atlas_img_cAsym, monkeypatch
+    def test_transformation_needed_for_different_grids(
+        self, mask_data_bAsym, atlas_img_cAsym, monkeypatch
     ):
-        """ParcelAggregation should NOT transform atlas when spaces are equivalent.
+        """ParcelAggregation SHOULD transform when grids differ.
 
-        This is the key bug: Previously atlas_aggregation.py line 398 did:
-            if atlas_space == input_space:
-                return atlas_img
-
-        But "MNI152NLin2009aAsym" != "MNI152NLin2009cAsym" (string comparison)
-        So it attempted transformation even though they're anatomically equivalent.
-
-        After fix, should normalize both spaces and recognize equivalence.
+        bAsym and cAsym have different voxel grids, so regridding is needed.
         """
         from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
-        # Create mock that would fail if transformation attempted
         transform_called = {"value": False}
 
         def mock_transform_image(*args, **kwargs):
             transform_called["value"] = True
-            # Return original to avoid actual transformation
             return atlas_img_cAsym
 
-        # Monkeypatch transform at the point where it's imported
         monkeypatch.setattr("lacuna.spatial.transform.transform_image", mock_transform_image)
 
-        # Create analysis instance
         analysis = ParcelAggregation()
 
-        # Call _ensure_atlas_matches_input_space (private method)
-        result = analysis._ensure_atlas_matches_input_space(
+        analysis._ensure_atlas_matches_input_space(
             atlas_img=atlas_img_cAsym,
             atlas_space="MNI152NLin2009cAsym",
             atlas_resolution=2.0,
-            input_space="MNI152NLin2009aAsym",
+            input_space="MNI152NLin2009bAsym",
             input_resolution=2.0,
-            input_affine=mask_data_aAsym.mask_img.affine,
+            input_affine=mask_data_bAsym.mask_img.affine,
         )
 
-        # Assert: Transformation should NOT have been called
-        # (spaces are equivalent after normalization)
-        assert not transform_called["value"], (
-            "transform_image was called even though spaces are equivalent "
-            "(aAsym and cAsym are anatomically identical)"
+        # cAsym and bAsym have different grids — transform IS needed
+        assert transform_called["value"], (
+            "transform_image was NOT called even though cAsym and bAsym "
+            "have different voxel grids and require regridding"
         )
-
-        # Result should be original atlas unchanged
-        assert result is atlas_img_cAsym
 
 
 class TestResolutionValidationInBaseAnalysis:

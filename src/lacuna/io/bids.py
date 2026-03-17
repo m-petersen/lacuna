@@ -84,7 +84,7 @@ def load_bids_dataset(
         Coordinate space for loaded masks. If None, attempts to detect from
         filename (_space-XXX) or sidecar JSON. If detection fails and space
         is not provided, a warning is emitted and the file is skipped.
-        Supported spaces: MNI152NLin6Asym, MNI152NLin2009aAsym, MNI152NLin2009cAsym
+        Supported spaces: MNI152NLin6Asym, MNI152NLin2009cAsym
     resolution : float or None, default=None
         Voxel resolution in mm. If None, attempts to detect from filename
         (_res-X) or sidecar JSON.

@@ -10,7 +10,37 @@ import numpy as np
 from nitransforms.manip import TransformChain
 
 from lacuna.core.exceptions import TransformNotAvailableError
-from lacuna.core.spaces import CoordinateSpace
+from lacuna.core.spaces import (
+    REFERENCE_AFFINES,
+    REFERENCE_SHAPES,
+    CoordinateSpace,
+)
+
+# TemplateFlow only stores transforms/templates for 2009cAsym.
+# 2009bAsym (used internally for dTOR985) must be mapped to 2009c for file lookup.
+_TEMPLATEFLOW_SPACE_CANONICAL = {
+    "MNI152NLin2009bAsym": "MNI152NLin2009cAsym",
+}
+
+
+def _canonicalize_space_variant(space_id: str) -> str:
+    """Map space identifiers to TemplateFlow canonical forms.
+
+    MNI152NLin2009bAsym is mapped to 2009cAsym because TemplateFlow
+    only stores transforms/templates for that variant.
+
+    Parameters
+    ----------
+    space_id : str
+        Space identifier.
+
+    Returns
+    -------
+    str
+        TemplateFlow-canonical space identifier.
+    """
+    return _TEMPLATEFLOW_SPACE_CANONICAL.get(space_id, space_id)
+
 
 # Fix for Jupyter notebooks: Allow nested event loops for nitransforms
 # nitransforms uses asyncio.run() which fails in Jupyter's existing event loop
@@ -28,29 +58,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Space equivalence groups - spaces that are anatomically identical
-# MNI152NLin2009aAsym, bAsym, and cAsym are anatomically identical
-# They only differ in the preprocessing pipeline used to create them
-EQUIVALENT_SPACES = {
-    "MNI152NLin2009aAsym": "MNI152NLin2009cAsym",
-    "MNI152NLin2009bAsym": "MNI152NLin2009cAsym",
-    "MNI152NLin2009cAsym": "MNI152NLin2009cAsym",  # Identity for completeness
-}
-
-
-def _canonicalize_space_variant(space_id: str) -> str:
-    """Canonicalize MNI space variant identifiers to canonical forms.
-
-    For anatomically identical spaces (e.g., MNI152NLin2009[abc]Asym),
-    returns the canonical representative (MNI152NLin2009cAsym).
-
-    Args:
-        space_id: Space identifier to canonicalize
-
-    Returns:
-        Canonical space identifier
-    """
-    return EQUIVALENT_SPACES.get(space_id, space_id)
+# MNI 2009 space grid families:
+# - 2009b has origin (-98, -134, -72) — used internally for dTOR985
+# - 2009c has origin (-96, -132, -78) — user-facing, TemplateFlow canonical
+# Both share MNI world coordinates (mm-space anatomy aligns) but have different
+# voxel grids, requiring affine-aware regridding to move between them.
+_MNI2009B = "MNI152NLin2009bAsym"
+_MNI2009C = "MNI152NLin2009cAsym"
+_NLIN6 = "MNI152NLin6Asym"
 
 
 class InterpolationMethod(str, Enum):
@@ -70,55 +85,63 @@ class TransformationStrategy:
 
     def determine_direction(
         self, source: CoordinateSpace, target: CoordinateSpace
-    ) -> Literal["forward", "reverse", "none"]:
+    ) -> Literal["forward", "reverse", "regrid", "chain_forward", "chain_reverse", "resample", "none"]:
         """Determine transformation direction based on source and target spaces.
 
-        Args:
-            source: Source coordinate space
-            target: Target coordinate space
+        Parameters
+        ----------
+        source : CoordinateSpace
+            Source coordinate space.
+        target : CoordinateSpace
+            Target coordinate space.
 
-        Returns:
-            "forward" for source->target transform,
-            "reverse" for target->source transform,
-            "none" if no transformation needed
+        Returns
+        -------
+        str
+            "none" — no transformation needed
+            "resample" — same space, different resolution
+            "regrid" — 2009b ↔ 2009c (same world coords, different voxel grid)
+            "forward" — NLin6 → NLin2009c (nonlinear warp)
+            "reverse" — NLin2009c → NLin6 (nonlinear warp)
+            "chain_forward" — NLin6 → 2009c → 2009b (warp then regrid)
+            "chain_reverse" — 2009b → 2009c → NLin6 (regrid then warp)
 
-        Raises:
-            TransformNotAvailableError: If transformation not supported
+        Raises
+        ------
+        TransformNotAvailableError
+            If transformation not supported.
         """
-        # Normalize space identifiers to handle equivalent spaces
-        source_normalized = _canonicalize_space_variant(source.identifier)
-        target_normalized = _canonicalize_space_variant(target.identifier)
+        src = source.identifier
+        tgt = target.identifier
 
-        # Same space (after normalization) - no transform needed
-        if source_normalized == target_normalized and source.resolution == target.resolution:
+        # Same space, same resolution — nothing to do
+        if src == tgt and source.resolution == target.resolution:
             return "none"
 
-        # Same space but different resolution - needs resampling only
-        if source_normalized == target_normalized and source.resolution != target.resolution:
+        # Same space, different resolution — resample
+        if src == tgt:
             return "resample"
 
-        # Check if transformation is available (using normalized spaces)
-        if not can_transform_between(source, target):
-            available = query_available_transforms()
-            raise TransformNotAvailableError(
-                source_space=source.identifier,
-                target_space=target.identifier,
-                supported_transforms=available,
-            )
+        # 2009b ↔ 2009c: same MNI world coordinates, different voxel grids
+        if {src, tgt} == {_MNI2009B, _MNI2009C}:
+            return "regrid"
 
-        # Determine direction based on normalized space identifiers
-        # Forward: NLin6 -> NLin2009c
-        if source_normalized == "MNI152NLin6Asym" and target_normalized == "MNI152NLin2009cAsym":
+        # NLin6 ↔ 2009c: nonlinear warp via TemplateFlow
+        if src == _NLIN6 and tgt == _MNI2009C:
             return "forward"
-        # Reverse: NLin2009c -> NLin6
-        elif source_normalized == "MNI152NLin2009cAsym" and target_normalized == "MNI152NLin6Asym":
+        if src == _MNI2009C and tgt == _NLIN6:
             return "reverse"
 
-        # Should not reach here if can_transform_between passed
+        # NLin6 ↔ 2009b: chain via 2009c (warp + regrid)
+        if src == _NLIN6 and tgt == _MNI2009B:
+            return "chain_forward"
+        if src == _MNI2009B and tgt == _NLIN6:
+            return "chain_reverse"
+
         raise TransformNotAvailableError(
-            source_space=source.identifier,
-            target_space=target.identifier,
-            available_transforms=query_available_transforms(),
+            source_space=src,
+            target_space=tgt,
+            supported_transforms=query_available_transforms(),
         )
 
     def select_interpolation(
@@ -126,12 +149,17 @@ class TransformationStrategy:
     ) -> InterpolationMethod:
         """Select appropriate interpolation method based on image data.
 
-        Args:
-            img: Image to transform
-            method: Override interpolation method (if None, auto-detect)
+        Parameters
+        ----------
+        img : nib.Nifti1Image
+            Image to transform.
+        method : InterpolationMethod or None
+            Override interpolation method (if None, auto-detect).
 
-        Returns:
-            Interpolation method to use
+        Returns
+        -------
+        InterpolationMethod
+            Interpolation method to use.
         """
         if method is not None:
             return method
@@ -160,13 +188,19 @@ class TransformationStrategy:
     ) -> nib.Nifti1Image:
         """Resample image to different resolution in same coordinate space.
 
-        Args:
-            img: Image to resample
-            target_space: Target coordinate space (with desired resolution)
-            interpolation: Interpolation method override
+        Parameters
+        ----------
+        img : nib.Nifti1Image
+            Image to resample.
+        target_space : CoordinateSpace
+            Target coordinate space (with desired resolution).
+        interpolation : InterpolationMethod or None
+            Interpolation method override.
 
-        Returns:
-            Resampled image
+        Returns
+        -------
+        nib.Nifti1Image
+            Resampled image.
         """
         from nilearn.image import resample_img
 
@@ -217,6 +251,72 @@ class TransformationStrategy:
                 copy_header=True,
             )
 
+    def apply_regrid(
+        self,
+        img: nib.Nifti1Image,
+        target_space: CoordinateSpace,
+        interpolation: InterpolationMethod | None = None,
+    ) -> nib.Nifti1Image:
+        """Resample image to a different voxel grid in the same world coordinate system.
+
+        Unlike apply_resampling() which rescales the source affine, this method
+        uses the TARGET space's reference affine and shape. This is needed when
+        moving between 2009b and 2009c which share MNI world coordinates but
+        have different voxel grids (origins differ by 2-6mm).
+
+        Parameters
+        ----------
+        img : nib.Nifti1Image
+            Image to regrid.
+        target_space : CoordinateSpace
+            Target coordinate space (with correct reference affine).
+        interpolation : InterpolationMethod or None
+            Interpolation method override.
+
+        Returns
+        -------
+        nib.Nifti1Image
+            Regridded image in target voxel grid.
+        """
+        from nilearn.image import resample_img
+
+        interp_method = self.select_interpolation(img, interpolation)
+        interp_str = "nearest" if interp_method == InterpolationMethod.NEAREST else "continuous"
+
+        # Use the target space's reference affine and shape (NOT derived from source)
+        target_affine = REFERENCE_AFFINES.get(
+            (target_space.identifier, target_space.resolution),
+            target_space.reference_affine,
+        )
+        target_shape = REFERENCE_SHAPES.get(
+            (target_space.identifier, target_space.resolution)
+        )
+        if target_shape is None:
+            raise ValueError(
+                f"No reference shape for {target_space.identifier}@{target_space.resolution}mm. "
+                f"Known shapes: {list(REFERENCE_SHAPES.keys())}"
+            )
+
+        logger.debug(
+            f"Regridding: {img.shape} -> {target_shape} "
+            f"(target: {target_space.identifier}@{target_space.resolution}mm)"
+        )
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Non-finite values detected",
+                category=UserWarning,
+            )
+            return resample_img(
+                img,
+                target_affine=target_affine,
+                target_shape=target_shape,
+                interpolation=interp_str,
+                force_resample=True,
+                copy_header=True,
+            )
+
     def apply_transformation(
         self,
         img: nib.Nifti1Image,
@@ -227,18 +327,28 @@ class TransformationStrategy:
     ) -> nib.Nifti1Image:
         """Apply spatial transformation to image data.
 
-        Args:
-            img: Image to transform
-            source: Source coordinate space
-            target: Target coordinate space
-            transform: Nitransforms TransformChain (composite transform with affine + nonlinear)
-            interpolation: Interpolation method (auto-detected if None)
+        Parameters
+        ----------
+        img : nib.Nifti1Image
+            Image to transform.
+        source : CoordinateSpace
+            Source coordinate space.
+        target : CoordinateSpace
+            Target coordinate space.
+        transform : TransformChain
+            Nitransforms TransformChain (composite transform with affine + nonlinear).
+        interpolation : InterpolationMethod or None
+            Interpolation method (auto-detected if None).
 
-        Returns:
-            Transformed image in target space
+        Returns
+        -------
+        nib.Nifti1Image
+            Transformed image in target space.
 
-        Raises:
-            TransformNotAvailableError: If transformation not supported
+        Raises
+        ------
+        TransformNotAvailableError
+            If transformation not supported.
         """
         # Determine direction
         direction = self.determine_direction(source, target)
@@ -275,26 +385,13 @@ class TransformationStrategy:
                 f"Could not load template for {target.identifier}@{target.resolution}mm, "
                 "using synthetic reference"
             )
-            # Standard MNI template dimensions at various resolutions
-            dimension_map = {
-                ("MNI152NLin6Asym", 1): (182, 218, 182),
-                ("MNI152NLin6Asym", 2): (91, 109, 91),
-                ("MNI152NLin2009cAsym", 1): (193, 229, 193),
-                ("MNI152NLin2009cAsym", 2): (97, 115, 97),
-                ("MNI152NLin2009bAsym", 1): (193, 229, 193),
-                ("MNI152NLin2009bAsym", 2): (97, 115, 97),
-                ("MNI152NLin2009aAsym", 1): (193, 229, 193),
-                ("MNI152NLin2009aAsym", 2): (97, 115, 97),
-            }
-            shape = dimension_map.get(
+            shape = REFERENCE_SHAPES.get(
                 (target.identifier, target.resolution),
                 # Fallback: estimate from 1mm dimensions and resolution
                 tuple(int(193 // target.resolution) for _ in range(3)),
             )
 
             # Create affine at target resolution
-            from lacuna.core.spaces import REFERENCE_AFFINES
-
             ref_affine = REFERENCE_AFFINES.get(
                 (target.identifier, target.resolution), target.reference_affine
             )
@@ -429,11 +526,15 @@ class TransformationStrategy:
     def _get_interpolation_order(self, method: InterpolationMethod) -> int:
         """Map interpolation method to scipy order parameter.
 
-        Args:
-            method: Interpolation method
+        Parameters
+        ----------
+        method : InterpolationMethod
+            Interpolation method.
 
-        Returns:
-            Scipy interpolation order (0-3)
+        Returns
+        -------
+        int
+            Scipy interpolation order (0-3).
         """
         mapping = {
             InterpolationMethod.NEAREST: 0,
@@ -458,22 +559,34 @@ def transform_image(
     between coordinate spaces. Use this when working with atlases, templates,
     or other non-lesion images.
 
-    Args:
-        img: NIfTI image to transform
-        source_space: Source coordinate space identifier (e.g., "MNI152NLin6Asym")
-        target_space: Target coordinate space object or identifier string
-        source_resolution: Source resolution in mm (default: infer from affine)
-        interpolation: Interpolation method (auto-detected if None).
-            Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic').
-            Default: 'cubic' for continuous data, 'nearest' for binary/integer data.
-        image_name: Name of image/atlas for user-facing log messages (e.g., "SchaeferYeo7Networks")
-        verbose: If True, print progress messages. If False, run silently.
+    Parameters
+    ----------
+    img : nib.Nifti1Image
+        NIfTI image to transform.
+    source_space : str
+        Source coordinate space identifier (e.g., "MNI152NLin6Asym").
+    target_space : CoordinateSpace or str
+        Target coordinate space object or identifier string.
+    source_resolution : int or None
+        Source resolution in mm (default: infer from affine).
+    interpolation : InterpolationMethod or str or None
+        Interpolation method (auto-detected if None).
+        Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic').
+        Default: 'cubic' for continuous data, 'nearest' for binary/integer data.
+    image_name : str or None
+        Name of image/atlas for user-facing log messages (e.g., "SchaeferYeo7Networks").
+    verbose : bool
+        If True, print progress messages. If False, run silently.
 
-    Returns:
-        Transformed NIfTI image in target space
+    Returns
+    -------
+    nib.Nifti1Image
+        Transformed NIfTI image in target space.
 
-    Raises:
-        TransformNotAvailableError: If transformation not supported
+    Raises
+    ------
+    TransformNotAvailableError
+        If transformation not supported.
 
     Notes:
         To save intermediate warped images for QC, use analysis classes with
@@ -492,8 +605,6 @@ def transform_image(
         >>> transformed = transform_image(atlas, "MNI152NLin6Asym", target,
         ...                              interpolation='nearest', image_name="MyAtlas")
     """
-    from lacuna.core.spaces import REFERENCE_AFFINES
-
     # Convert string interpolation to enum if needed
     if isinstance(interpolation, str):
         interp_map = {
@@ -556,15 +667,77 @@ def transform_image(
             )
         return strategy.apply_resampling(img, target_space_obj, interpolation)
 
-    # Load transform from asset registry
+    # Handle regrid (2009b ↔ 2009c: same world coords, different voxel grid)
+    if direction == "regrid":
+        if verbose:
+            logger.info(
+                f"Regridding {image_desc}: "
+                f"{source_space_obj.identifier}@{source_space_obj.resolution}mm → "
+                f"{target_space_obj.identifier}@{target_space_obj.resolution}mm "
+                f"(same world space, different voxel grid)"
+            )
+        return strategy.apply_regrid(img, target_space_obj, interpolation)
+
+    # Handle chained transforms (NLin6 ↔ 2009b via 2009c intermediate)
+    if direction == "chain_forward":
+        # NLin6 → 2009c (nonlinear warp) → 2009b (regrid)
+        if verbose:
+            logger.info(
+                f"Chaining {image_desc}: "
+                f"{source_space_obj.identifier} → MNI152NLin2009cAsym → "
+                f"{target_space_obj.identifier}"
+            )
+        intermediate = transform_image(
+            img,
+            source_space=source_space_obj.identifier,
+            target_space="MNI152NLin2009cAsym",
+            source_resolution=source_space_obj.resolution,
+            interpolation=interpolation,
+            image_name=image_name,
+            verbose=verbose,
+        )
+        return transform_image(
+            intermediate,
+            source_space="MNI152NLin2009cAsym",
+            target_space=target_space_obj,
+            interpolation=interpolation,
+            image_name=image_name,
+            verbose=verbose,
+        )
+
+    if direction == "chain_reverse":
+        # 2009b → 2009c (regrid) → NLin6 (reverse warp)
+        if verbose:
+            logger.info(
+                f"Chaining {image_desc}: "
+                f"{source_space_obj.identifier} → MNI152NLin2009cAsym → "
+                f"{target_space_obj.identifier}"
+            )
+        intermediate = transform_image(
+            img,
+            source_space=source_space_obj.identifier,
+            target_space="MNI152NLin2009cAsym",
+            source_resolution=source_space_obj.resolution,
+            interpolation=interpolation,
+            image_name=image_name,
+            verbose=verbose,
+        )
+        return transform_image(
+            intermediate,
+            source_space="MNI152NLin2009cAsym",
+            target_space=target_space_obj,
+            interpolation=interpolation,
+            image_name=image_name,
+            verbose=verbose,
+        )
+
+    # Load nonlinear transform from asset registry (forward/reverse warp)
     from lacuna.assets.transforms import load_transform
 
     transform_name = f"{source_space_obj.identifier}_to_{target_space_obj.identifier}"
     try:
         transform_path = load_transform(transform_name)
     except (KeyError, FileNotFoundError) as e:
-        from lacuna.core.exceptions import TransformNotAvailableError
-
         raise TransformNotAvailableError(
             source_space_obj.identifier,
             target_space_obj.identifier,
@@ -573,7 +746,6 @@ def transform_image(
 
     # Log transformation with image name and space transition
     if verbose:
-        # Select interpolation method for logging
         interp_method = strategy.select_interpolation(img, interpolation)
         logger.info(
             f"Warping {image_desc} to reference: "
@@ -583,7 +755,6 @@ def transform_image(
         )
 
     # Load transform with nitransforms
-    # Use manip.load for composite transforms (affine + nonlinear warp fields)
     try:
         import nitransforms as nt
 
@@ -622,21 +793,32 @@ def transform_mask_data(
     - Transformation application
     - Provenance tracking
 
-    Args:
-        mask_data: SubjectData object to transform
-        target_space: Target coordinate space
-        interpolation: Interpolation method (auto-detected if None).
-            Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic').
-            Default: 'nearest' for binary masks (preserves mask integrity).
-        image_name: Name of mask for user-facing log messages (e.g., "lesion_001")
-        verbose: If True, print progress messages. If False, run silently.
+    Parameters
+    ----------
+    mask_data : SubjectData
+        SubjectData object to transform.
+    target_space : CoordinateSpace
+        Target coordinate space.
+    interpolation : InterpolationMethod or str or None
+        Interpolation method (auto-detected if None).
+        Can be InterpolationMethod enum or string ('nearest', 'linear', 'cubic').
+        Default: 'nearest' for binary masks (preserves mask integrity).
+    image_name : str or None
+        Name of mask for user-facing log messages (e.g., "lesion_001").
+    verbose : bool
+        If True, print progress messages. If False, run silently.
 
-    Returns:
-        New SubjectData object in target space
+    Returns
+    -------
+    SubjectData
+        New SubjectData object in target space.
 
-    Raises:
-        TransformNotAvailableError: If transformation not supported
-        SpaceDetectionError: If source space cannot be determined
+    Raises
+    ------
+    TransformNotAvailableError
+        If transformation not supported.
+    SpaceDetectionError
+        If source space cannot be determined.
 
     Notes:
         To save intermediate warped images for QC, use analysis classes with
@@ -689,8 +871,6 @@ def transform_mask_data(
     strategy = TransformationStrategy()
     interp_method = strategy.select_interpolation(mask_data.mask_img, interpolation)
 
-    from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
-
     source_space_obj = CoordinateSpace(
         identifier=source_identifier,
         resolution=source_resolution,
@@ -700,21 +880,31 @@ def transform_mask_data(
     )
     direction = strategy.determine_direction(source_space_obj, target_space)
 
+    # Determine method string for provenance
+    method_map = {
+        "forward": "nitransforms",
+        "reverse": "nitransforms",
+        "regrid": "nilearn_regrid",
+        "chain_forward": "nitransforms+nilearn_regrid",
+        "chain_reverse": "nilearn_regrid+nitransforms",
+        "resample": "nilearn_resample",
+    }
+    rationale_map = {
+        "resample": "Resolution change within same coordinate space",
+        "regrid": "Affine-aware regrid between 2009b/c voxel grids (same world space)",
+        "chain_forward": "NLin6 → 2009c (warp) → 2009b (regrid)",
+        "chain_reverse": "2009b → 2009c (regrid) → NLin6 (warp)",
+    }
+
     transform_record = TransformationRecord(
         source_space=source_identifier,
         source_resolution=source_resolution,
         target_space=target_space.identifier,
         target_resolution=target_space.resolution,
-        method=(
-            "nitransforms"
-            if direction == "forward" or direction == "reverse"
-            else "nilearn_resample"
-        ),
+        method=method_map.get(direction, "nitransforms"),
         interpolation=interp_method.value,
-        rationale=(
-            f"Automatic transformation for {direction} direction"
-            if direction != "resample"
-            else "Resolution change within same coordinate space"
+        rationale=rationale_map.get(
+            direction, f"Automatic transformation for {direction} direction"
         ),
     )
 
@@ -737,72 +927,51 @@ def transform_mask_data(
 def query_available_transforms() -> list[tuple[str, str]]:
     """Query available spatial transformations.
 
-    Returns a list of supported (source_space, target_space) pairs for
-    spatial transformations. This includes both actual transforms and
-    equivalent space mappings (e.g., MNI152NLin2009aAsym is equivalent
-    to MNI152NLin2009cAsym).
+    Returns a list of supported (source_space, target_space) pairs:
+    - Nonlinear warps: NLin6 ↔ 2009c (via TemplateFlow)
+    - Regrid: 2009b ↔ 2009c (same world coords, different voxel grid)
+    - Chained: NLin6 ↔ 2009b (warp via 2009c + regrid)
 
     Returns
     -------
     list[tuple[str, str]]
-        List of (source, target) space identifier pairs that can be transformed.
+        List of (source, target) space identifier pairs.
 
     Examples
     --------
     >>> transforms = query_available_transforms()
     >>> ('MNI152NLin6Asym', 'MNI152NLin2009cAsym') in transforms
     True
-    >>> ('MNI152NLin6Asym', 'MNI152NLin2009aAsym') in transforms  # Via equivalence
+    >>> ('MNI152NLin2009bAsym', 'MNI152NLin2009cAsym') in transforms
     True
     """
-    # Base transforms available in TemplateFlow
-    base_transforms = [
-        ("MNI152NLin6Asym", "MNI152NLin2009cAsym"),
-        ("MNI152NLin2009cAsym", "MNI152NLin6Asym"),
+    return [
+        # Nonlinear warps via TemplateFlow
+        (_NLIN6, _MNI2009C),
+        (_MNI2009C, _NLIN6),
+        # Regrid: same world coords, different voxel grids
+        (_MNI2009B, _MNI2009C),
+        (_MNI2009C, _MNI2009B),
+        # Chained: NLin6 ↔ 2009b via 2009c
+        (_NLIN6, _MNI2009B),
+        (_MNI2009B, _NLIN6),
     ]
-
-    # Add equivalent space transforms
-    # Since a/b/cAsym are anatomically identical, we can transform between them
-    all_transforms = base_transforms.copy()
-
-    # Add transforms from NLin6 to all NLin2009 variants
-    for variant in ["MNI152NLin2009aAsym", "MNI152NLin2009bAsym"]:
-        all_transforms.extend(
-            [
-                ("MNI152NLin6Asym", variant),
-                (variant, "MNI152NLin6Asym"),
-            ]
-        )
-
-    # Add identity transforms for equivalent spaces (same anatomy, no actual transform needed)
-    nlin2009_variants = ["MNI152NLin2009aAsym", "MNI152NLin2009bAsym", "MNI152NLin2009cAsym"]
-    for i, space1 in enumerate(nlin2009_variants):
-        for space2 in nlin2009_variants[i + 1 :]:
-            all_transforms.extend(
-                [
-                    (space1, space2),
-                    (space2, space1),
-                ]
-            )
-
-    return all_transforms
 
 
 def can_transform_between(source: CoordinateSpace, target: CoordinateSpace) -> bool:
     """Check if transformation is possible between two coordinate spaces.
 
-    This includes checking for:
-    1. Identity (same space and resolution)
-    2. Resampling (same space, different resolution)
-    3. Actual transforms (different spaces)
-    4. Equivalent spaces (anatomically identical spaces)
+    Parameters
+    ----------
+    source : CoordinateSpace
+        Source coordinate space.
+    target : CoordinateSpace
+        Target coordinate space.
 
-    Args:
-        source: Source coordinate space
-        target: Target coordinate space
-
-    Returns:
-        True if transformation is supported, False otherwise
+    Returns
+    -------
+    bool
+        True if transformation is supported, False otherwise.
 
     Examples
     --------
@@ -811,22 +980,12 @@ def can_transform_between(source: CoordinateSpace, target: CoordinateSpace) -> b
     >>> target = CoordinateSpace('MNI152NLin2009cAsym', 2, REFERENCE_AFFINES[('MNI152NLin2009cAsym', 2)])
     >>> can_transform_between(source, target)
     True
-    >>> # Also works with equivalent spaces
-    >>> target_a = CoordinateSpace('MNI152NLin2009aAsym', 2, REFERENCE_AFFINES.get(('MNI152NLin2009aAsym', 2), target.reference_affine))
-    >>> can_transform_between(source, target_a)
-    True
     """
-    # Normalize space identifiers
-    source_normalized = _canonicalize_space_variant(source.identifier)
-    target_normalized = _canonicalize_space_variant(target.identifier)
-
-    # Same space (after normalization) - always possible (identity or resample)
-    if source_normalized == target_normalized:
+    # Same space — always possible (identity or resample)
+    if source.identifier == target.identifier:
         return True
 
-    # Check if transform pair is supported
-    available_transforms = query_available_transforms()
-    return (source.identifier, target.identifier) in available_transforms
+    return (source.identifier, target.identifier) in query_available_transforms()
 
 
 __all__ = [

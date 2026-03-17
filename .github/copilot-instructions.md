@@ -83,6 +83,12 @@ See `docs/testing_strategy.md` for comprehensive testing guide.
 | Only contract tests | `make test-contract` | ~15s |
 | Only integration tests | `make test-integration` | ~1min |
 
+# Testing Guidelines
+- NEVER suggest or use raw `pytest` commands (e.g., `pytest -v`, `pytest tests/`).
+- ALWAYS use the test commands defined in the `Makefile`.
+- For running tests, use commands like `make test-fast`, `make test-unit`, or `make test-integration` depending on the context.
+- If necessary, review the `Makefile` for the exact target names before running a command.
+
 ### Code Quality
 
 Before committing:

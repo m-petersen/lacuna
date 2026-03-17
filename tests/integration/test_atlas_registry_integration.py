@@ -44,10 +44,6 @@ class TestAtlasRegistryBasics:
         assert len(atlases_lin6) > 0
         assert all(a.space == "MNI152NLin6Asym" for a in atlases_lin6)
 
-        # Get atlases in MNI152NLin2009aAsym space
-        atlases_lin2009a = list_parcellations(space="MNI152NLin2009aAsym")
-        assert len(atlases_lin2009a) >= 1  # At least HCP1065
-
     def test_filter_atlases_by_resolution(self):
         """Test filtering atlases by resolution."""
         # Get 1mm atlases

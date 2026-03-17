@@ -86,7 +86,6 @@ class TestAtlasRegistryContract:
             "TianSubcortex_3TS1",
             "TianSubcortex_3TS2",
             "TianSubcortex_3TS3",
-            "HCP1065_thr0p1",
         ]
 
         for atlas_name in expected_atlases:
@@ -127,16 +126,6 @@ class TestAtlasRegistryContract:
         assert tian_s1.space == "MNI152NLin6Asym"
         assert tian_s1.resolution == 1
         assert "subcort" in tian_s1.description.lower()
-
-    def test_hcp_atlas_metadata(self):
-        """HCP white matter atlas must have correct metadata."""
-        from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY
-
-        hcp = PARCELLATION_REGISTRY["HCP1065_thr0p1"]
-        assert hcp.space == "MNI152NLin2009aAsym"
-        assert hcp.resolution == 1
-        assert "white matter" in hcp.description.lower() or "tract" in hcp.description.lower()
-
 
 class TestAtlasLoaderContract:
     """Contract tests for atlas loading functionality."""

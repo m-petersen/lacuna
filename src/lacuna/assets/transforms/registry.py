@@ -44,11 +44,11 @@ class TransformMetadata(AssetMetadata):
         ValueError
             If metadata is invalid
         """
-        from lacuna.core.spaces import SPACE_ALIASES, SUPPORTED_SPACES
+        from lacuna.core.spaces import SUPPORTED_SPACES
 
         # Check spaces
         for space in [self.from_space, self.to_space]:
-            if space and space not in SUPPORTED_SPACES and space not in SPACE_ALIASES:
+            if space and space not in SUPPORTED_SPACES:
                 raise ValueError(f"Unsupported space: {space}. " f"Supported: {SUPPORTED_SPACES}")
 
 

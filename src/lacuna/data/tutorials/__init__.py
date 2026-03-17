@@ -34,6 +34,7 @@ __all__ = [
     "get_tutorial_subjects",
     "get_subject_mask_path",
     "setup_tutorial_data",
+    "setup_tutorial_raw_masks",
 ]
 
 
@@ -208,5 +209,78 @@ def setup_tutorial_data(
 
     source = get_tutorial_bids_dir()
     shutil.copytree(source, target)
+
+    return target
+
+
+def setup_tutorial_raw_masks(
+    target_dir: str | PathLike[str],
+    *,
+    overwrite: bool = False,
+) -> Path:
+    """Copy tutorial masks to a flat directory without BIDS structure.
+
+    Creates a directory of NIfTI mask files named by subject ID only,
+    without any BIDS hierarchy. This is useful for demonstrating the
+    ``bidsify()`` function in tutorials.
+
+    Parameters
+    ----------
+    target_dir : str or PathLike
+        Directory where raw mask files will be copied.
+    overwrite : bool, optional
+        If True, overwrite existing directory. Default: False.
+
+    Returns
+    -------
+    Path
+        Path to the directory containing raw mask files.
+
+    Raises
+    ------
+    FileExistsError
+        If target_dir exists and overwrite is False.
+
+    Examples
+    --------
+    >>> from lacuna.data.tutorials import setup_tutorial_raw_masks
+    >>> raw_dir = setup_tutorial_raw_masks("~/raw_masks")
+    >>> sorted(f.name for f in raw_dir.glob("*.nii.gz"))
+    ['sub-01.nii.gz', 'sub-02.nii.gz', 'sub-03.nii.gz']
+
+    Use with ``bidsify()`` to convert to BIDS format:
+
+    >>> from lacuna.io.bidsify import bidsify
+    >>> bidsify(raw_dir, "~/bids_output", space="MNI152NLin6Asym", label="lesion")
+
+    Notes
+    -----
+    The output directory contains only flat NIfTI files:
+
+    ::
+
+        target_dir/
+        ├── sub-01.nii.gz
+        ├── sub-02.nii.gz
+        └── sub-03.nii.gz
+
+    These files are identical to the masks in the bundled BIDS dataset,
+    but stripped of BIDS structure and naming conventions.
+    """
+    target = Path(target_dir).expanduser().resolve()
+
+    if target.exists():
+        if not overwrite:
+            raise FileExistsError(
+                f"Target directory already exists: {target}. "
+                "Use overwrite=True to replace it."
+            )
+        shutil.rmtree(target)
+
+    target.mkdir(parents=True)
+
+    for subject_id in get_tutorial_subjects():
+        mask_path = get_subject_mask_path(subject_id)
+        shutil.copy2(mask_path, target / f"{subject_id}.nii.gz")
 
     return target
