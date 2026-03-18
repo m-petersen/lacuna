@@ -111,8 +111,10 @@ class RunConfig:
         # SNM-specific options
         if hasattr(args, "parcel_atlas") and args.parcel_atlas:
             analysis_options["parcellation_name"] = args.parcel_atlas
-        if hasattr(args, "compute_roi_disconnection") and args.compute_roi_disconnection:
+        if hasattr(args, "compute_disconnectivity_matrix") and args.compute_disconnectivity_matrix:
             analysis_options["compute_disconnectivity_matrix"] = True
+        if hasattr(args, "compute_roi_disconnection") and args.compute_roi_disconnection:
+            analysis_options["compute_roi_disconnection"] = True
         # Handle --no-cache-tdi flag (default is to cache)
         if hasattr(args, "no_cache_tdi") and args.no_cache_tdi:
             analysis_options["cache_tdi"] = False
@@ -150,6 +152,39 @@ class RunConfig:
             raise ValueError("--mask-space is required when processing a single NIfTI file")
         if self.n_procs < -1 or self.n_procs == 0:
             raise ValueError(f"--nprocs must be -1 (all CPUs) or >= 1, got {self.n_procs}")
+
+        # SNM flag dependency validation
+        if self.analysis in ("snm", "structuralnetworkmapping"):
+            opts = self.analysis_options
+            has_atlas = "parcellation_name" in opts
+            has_disconn = opts.get("compute_disconnectivity_matrix", False)
+            has_roi = opts.get("compute_roi_disconnection", False)
+
+            if has_atlas and not (has_disconn or has_roi):
+                raise ValueError(
+                    "--parcel-atlas requires at least one of "
+                    "--compute-disconnectivity-matrix or --compute-roi-disconnection"
+                )
+            if (has_disconn or has_roi) and not has_atlas:
+                raise ValueError(
+                    "--compute-disconnectivity-matrix and --compute-roi-disconnection "
+                    "require --parcel-atlas. Use 'lacuna info atlases' to list available atlases."
+                )
+            if has_atlas:
+                self._validate_atlas_name(opts["parcellation_name"])
+
+    @staticmethod
+    def _validate_atlas_name(name: str) -> None:
+        """Validate atlas name against registry."""
+        from lacuna.assets.parcellations import list_parcellations
+
+        available = [a.name for a in list_parcellations()]
+        if name not in available:
+            raise ValueError(
+                f"Atlas '{name}' not found. "
+                f"Available atlases: {', '.join(available[:5])}...\n"
+                f"Use 'lacuna info atlases' to see all options."
+            )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -319,6 +354,7 @@ def _handle_info_command(args: Namespace) -> int:
 def _show_atlases_info() -> int:
     """Display information about available atlases."""
     from lacuna.assets.parcellations import list_parcellations
+    from lacuna.data import get_atlas_citation
 
     atlases = list_parcellations()
 
@@ -330,13 +366,13 @@ def _show_atlases_info() -> int:
         print("\n  Use 'lacuna fetch' to download connectomes which include atlases.")
         return EXIT_SUCCESS
 
-    # Group by type
-    schaefer = [a for a in atlases if a.name.startswith("Schaefer")]
-    tian = [a for a in atlases if a.name.startswith("Tian")]
+    # Group by type (combined must be excluded from schaefer/tian)
     combined = [a for a in atlases if "Tian" in a.name and "Schaefer" in a.name]
+    schaefer = [a for a in atlases if a.name.startswith("Schaefer") and a not in combined]
+    tian = [a for a in atlases if a.name.startswith("Tian") and a not in combined]
     other = [a for a in atlases if a not in schaefer + tian + combined]
 
-    def print_atlas_group(title: str, atlas_list: list):
+    def print_atlas_group(title: str, atlas_list: list, citation_key: str | None = None):
         if not atlas_list:
             return
         print(f"\n{title}:")
@@ -344,9 +380,19 @@ def _show_atlases_info() -> int:
             space = getattr(atlas, "space", "unknown")
             resolution = getattr(atlas, "resolution", "?")
             print(f"  {atlas.name:<45} ({space}, {resolution}mm)")
+        if citation_key:
+            citation = get_atlas_citation(citation_key)
+            if not citation.startswith("No citation"):
+                print(f"\n  Citation:")
+                for line in citation.strip().splitlines():
+                    print(f"    {line}")
 
-    print_atlas_group("Schaefer Cortical Parcellations", schaefer)
-    print_atlas_group("Tian Subcortical Parcellations", tian)
+    # Use well-known citation keys (these match entries in get_atlas_citation)
+    schaefer_key = "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg"
+    tian_key = "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg"
+
+    print_atlas_group("Schaefer Cortical Parcellations", schaefer, schaefer_key if schaefer else None)
+    print_atlas_group("Tian Subcortical Parcellations", tian, tian_key if tian else None)
     print_atlas_group("Combined Cortical + Subcortical", combined)
     print_atlas_group("Other Parcellations", other)
 
@@ -363,6 +409,7 @@ def _show_connectomes_info() -> int:
         list_functional_connectomes,
         list_structural_connectomes,
     )
+    from lacuna.io.downloaders import CONNECTOME_SOURCES
 
     func_connectomes = list_functional_connectomes()
     struct_connectomes = list_structural_connectomes()
@@ -384,14 +431,20 @@ def _show_connectomes_info() -> int:
         for struct_conn in struct_connectomes:
             print(f"  {struct_conn.name:<30} (space={struct_conn.space})")
     else:
-        print("  None registered. Use 'lacuna fetch dtor985' to download dTOR985.")
+        print("  None registered. Use 'lacuna fetch dtor985' or 'lacuna fetch hcp1065'.")
 
     print("\n" + "=" * 60)
     print("\nFetchable Connectomes (use 'lacuna fetch <name>'):")
-    print("  gsp1000  - GSP1000 Functional Connectome (~200GB)")
-    print("             1000 healthy subjects, MNI152NLin6Asym space")
-    print("  dtor985  - dTOR985 Structural Tractogram (~10GB)")
-    print("             985 healthy subjects, MNI152NLin2009bAsym space")
+    for name, source in CONNECTOME_SOURCES.items():
+        print(f"\n  {name:<8} - {source.display_name} (~{source.estimated_size_gb:.0f}GB)")
+        space_note = source.space
+        if name == "hcp1065":
+            space_note += " (native: MNI152NLin2009aAsym)"
+        print(f"             {source.n_subjects} subjects, {space_note} space")
+        if source.citation:
+            print(f"             Citation:")
+            for line in source.citation.strip().splitlines():
+                print(f"               {line}")
     print()
 
     return EXIT_SUCCESS

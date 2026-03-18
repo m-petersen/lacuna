@@ -291,29 +291,50 @@ def fetch_gsp1000(
     processed_dir.mkdir(parents=True, exist_ok=True)
 
     # Check if processed files already exist
+    stale_test_data = False
     existing_hdf5 = list(processed_dir.glob("*.h5")) + list(processed_dir.glob("*.hdf5"))
     if existing_hdf5 and not force:
-        if verbose:
-            print(f"Using existing HDF5 files: {processed_dir} ({len(existing_hdf5)} files)")
-        warn_list.append(f"Using existing HDF5 files: {processed_dir}")
+        # Detect stale test-mode data: single chunk with ≤10 subjects
+        stale_test_data = False
+        if not test_mode and len(existing_hdf5) == 1:
+            try:
+                import h5py
 
-        # Skip to registration phase
-        registered = _register_gsp1000(
-            register, register_name, source, processed_dir, progress_callback, warn_list
-        )
+                with h5py.File(existing_hdf5[0], "r") as hf:
+                    if hf.attrs.get("n_subjects", 0) <= 10:
+                        stale_test_data = True
+            except Exception:
+                pass
 
-        return FetchResult(
-            success=True,
-            connectome_name="gsp1000",
-            output_dir=processed_dir,
-            output_files=existing_hdf5,
-            registered=registered,
-            register_name=register_name if registered else None,
-            duration_seconds=time.time() - start_time,
-            download_time_seconds=0.0,
-            processing_time_seconds=0.0,
-            warnings=warn_list,
-        )
+        if stale_test_data:
+            if verbose:
+                print(
+                    "Existing HDF5 appears to be from test mode "
+                    f"— overwriting with full dataset"
+                )
+            warn_list.append("Overwriting stale test-mode HDF5 data")
+        else:
+            if verbose:
+                print(f"Using existing HDF5 files: {processed_dir} ({len(existing_hdf5)} files)")
+            warn_list.append(f"Using existing HDF5 files: {processed_dir}")
+
+            # Skip to registration phase
+            registered = _register_gsp1000(
+                register, register_name, source, processed_dir, progress_callback, warn_list
+            )
+
+            return FetchResult(
+                success=True,
+                connectome_name="gsp1000",
+                output_dir=processed_dir,
+                output_files=existing_hdf5,
+                registered=registered,
+                register_name=register_name if registered else None,
+                duration_seconds=time.time() - start_time,
+                download_time_seconds=0.0,
+                processing_time_seconds=0.0,
+                warnings=warn_list,
+            )
 
     try:
         # Phase 1: Download
@@ -373,20 +394,25 @@ def fetch_gsp1000(
                 )
             )
 
-        subjects_per_chunk = 100 if test_mode else max(1, 1000 // batches)
         if test_mode:
-            warn_list.append("Test mode: using 1 tarball with minimal batching")
+            subjects_per_chunk = 10
+            max_subjects = 10
+            warn_list.append("Test mode: using first 10 subjects in single chunk")
+        else:
+            subjects_per_chunk = max(1, 1000 // batches)
+            max_subjects = None
 
         # Find brain mask
         mask_path = _find_brain_mask(raw_dir)
 
-        # Run conversion
+        # Run conversion (overwrite if force or stale test-mode data detected)
         output_files = gsp1000_to_hdf5(
             gsp_dir=raw_dir,
             mask_path=mask_path,
             output_dir=processed_dir,
             subjects_per_chunk=subjects_per_chunk,
-            overwrite=force,
+            max_subjects=max_subjects,
+            overwrite=force or stale_test_data,
         )
 
         processing_time = time.time() - processing_start

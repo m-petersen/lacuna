@@ -76,6 +76,9 @@ class ConnectomeSource:
     estimated_size_gb: float = 0.0
     """Estimated download size in GB for user information."""
 
+    citation: str = ""
+    """Citation text for this connectome dataset."""
+
 
 @dataclass
 class FetchConfig:
@@ -335,6 +338,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         n_subjects=1000,
         space="MNI152NLin6Asym",
         estimated_size_gb=200.0,
+        citation="Cohen et al, 2020. https://doi.org/10.7910/DVN/ILXIKS"
     ),
     "dtor985": ConnectomeSource(
         name="dtor985",
@@ -350,6 +354,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         n_subjects=985,
         space="MNI152NLin2009bAsym",
         estimated_size_gb=11.0,
+        citation="Elias et al, 2024. https://doi.org/10.1038/s41597-024-03197-0"
     ),
     "hcp1065": ConnectomeSource(
         name="hcp1065",
@@ -364,5 +369,6 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         n_subjects=1065,
         space="MNI152NLin2009cAsym",
         estimated_size_gb=1.5,
+        citation="Yeh et al, 2022. https://doi.org/10.1038/s41467-022-32595-4"
     ),
 }

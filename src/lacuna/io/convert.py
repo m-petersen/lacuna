@@ -20,6 +20,7 @@ def gsp1000_to_hdf5(
     output_dir: str | Path,
     subjects_per_chunk: int = 10,
     *,
+    max_subjects: int | None = None,
     overwrite: bool = False,
 ) -> list[Path]:
     """
@@ -45,6 +46,9 @@ def gsp1000_to_hdf5(
         Directory where chunk HDF5 files will be saved
     subjects_per_chunk : int, default=10
         Number of subjects to include in each chunk file
+    max_subjects : int, optional
+        Maximum number of subjects to process. If set, only the first
+        ``max_subjects`` files are used. Useful for test mode.
     overwrite : bool, default=False
         Whether to overwrite existing chunk files
 
@@ -97,6 +101,9 @@ def gsp1000_to_hdf5(
             f"No NIfTI files found matching pattern: {search_pattern}\n"
             "Expected GSP1000 structure: sub-*/func/*bld001_rest_*_finalmask.nii.gz"
         )
+
+    if max_subjects is not None and len(all_subject_files) > max_subjects:
+        all_subject_files = all_subject_files[:max_subjects]
 
     n_total_subjects = len(all_subject_files)
     print(f"Found {n_total_subjects} subject files")
