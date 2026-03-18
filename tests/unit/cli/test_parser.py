@@ -118,6 +118,27 @@ class TestRunSubcommandParsing:
         assert args.command == "run"
         assert args.analysis == "snm"
 
+    def test_run_snm_with_all_parcellation_flags(self, tmp_path):
+        """Test parsing SNM with --parcel-atlas and both compute flags."""
+        parser = build_parser()
+        bids_dir = tmp_path / "bids"
+        output_dir = tmp_path / "output"
+        conn_path = tmp_path / "dtor985.tck"
+
+        args = parser.parse_args(
+            [
+                "run", "snm", str(bids_dir), str(output_dir),
+                "--connectome-path", str(conn_path),
+                "--parcel-atlas", "Schaefer2018_100Parcels7Networks",
+                "--compute-disconnectivity-matrix",
+                "--compute-roi-disconnection",
+            ]
+        )
+
+        assert args.parcel_atlas == "Schaefer2018_100Parcels7Networks"
+        assert args.compute_disconnectivity_matrix is True
+        assert args.compute_roi_disconnection is True
+
     def test_run_with_participant_label(self, tmp_path):
         """Test run with --participant-label option."""
         parser = build_parser()

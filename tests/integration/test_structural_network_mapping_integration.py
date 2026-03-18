@@ -93,12 +93,12 @@ class TestStructuralNetworkMappingIntegration:
         assert "disconnectivity_percent" not in result.metadata
 
     def test_analysis_with_bundled_atlas(self, test_data_paths):
-        """Test analysis with bundled Schaefer100 atlas."""
+        """Test analysis with bundled Schaefer100 atlas and disconnectivity matrix."""
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
-            compute_disconnectivity_matrix=False,
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -134,16 +134,16 @@ class TestStructuralNetworkMappingIntegration:
         assert np.all(disconn_pct >= 0)
         assert np.all(disconn_pct <= 100)
 
-        # Should NOT have lesioned matrix (compute_disconnectivity_matrix=False)
+        # Should NOT have lesioned matrix (compute_roi_disconnection=False)
         assert result.metadata.get("lesioned_connectivity_matrix") is None
 
-    def test_analysis_with_lesioned_computation(self, test_data_paths):
-        """Test analysis with compute_disconnectivity_matrix=True."""
+    def test_analysis_with_roi_disconnection(self, test_data_paths):
+        """Test analysis with compute_roi_disconnection=True."""
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
-            compute_disconnectivity_matrix=True,
+            compute_roi_disconnection=True,
             n_jobs=2,
             verbose=False,
         )
@@ -175,6 +175,7 @@ class TestStructuralNetworkMappingIntegration:
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
             compute_disconnectivity_matrix=True,
+            compute_roi_disconnection=True,
             n_jobs=2,
             verbose=False,
         )
@@ -198,6 +199,7 @@ class TestStructuralNetworkMappingIntegration:
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
             compute_disconnectivity_matrix=True,
+            compute_roi_disconnection=True,
             n_jobs=2,
             verbose=False,
         )
@@ -220,6 +222,7 @@ class TestStructuralNetworkMappingIntegration:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -252,6 +255,7 @@ class TestStructuralNetworkMappingIntegration:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -311,6 +315,7 @@ class TestEdgeCases:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -331,6 +336,7 @@ class TestEdgeCases:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name="Schaefer2018_100Parcels7Networks",
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )
@@ -365,6 +371,7 @@ class TestDifferentAtlases:
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
             parcellation_name=atlas_name,
+            compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
         )

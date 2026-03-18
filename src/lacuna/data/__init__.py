@@ -194,48 +194,13 @@ def get_atlas_citation(name: str) -> str:
     """
     # Citation database - keys match actual bundled atlas names
     citations = {
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg": """Schaefer 2018 Atlas (100 parcels, 7 networks):
-Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
-Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
-Functional Connectivity MRI.
-Cerebral Cortex, 28(9), 3095-3114.
-https://doi.org/10.1093/cercor/bhx179""",
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-200Parcels7Networks_dseg": """Schaefer 2018 Atlas (200 parcels, 7 networks):
-Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
-Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
-Functional Connectivity MRI.
-Cerebral Cortex, 28(9), 3095-3114.
-https://doi.org/10.1093/cercor/bhx179""",
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-400Parcels7Networks_dseg": """Schaefer 2018 Atlas (400 parcels, 7 networks):
-Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
-Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
-Functional Connectivity MRI.
-Cerebral Cortex, 28(9), 3095-3114.
-https://doi.org/10.1093/cercor/bhx179""",
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg": """Schaefer 2018 Atlas (1000 parcels, 7 networks):
-Schaefer, A., Kong, R., Gordon, E.M., et al. (2018).
-Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic
-Functional Connectivity MRI.
-Cerebral Cortex, 28(9), 3095-3114.
-https://doi.org/10.1093/cercor/bhx179""",
-        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg": """Tian Subcortical Atlas - Scale 1 (16 regions):
-Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
-Topographic organization of the human subcortex unveiled with functional
-connectivity gradients.
-Nature Neuroscience, 23, 1516-1528.
-https://doi.org/10.1038/s41593-020-00711-6""",
-        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS2_dseg": """Tian Subcortical Atlas - Scale 2 (32 regions):
-Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
-Topographic organization of the human subcortex unveiled with functional
-connectivity gradients.
-Nature Neuroscience, 23, 1516-1528.
-https://doi.org/10.1038/s41593-020-00711-6""",
-        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS3_dseg": """Tian Subcortical Atlas - Scale 3 (54 regions):
-Tian, Y., Margulies, D.S., Breakspear, M., & Zalesky, A. (2020).
-Topographic organization of the human subcortex unveiled with functional
-connectivity gradients.
-Nature Neuroscience, 23, 1516-1528.
-https://doi.org/10.1038/s41593-020-00711-6""",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-200Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-400Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
+        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS2_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
+        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS3_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
     }
 
     if name not in citations:

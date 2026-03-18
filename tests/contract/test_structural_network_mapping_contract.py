@@ -369,6 +369,20 @@ def test_compute_disconnectivity_matrix_parameter(temp_connectome):
     assert analysis.compute_disconnectivity_matrix is True
 
 
+@pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
+@pytest.mark.requires_mrtrix
+def test_compute_roi_disconnection_parameter(temp_connectome):
+    """Test that compute_roi_disconnection parameter is available."""
+    from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
+
+    analysis = StructuralNetworkMapping(
+        connectome_name=temp_connectome,
+        parcellation_name="Schaefer2018_100Parcels7Networks",
+        compute_roi_disconnection=True,
+    )
+    assert analysis.compute_roi_disconnection is True
+
+
 def test_results_include_connectivity_matrices_when_atlas_provided():
     """Test that results include connectivity matrices when atlas is provided."""
     # This is a contract test - we're testing the interface, not the implementation
@@ -414,7 +428,7 @@ def test_matrix_statistics_structure():
         "most_affected_parcel",
     }
 
-    # When compute_disconnectivity_matrix=True, additional keys expected
+    # When compute_roi_disconnection=True, additional keys expected
     expected_stats_with_lesioned = expected_stats_keys | {
         "lesioned_mean_degree",
         "connectivity_preservation_ratio",
@@ -430,12 +444,13 @@ def test_lesioned_connectivity_optional(temp_connectome):
     """Test that lesioned connectivity is only computed when requested."""
     from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
-    # Default: compute_disconnectivity_matrix=False
+    # Default: both flags False
     analysis1 = StructuralNetworkMapping(
         connectome_name=temp_connectome,
         parcellation_name="Schaefer2018_100Parcels7Networks",
     )
     assert analysis1.compute_disconnectivity_matrix is False
+    assert analysis1.compute_roi_disconnection is False
 
     # Explicit: compute_disconnectivity_matrix=True
     analysis2 = StructuralNetworkMapping(
@@ -444,3 +459,11 @@ def test_lesioned_connectivity_optional(temp_connectome):
         compute_disconnectivity_matrix=True,
     )
     assert analysis2.compute_disconnectivity_matrix is True
+
+    # Explicit: compute_roi_disconnection=True
+    analysis3 = StructuralNetworkMapping(
+        connectome_name=temp_connectome,
+        parcellation_name="Schaefer2018_100Parcels7Networks",
+        compute_roi_disconnection=True,
+    )
+    assert analysis3.compute_roi_disconnection is True

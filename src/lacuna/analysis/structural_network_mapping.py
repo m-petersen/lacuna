@@ -184,6 +184,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         connectome_name: str,
         parcellation_name: str | None = None,
         compute_disconnectivity_matrix: bool = False,
+        compute_roi_disconnection: bool = False,
         output_resolution: Literal[1, 2] = 2,
         cache_tdi: bool = True,
         n_jobs: int = 1,
@@ -205,7 +206,10 @@ class StructuralNetworkMapping(BaseAnalysis):
             Name of registered atlas for parcellated connectivity matrices.
         compute_disconnectivity_matrix : bool, default=False
             If True and parcellation_name provided, compute disconnectivity matrices
-            including per-ROI disconnection percentages.
+            (full, mask, and disconnectivity percentage connectivity matrices).
+        compute_roi_disconnection : bool, default=False
+            If True and parcellation_name provided, compute per-ROI disconnection
+            percentages and intact (post-disconnection) connectivity matrix.
         output_resolution : {1, 2}, default=2
             Output resolution in mm (must match connectome resolution).
         cache_tdi : bool, default=True
@@ -265,6 +269,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Store analysis parameters
         self.parcellation_name = parcellation_name
         self.compute_disconnectivity_matrix = compute_disconnectivity_matrix
+        self.compute_roi_disconnection = compute_roi_disconnection
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
         self.n_jobs = n_jobs
@@ -782,8 +787,10 @@ class StructuralNetworkMapping(BaseAnalysis):
                     )
                     results["warped_atlas"] = warped_atlas_result
 
-            # Optional: Compute parcellated connectivity matrices if atlas provided
-            if self._parcellation_resolved is not None:
+            # Optional: Compute parcellated connectivity matrices if explicitly requested
+            if self._parcellation_resolved is not None and (
+                self.compute_disconnectivity_matrix or self.compute_roi_disconnection
+            ):
                 self.logger.info("Computing connectivity matrices...")
                 connectivity_results = self._compute_connectivity_matrices(
                     mask_data=mask_data,
@@ -841,8 +848,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             - 'mask_connectivity_matrix': ConnectivityMatrixResult
             - 'disconnectivity_percent': ConnectivityMatrixResult
             - 'full_connectivity_matrix': ConnectivityMatrixResult
-            - 'intact_connectivity_matrix': ConnectivityMatrixResult (if compute_disconnectivity_matrix=True)
-            - 'roi_disconnection': ParcelData (if compute_disconnectivity_matrix=True)
+            - 'intact_connectivity_matrix': ConnectivityMatrixResult (if compute_roi_disconnection=True)
+            - 'roi_disconnection': ParcelData (if compute_roi_disconnection=True)
             - 'matrix_statistics': MiscResult
         """
 
@@ -877,7 +884,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Step 4: Optional - compute intact (post-disconnection) connectivity
         intact_matrix = None
-        if self.compute_disconnectivity_matrix:
+        if self.compute_roi_disconnection:
             self.logger.info(
                 "Computing intact (post-disconnection) connectivity matrix", indent_level=1
             )

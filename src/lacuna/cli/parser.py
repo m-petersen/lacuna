@@ -547,12 +547,17 @@ def _build_snm_parser(subparsers) -> None:
         "--parcel-atlas",
         type=str,
         metavar="NAME",
-        help="Atlas for connectivity matrices. Use 'lacuna info atlases' to list.",
+        help="Atlas for parcellation-based analyses. Use 'lacuna info atlases' to list.",
+    )
+    g_snm.add_argument(
+        "--compute-disconnectivity-matrix",
+        action="store_true",
+        help="Compute disconnectivity matrices (requires --parcel-atlas)",
     )
     g_snm.add_argument(
         "--compute-roi-disconnection",
         action="store_true",
-        help="Compute per-ROI disconnection values",
+        help="Compute per-ROI disconnection values (requires --parcel-atlas)",
     )
     g_snm.add_argument(
         "--output-resolution",
