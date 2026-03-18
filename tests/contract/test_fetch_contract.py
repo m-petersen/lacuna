@@ -111,6 +111,51 @@ class TestFetchdTOR985Contract:
         assert hints["return"] is FetchResult
 
 
+class TestFetchHCP1065Contract:
+    """Contract tests for fetch_hcp1065 function."""
+
+    def test_fetch_hcp1065_exists_in_module(self):
+        """fetch_hcp1065 should be importable from lacuna.io."""
+        from lacuna.io import fetch_hcp1065
+
+        assert callable(fetch_hcp1065)
+
+    def test_fetch_hcp1065_signature(self):
+        """fetch_hcp1065 should have the expected parameter signature."""
+        from lacuna.io import fetch_hcp1065
+
+        sig = inspect.signature(fetch_hcp1065)
+        params = sig.parameters
+
+        # Required parameters
+        assert "output_dir" in params
+
+        # Should NOT have api_key (public download)
+        assert "api_key" not in params
+
+        # Optional keyword-only parameters
+        assert "keep_original" in params
+        assert params["keep_original"].default is True
+
+        assert "register" in params
+        assert params["register"].default is True
+
+        assert "force" in params
+        assert params["force"].default is False
+
+        assert "progress_callback" in params
+        assert params["progress_callback"].default is None
+
+    def test_fetch_hcp1065_returns_fetch_result(self):
+        """fetch_hcp1065 should return FetchResult."""
+        from lacuna.io import fetch_hcp1065
+        from lacuna.io.downloaders import FetchResult
+
+        hints = get_type_hints(fetch_hcp1065)
+        assert "return" in hints
+        assert hints["return"] is FetchResult
+
+
 class TestFetchConnectomeContract:
     """Contract tests for fetch_connectome dispatcher function."""
 
@@ -149,17 +194,18 @@ class TestListFetchableConnectomesContract:
 
         result = list_fetchable_connectomes()
         assert isinstance(result, list)
-        assert len(result) >= 2  # At least gsp1000 and dtor985
+        assert len(result) >= 3  # At least gsp1000, dtor985, and hcp1065
         assert all(isinstance(s, ConnectomeSource) for s in result)
 
-    def test_list_includes_gsp1000_and_dtor985(self):
-        """list_fetchable_connectomes should include gsp1000 and dtor985."""
+    def test_list_includes_all_connectomes(self):
+        """list_fetchable_connectomes should include gsp1000, dtor985, and hcp1065."""
         from lacuna.io import list_fetchable_connectomes
 
         result = list_fetchable_connectomes()
         names = [s.name for s in result]
         assert "gsp1000" in names
         assert "dtor985" in names
+        assert "hcp1065" in names
 
 
 class TestConnectomeSourcesRegistry:
@@ -190,6 +236,16 @@ class TestConnectomeSourcesRegistry:
         assert isinstance(dtor, ConnectomeSource)
         assert dtor.type == "structural"
         assert dtor.source_type == "figshare"
+
+    def test_connectome_sources_has_hcp1065(self):
+        """CONNECTOME_SOURCES should have hcp1065 entry."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES, ConnectomeSource
+
+        assert "hcp1065" in CONNECTOME_SOURCES
+        hcp = CONNECTOME_SOURCES["hcp1065"]
+        assert isinstance(hcp, ConnectomeSource)
+        assert hcp.type == "structural"
+        assert hcp.source_type == "github"
 
 
 class TestFetchExceptionsContract:

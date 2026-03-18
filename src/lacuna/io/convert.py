@@ -2,7 +2,7 @@
 Connectome conversion utilities for preparing user data.
 
 Converts raw connectome data from various sources (GSP1000, HCP, etc.)
-into Lacuna-compatible HDF5 format.
+into Lacuna-compatible HDF5 format and tractogram formats.
 """
 
 import glob
@@ -187,6 +187,138 @@ def gsp1000_to_hdf5(
     print(f"Created {len(created_files)} chunk files in: {output_dir}")
 
     return created_files
+
+
+def merge_trk_to_tck(
+    source_dir: str | Path,
+    output_path: str | Path,
+    *,
+    exclude_patterns: list[str] | None = None,
+    overwrite: bool = False,
+) -> Path:
+    """
+    Merge multiple TrackVis .trk/.trk.gz tractograms into a single MRtrix3 .tck file.
+
+    Recursively finds all .trk and .trk.gz files in the source directory,
+    loads their streamlines (excluding files matching specified patterns),
+    and saves them as a single merged .tck tractogram.
+
+    Parameters
+    ----------
+    source_dir : str | Path
+        Directory containing .trk/.trk.gz tract files (searched recursively).
+    output_path : str | Path
+        Output path for the merged .tck file.
+    exclude_patterns : list[str], optional
+        List of patterns to match against file paths for exclusion.
+        Files whose path contains any of these strings (case-insensitive)
+        are skipped. Default: ``["cranial nerve", "cranial_nerve"]``.
+    overwrite : bool, default=False
+        Whether to overwrite an existing output file.
+
+    Returns
+    -------
+    Path
+        Path to the created .tck file.
+
+    Raises
+    ------
+    FileNotFoundError
+        If source directory not found.
+    ValueError
+        If no .trk/.trk.gz files found or output is not .tck format.
+    RuntimeError
+        If merging fails.
+
+    Examples
+    --------
+    >>> tck_path = merge_trk_to_tck(
+    ...     source_dir="/data/hcp1065_tracts",
+    ...     output_path="/data/hcp1065.tck",
+    ... )
+    """
+    from nibabel.streamlines import TckFile, Tractogram
+
+    source_dir = Path(source_dir)
+    output_path = Path(output_path)
+
+    if exclude_patterns is None:
+        exclude_patterns = ["cranial nerve", "cranial_nerve"]
+
+    if not source_dir.exists():
+        raise FileNotFoundError(f"Source directory not found: {source_dir}")
+
+    if output_path.suffix != ".tck":
+        raise ValueError(
+            f"Output must be .tck format, got: {output_path.suffix}"
+        )
+
+    if output_path.exists() and not overwrite:
+        print(f"Output file already exists: {output_path}")
+        return output_path
+
+    # Find all .trk and .trk.gz files
+    trk_files = sorted(source_dir.rglob("*.trk.gz")) + sorted(source_dir.rglob("*.trk"))
+
+    if not trk_files:
+        raise ValueError(
+            f"No .trk or .trk.gz files found in: {source_dir}\n"
+            "Expected directory containing tractography files."
+        )
+
+    # Filter out excluded patterns
+    exclude_lower = [p.lower() for p in exclude_patterns]
+    filtered_files = []
+    for f in trk_files:
+        path_str = str(f).lower()
+        if any(pattern in path_str for pattern in exclude_lower):
+            continue
+        filtered_files.append(f)
+
+    if not filtered_files:
+        raise ValueError(
+            f"All {len(trk_files)} tract files were excluded by patterns: {exclude_patterns}"
+        )
+
+    print(f"Found {len(filtered_files)} tract files ({len(trk_files) - len(filtered_files)} excluded)")
+
+    # Load and merge streamlines
+    all_streamlines = []
+    files_processed = 0
+
+    print("Loading and merging streamlines...")
+    for trk_path in tqdm(filtered_files, desc="Merging tracts"):
+        try:
+            trk = nib.streamlines.load(str(trk_path))
+            all_streamlines.extend(trk.streamlines)
+            files_processed += 1
+        except Exception as e:
+            print(f"  Warning: Error loading {trk_path.name}: {e}")
+
+    if not all_streamlines:
+        raise RuntimeError("No streamlines loaded from any tract file.")
+
+    print(f"Processed {files_processed} files, {len(all_streamlines)} total streamlines")
+
+    # Create output directory
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create merged tractogram and save
+    print(f"Saving merged tractogram to {output_path}...")
+    try:
+        tractogram = Tractogram(
+            streamlines=all_streamlines,
+            affine_to_rasmm=np.eye(4),
+        )
+        tck = TckFile(tractogram)
+        tck.save(str(output_path))
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to save merged tractogram: {e}"
+        ) from e
+
+    print(f"Merge complete: {output_path}")
+    return output_path
 
 
 def trk_to_tck(

@@ -142,6 +142,82 @@ class TestFetchDtor985Integration:
 
 @pytest.mark.slow
 @pytest.mark.integration
+class TestFetchHcp1065Integration:
+    """Integration tests for fetch_hcp1065 function."""
+
+    def test_fetch_hcp1065_creates_output_dir(self, tmp_path):
+        """fetch_hcp1065 should create output directory if it doesn't exist."""
+        from lacuna.io import fetch_hcp1065
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        output_dir = tmp_path / "nonexistent" / "path"
+        assert not output_dir.exists()
+
+        # Mock the download to avoid network call
+        with patch.object(
+            GithubReleaseDownloader,
+            "download",
+            return_value=[output_dir / "hcp1065_avg_tracts_trk.zip"],
+        ):
+            with patch(
+                "zipfile.ZipFile",
+                side_effect=RuntimeError("Mock zip error"),
+            ):
+                from lacuna.core.exceptions import ProcessingError
+
+                with pytest.raises(ProcessingError):
+                    fetch_hcp1065(output_dir=output_dir)
+
+        # Directory should be created even if the operation fails later
+        assert output_dir.exists()
+
+    def test_fetch_hcp1065_with_mocked_download(self, tmp_path):
+        """fetch_hcp1065 should work with mocked downloader and merger."""
+        import zipfile
+
+        from lacuna.io import fetch_hcp1065
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        # Create mock zip file
+        zip_file = tmp_path / "hcp1065_avg_tracts_trk.zip"
+        zip_file.write_bytes(b"fake zip data")
+
+        # Create extract dir so zip extraction is "skipped"
+        extract_dir = tmp_path / "hcp1065_tracts"
+        extract_dir.mkdir()
+        (extract_dir / "dummy.trk").write_bytes(b"fake")
+
+        # Mock the GithubReleaseDownloader
+        with patch.object(GithubReleaseDownloader, "download", return_value=[zip_file]):
+            # Mock merge_trk_to_tck
+            def mock_merge(source_dir, output_path, **kwargs):
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_bytes(b"merged tractogram")
+                return output_path
+
+            with patch("lacuna.io.convert.merge_trk_to_tck", side_effect=mock_merge):
+                result = fetch_hcp1065(
+                    output_dir=tmp_path,
+                    keep_original=True,
+                    register=False,
+                )
+
+                assert result.success
+                assert result.connectome_name == "hcp1065"
+                assert len(result.output_files) >= 1
+
+    def test_fetch_hcp1065_no_api_key_needed(self, tmp_path):
+        """fetch_hcp1065 should not require any API key."""
+        import inspect
+
+        from lacuna.io import fetch_hcp1065
+
+        sig = inspect.signature(fetch_hcp1065)
+        assert "api_key" not in sig.parameters
+
+
+@pytest.mark.slow
+@pytest.mark.integration
 class TestFetchConnectomeIntegration:
     """Integration tests for fetch_connectome dispatcher."""
 
@@ -174,6 +250,26 @@ class TestFetchConnectomeIntegration:
                 with pytest.raises(ProcessingError):
                     fetch_connectome("dtor985", output_dir=tmp_path)
 
+    def test_fetch_connectome_hcp1065_dispatch(self, tmp_path):
+        """fetch_connectome should dispatch to fetch_hcp1065."""
+        from lacuna.io import fetch_connectome
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        # Mock to avoid actual download
+        with patch.object(
+            GithubReleaseDownloader,
+            "download",
+            return_value=[tmp_path / "hcp1065_avg_tracts_trk.zip"],
+        ):
+            with patch(
+                "zipfile.ZipFile",
+                side_effect=RuntimeError("Mock zip error"),
+            ):
+                from lacuna.core.exceptions import ProcessingError
+
+                with pytest.raises(ProcessingError):
+                    fetch_connectome("hcp1065", output_dir=tmp_path)
+
     def test_fetch_connectome_unknown_raises(self, tmp_path):
         """fetch_connectome should raise ValueError for unknown connectome."""
         from lacuna.io import fetch_connectome
@@ -193,12 +289,13 @@ class TestListFetchableConnectomes:
 
         sources = list_fetchable_connectomes()
 
-        assert len(sources) >= 2
+        assert len(sources) >= 3
         assert all(isinstance(s, ConnectomeSource) for s in sources)
 
         names = [s.name for s in sources]
         assert "gsp1000" in names
         assert "dtor985" in names
+        assert "hcp1065" in names
 
 
 @pytest.mark.integration

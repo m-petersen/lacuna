@@ -19,7 +19,7 @@ from .bids import (
     save_nifti,
     validate_bids_derivatives,
 )
-from .convert import gsp1000_to_hdf5, trk_to_tck
+from .convert import gsp1000_to_hdf5, merge_trk_to_tck, trk_to_tck
 from .downloaders import (
     CONNECTOME_SOURCES,
     ConnectomeSource,
@@ -39,12 +39,10 @@ from .fetch import (
     fetch_connectome,
     fetch_dtor985,
     fetch_gsp1000,
-    get_atlas,
+    fetch_hcp1065,
     get_connectome_path,
     get_data_dir,
     get_fetch_status,
-    get_tractogram,
-    list_available_atlases,
     list_fetchable_connectomes,
 )
 
@@ -62,15 +60,13 @@ __all__ = [
     "export_provenance_to_json",
     "batch_export_to_csv",
     "batch_export_to_tsv",
-    # Fetch - atlases & tractograms
-    "get_atlas",
+    # Fetch - paths & status
     "get_connectome_path",
     "get_data_dir",
-    "get_tractogram",
-    "list_available_atlases",
     # Fetch - connectomes
     "fetch_gsp1000",
     "fetch_dtor985",
+    "fetch_hcp1065",
     "fetch_connectome",
     "list_fetchable_connectomes",
     "get_fetch_status",
@@ -82,5 +78,6 @@ __all__ = [
     "FetchResult",
     # Convert
     "gsp1000_to_hdf5",
+    "merge_trk_to_tck",
     "trk_to_tck",
 ]

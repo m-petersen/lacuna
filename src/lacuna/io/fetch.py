@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 import time
-import warnings
 from collections.abc import Callable
 from pathlib import Path
 
@@ -697,6 +696,249 @@ def _register_dtor985(
         return False
 
 
+def fetch_hcp1065(
+    output_dir: str | Path,
+    *,
+    keep_original: bool = True,
+    register: bool = True,
+    register_name: str = "HCP1065",
+    force: bool = False,
+    progress_callback: Callable[[FetchProgress], None] | None = None,
+    verbose: bool = False,
+) -> FetchResult:
+    """
+    Download, merge, and register the HCP1065 structural tractogram.
+
+    Downloads the Human Connectome Project 1065-subject averaged tractography
+    atlas from GitHub Releases as a zip of TrackVis (.trk) files, merges all
+    tract files (excluding cranial nerves) into a single MRtrix3 (.tck) file,
+    and optionally registers for use with StructuralNetworkMapping.
+
+    Parameters
+    ----------
+    output_dir : str or Path
+        Directory for output .tck file.
+    keep_original : bool, default=True
+        Keep original .zip file and extracted tracts after merging.
+    register : bool, default=True
+        Automatically register tractogram after processing.
+    register_name : str, default="HCP1065"
+        Name for tractogram registration.
+    force : bool, default=False
+        Overwrite existing files and registrations.
+    progress_callback : callable, optional
+        Function called with FetchProgress updates during operation.
+    verbose : bool, default=False
+        Print informational messages.
+
+    Returns
+    -------
+    FetchResult
+        Result containing output path, registration status, and timing.
+
+    Raises
+    ------
+    DownloadError
+        If download fails.
+    ProcessingError
+        If extraction or merging fails.
+
+    Examples
+    --------
+    >>> from lacuna.io import fetch_hcp1065
+    >>> result = fetch_hcp1065("/data/connectomes/hcp1065")
+    >>> print(result.output_files[0])  # Path to .tck file
+    """
+    from ..core.exceptions import DownloadError, ProcessingError
+    from .convert import merge_trk_to_tck
+    from .downloaders import CONNECTOME_SOURCES
+    from .downloaders.github import GithubReleaseDownloader
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    start_time = time.time()
+    download_time = 0.0
+    processing_time = 0.0
+    warn_list: list[str] = []
+
+    source = CONNECTOME_SOURCES["hcp1065"]
+
+    # Check if .tck already exists
+    tck_path = output_dir / f"{source.name}.tck"
+
+    if tck_path.exists() and not force:
+        if verbose:
+            print(f"Using existing .tck file: {tck_path}")
+        warn_list.append(f"Using existing .tck file: {tck_path}")
+
+        registered = _register_hcp1065(
+            register, register_name, source, tck_path, progress_callback, warn_list
+        )
+
+        return FetchResult(
+            success=True,
+            connectome_name="hcp1065",
+            output_dir=output_dir,
+            output_files=[tck_path],
+            registered=registered,
+            register_name=register_name if registered else None,
+            duration_seconds=time.time() - start_time,
+            download_time_seconds=0.0,
+            processing_time_seconds=0.0,
+            warnings=warn_list,
+        )
+
+    try:
+        # Phase 1: Download zip
+        download_start = time.time()
+
+        if progress_callback:
+            progress_callback(
+                FetchProgress(
+                    phase="download",
+                    current_file="",
+                    files_completed=0,
+                    files_total=1,
+                    message="Downloading HCP1065 tractography atlas...",
+                )
+            )
+
+        downloader = GithubReleaseDownloader(source)
+        downloaded_files = downloader.download(
+            output_path=output_dir,
+            progress_callback=progress_callback,
+        )
+
+        if not downloaded_files:
+            raise DownloadError(url=source.download_url or "", reason="No files downloaded")
+
+        zip_path = downloaded_files[0]
+        download_time = time.time() - download_start
+
+        # Phase 2: Extract zip
+        processing_start = time.time()
+
+        if progress_callback:
+            progress_callback(
+                FetchProgress(
+                    phase="processing",
+                    current_file=zip_path.name,
+                    files_completed=0,
+                    files_total=1,
+                    message="Extracting tract files...",
+                )
+            )
+
+        import zipfile
+
+        extract_dir = output_dir / "hcp1065_tracts"
+        if not extract_dir.exists() or not any(extract_dir.iterdir()) or force:
+            extract_dir.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(zip_path, "r") as zf:
+                zf.extractall(extract_dir)
+
+        # Phase 3: Merge .trk files to single .tck
+        if progress_callback:
+            progress_callback(
+                FetchProgress(
+                    phase="processing",
+                    current_file="",
+                    files_completed=0,
+                    files_total=1,
+                    message="Merging tract files to .tck format...",
+                )
+            )
+
+        if tck_path.exists() and not force:
+            if verbose:
+                print(f"Using existing .tck file: {tck_path}")
+            warn_list.append(f"Using existing .tck file: {tck_path}")
+        else:
+            tck_path = merge_trk_to_tck(
+                source_dir=extract_dir,
+                output_path=tck_path,
+                overwrite=force,
+            )
+
+        # Cleanup originals if requested
+        if not keep_original:
+            import shutil
+
+            if zip_path.exists():
+                zip_path.unlink()
+            if extract_dir.exists():
+                shutil.rmtree(extract_dir)
+
+        processing_time = time.time() - processing_start
+
+        # Phase 4: Registration
+        registered = _register_hcp1065(
+            register, register_name, source, tck_path, progress_callback, warn_list
+        )
+
+        duration = time.time() - start_time
+
+        output_files = [tck_path]
+        if keep_original and zip_path.exists():
+            output_files.insert(0, zip_path)
+
+        return FetchResult(
+            success=True,
+            connectome_name="hcp1065",
+            output_dir=output_dir,
+            output_files=output_files,
+            registered=registered,
+            register_name=register_name if registered else None,
+            duration_seconds=duration,
+            download_time_seconds=download_time,
+            processing_time_seconds=processing_time,
+            warnings=warn_list,
+        )
+
+    except (DownloadError, ProcessingError):
+        raise
+    except Exception as e:
+        raise ProcessingError(operation="fetch_hcp1065", reason=str(e)) from e
+
+
+def _register_hcp1065(
+    register: bool,
+    register_name: str,
+    source,
+    tck_path: Path,
+    progress_callback: Callable | None,
+    warn_list: list[str],
+) -> bool:
+    """Register HCP1065 tractogram."""
+    if not register:
+        return False
+
+    if progress_callback:
+        progress_callback(
+            FetchProgress(
+                phase="registration",
+                current_file="",
+                files_completed=0,
+                files_total=1,
+                message=f"Registering as '{register_name}'...",
+            )
+        )
+    try:
+        from ..assets.connectomes import register_structural_connectome
+
+        register_structural_connectome(
+            name=register_name,
+            space=source.space,
+            tractogram_path=tck_path,
+            description=source.description or f"Downloaded via fetch_hcp1065 ({source.n_subjects} subjects)",
+        )
+        return True
+    except Exception as e:
+        warn_list.append(f"Registration failed: {e}")
+        return False
+
+
 def fetch_connectome(
     name: str,
     output_dir: str | Path,
@@ -741,6 +983,8 @@ def fetch_connectome(
         return fetch_gsp1000(output_dir, **kwargs)
     elif name == "dtor985":
         return fetch_dtor985(output_dir, **kwargs)
+    elif name == "hcp1065":
+        return fetch_hcp1065(output_dir, **kwargs)
     else:
         raise ValueError(f"No fetch implementation for '{name}'")
 
@@ -814,119 +1058,3 @@ def get_fetch_status(name: str) -> dict:
         "location": location,
         "size_bytes": size_bytes,
     }
-
-
-# ============================================================================
-# Deprecated Functions
-# ============================================================================
-
-
-def list_available_atlases() -> list[str]:
-    """
-    List available atlases.
-
-    .. deprecated::
-        Use ``lacuna.assets.parcellations.list_parcellations()`` instead.
-        Atlases are bundled in the package, not fetched remotely.
-
-    Returns
-    -------
-    list[str]
-        List of bundled atlas names.
-    """
-    warnings.warn(
-        "list_available_atlases() is deprecated. "
-        "Use lacuna.assets.parcellations.list_parcellations() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    try:
-        from ..assets.parcellations import list_parcellations
-
-        return [p.name for p in list_parcellations()]
-    except ImportError:
-        return []
-
-
-def get_atlas(name_or_path: str) -> tuple[Path, Path]:
-    """
-    Get atlas files.
-
-    .. deprecated::
-        Use ``lacuna.assets.parcellations.load_parcellation()`` instead.
-        Atlases are bundled in the package, not fetched remotely.
-
-    Parameters
-    ----------
-    name_or_path : str
-        Atlas name or path.
-
-    Returns
-    -------
-    tuple[Path, Path]
-        (image_path, labels_path) pair.
-    """
-    warnings.warn(
-        "get_atlas() is deprecated. "
-        "Use lacuna.assets.parcellations.load_parcellation() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    # Try as path first
-    path = Path(name_or_path)
-    if path.exists():
-        return discover_atlas_files(path)
-
-    # Try bundled atlases
-    try:
-        from ..assets.parcellations import load_parcellation
-
-        parc = load_parcellation(name_or_path)
-        return parc.image_path, parc.labels_path
-    except (ImportError, KeyError) as e:
-        raise AtlasNotFoundError(
-            f"Atlas '{name_or_path}' not found. "
-            "Use lacuna.assets.parcellations.list_parcellations() to see available atlases."
-        ) from e
-
-
-def get_tractogram(name: str = "dTOR985", *, convert_to_tck: bool = True) -> Path:
-    """
-    Get structural tractogram.
-
-    .. deprecated::
-        Use ``lacuna.io.fetch_dtor985()`` instead.
-
-    Parameters
-    ----------
-    name : str
-        Tractogram name.
-    convert_to_tck : bool
-        Convert to .tck format.
-
-    Returns
-    -------
-    Path
-        Path to tractogram file.
-    """
-    warnings.warn(
-        "get_tractogram() is deprecated. Use lacuna.io.fetch_dtor985() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    cache_dir = get_data_dir() / "tractograms"
-    tck_path = cache_dir / f"{name}.tck"
-    trk_path = cache_dir / f"{name}.trk"
-
-    if tck_path.exists() and convert_to_tck:
-        return tck_path
-    elif trk_path.exists():
-        if convert_to_tck:
-            from .convert import trk_to_tck
-
-            return trk_to_tck(trk_path, tck_path)
-        return trk_path
-
-    raise FileNotFoundError(
-        f"Tractogram '{name}' not found. Use lacuna.io.fetch_dtor985() to download it."
-    )

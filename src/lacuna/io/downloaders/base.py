@@ -39,7 +39,7 @@ class ConnectomeSource:
     description: str
     """User-facing description of the connectome."""
 
-    source_type: Literal["dataverse", "figshare"]
+    source_type: Literal["dataverse", "figshare", "github"]
     """Download source requiring specific authentication/handling."""
 
     # Dataverse-specific
@@ -350,5 +350,19 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         n_subjects=985,
         space="MNI152NLin2009bAsym",
         estimated_size_gb=11.0,
+    ),
+    "hcp1065": ConnectomeSource(
+        name="hcp1065",
+        display_name="HCP1065 Structural Connectome",
+        type="structural",
+        description=(
+            "Human Connectome Project 1065-subject averaged tractography atlas. "
+            "Provides structural connectivity template for structural network mapping."
+        ),
+        source_type="github",
+        download_url="https://github.com/data-others/atlas/releases/download/hcp1065/hcp1065_avg_tracts_trk.zip",
+        n_subjects=1065,
+        space="MNI152NLin2009cAsym",
+        estimated_size_gb=1.5,
     ),
 }

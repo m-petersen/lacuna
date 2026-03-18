@@ -59,6 +59,8 @@ def handle_fetch_command(args: argparse.Namespace) -> int:
         return _handle_gsp1000(args)
     elif connectome == "dtor985":
         return _handle_dtor985(args)
+    elif connectome == "hcp1065":
+        return _handle_hcp1065(args)
     else:
         print(f"Error: Unknown connectome '{connectome}'")
         return 1
@@ -181,6 +183,48 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
         return 1
 
 
+def _handle_hcp1065(args: argparse.Namespace) -> int:
+    """Handle HCP1065 fetch."""
+    from lacuna.core.exceptions import DownloadError, ProcessingError
+    from lacuna.io import fetch_hcp1065
+
+    # Get output directory
+    output_dir = getattr(args, "output_dir", None)
+    if output_dir is None:
+        from lacuna.io.fetch import get_data_dir
+
+        output_dir = get_data_dir() / "connectomes" / "hcp1065"
+
+    # Get configuration
+    keep_original = not getattr(args, "no_keep_original_zip", False)
+    force = getattr(args, "force", False)
+
+    print("Fetching HCP1065 structural tractogram...")
+    print(f"  Output: {output_dir}")
+    print(f"  Keep original: {keep_original}")
+    print()
+
+    try:
+        result = fetch_hcp1065(
+            output_dir=output_dir,
+            keep_original=keep_original,
+            register=False,  # Registration handled by analysis steps
+            force=force,
+        )
+        print("\n✓ HCP1065 fetch complete!")
+        print(f"  Files: {len(result.output_files)}")
+        print(f"  Duration: {result.duration_seconds:.1f}s")
+        print(f"  Output: {result.output_dir}")
+        return 0
+
+    except DownloadError as e:
+        print(f"\n✗ Download error: {e}")
+        return 1
+    except ProcessingError as e:
+        print(f"\n✗ Processing error: {e}")
+        return 1
+
+
 def _handle_interactive(args: argparse.Namespace) -> int:
     """Handle interactive guided setup."""
     from lacuna.io.downloaders import CONNECTOME_SOURCES
@@ -244,6 +288,10 @@ def _handle_interactive(args: argparse.Namespace) -> int:
     elif selected.name == "dtor985":
         args.connectome = "dtor985"
         return _handle_dtor985(args)
+
+    elif selected.name == "hcp1065":
+        args.connectome = "hcp1065"
+        return _handle_hcp1065(args)
 
     return 0
 

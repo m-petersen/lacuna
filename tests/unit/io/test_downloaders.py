@@ -239,6 +239,95 @@ class TestFigshareDownloader:
                 assert files[0].name == "tractogram.trk"
 
 
+class TestGithubReleaseDownloader:
+    """Unit tests for GithubReleaseDownloader."""
+
+    def test_github_downloader_no_api_key_needed(self):
+        """GithubReleaseDownloader should create instance without any API key."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        source = CONNECTOME_SOURCES["hcp1065"]
+        downloader = GithubReleaseDownloader(source)
+
+        assert downloader.source == source
+
+    def test_github_downloader_requires_download_url(self, tmp_path):
+        """GithubReleaseDownloader should raise DownloadError if no download_url."""
+        from lacuna.core.exceptions import DownloadError
+        from lacuna.io.downloaders import ConnectomeSource
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        source = ConnectomeSource(
+            name="test",
+            display_name="Test",
+            type="structural",
+            description="Test",
+            source_type="github",
+            download_url=None,
+        )
+
+        downloader = GithubReleaseDownloader(source)
+
+        with pytest.raises(DownloadError) as exc_info:
+            downloader.download(tmp_path)
+
+        assert "No download_url configured" in str(exc_info.value)
+
+    def test_github_downloader_extracts_filename(self):
+        """GithubReleaseDownloader should extract filename from URL."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        source = CONNECTOME_SOURCES["hcp1065"]
+        downloader = GithubReleaseDownloader(source)
+
+        filename = downloader._get_filename_from_url(source.download_url)
+        assert filename == "hcp1065_avg_tracts_trk.zip"
+
+    def test_github_download_with_mock(self, tmp_path):
+        """GithubReleaseDownloader should download file via HTTP GET."""
+        import requests
+
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        source = CONNECTOME_SOURCES["hcp1065"]
+        downloader = GithubReleaseDownloader(source)
+
+        # Mock download response
+        mock_response = MagicMock()
+        mock_response.headers = {
+            "content-length": "1000",
+            "content-type": "application/zip",
+        }
+        mock_response.iter_content.return_value = [b"fake zip data"]
+
+        with patch.object(requests, "get", return_value=mock_response):
+            files = downloader.download(tmp_path)
+
+            assert len(files) == 1
+            assert files[0].exists()
+            assert files[0].name == "hcp1065_avg_tracts_trk.zip"
+
+    def test_github_download_skips_existing(self, tmp_path):
+        """GithubReleaseDownloader should skip already downloaded files."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        source = CONNECTOME_SOURCES["hcp1065"]
+        downloader = GithubReleaseDownloader(source)
+
+        # Create existing file
+        existing = tmp_path / "hcp1065_avg_tracts_trk.zip"
+        existing.write_bytes(b"existing data")
+
+        files = downloader.download(tmp_path)
+
+        assert len(files) == 1
+        assert files[0] == existing
+
+
 class TestGetApiKey:
     """Unit tests for get_api_key helper function."""
 
@@ -297,3 +386,18 @@ class TestConnectomeSources:
         assert dtor.n_subjects == 985
         assert dtor.n_subjects == 985
         assert dtor.estimated_size_gb > 0
+
+    def test_hcp1065_source_configuration(self):
+        """HCP1065 source should have correct configuration."""
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+
+        hcp = CONNECTOME_SOURCES["hcp1065"]
+
+        assert hcp.name == "hcp1065"
+        assert hcp.type == "structural"
+        assert hcp.source_type == "github"
+        assert hcp.download_url is not None
+        assert "github.com" in hcp.download_url
+        assert hcp.n_subjects == 1065
+        assert hcp.space == "MNI152NLin2009cAsym"
+        assert hcp.estimated_size_gb > 0

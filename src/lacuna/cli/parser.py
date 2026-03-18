@@ -111,7 +111,8 @@ def _build_fetch_parser(subparsers) -> None:
             "Download, process, and register connectomes for lesion network mapping.\n\n"
             "Available connectomes:\n"
             "  gsp1000  - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
-            "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n\n"
+            "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n"
+            "  hcp1065  - HCP1065 structural tractogram (~1.5GB, no API key required)\n\n"
             "Examples:\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY --batches 50\n"
             "  lacuna fetch dtor985 --api-key \\$FIGSHARE_API_KEY --output-dir /data/connectomes\n"
@@ -124,7 +125,7 @@ def _build_fetch_parser(subparsers) -> None:
     fetch_parser.add_argument(
         "connectome",
         nargs="?",
-        choices=["gsp1000", "dtor985"],
+        choices=["gsp1000", "dtor985", "hcp1065"],
         help="Connectome to fetch (gsp1000 or dtor985)",
     )
 
@@ -217,6 +218,14 @@ def _build_fetch_parser(subparsers) -> None:
         "--no-keep-original-trk",
         action="store_true",
         help="Remove original .trk file after conversion to .tck to save disk space",
+    )
+
+    # HCP1065-specific options
+    g_hcp = fetch_parser.add_argument_group("HCP1065 options")
+    g_hcp.add_argument(
+        "--no-keep-original-zip",
+        action="store_true",
+        help="Remove original .zip file and extracted tracts after merging to .tck",
     )
 
 
