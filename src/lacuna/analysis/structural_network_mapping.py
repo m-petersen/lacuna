@@ -685,8 +685,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             disconn_map = nib.load(disconn_map_path, mmap=True)
 
             # Compute summary statistics (this will load data temporarily but release it)
-            disconn_array = disconn_map.get_fdata()
-            mean_disconnection = float(np.mean(disconn_array[disconn_array > 0]))
+            disconn_array = np.nan_to_num(disconn_map.get_fdata(), nan=0.0, posinf=0.0, neginf=0.0)
+            positive_mask = disconn_array > 0
+            mean_disconnection = float(np.mean(disconn_array[positive_mask])) if np.any(positive_mask) else 0.0
 
             # Free memory immediately after computing statistics
             del disconn_array
@@ -698,6 +699,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             # Load disconnection map into memory
             # This ensures results are independent of temp directory lifecycle
             disconn_data = nib.load(disconn_map_path).get_fdata()
+            # Replace non-finite values (NaN/Inf from division by zero) with 0
+            disconn_data = np.nan_to_num(disconn_data, nan=0.0, posinf=0.0, neginf=0.0)
             final_disconn_map = nib.Nifti1Image(
                 disconn_data, disconn_map.affine, disconn_map.header
             )
