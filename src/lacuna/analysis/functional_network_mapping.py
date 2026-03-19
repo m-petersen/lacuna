@@ -225,9 +225,17 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Analysis parameters
         self.method = method
         self.pini_percentile = pini_percentile
+        if not (1 <= pini_percentile <= 100):
+            raise ValueError(
+                f"pini_percentile must be between 1 and 100, got {pini_percentile}"
+            )
         self.n_jobs = n_jobs
         self.compute_p_map = compute_p_map
         self.fdr_alpha = fdr_alpha
+        if fdr_alpha is not None and not (0 < fdr_alpha <= 1):
+            raise ValueError(
+                f"fdr_alpha must be between 0 (exclusive) and 1 (inclusive), got {fdr_alpha}"
+            )
         self.t_threshold = t_threshold
         self.return_in_input_space = return_in_input_space
         self.final_output_resolution = output_resolution  # User-specified, None means auto

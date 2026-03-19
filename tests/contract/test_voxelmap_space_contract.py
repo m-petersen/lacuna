@@ -62,13 +62,13 @@ class TestVoxelMapSpaceContract:
         try:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_connectome",
-                parcellation_name="schaefer100",
+                parcellation_name="Schaefer2018_100Parcels7Networks",
                 return_in_input_space=False,
                 check_dependencies=False,
             )
             # Verify parameter is set
             assert analysis.return_in_input_space is False
-        except KeyError:
+        except (KeyError, ValueError):
             # Expected - connectome not registered, but parameter was accepted
             pass
 
@@ -77,13 +77,13 @@ class TestVoxelMapSpaceContract:
         try:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_connectome",
-                parcellation_name="schaefer100",
+                parcellation_name="Schaefer2018_100Parcels7Networks",
                 return_in_input_space=True,
                 check_dependencies=False,
             )
             # Verify parameter is set
             assert analysis.return_in_input_space is True
-        except KeyError:
+        except (KeyError, ValueError):
             # Expected - connectome not registered, but parameter was accepted
             pass
 

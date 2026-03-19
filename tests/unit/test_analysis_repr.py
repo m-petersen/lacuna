@@ -285,14 +285,14 @@ class TestStructuralNetworkMappingRepr:
 
             analysis = StructuralNetworkMapping(
                 connectome_name="test_struct_atlas",
-                parcellation_name="schaefer100",
+                parcellation_name="Schaefer2018_100Parcels7Networks",
                 compute_disconnectivity_matrix=True,
                 check_dependencies=False,
             )
 
             repr_str = repr(analysis)
 
-            assert "parcellation_name='schaefer100'" in repr_str
+            assert "parcellation_name='Schaefer2018_100Parcels7Networks'" in repr_str
             assert "compute_disconnectivity_matrix=True" in repr_str
         finally:
             unregister_structural_connectome("test_struct_atlas")
@@ -316,7 +316,7 @@ class TestStructuralNetworkMappingRepr:
 
             analysis = StructuralNetworkMapping(
                 connectome_name="test_struct_str",
-                parcellation_name="schaefer100",
+                parcellation_name="Schaefer2018_100Parcels7Networks",
                 n_jobs=4,
                 verbose=False,
                 check_dependencies=False,
@@ -327,7 +327,7 @@ class TestStructuralNetworkMappingRepr:
             assert "StructuralNetworkMapping Analysis" in str_output
             assert "Configuration:" in str_output
             assert "connectome_name: test_struct_str" in str_output
-            assert "parcellation_name: schaefer100" in str_output
+            assert "parcellation_name: Schaefer2018_100Parcels7Networks" in str_output
             assert "n_jobs: 4" in str_output
         finally:
             unregister_structural_connectome("test_struct_str")

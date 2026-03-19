@@ -173,6 +173,11 @@ class RunConfig:
             if has_atlas:
                 self._validate_atlas_name(opts["parcellation_name"])
 
+        # Validate atlas names for RD and FNM (parcel_names list)
+        if "parcel_names" in self.analysis_options:
+            for name in self.analysis_options["parcel_names"]:
+                self._validate_atlas_name(name)
+
     @staticmethod
     def _validate_atlas_name(name: str) -> None:
         """Validate atlas name against registry."""

@@ -270,9 +270,34 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.parcellation_name = parcellation_name
         self.compute_disconnectivity_matrix = compute_disconnectivity_matrix
         self.compute_roi_disconnection = compute_roi_disconnection
+
+        # Validate: compute flags require parcellation_name
+        if (compute_disconnectivity_matrix or compute_roi_disconnection) and parcellation_name is None:
+            flags = []
+            if compute_disconnectivity_matrix:
+                flags.append("compute_disconnectivity_matrix")
+            if compute_roi_disconnection:
+                flags.append("compute_roi_disconnection")
+            raise ValueError(
+                f"{' and '.join(flags)} requires parcellation_name to be specified. "
+                f"Use list_parcellations() to see available options."
+            )
+
+        # Validate parcellation name early (full loading deferred to _validate_inputs)
+        if parcellation_name is not None:
+            available_names = [a.name for a in list_parcellations()]
+            if parcellation_name not in available_names:
+                raise ValueError(
+                    f"Atlas '{parcellation_name}' not found in registry. "
+                    f"Available parcellations: {', '.join(available_names[:10])}... "
+                    f"Use list_parcellations() to see all options."
+                )
+
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
         self.n_jobs = n_jobs
+        if n_jobs != -1 and n_jobs < 1:
+            raise ValueError(f"n_jobs must be -1 (all CPUs) or >= 1, got {n_jobs}")
         self.keep_intermediate = keep_intermediate
         self.cleanup_temp_files = cleanup_temp_files
         self.show_mrtrix_output = show_mrtrix_output
