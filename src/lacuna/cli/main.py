@@ -81,7 +81,8 @@ class RunConfig:
         analysis_options: dict[str, Any] = {}
 
         # Common analysis options
-        if hasattr(args, "parcel_atlases") and args.parcel_atlases:
+        # Note: SNM uses parcellation_name (set below), not parcel_names
+        if hasattr(args, "parcel_atlases") and args.parcel_atlases and args.analysis not in ("snm", "structuralnetworkmapping"):
             analysis_options["parcel_names"] = args.parcel_atlases
         if hasattr(args, "custom_parcellation") and args.custom_parcellation:
             analysis_options["custom_parcellation"] = args.custom_parcellation
@@ -118,9 +119,12 @@ class RunConfig:
         # Handle --no-cache-tdi flag (default is to cache)
         if hasattr(args, "no_cache_tdi") and args.no_cache_tdi:
             analysis_options["cache_tdi"] = False
-        # Use nprocs for MRtrix threading in SNM
+        # Pass nprocs to analysis as n_jobs
         nprocs = getattr(args, "nprocs", -1)
-        if nprocs > 0 and args.analysis in ("snm", "structuralnetworkmapping"):
+        if nprocs != 1 and args.analysis in (
+            "snm", "structuralnetworkmapping",
+            "fnm", "functionalnetworkmapping",
+        ):
             analysis_options["n_jobs"] = nprocs
         if hasattr(args, "show_mrtrix_output") and args.show_mrtrix_output:
             analysis_options["show_mrtrix_output"] = True

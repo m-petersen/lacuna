@@ -784,12 +784,17 @@ class StructuralNetworkMapping(BaseAnalysis):
             results["summarystatistics"] = summary_result
 
             # Add intermediate results if keep_intermediate=True
-            # Files are read into memory here so they persist after temp cleanup
+            # Copy files to a persistent staging dir so they survive temp cleanup
             if self.keep_intermediate:
-                # Add mask tractogram (read bytes into memory before temp cleanup)
-                mask_tractogram_result = Tractogram.from_file(
-                    path=mask_tck_path,
+                import shutil
+
+                staging_dir = get_temp_dir(prefix=f"slnm_intermediates_{subject_id}_")
+                staged_tck = staging_dir / mask_tck_path.name
+                shutil.copy2(mask_tck_path, staged_tck)
+
+                mask_tractogram_result = Tractogram(
                     name="mask_tractogram",
+                    tractogram_path=staged_tck,
                     metadata={
                         "description": "Tractogram filtered by mask",
                     },
@@ -852,9 +857,11 @@ class StructuralNetworkMapping(BaseAnalysis):
                 if self.keep_intermediate and self.compute_roi_disconnection:
                     intact_tck_path = temp_dir_path / f"{subject_id}_intact.tck"
                     if intact_tck_path.exists():
-                        intact_tractogram_result = Tractogram.from_file(
-                            path=intact_tck_path,
+                        staged_intact = staging_dir / intact_tck_path.name
+                        shutil.copy2(intact_tck_path, staged_intact)
+                        intact_tractogram_result = Tractogram(
                             name="intact_tractogram",
+                            tractogram_path=staged_intact,
                             metadata={
                                 "description": "Intact (post-disconnection) tractogram",
                             },

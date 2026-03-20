@@ -162,7 +162,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         pini_percentile : int, default=20
             Percentile threshold for PINI method (0-100).
         n_jobs : int, default=1
-            Number of parallel jobs (not yet implemented).
+            Number of parallel jobs for post-processing (result aggregation
+            and spatial resampling). Set to -1 to use all available CPUs.
         verbose : bool, default=False
             If True, print progress messages. If False, run silently.
         compute_p_map : bool, default=True
@@ -1213,30 +1214,20 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Compute final statistics from aggregated values
         self.logger.info("Aggregating results...")
 
-        # Build results for processed masks, indexed by original position
-        processed_results = {}
-        for i, mask_info in enumerate(mask_batch):
-            original_idx = mask_info["index"]
-            subject_id = self._format_subject_id(mask_info["mask_data"])
-            self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
-
-            # Compute statistics from streaming aggregators
+        # Define per-subject aggregation work
+        def _aggregate_one(i, mask_info):
+            """Aggregate results for a single mask (thread-safe)."""
             n = aggregators[i]["n"]
             mean_z = aggregators[i]["sum_z"] / n
             mean_r = np.tanh(mean_z).astype(np.float32)
 
-            # Compute sample standard deviation for t-statistics (always computed)
-            # Using Bessel's correction (N-1 denominator) to match _run_analysis
-            # Population variance: Var_pop = E[X²] - E[X]² = sum_z2/n - mean_z²
-            # Sample variance: Var_sample = (n / (n-1)) * Var_pop
+            # Sample standard deviation with Bessel's correction
             var_z_population = (aggregators[i]["sum_z2"] / n) - (mean_z**2)
             var_z_sample = (n / (n - 1)) * var_z_population
-            std_z = np.sqrt(np.maximum(var_z_sample, 0))  # Avoid negative from numerical errors
+            std_z = np.sqrt(np.maximum(var_z_sample, 0))
 
-            # Create a copy of mask_data to avoid modifying input
             mask_copy = mask_info["mask_data"].copy()
 
-            # Aggregate using optimized method that accepts pre-computed statistics
             result = self._aggregate_results_from_statistics(
                 mask_copy,
                 mean_r,
@@ -1247,12 +1238,35 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 mask_shape,
                 total_subjects,
             )
+            return mask_info["index"], result
 
-            processed_results[original_idx] = result
+        effective_n_jobs = self.n_jobs
+        use_parallel = effective_n_jobs != 1 and len(mask_batch) > 1
+
+        if use_parallel:
+            from joblib import Parallel, delayed
+
+            self.logger.info(
+                f"Aggregating {len(mask_batch)} subjects in parallel "
+                f"(n_jobs={effective_n_jobs})"
+            )
+            pairs = Parallel(n_jobs=effective_n_jobs, backend="loky")(
+                delayed(_aggregate_one)(i, mask_info)
+                for i, mask_info in enumerate(mask_batch)
+            )
+            processed_results = {idx: result for idx, result in pairs}
+        else:
+            processed_results = {}
+            for i, mask_info in enumerate(mask_batch):
+                subject_id = self._format_subject_id(mask_info["mask_data"])
+                self.logger.info(
+                    f"Aggregating results for: {subject_id}", indent_level=1
+                )
+                idx, result = _aggregate_one(i, mask_info)
+                processed_results[idx] = result
 
         # Build final results list in original input order
-        # All masks are processed (empty masks now raise errors)
-        results = list(processed_results.values())
+        results = [processed_results[k] for k in sorted(processed_results)]
 
         self.logger.success(
             "Batch processing complete",

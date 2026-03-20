@@ -163,7 +163,7 @@ class TestCLIModuleEntry:
 class TestCLIWithMockedAnalysis:
     """Tests for CLI with mocked analysis to avoid heavy computation."""
 
-    def test_cli_run_rd_creates_output_directory(self, minimal_bids_dataset, output_dir, tmp_dir):
+    def test_cli_run_rd_creates_output_directory(self, minimal_bids_dataset, output_dir):
         """Test that CLI run creates output directory."""
         from lacuna.cli import main
 
@@ -176,15 +176,13 @@ class TestCLIWithMockedAnalysis:
                 str(output_dir),
                 "--parcel-atlases",
                 "Schaefer100",
-                "--tmp-dir",
-                str(tmp_dir),
             ]
         )
 
         # Even if analysis fails, output dir should be created
         assert output_dir.exists()
 
-    def test_cli_run_rd_respects_participant_label(self, minimal_bids_dataset, output_dir, tmp_dir):
+    def test_cli_run_rd_respects_participant_label(self, minimal_bids_dataset, output_dir):
         """Test that CLI respects --participant-label filtering."""
         from lacuna.cli import main
 
@@ -199,8 +197,6 @@ class TestCLIWithMockedAnalysis:
                 "Schaefer100",
                 "--participant-label",
                 "001",
-                "--tmp-dir",
-                str(tmp_dir),
             ]
         )
 

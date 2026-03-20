@@ -203,20 +203,21 @@ class TestRunSubcommandParsing:
         assert args.nprocs == 8
 
     def test_run_with_tmp_dir(self, tmp_path):
-        """Test run with --tmp-dir option."""
+        """Test run with --tmp-dir option (SNM only)."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
         tmp_dir = tmp_path / "tmp"
+        conn_path = tmp_path / "tractogram.tck"
 
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "snm",
                 str(bids_dir),
                 str(output_dir),
-                "--parcel-atlases",
-                "Schaefer100",
+                "--connectome-path",
+                str(conn_path),
                 "--tmp-dir",
                 str(tmp_dir),
             ]
@@ -397,7 +398,6 @@ class TestComplexScenarios:
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
-        tmp_dir = tmp_path / "tmp"
 
         conn_path = tmp_path / "gsp1000.h5"
         args = parser.parse_args(
@@ -416,8 +416,8 @@ class TestComplexScenarios:
                 "Schaefer200",
                 "--nprocs",
                 "4",
-                "--tmp-dir",
-                str(tmp_dir),
+                "--batch-size",
+                "50",
                 "-vv",
             ]
         )
@@ -430,24 +430,25 @@ class TestComplexScenarios:
         assert args.connectome_path == conn_path
         assert args.parcel_atlases == ["Schaefer100", "Schaefer200"]
         assert args.nprocs == 4
-        assert args.tmp_dir == tmp_dir
+        assert args.batch_size == 50
         assert args.verbose_count == 2
 
     def test_short_tmp_dir_option(self, tmp_path):
-        """Test that -w works as short form for --tmp-dir."""
+        """Test that -w works as short form for --tmp-dir (SNM only)."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
         tmp_dir = tmp_path / "tmp"
+        conn_path = tmp_path / "tractogram.tck"
 
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "snm",
                 str(bids_dir),
                 str(output_dir),
-                "--parcel-atlases",
-                "Schaefer100",
+                "--connectome-path",
+                str(conn_path),
                 "-w",
                 str(tmp_dir),
             ]

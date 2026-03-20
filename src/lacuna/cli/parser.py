@@ -16,7 +16,6 @@ Functions:
 from __future__ import annotations
 
 import os
-import argparse
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from pathlib import Path
 
@@ -325,32 +324,6 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
         ),
     )
 
-    # Performance Options
-    g_perf = parser.add_argument_group("Performance options")
-    g_perf.add_argument(
-        "--nprocs",
-        type=int,
-        default=-1,
-        metavar="N",
-        help="Number of parallel processes (-1 for all CPUs). Also used for MRtrix3 thread count in SNM.",
-    )
-    g_perf.add_argument(
-        "--batch-size",
-        type=int,
-        default=-1,
-        metavar="N",
-        help=argparse.SUPPRESS,
-    )
-    g_perf.add_argument(
-        "-w",
-        "--tmp-dir",
-        dest="tmp_dir",
-        type=Path,
-        default=Path(os.getenv("LACUNA_TMP_DIR", "tmp")),
-        metavar="PATH",
-        help="Temporary directory for intermediate files",
-    )
-
     # Other Options
     g_other = parser.add_argument_group("Other options")
     g_other.add_argument(
@@ -395,6 +368,16 @@ def _build_rd_parser(subparsers) -> None:
 
     # Add shared arguments
     _add_shared_run_arguments(rd_parser)
+
+    # Performance Options
+    g_perf = rd_parser.add_argument_group("Performance options")
+    g_perf.add_argument(
+        "--nprocs",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Number of parallel processes for subject processing (-1 for all CPUs)",
+    )
 
     # RegionalDamage-specific options
     g_rd = rd_parser.add_argument_group("RegionalDamage options")
@@ -441,6 +424,26 @@ def _build_fnm_parser(subparsers) -> None:
 
     # Add shared arguments
     _add_shared_run_arguments(fnm_parser)
+
+    # Performance Options
+    g_perf = fnm_parser.add_argument_group("Performance options")
+    g_perf.add_argument(
+        "--nprocs",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Number of parallel processes (-1 for all CPUs)",
+    )
+    g_perf.add_argument(
+        "--batch-size",
+        type=int,
+        default=-1,
+        metavar="N",
+        help=(
+            "Number of lesion masks to vectorize together (-1 for all). "
+            "Controls memory usage when processing many subjects."
+        ),
+    )
 
     # FNM-specific options
     g_fnm = fnm_parser.add_argument_group("FunctionalNetworkMapping options")
@@ -530,6 +533,25 @@ def _build_snm_parser(subparsers) -> None:
 
     # Add shared arguments
     _add_shared_run_arguments(snm_parser)
+
+    # Performance Options
+    g_perf = snm_parser.add_argument_group("Performance options")
+    g_perf.add_argument(
+        "--nprocs",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Number of threads for MRtrix3 processing (-1 for all CPUs)",
+    )
+    g_perf.add_argument(
+        "-w",
+        "--tmp-dir",
+        dest="tmp_dir",
+        type=Path,
+        default=Path(os.getenv("LACUNA_TMP_DIR", "tmp")),
+        metavar="PATH",
+        help="Temporary directory for MRtrix3 intermediate files",
+    )
 
     # SNM-specific options
     g_snm = snm_parser.add_argument_group("StructuralNetworkMapping options")

@@ -1,12 +1,12 @@
 # Tutorials
 
-Welcome to the tutorials! These learning-oriented guides will teach you how to work with Lacuna.
+Welcome to the tutorials! These guides will teach you how to work with Lacuna.
 
 The tutorials are self-contained Jupyter notebooks. You can run them locally or via the Colab links provided in each tutorial.
 
 ## First steps
 
-We recommend following these tutorials in order. They provide a high-level overview of analyses to introduce you to the package:
+We recommend doing the ge. They provide a high-level overview of analyses to introduce you to the package:
 
 <div class="grid cards" markdown>
 
