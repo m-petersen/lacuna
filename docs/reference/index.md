@@ -6,21 +6,21 @@ Technical reference documentation for Lacuna.
 
 <div class="grid cards" markdown>
 
--   :material-console:{ .lg .middle } **Command-Line Interface**
+-   **Command-Line Interface**
 
     ---
 
     Complete CLI documentation with commands, options, and examples.
 
-    [:octicons-arrow-right-24: CLI Reference](cli/index.md)
+    [CLI Reference](cli/index.md)
 
--   :material-api:{ .lg .middle } **Python API**
+-   **Python API**
 
     ---
 
     Auto-generated API reference from source code docstrings.
 
-    [:octicons-arrow-right-24: API Reference](api/lacuna/index.md)
+    [API Reference](api/lacuna/index.md)
 
 </div>
 
@@ -46,5 +46,3 @@ Technical reference documentation for Lacuna.
 
 This reference documentation is auto-generated from NumPy-style docstrings
 in the source code using [mkdocstrings](https://mkdocstrings.github.io/).
-For conceptual explanations, see the [Explanation](../explanation/index.md)
-section.

@@ -138,7 +138,7 @@ lacuna run fnm /bids /output \
 Computes white matter disconnection using tractography. Generates disconnection maps showing regions affected by streamline interruption through lesioned tissue.
 
 !!! warning "MRtrix3 required"
-    This analysis requires MRtrix3 to be installed and in PATH. See [Setup MRtrix3](../../how-to/setup-mrtrix3.md).
+    This analysis requires MRtrix3 to be installed and in PATH.
 
 ### StructuralNetworkMapping options
 
@@ -198,9 +198,3 @@ my_study/
 | `LACUNA_TMP_DIR` | Custom temporary directory (default: `./tmp`) |
 | `TEMPLATEFLOW_HOME` | TemplateFlow cache directory |
 
-## See Also
-
-- [Run Functional LNM](../../how-to/run-flnm.md) — Step-by-step fLNM guide
-- [Run Structural LNM](../../how-to/run-slnm.md) — Step-by-step sLNM guide
-- [Regional Damage](../../how-to/regional-damage.md) — Step-by-step RD guide
-- [Batch Processing](../../how-to/batch-processing.md) — Processing multiple subjects

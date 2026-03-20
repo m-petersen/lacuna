@@ -14,53 +14,53 @@ lacuna <command> [options]
 
 <div class="grid cards" markdown>
 
--   :material-play:{ .lg .middle } **Run**
+-   **Run**
 
     ---
 
     Run lesion analyses (regional damage, functional and structural network mapping).
 
-    [:octicons-arrow-right-24: Run](run.md)
+    [Run](run.md)
 
--   :material-download:{ .lg .middle } **Fetch**
+-   **Fetch**
 
     ---
 
     Download normative connectomes and other assets to the local cache.
 
-    [:octicons-arrow-right-24: Fetch](fetch.md)
+    [Fetch](fetch.md)
 
--   :material-table:{ .lg .middle } **Collect**
+-   **Collect**
 
     ---
 
     Aggregate subject-level parcelstats into group-level tables.
 
-    [:octicons-arrow-right-24: Collect](collect.md)
+    [Collect](collect.md)
 
--   :material-information:{ .lg .middle } **Info**
+-   **Info**
 
     ---
 
     Display available resources (atlases, connectomes).
 
-    [:octicons-arrow-right-24: Info](info.md)
+    [Info](info.md)
 
--   :material-file-swap:{ .lg .middle } **Bidsify**
+-   **Bidsify**
 
     ---
 
     Convert a directory of NIfTI mask files to BIDS format.
 
-    [:octicons-arrow-right-24: Bidsify](bidsify.md)
+    [Bidsify](bidsify.md)
 
--   :material-school:{ .lg .middle } **Tutorial**
+-   **Tutorial**
 
     ---
 
     Setup tutorial data for learning Lacuna.
 
-    [:octicons-arrow-right-24: Tutorial](tutorial.md)
+    [Tutorial](tutorial.md)
 
 </div>
 
@@ -98,8 +98,3 @@ lacuna run fnm --help
 lacuna fetch --help
 ```
 
-## See Also
-
-- [Installation Guide](../../how-to/installation.md) — Setting up Lacuna
-- [Docker Guide](../../how-to/docker.md) — Running via containers
-- [Apptainer Guide](../../how-to/apptainer.md) — Running on HPC clusters

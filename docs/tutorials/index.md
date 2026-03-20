@@ -4,28 +4,40 @@ Welcome to the tutorials! These guides will teach you how to work with Lacuna.
 
 The tutorials are self-contained Jupyter notebooks. You can run them locally or via the Colab links provided in each tutorial.
 
-## First steps
-
-We recommend doing the ge. They provide a high-level overview of analyses to introduce you to the package:
+Start with the getting started tutorial, then explore the analysis-specific guides:
 
 <div class="grid cards" markdown>
 
--   :material-console:{ .lg .middle } **Getting started with the CLI**
+-   **Getting Started**
 
     ---
 
-    Fetch sample data, and run your first analysis using the command-line interface.
+    Introduction to Lacuna's CLI: tutorial data, bidsify, fetch, run, and collect.
 
-    [:octicons-arrow-right-24: CLI Tutorial](getting-started-cli.ipynb)
+    [Getting Started](getting-started.ipynb)
 
--   :material-language-python:{ .lg .middle } **Getting started with the API**
+-   **Regional Damage**
 
     ---
 
-    Learn the Python API: load masks, run analyses, and access results programmatically.
+    Measure lesion overlap with brain parcellation atlases.
 
-    [:octicons-arrow-right-24: API Tutorial](getting-started-api.ipynb)
+    [Regional Damage](regional-damage.ipynb)
+
+-   **Functional Network Mapping**
+
+    ---
+
+    Map functional brain circuitry linked to a lesion.
+
+    [FNM Tutorial](functional-network-mapping.ipynb)
+
+-   **Structural Network Mapping**
+
+    ---
+
+    Map structural disconnectivity using normative tractogram data.
+
+    [SNM Tutorial](structural-network-mapping.ipynb)
 
 </div>
-
-

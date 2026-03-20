@@ -3,7 +3,7 @@ hide:
   - navigation
 ---
 
-## Lacuna: a scientific Python package for neuroimaging lesion analysis.
+## Lacuna: a scientific Python package for advanced brain lesion analysis.
 
 Lacuna bridges the gap between individual lesion masks and normative brain data, e.g. connectomes. It provides a reproducible, BIDS-compatible workflow that currently covers the following primary modes of analysis:
 
@@ -72,41 +72,23 @@ Get up and running in minutes.
 
 ## Documentation
 
-This documentation is organized by the [Diátaxis](https://diataxis.fr/) framework:
-
 <div class="grid cards" markdown>
 
--   :material-school:{ .lg .middle } **Tutorials**
+-   **Tutorials**
 
     ---
 
-    Step-by-step lessons to introduce you to the package.
+    Learn how to use Lacuna with hands-on Jupyter notebook tutorials.
 
-    [:octicons-arrow-right-24: Start learning](tutorials/index.md)
+    [Start learning](tutorials/index.md)
 
--   :material-tools:{ .lg .middle } **How-to Guides**
-
-    ---
-
-    Solutions for specific analysis goals.
-
-    [:octicons-arrow-right-24: Find a guide](how-to/index.md)
-
--   :material-book-open-page-variant:{ .lg .middle } **Reference**
+-   **Reference**
 
     ---
 
-    Technical descriptions of the API, CLI, and config.
+    CLI commands, options, and auto-generated API documentation.
 
-    [:octicons-arrow-right-24: Browse reference](reference/index.md)
-
--   :material-lightbulb:{ .lg .middle } **Explanation**
-
-    ---
-
-    Discussion of background concepts and design.
-
-    [:octicons-arrow-right-24: Learn concepts](explanation/index.md)
+    [Browse reference](reference/index.md)
 
 </div>
 
