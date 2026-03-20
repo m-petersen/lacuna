@@ -109,8 +109,8 @@ class RunConfig:
             analysis_options["return_in_input_space"] = False
 
         # SNM-specific options
-        if hasattr(args, "parcel_atlas") and args.parcel_atlas:
-            analysis_options["parcellation_name"] = args.parcel_atlas
+        if hasattr(args, "parcel_atlases") and args.parcel_atlases and args.analysis in ("snm", "structuralnetworkmapping"):
+            analysis_options["parcellation_name"] = args.parcel_atlases
         if hasattr(args, "compute_disconnectivity_matrix") and args.compute_disconnectivity_matrix:
             analysis_options["compute_disconnectivity_matrix"] = True
         if hasattr(args, "compute_roi_disconnection") and args.compute_roi_disconnection:
@@ -162,16 +162,21 @@ class RunConfig:
 
             if has_atlas and not (has_disconn or has_roi):
                 raise ValueError(
-                    "--parcel-atlas requires at least one of "
+                    "--parcel-atlases requires at least one of "
                     "--compute-disconnectivity-matrix or --compute-roi-disconnection"
                 )
             if (has_disconn or has_roi) and not has_atlas:
                 raise ValueError(
                     "--compute-disconnectivity-matrix and --compute-roi-disconnection "
-                    "require --parcel-atlas. Use 'lacuna info atlases' to list available atlases."
+                    "require --parcel-atlases. Use 'lacuna info atlases' to list available atlases."
                 )
             if has_atlas:
-                self._validate_atlas_name(opts["parcellation_name"])
+                # parcellation_name is now a list for SNM
+                names = opts["parcellation_name"]
+                if isinstance(names, str):
+                    names = [names]
+                for name in names:
+                    self._validate_atlas_name(name)
 
         # Validate atlas names for RD and FNM (parcel_names list)
         if "parcel_names" in self.analysis_options:
@@ -294,7 +299,8 @@ def _handle_collect_command(args: Namespace) -> int:
     log_level = max(25 - 5 * getattr(args, "verbose_count", 0), 10)
     _setup_logging(log_level)
 
-    output_dir = args.output_dir
+    derivatives_dir = args.derivatives_dir
+    output_dir = getattr(args, "output_dir", None) or derivatives_dir
     overwrite = getattr(args, "overwrite", False)
     pattern = getattr(args, "pattern", None)
 
@@ -311,19 +317,31 @@ def _handle_collect_command(args: Namespace) -> int:
         glob_pattern = "*_parcelstats.tsv"
 
     logger.info("Running collect (group-level aggregation)")
-    logger.info(f"Scanning derivatives directory: {output_dir}")
+    logger.info(f"Scanning derivatives directory: {derivatives_dir}")
+    if output_dir != derivatives_dir:
+        logger.info(f"Output directory: {output_dir}")
     logger.info(f"Pattern: {glob_pattern}")
+
+    # Pre-scan to inform user what was found
+    matched_files = [
+        f for f in Path(derivatives_dir).rglob(glob_pattern) if not f.name.startswith("group_")
+    ]
+    n_subjects = len(set(f.parent.parent.parent.name for f in matched_files if f.parent.parent.parent.name.startswith("sub-")))
+    logger.info(f"Found {len(matched_files)} file(s) across {n_subjects} subject(s)")
 
     try:
         created_files = aggregate_parcelstats(
-            derivatives_dir=output_dir,
+            derivatives_dir=derivatives_dir,
             output_dir=output_dir,
             pattern=glob_pattern,
             overwrite=overwrite,
         )
 
         if not created_files:
-            logger.warning("No parcelstats files found to aggregate")
+            if not overwrite:
+                logger.info("No new files created (all outputs already exist). Use --overwrite to replace.")
+            else:
+                logger.warning("No parcelstats files found to aggregate")
             return EXIT_SUCCESS
 
         logger.info(f"Created {len(created_files)} group-level TSV file(s):")

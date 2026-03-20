@@ -16,6 +16,7 @@ Functions:
 from __future__ import annotations
 
 import os
+import argparse
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from pathlib import Path
 
@@ -338,11 +339,7 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
         type=int,
         default=-1,
         metavar="N",
-        help=(
-            "Number of masks to process together per batch. "
-            "Use -1 for all masks at once (fastest). "
-            "Lower values reduce peak memory."
-        ),
+        help=argparse.SUPPRESS,
     )
     g_perf.add_argument(
         "-w",
@@ -544,20 +541,21 @@ def _build_snm_parser(subparsers) -> None:
         help="Path to .tck tractogram file (from 'lacuna fetch dtor985')",
     )
     g_snm.add_argument(
-        "--parcel-atlas",
+        "--parcel-atlases",
+        nargs="+",
         type=str,
-        metavar="NAME",
-        help="Atlas for parcellation-based analyses. Use 'lacuna info atlases' to list.",
+        metavar="ATLAS",
+        help="Atlas name(s) for parcellation-based analyses. Use 'lacuna info atlases' to list.",
     )
     g_snm.add_argument(
         "--compute-disconnectivity-matrix",
         action="store_true",
-        help="Compute disconnectivity matrices (requires --parcel-atlas)",
+        help="Compute disconnectivity matrices (requires --parcel-atlases)",
     )
     g_snm.add_argument(
         "--compute-roi-disconnection",
         action="store_true",
-        help="Compute per-ROI disconnection values (requires --parcel-atlas)",
+        help="Compute per-ROI disconnection values (requires --parcel-atlases)",
     )
     g_snm.add_argument(
         "--output-resolution",
@@ -599,25 +597,21 @@ def _build_collect_parser(subparsers) -> None:
         help="Aggregate parcelstats across subjects",
         description=(
             "Aggregate subject-level parcelstats TSV files into group-level tables.\n\n"
-            "Scans the output directory for *_parcelstats.tsv files and combines\n"
+            "Scans a derivatives directory for *_parcelstats.tsv files and combines\n"
             "them into group-level TSV files.\n\n"
             "Examples:\n"
-            "  lacuna collect /bids /output\n"
-            "  lacuna collect /bids /output --pattern '*acuteinfarct*'"
+            "  lacuna collect /output\n"
+            "  lacuna collect /output --pattern '*roidisconnection*'\n"
+            "  lacuna collect /output --output-dir /results --pattern '*acuteinfarct*'"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
 
     # Positional arguments
     collect_parser.add_argument(
-        "bids_dir",
+        "derivatives_dir",
         type=Path,
-        help="Root folder of BIDS dataset (for metadata)",
-    )
-    collect_parser.add_argument(
-        "output_dir",
-        type=Path,
-        help="Output directory containing derivatives to aggregate",
+        help="Directory containing BIDS derivatives to aggregate (e.g., lacuna run output)",
     )
 
     # Filtering options
@@ -631,6 +625,12 @@ def _build_collect_parser(subparsers) -> None:
 
     # Output options
     g_output = collect_parser.add_argument_group("Output options")
+    g_output.add_argument(
+        "--output-dir",
+        type=Path,
+        metavar="DIR",
+        help="Directory for group-level TSV files (default: same as derivatives_dir)",
+    )
     g_output.add_argument(
         "--overwrite",
         action="store_true",

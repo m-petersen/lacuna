@@ -444,6 +444,7 @@ class Tractogram(DataContainer):
     name: str
     tractogram_path: Path
     streamlines: list[np.ndarray] | np.ndarray | None = None
+    _file_data: bytes | None = field(default=None, repr=False)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -489,6 +490,71 @@ class Tractogram(DataContainer):
             f"path='{self.tractogram_path.name}', "
             f"in_memory={in_mem})"
         )
+
+    @classmethod
+    def from_file(
+        cls,
+        path: Path,
+        name: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> "Tractogram":
+        """Create a Tractogram by reading file data into memory.
+
+        Use this when the source file will be deleted (e.g., in a temp directory)
+        but the data needs to persist for later export.
+
+        Parameters
+        ----------
+        path : Path
+            Path to the tractogram file (.tck, .trk) to read.
+        name : str
+            Name/identifier for this result.
+        metadata : dict, optional
+            Additional metadata.
+
+        Returns
+        -------
+        Tractogram
+            Tractogram with file data stored in memory.
+        """
+        file_data = path.read_bytes()
+        return cls(
+            name=name,
+            tractogram_path=path,
+            _file_data=file_data,
+            metadata=metadata or {},
+        )
+
+    def save(self, output_path: Path) -> Path:
+        """Save tractogram to disk.
+
+        If file data is stored in memory, writes it to the output path.
+        Otherwise, copies the source file.
+
+        Parameters
+        ----------
+        output_path : Path
+            Destination file path.
+
+        Returns
+        -------
+        Path
+            Path to the saved file.
+        """
+        import shutil
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if self._file_data is not None:
+            output_path.write_bytes(self._file_data)
+        elif self.tractogram_path.exists():
+            shutil.copy2(self.tractogram_path, output_path)
+        else:
+            raise FileNotFoundError(
+                f"Cannot save tractogram: source file '{self.tractogram_path}' "
+                f"no longer exists and no in-memory data available."
+            )
+        return output_path
 
 
 @dataclass

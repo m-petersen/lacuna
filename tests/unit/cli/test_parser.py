@@ -119,7 +119,7 @@ class TestRunSubcommandParsing:
         assert args.analysis == "snm"
 
     def test_run_snm_with_all_parcellation_flags(self, tmp_path):
-        """Test parsing SNM with --parcel-atlas and both compute flags."""
+        """Test parsing SNM with --parcel-atlases and both compute flags."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
@@ -129,13 +129,13 @@ class TestRunSubcommandParsing:
             [
                 "run", "snm", str(bids_dir), str(output_dir),
                 "--connectome-path", str(conn_path),
-                "--parcel-atlas", "Schaefer2018_100Parcels7Networks",
+                "--parcel-atlases", "Schaefer2018_100Parcels7Networks",
                 "--compute-disconnectivity-matrix",
                 "--compute-roi-disconnection",
             ]
         )
 
-        assert args.parcel_atlas == "Schaefer2018_100Parcels7Networks"
+        assert args.parcel_atlases == ["Schaefer2018_100Parcels7Networks"]
         assert args.compute_disconnectivity_matrix is True
         assert args.compute_roi_disconnection is True
 
@@ -333,23 +333,34 @@ class TestCollectSubcommand:
     def test_collect_parsing(self, tmp_path):
         """Test parsing collect subcommand."""
         parser = build_parser()
-        bids_dir = tmp_path / "bids"
-        output_dir = tmp_path / "output"
+        derivatives_dir = tmp_path / "output"
 
-        args = parser.parse_args(["collect", str(bids_dir), str(output_dir)])
+        args = parser.parse_args(["collect", str(derivatives_dir)])
 
         assert args.command == "collect"
-        assert args.bids_dir == bids_dir
-        assert args.output_dir == output_dir
+        assert args.derivatives_dir == derivatives_dir
+        assert args.output_dir is None
+
+    def test_collect_with_output_dir(self, tmp_path):
+        """Test collect with --output-dir option."""
+        parser = build_parser()
+        derivatives_dir = tmp_path / "output"
+        results_dir = tmp_path / "results"
+
+        args = parser.parse_args(
+            ["collect", str(derivatives_dir), "--output-dir", str(results_dir)]
+        )
+
+        assert args.derivatives_dir == derivatives_dir
+        assert args.output_dir == results_dir
 
     def test_collect_with_pattern_filter(self, tmp_path):
         """Test collect with --pattern option."""
         parser = build_parser()
-        bids_dir = tmp_path / "bids"
-        output_dir = tmp_path / "output"
+        derivatives_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["collect", str(bids_dir), str(output_dir), "--pattern", "*lesion*"]
+            ["collect", str(derivatives_dir), "--pattern", "*lesion*"]
         )
 
         # Parser stores pattern as-is; main.py transforms it for glob matching

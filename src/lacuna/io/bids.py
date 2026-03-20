@@ -800,6 +800,7 @@ def export_bids_derivatives(
     from ..core.data_types import (
         ConnectivityMatrix,
         ScalarMetric,
+        Tractogram,
         VoxelMap,
     )
     from ..core.data_types import (
@@ -911,6 +912,20 @@ def export_bids_derivatives(
                         label=label,
                         overwrite=overwrite,
                     )
+
+                # Tractogram -> .tck file (goes to anat/ for BIDS compliance)
+                elif isinstance(value, Tractogram):
+                    bids_key = format_bids_export_filename(key, "tractogram")
+                    suffix = value.tractogram_path.suffix or ".tck"
+                    label_part = f"_label-{label}" if label else ""
+                    tck_filename = f"{base_name}{label_part}_{bids_key}{suffix}"
+                    tck_path = anat_dir / tck_filename
+
+                    if not tck_path.exists() or overwrite:
+                        try:
+                            value.save(tck_path)
+                        except FileNotFoundError:
+                            pass  # Source file no longer exists and no in-memory data
 
                 # ScalarMetric or other serializable -> JSON (goes to anat/ for BIDS compliance)
                 elif export_scalars:
@@ -1261,8 +1276,10 @@ def aggregate_parcelstats(
     output_dir = Path(output_dir) if output_dir else derivatives_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Find all parcelstats files
-    parcelstats_files = list(derivatives_dir.rglob(pattern))
+    # Find all parcelstats files (exclude group-level files from previous runs)
+    parcelstats_files = [
+        f for f in derivatives_dir.rglob(pattern) if not f.name.startswith("group_")
+    ]
 
     if not parcelstats_files:
         raise BidsError(f"No parcelstats files found matching '{pattern}' in {derivatives_dir}")
@@ -1324,8 +1341,6 @@ def aggregate_parcelstats(
         group_path = output_dir / group_filename
 
         if group_path.exists() and not overwrite:
-            # Skip existing files unless overwrite is True
-            created_files[output_type] = group_path
             continue
 
         # Collect data from all subjects

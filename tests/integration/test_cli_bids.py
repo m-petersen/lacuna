@@ -249,26 +249,21 @@ class TestCollectCommand:
     """Tests for 'lacuna collect' command."""
 
     def test_collect_with_nonexistent_dir_returns_error(self, tmp_path):
-        """Test that collect with non-existent output dir returns error."""
+        """Test that collect with non-existent derivatives dir returns error."""
         from lacuna.cli import main
 
-        # Create bids_dir but not output_dir
-        bids_dir = tmp_path / "bids"
-        bids_dir.mkdir()
-        result = main(["collect", str(bids_dir), str(tmp_path / "nonexistent")])
+        result = main(["collect", str(tmp_path / "nonexistent")])
         assert result != 0
 
     def test_collect_with_empty_dir(self, tmp_path):
         """Test that collect with empty dir handles gracefully."""
         from lacuna.cli import main
 
-        bids_dir = tmp_path / "bids"
-        bids_dir.mkdir()
-        output_dir = tmp_path / "empty_derivatives"
-        output_dir.mkdir()
+        derivatives_dir = tmp_path / "empty_derivatives"
+        derivatives_dir.mkdir()
 
         # Should handle empty dir gracefully (no parcelstats files found)
-        main(["collect", str(bids_dir), str(output_dir)])
+        main(["collect", str(derivatives_dir)])
         # May return error or success depending on implementation
         # Just verify it doesn't crash
 

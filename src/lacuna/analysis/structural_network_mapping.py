@@ -94,10 +94,8 @@ class StructuralNetworkMapping(BaseAnalysis):
     keep_intermediate : bool, default=False
         If True, include intermediate results in output (lesion tractogram, lesion TDI,
         warped atlas if transformed). Useful for debugging and quality control.
-    cleanup_temp_files : bool, default=True
-        If True, delete temporary working directory after analysis completes.
-        Set to False to preserve temp files on disk for inspection.
-        Note: This is independent of keep_intermediate.
+        Intermediate files are exported to the output directory alongside other results;
+        temporary working directories are always cleaned up.
     check_dependencies : bool, default=True
         If True, checks for MRtrix3 availability.
     verbose : bool, default=True
@@ -182,14 +180,13 @@ class StructuralNetworkMapping(BaseAnalysis):
     def __init__(
         self,
         connectome_name: str,
-        parcellation_name: str | None = None,
+        parcellation_name: str | list[str] | None = None,
         compute_disconnectivity_matrix: bool = False,
         compute_roi_disconnection: bool = False,
         output_resolution: Literal[1, 2] = 2,
         cache_tdi: bool = True,
         n_jobs: int = 1,
         keep_intermediate: bool = False,
-        cleanup_temp_files: bool = True,
         check_dependencies: bool = True,
         verbose: bool = False,
         show_mrtrix_output: bool = False,
@@ -219,9 +216,6 @@ class StructuralNetworkMapping(BaseAnalysis):
         keep_intermediate : bool, default=False
             If True, include intermediate results in output (lesion tractogram,
             lesion TDI, warped atlas). Useful for debugging and QC.
-        cleanup_temp_files : bool, default=True
-            If True, delete temporary working directory after analysis.
-            Set to False to preserve temp files on disk for inspection.
         check_dependencies : bool, default=True
             If True, checks for MRtrix3 availability.
         verbose : bool, default=True
@@ -266,13 +260,21 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.tractogram_space = connectome.metadata.space
         self.template = connectome.template_path  # May be None
 
-        # Store analysis parameters
-        self.parcellation_name = parcellation_name
+        # Store analysis parameters — normalize parcellation_name(s) to list
+        if parcellation_name is None:
+            self.parcellation_names: list[str] = []
+        elif isinstance(parcellation_name, str):
+            self.parcellation_names = [parcellation_name]
+        else:
+            self.parcellation_names = list(parcellation_name)
+        # Keep singular attribute for backward compatibility
+        self.parcellation_name = self.parcellation_names[0] if self.parcellation_names else None
+
         self.compute_disconnectivity_matrix = compute_disconnectivity_matrix
         self.compute_roi_disconnection = compute_roi_disconnection
 
         # Validate: compute flags require parcellation_name
-        if (compute_disconnectivity_matrix or compute_roi_disconnection) and parcellation_name is None:
+        if (compute_disconnectivity_matrix or compute_roi_disconnection) and not self.parcellation_names:
             flags = []
             if compute_disconnectivity_matrix:
                 flags.append("compute_disconnectivity_matrix")
@@ -283,15 +285,16 @@ class StructuralNetworkMapping(BaseAnalysis):
                 f"Use list_parcellations() to see available options."
             )
 
-        # Validate parcellation name early (full loading deferred to _validate_inputs)
-        if parcellation_name is not None:
+        # Validate parcellation names early (full loading deferred to _validate_inputs)
+        if self.parcellation_names:
             available_names = [a.name for a in list_parcellations()]
-            if parcellation_name not in available_names:
-                raise ValueError(
-                    f"Atlas '{parcellation_name}' not found in registry. "
-                    f"Available parcellations: {', '.join(available_names[:10])}... "
-                    f"Use list_parcellations() to see all options."
-                )
+            for name in self.parcellation_names:
+                if name not in available_names:
+                    raise ValueError(
+                        f"Atlas '{name}' not found in registry. "
+                        f"Available parcellations: {', '.join(available_names[:10])}... "
+                        f"Use list_parcellations() to see all options."
+                    )
 
         self.output_resolution = output_resolution
         self.cache_tdi = cache_tdi
@@ -299,7 +302,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         if n_jobs != -1 and n_jobs < 1:
             raise ValueError(f"n_jobs must be -1 (all CPUs) or >= 1, got {n_jobs}")
         self.keep_intermediate = keep_intermediate
-        self.cleanup_temp_files = cleanup_temp_files
+
         self.show_mrtrix_output = show_mrtrix_output
         self.return_in_input_space = return_in_input_space
 
@@ -313,6 +316,10 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         # Internal state
         self.whole_brain_tdi = None  # Will be set during validation
+        # Per-atlas state: list of dicts with keys: name, image, labels, resolved_path, was_transformed, etc.
+        self._atlases: list[dict] = []
+        self._full_connectivity_matrices: dict[str, np.ndarray] = {}  # Cached per atlas name
+        # Keep legacy attributes for backward compat (set to first atlas after validation)
         self._atlas_image = None
         self._atlas_labels = None
         self._parcellation_resolved = None
@@ -537,13 +544,20 @@ class StructuralNetworkMapping(BaseAnalysis):
         if not self.template.exists():
             raise FileNotFoundError(f"Template not found: {self.template}")
 
-        # Load atlas from registry
-        if self.parcellation_name is not None:
+        # Load atlases from registry
+        self._atlases = []
+        for parc_name in self.parcellation_names:
             try:
-                atlas = load_parcellation(self.parcellation_name)
-                # Store the atlas image for use in analysis
-                self._atlas_image = atlas.image
-                self._atlas_labels = atlas.labels
+                atlas = load_parcellation(parc_name)
+                atlas_info = {
+                    "name": parc_name,
+                    "image": atlas.image,
+                    "labels": atlas.labels,
+                    "resolved_path": None,
+                    "was_transformed": False,
+                    "original_space": None,
+                    "original_resolution": None,
+                }
 
                 # Check if atlas space matches tractogram space
                 atlas_space = atlas.metadata.space
@@ -552,7 +566,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 if atlas_space != self.tractogram_space:
                     self.logger.info(
                         f"Atlas space ({atlas_space}) differs from tractogram space "
-                        f"({self.tractogram_space}). Transforming atlas..."
+                        f"({self.tractogram_space}). Transforming atlas '{parc_name}'..."
                     )
 
                     # Transform atlas to tractogram space
@@ -572,15 +586,13 @@ class StructuralNetworkMapping(BaseAnalysis):
                         reference_affine=template_img.affine,
                     )
 
-                    # Transform atlas (nearest neighbor interpolation for label preservation)
-                    # Logging is handled by transform_image
                     transformed_atlas_img = transform_image(
-                        img=self._atlas_image,
+                        img=atlas_info["image"],
                         source_space=atlas_space,
                         target_space=target_space,
                         source_resolution=atlas_resolution,
-                        interpolation="nearest",  # Preserve integer labels
-                        image_name=f"atlas '{self.parcellation_name}'",
+                        interpolation="nearest",
+                        image_name=f"atlas '{parc_name}'",
                         verbose=self.verbose,
                     )
 
@@ -588,47 +600,56 @@ class StructuralNetworkMapping(BaseAnalysis):
                     atlas_cache_dir = get_cache_dir() / "atlases"
                     atlas_cache_dir.mkdir(exist_ok=True, parents=True)
 
-                    # Create deterministic filename based on atlas name and target space
                     atlas_hash = hashlib.md5(
-                        f"{self.parcellation_name}_{self.tractogram_space}_{self.output_resolution}".encode()
+                        f"{parc_name}_{self.tractogram_space}_{self.output_resolution}".encode()
                     ).hexdigest()[:12]
                     transformed_atlas_path = atlas_cache_dir / f"atlas_{atlas_hash}.nii.gz"
 
-                    # Save and update references
                     nib.save(transformed_atlas_img, transformed_atlas_path)
-                    self._parcellation_resolved = transformed_atlas_path
-                    self._atlas_image = transformed_atlas_img
-                    # Store metadata for intermediate output
-                    self._atlas_was_transformed = True
-                    self._original_atlas_space = atlas_space
-                    self._original_atlas_resolution = atlas_resolution
+                    atlas_info["resolved_path"] = transformed_atlas_path
+                    atlas_info["image"] = transformed_atlas_img
+                    atlas_info["was_transformed"] = True
+                    atlas_info["original_space"] = atlas_space
+                    atlas_info["original_resolution"] = atlas_resolution
 
                     self.logger.info(f"Atlas transformed and cached to: {transformed_atlas_path}")
                 else:
                     # No transformation needed - use original atlas file
-                    self._atlas_was_transformed = False
                     from lacuna.assets.parcellations.loader import BUNDLED_PARCELLATIONS_DIR
 
                     atlas_filename_path = Path(atlas.metadata.parcellation_filename)
                     if atlas_filename_path.is_absolute():
-                        self._parcellation_resolved = atlas_filename_path
+                        atlas_info["resolved_path"] = atlas_filename_path
                     else:
-                        self._parcellation_resolved = (
+                        atlas_info["resolved_path"] = (
                             BUNDLED_PARCELLATIONS_DIR / atlas.metadata.parcellation_filename
                         )
 
-                    if not self._parcellation_resolved.exists():
+                    if not atlas_info["resolved_path"].exists():
                         raise FileNotFoundError(
-                            f"Atlas file not found: {self._parcellation_resolved}"
+                            f"Atlas file not found: {atlas_info['resolved_path']}"
                         )
+
+                self._atlases.append(atlas_info)
 
             except KeyError as e:
                 available = [a.name for a in list_parcellations()]
                 raise ValueError(
-                    f"Atlas '{self.parcellation_name}' not found in registry. "
+                    f"Atlas '{parc_name}' not found in registry. "
                     f"Available parcellations: {', '.join(available[:5])}... "
                     f"Use list_parcellations() to see all options."
                 ) from e
+
+        # Set legacy single-atlas attributes from first atlas (backward compat)
+        if self._atlases:
+            first = self._atlases[0]
+            self._atlas_image = first["image"]
+            self._atlas_labels = first["labels"]
+            self._parcellation_resolved = first["resolved_path"]
+            self._atlas_was_transformed = first["was_transformed"]
+            if first["was_transformed"]:
+                self._original_atlas_space = first["original_space"]
+                self._original_atlas_resolution = first["original_resolution"]
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
         """
@@ -763,20 +784,19 @@ class StructuralNetworkMapping(BaseAnalysis):
             results["summarystatistics"] = summary_result
 
             # Add intermediate results if keep_intermediate=True
+            # Files are read into memory here so they persist after temp cleanup
             if self.keep_intermediate:
-                # Add mask tractogram as TractogramResult
-                mask_tractogram_result = Tractogram(
+                # Add mask tractogram (read bytes into memory before temp cleanup)
+                mask_tractogram_result = Tractogram.from_file(
+                    path=mask_tck_path,
                     name="mask_tractogram",
-                    streamlines=None,  # Not loading into memory
-                    tractogram_path=mask_tck_path,
                     metadata={
                         "description": "Tractogram filtered by mask",
-                        "temp_directory": str(temp_dir_path),
                     },
                 )
                 results["mask_tractogram"] = mask_tractogram_result
 
-                # Add mask TDI as VoxelMapResult
+                # Add mask TDI as VoxelMap (loaded into memory)
                 mask_tdi_path = temp_dir_path / "mask_tdi.nii.gz"
                 if mask_tdi_path.exists():
                     mask_tdi_img = nib.load(mask_tdi_path)
@@ -787,47 +807,59 @@ class StructuralNetworkMapping(BaseAnalysis):
                         resolution=self.output_resolution,
                         metadata={
                             "description": "Track density image for mask-filtered tractogram",
-                            "temp_directory": str(temp_dir_path),
                         },
                     )
                     results["mask_tdi"] = mask_tdi_result
 
-                # Add warped atlas if atlas was transformed
-                if self._parcellation_resolved is not None and getattr(
-                    self, "_atlas_was_transformed", False
-                ):
-                    warped_atlas_result = VoxelMap(
-                        name=f"warped_atlas_{self.parcellation_name}",
-                        data=self._atlas_image,
-                        space=self.tractogram_space,
-                        resolution=self.output_resolution,
-                        metadata={
-                            "description": (
-                                f"Atlas '{self.parcellation_name}' transformed from "
-                                f"{self._original_atlas_space}@{self._original_atlas_resolution}mm "
-                                f"to {self.tractogram_space}@{self.output_resolution}mm"
-                            ),
-                            "original_space": self._original_atlas_space,
-                            "original_resolution": self._original_atlas_resolution,
-                            "parcellation_name": self.parcellation_name,
-                            "cached_path": str(self._parcellation_resolved),
-                        },
-                    )
-                    results["warped_atlas"] = warped_atlas_result
+                # Add warped atlases if transformed
+                for atlas_info in self._atlases:
+                    if atlas_info["was_transformed"]:
+                        warped_atlas_result = VoxelMap(
+                            name=f"warped_atlas_{atlas_info['name']}",
+                            data=atlas_info["image"],
+                            space=self.tractogram_space,
+                            resolution=self.output_resolution,
+                            metadata={
+                                "description": (
+                                    f"Atlas '{atlas_info['name']}' transformed from "
+                                    f"{atlas_info['original_space']}@{atlas_info['original_resolution']}mm "
+                                    f"to {self.tractogram_space}@{self.output_resolution}mm"
+                                ),
+                                "original_space": atlas_info["original_space"],
+                                "original_resolution": atlas_info["original_resolution"],
+                                "parcellation_name": atlas_info["name"],
+                                "cached_path": str(atlas_info["resolved_path"]),
+                            },
+                        )
+                        results[f"warped_atlas_{atlas_info['name']}"] = warped_atlas_result
 
-            # Optional: Compute parcellated connectivity matrices if explicitly requested
-            if self._parcellation_resolved is not None and (
+            # Optional: Compute parcellated connectivity matrices per atlas
+            if self._atlases and (
                 self.compute_disconnectivity_matrix or self.compute_roi_disconnection
             ):
-                self.logger.info("Computing connectivity matrices...")
-                connectivity_results = self._compute_connectivity_matrices(
-                    mask_data=mask_data,
-                    mask_tck_path=mask_tck_path,
-                    temp_dir_path=temp_dir_path,
-                    subject_id=subject_id,
-                )
-                # Merge connectivity matrix results into results dict
-                results.update(connectivity_results)
+                for atlas_info in self._atlases:
+                    self.logger.info(f"Computing connectivity matrices for '{atlas_info['name']}'...")
+                    connectivity_results = self._compute_connectivity_matrices(
+                        mask_data=mask_data,
+                        mask_tck_path=mask_tck_path,
+                        temp_dir_path=temp_dir_path,
+                        subject_id=subject_id,
+                        atlas_info=atlas_info,
+                    )
+                    results.update(connectivity_results)
+
+                # Save intact tractogram as intermediate (atlas-independent, only one copy)
+                if self.keep_intermediate and self.compute_roi_disconnection:
+                    intact_tck_path = temp_dir_path / f"{subject_id}_intact.tck"
+                    if intact_tck_path.exists():
+                        intact_tractogram_result = Tractogram.from_file(
+                            path=intact_tck_path,
+                            name="intact_tractogram",
+                            metadata={
+                                "description": "Intact (post-disconnection) tractogram",
+                            },
+                        )
+                        results["intact_tractogram"] = intact_tractogram_result
 
             # Transform VoxelMap results back to input space if requested
             if self.return_in_input_space:
@@ -837,17 +869,10 @@ class StructuralNetworkMapping(BaseAnalysis):
             return results
 
         finally:
-            # Clean up temp files based on cleanup_temp_files flag (independent of keep_intermediate)
-            if self.cleanup_temp_files:
-                import shutil
+            # Always clean up temporary working directory
+            import shutil
 
-                shutil.rmtree(temp_dir_path, ignore_errors=True)
-            else:
-                self.logger.success(f"Temp files preserved in: {temp_dir_path}")
-                self.logger.info("Files saved:", indent_level=1)
-                self.logger.info("- mask_streamlines.tck", indent_level=2)
-                self.logger.info("- mask_tdi.nii.gz", indent_level=2)
-                self.logger.info("- disconnection_map.nii.gz", indent_level=2)
+            shutil.rmtree(temp_dir_path, ignore_errors=True)
 
     def _compute_connectivity_matrices(
         self,
@@ -855,8 +880,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         mask_tck_path: Path,
         temp_dir_path: Path,
         subject_id: str,
+        atlas_info: dict | None = None,
     ) -> dict[str, "AnalysisResult"]:
-        """Compute parcellated connectivity matrices.
+        """Compute parcellated connectivity matrices for a single atlas.
 
         Parameters
         ----------
@@ -868,38 +894,51 @@ class StructuralNetworkMapping(BaseAnalysis):
             Temporary directory for intermediate files
         subject_id : str
             SubjectData identifier for file naming
+        atlas_info : dict, optional
+            Atlas info dict with keys: name, image, labels, resolved_path.
+            If None, falls back to legacy self._parcellation_resolved.
 
         Returns
         -------
         dict[str, AnalysisResult]
-            Dictionary containing:
-            - 'mask_connectivity_matrix': ConnectivityMatrixResult
-            - 'disconnectivity_percent': ConnectivityMatrixResult
-            - 'full_connectivity_matrix': ConnectivityMatrixResult
-            - 'intact_connectivity_matrix': ConnectivityMatrixResult (if compute_roi_disconnection=True)
-            - 'roi_disconnection': ParcelData (if compute_roi_disconnection=True)
-            - 'matrix_statistics': MiscResult
+            Dictionary containing per-atlas results keyed by BIDS-style names.
         """
+        # Resolve atlas info (support legacy single-atlas callers)
+        if atlas_info is None:
+            atlas_info = {
+                "name": self.parcellation_name,
+                "labels": self._atlas_labels,
+                "resolved_path": self._parcellation_resolved,
+            }
 
-        # Step 1: Compute full-brain connectivity matrix (cached)
-        if self._full_connectivity_matrix is None:
+        parc_name = atlas_info["name"]
+        parc_labels = atlas_info["labels"]
+        parc_resolved = atlas_info["resolved_path"]
+
+        # Step 1: Compute full-brain connectivity matrix (cached per atlas)
+        if parc_name not in self._full_connectivity_matrices:
             self.logger.info(
-                "Computing full-brain connectivity matrix (will be cached)", indent_level=1
+                f"Computing full-brain connectivity matrix for '{parc_name}' (will be cached)",
+                indent_level=1,
             )
-            self._full_connectivity_matrix = self._compute_connectivity_matrix(
+            self._full_connectivity_matrices[parc_name] = self._compute_connectivity_matrix(
                 tractogram_path=self.tractogram_path,
-                matrix_name="full_connectivity",
+                matrix_name=f"full_connectivity_{parc_name}",
+                parcellation_path=parc_resolved,
             )
         else:
-            self.logger.info("Using cached full-brain connectivity matrix", indent_level=1)
+            self.logger.info(
+                f"Using cached full-brain connectivity matrix for '{parc_name}'", indent_level=1
+            )
 
-        full_matrix = self._full_connectivity_matrix
+        full_matrix = self._full_connectivity_matrices[parc_name]
 
         # Step 2: Compute mask connectivity matrix
         self.logger.info("Computing mask connectivity matrix", indent_level=1)
         mask_matrix = self._compute_connectivity_matrix(
             tractogram_path=mask_tck_path,
-            matrix_name=f"{subject_id}_mask_connectivity",
+            matrix_name=f"{subject_id}_mask_connectivity_{parc_name}",
+            parcellation_path=parc_resolved,
         )
 
         # Step 3: Compute disconnectivity percentage
@@ -913,31 +952,32 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Step 4: Optional - compute intact (post-disconnection) connectivity
         intact_matrix = None
         if self.compute_roi_disconnection:
-            self.logger.info(
-                "Computing intact (post-disconnection) connectivity matrix", indent_level=1
-            )
-
-            # Save mask temporarily for tckedit -exclude
-            exclude_mask_path = temp_dir_path / f"{subject_id}_exclude_mask.nii.gz"
-            nib.save(mask_data.mask_img, exclude_mask_path)
-
-            # Filter tractogram to EXCLUDE streamlines through mask
+            # The intact tractogram (tckedit -exclude) is atlas-independent,
+            # so reuse if already computed for this subject
             intact_tck_path = temp_dir_path / f"{subject_id}_intact.tck"
-            command = [
-                "tckedit",
-                str(self.tractogram_path),
-                str(intact_tck_path),
-                "-exclude",
-                str(exclude_mask_path),
-                "-force",
-            ]
-            command.extend(_get_nthreads_args(self.n_jobs))
-            run_mrtrix_command(command, verbose=self.show_mrtrix_output)
+            if not intact_tck_path.exists():
+                self.logger.info(
+                    "Computing intact (post-disconnection) tractogram", indent_level=1
+                )
+                exclude_mask_path = temp_dir_path / f"{subject_id}_exclude_mask.nii.gz"
+                nib.save(mask_data.mask_img, exclude_mask_path)
 
-            # Compute intact connectivity matrix
+                command = [
+                    "tckedit",
+                    str(self.tractogram_path),
+                    str(intact_tck_path),
+                    "-exclude",
+                    str(exclude_mask_path),
+                    "-force",
+                ]
+                command.extend(_get_nthreads_args(self.n_jobs))
+                run_mrtrix_command(command, verbose=self.show_mrtrix_output)
+
+            self.logger.info("Computing intact connectivity matrix", indent_level=1)
             intact_matrix = self._compute_connectivity_matrix(
                 tractogram_path=intact_tck_path,
-                matrix_name=f"{subject_id}_intact_connectivity",
+                matrix_name=f"{subject_id}_intact_connectivity_{parc_name}",
+                parcellation_path=parc_resolved,
             )
 
         # Step 5: Compute summary statistics
@@ -954,9 +994,8 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Get atlas labels for ConnectivityMatrixResult
         # Convert dict[int, str] to list[str] ordered by region ID
         atlas_labels = [f"region_{i}" for i in range(mask_matrix.shape[0])]
-        if hasattr(self, "_atlas_labels") and self._atlas_labels is not None:
-            # Sort by region ID and extract names
-            sorted_regions = sorted(self._atlas_labels.items())
+        if parc_labels is not None:
+            sorted_regions = sorted(parc_labels.items())
             atlas_labels = [name for region_id, name in sorted_regions]
 
         # ConnectivityMatrixResult for mask connectivity
@@ -966,12 +1005,12 @@ class StructuralNetworkMapping(BaseAnalysis):
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
-                "atlas": self.parcellation_name,
+                "atlas": parc_name,
                 "tractogram": str(self.tractogram_path),
             },
         )
         mask_conn_key = build_result_key(
-            atlas=self.parcellation_name,
+            atlas=parc_name,
             source="StructuralNetworkMapping",
             desc="mask_connectivity_matrix",
         )
@@ -984,12 +1023,12 @@ class StructuralNetworkMapping(BaseAnalysis):
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
-                "atlas": self.parcellation_name,
+                "atlas": parc_name,
                 "description": "Percentage of streamlines disconnected by mask",
             },
         )
         disconn_pct_key = build_result_key(
-            atlas=self.parcellation_name,
+            atlas=parc_name,
             source="StructuralNetworkMapping",
             desc="disconnectivity_percent",
         )
@@ -1002,12 +1041,12 @@ class StructuralNetworkMapping(BaseAnalysis):
             region_labels=atlas_labels,
             matrix_type="structural",
             metadata={
-                "atlas": self.parcellation_name,
+                "atlas": parc_name,
                 "description": "Full brain connectivity matrix (reference)",
             },
         )
         full_conn_key = build_result_key(
-            atlas=self.parcellation_name,
+            atlas=parc_name,
             source="StructuralNetworkMapping",
             desc="full_connectivity_matrix",
         )
@@ -1021,33 +1060,28 @@ class StructuralNetworkMapping(BaseAnalysis):
                 region_labels=atlas_labels,
                 matrix_type="structural",
                 metadata={
-                    "atlas": self.parcellation_name,
+                    "atlas": parc_name,
                     "description": "Intact connectivity excluding disconnected streamlines",
                 },
             )
             intact_conn_key = build_result_key(
-                atlas=self.parcellation_name,
+                atlas=parc_name,
                 source="StructuralNetworkMapping",
                 desc="intact_connectivity_matrix",
             )
             results[intact_conn_key] = intact_result
 
             # Compute per-ROI disconnection percentage
-            # For each ROI: (streamlines through mask connecting ROI) / (all streamlines connecting ROI)
-            # Sum rows to get total streamlines per ROI (row sum = degree weighted by streamline count)
             full_roi_streamlines = np.sum(full_matrix, axis=1)
             mask_roi_streamlines = np.sum(mask_matrix, axis=1)
 
             with np.errstate(divide="ignore", invalid="ignore"):
                 roi_disconnection_pct = (mask_roi_streamlines / full_roi_streamlines) * 100
 
-            # Handle division by zero
             roi_disconnection_pct = np.nan_to_num(
                 roi_disconnection_pct, nan=0.0, posinf=0.0, neginf=0.0
             )
 
-            # Create ParcelData with per-ROI disconnection percentages
-            # Convert array to dict mapping region labels to values
             roi_disconnection_data = {
                 label: float(roi_disconnection_pct[i]) for i, label in enumerate(atlas_labels)
             }
@@ -1057,14 +1091,13 @@ class StructuralNetworkMapping(BaseAnalysis):
                 region_labels=atlas_labels,
                 aggregation_method="percent",
                 metadata={
-                    "atlas": self.parcellation_name,
+                    "atlas": parc_name,
                     "description": "Percentage of streamlines disconnected per ROI",
                     "unit": "percent",
                 },
             )
-            # Build BIDS-style result key with atlas prefix
             roi_disconnection_key = build_result_key(
-                atlas=self.parcellation_name,
+                atlas=parc_name,
                 source="StructuralNetworkMapping",
                 desc="roi_disconnection",
             )
@@ -1075,11 +1108,11 @@ class StructuralNetworkMapping(BaseAnalysis):
             name="matrix_statistics",
             data=matrix_stats,
             metadata={
-                "atlas": self.parcellation_name,
+                "atlas": parc_name,
             },
         )
         matrix_stats_key = build_result_key(
-            atlas=self.parcellation_name,
+            atlas=parc_name,
             source="StructuralNetworkMapping",
             desc="matrix_statistics",
         )
@@ -1091,6 +1124,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         self,
         tractogram_path: Path,
         matrix_name: str,
+        parcellation_path: Path | None = None,
     ) -> np.ndarray:
         """Compute connectivity matrix from tractogram using tck2connectome.
 
@@ -1100,6 +1134,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             Path to tractogram file
         matrix_name : str
             Name for temporary CSV file
+        parcellation_path : Path, optional
+            Path to atlas NIfTI file. Defaults to self._parcellation_resolved.
 
         Returns
         -------
@@ -1108,13 +1144,16 @@ class StructuralNetworkMapping(BaseAnalysis):
         """
         from lacuna.utils.cache import make_temp_file
 
+        if parcellation_path is None:
+            parcellation_path = self._parcellation_resolved
+
         with make_temp_file(suffix=".csv", delete=True, mode="w") as tmp_csv:
             output_csv = Path(tmp_csv.name)
 
             command = [
                 "tck2connectome",
                 str(tractogram_path),
-                str(self._parcellation_resolved),
+                str(parcellation_path),
                 str(output_csv),
                 "-symmetric",
                 "-zero_diagonal",
@@ -1213,7 +1252,6 @@ class StructuralNetworkMapping(BaseAnalysis):
             "output_resolution": self.output_resolution,
             "n_jobs": self.n_jobs,
             "keep_intermediate": self.keep_intermediate,
-            "cleanup_temp_files": self.cleanup_temp_files,
             "show_mrtrix_output": self.show_mrtrix_output,
             "return_in_input_space": self.return_in_input_space,
             "verbose": self.verbose,
