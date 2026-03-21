@@ -3,25 +3,37 @@ hide:
   - navigation
 ---
 
-## Lacuna: a scientific Python package for advanced brain lesion analysis.
+# Lacuna
 
-Lacuna bridges the gap between individual lesion masks and normative brain data, e.g. connectomes. It provides a reproducible, BIDS-compatible workflow that currently covers the following primary modes of analysis:
+A scientific Python package for advanced brain lesion analysis.
+
+Lacuna bridges the gap between individual lesion masks and normative brain data.
+It provides a reproducible, BIDS-compatible workflow for lesion network mapping
+and regional damage quantification.
+
+## Install
+
+```bash
+pip install git+https://github.com/m-petersen/lacuna
+```
+
+## Analyses
 
 <div class="grid cards" markdown>
 
--   **Functional Lesion Network Mapping**
+-   **Functional network mapping**
 
     ---
 
-    Perform **fLNM** to map the functional brain circuitry linked to a lesion using resting-state functional connectivity.
+    Map the functional brain circuitry linked to a lesion using resting-state functional connectivity.
 
--   **Structural Lesion Network Mapping**
+-   **Structural network mapping**
 
     ---
 
-    Perform **sLNM** to map the structural disconnectivity of a lesion using normative tractogram data.
+    Map the structural disconnectivity of a lesion using normative tractogram data.
 
--   **Regional Damage**
+-   **Regional damage**
 
     ---
 
@@ -29,46 +41,23 @@ Lacuna bridges the gap between individual lesion masks and normative brain data,
 
 </div>
 
-## Quick Start
+## Usage
 
-Get up and running in minutes.
+```bash
+# Create a tutorial dataset with synthetic lesion masks
+lacuna tutorial my_dataset --raw
 
-=== "1. Install"
+# Convert a directory of NIfTI masks into a BIDS dataset
+lacuna bidsify my_dataset my_dataset_bids
 
-    Lacuna is available via the github repository.
-    
-    ```bash
-    pip install git+https://github.com/m-petersen/lacuna
-    ```
+# Run a regional damage analysis
+lacuna run rd my_dataset_bids output --parcel-atlases Schaefer2018_100Parcels7Networks
 
-=== "2. Setup tutorial data"
+# Collect results into group-level tables
+lacuna collect output --pattern "*schaefer2018*" --output-dir /tmp/group_outputs()
+```
 
-    Setup tutorial dataset with 3 synthetic lesion masks in MNI space.
-
-    ```bash
-    lacuna tutorial bids_tutorial
-    ```
-
-=== "3. Fetch data"
-
-    Download necessary connectome. You will need an API key from [Figshare](https://figshare.com/account/login) to automatically download the [dTOR985 connectome](https://springernature.figshare.com/articles/dataset/dTOR-985_structural_connectome_full_tractogram_trk_file/25209947?file=44515847).
-
-    ```bash
-    lacuna fetch dtor985 \
-        --output-dir conn \
-        --api-key <YOUR_FIGSHARE_TOKEN>
-    ```
-
-=== "4. Run analysis"
-
-    Run a standard Structural Network Mapping analysis on the tutorial dataset.
-
-    ```bash
-    lacuna run snm \
-        bids_tutorial \
-        lacuna_output \
-        --connectome-path conn/dTOR_full_tractogram.tck 
-    ```
+For the full walkthrough, see the [Getting Started](tutorials/getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
 
 ## Documentation
 
@@ -78,9 +67,17 @@ Get up and running in minutes.
 
     ---
 
-    Learn how to use Lacuna with hands-on Jupyter notebook tutorials.
+    Step-by-step Jupyter notebook tutorials covering each analysis type.
 
     [Start learning](tutorials/index.md)
+
+-   **How-to Guides**
+
+    ---
+
+    Practical guides for specific tasks like spatial normalization.
+
+    [Find a guide](how-to/index.md)
 
 -   **Reference**
 
@@ -90,13 +87,12 @@ Get up and running in minutes.
 
     [Browse reference](reference/index.md)
 
+-   **Explanation**
+
+    ---
+
+    Background on coordinate spaces and Lacuna's design.
+
+    [Learn concepts](explanation/index.md)
+
 </div>
-
-## Key Features
-
-| Feature | Description |
-| :--- | :--- |
-| **BIDS-native** | Designed to work seamlessly with BIDS-formatted datasets out of the box. |
-| **Reproducible** | Fully containerized workflows available via Docker and Apptainer. |
-| **Efficient** | Implementations optimized for fast analyses. |
-| **Extensible** | Plugin architecture allows for custom analyses and atlas integration. |
