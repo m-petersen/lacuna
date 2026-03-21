@@ -8,36 +8,28 @@ Start with the getting started tutorial, then explore the analysis-specific guid
 
 <div class="grid cards" markdown>
 
--   **Getting Started**
+-   [**Getting started**](getting-started.ipynb)
 
     ---
 
     Introduction to Lacuna's CLI: tutorial data, bidsify, fetch, run, and collect.
 
-    [Getting Started](getting-started.ipynb)
-
--   **Regional Damage**
+-   [**Regional damage**](regional-damage.ipynb)
 
     ---
 
     Measure lesion overlap with brain parcellation atlases.
 
-    [Regional Damage](regional-damage.ipynb)
-
--   **Functional Network Mapping**
+-   [**Functional network mapping**](functional-network-mapping.ipynb)
 
     ---
 
     Map functional brain circuitry linked to a lesion.
 
-    [FNM Tutorial](functional-network-mapping.ipynb)
-
--   **Structural Network Mapping**
+-   [**Structural network mapping**](structural-network-mapping.ipynb)
 
     ---
 
     Map structural disconnectivity using normative tractogram data.
-
-    [SNM Tutorial](structural-network-mapping.ipynb)
 
 </div>

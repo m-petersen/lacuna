@@ -1,14 +1,10 @@
-# Coordinate Spaces in Lacuna
+# Coordinate spaces in Lacuna
 
-Understanding MNI spaces and how Lacuna handles spatial alignment automatically.
+To combine lesion masks and atlas data, we need to bring them to the same coordinate space. Instead of requiring you to manually align all data to a single space, Lacuna uses [TemplateFlow](https://www.templateflow.org/) to handle transformations internally. You only need to provide lesion masks in one of the two supported MNI spaces — Lacuna ensures everything else is brought into alignment automatically.
 
-## Overview
+For how to get your masks into MNI space, see the [spatial normalization](../how-to/spatial-normalization.ipynb) how-to guide.
 
-Lesion network mapping requires that lesion masks and normative connectomes share the same coordinate space. Instead of requiring you to manually align all data to a single space, Lacuna uses [TemplateFlow](https://www.templateflow.org/) to handle transformations internally. You only need to provide lesion masks in one of the two supported MNI spaces — Lacuna ensures everything else is brought into alignment automatically.
-
-For how to get your masks into MNI space, see the [Spatial Normalization](../how-to/spatial-normalization.md) how-to guide.
-
-## What Is a Coordinate Space?
+## What is a coordinate space?
 
 A coordinate space defines how 3D voxel indices (i, j, k) map to physical
 locations in the brain (x, y, z in millimeters).
@@ -30,66 +26,48 @@ print(img.affine)
 #  [ 0.  0.  0.  1.]]
 ```
 
-## Why Spaces Matter
+## Why spaces matter
 
 Lacuna compares your lesion mask against normative connectomes derived from
 healthy subjects. For this comparison to be meaningful:
 
-1. **Same template**: Both must be aligned to the same reference brain
-2. **Same resolution**: Voxel grids must match (or be resampled)
-3. **Same orientation**: Left-right, anterior-posterior must agree
+1. Both must be aligned to the same reference brain
+2. Voxel grids must match
+3. Left-right, anterior-posterior must agree
 
 If spaces don't match, a lesion at voxel (45, 54, 45) in your mask would correspond
 to a different anatomical location in the connectome.
 
-## Supported MNI Spaces
+## Supported MNI spaces
 
 The Montreal Neurological Institute (MNI) template is the standard space in neuroimaging. There are multiple MNI variants — Lacuna supports two as user input:
 
-### MNI152NLin6Asym
+- **MNI152NLin6Asym** used by FSL, HCP pipelines
 
-- **Used by**: FSL, HCP pipelines
-- **Resolution**: Typically 2mm isotropic
-- **Orientation**: RAS (Right-Anterior-Superior)
-- **Lacuna use**: Functional connectomes (GSP1000, HCP1065)
+- **MNI152NLin2009cAsym** used by fMRIPrep, SPM12
 
-### MNI152NLin2009cAsym
+### Why multiple MNI Spaces?
 
-- **Used by**: fMRIPrep, TemplateFlow
-- **Resolution**: Various (0.5mm to 2mm)
-- **Orientation**: RAS
-- **Lacuna use**: Structural connectomes, TemplateFlow canonical
+Different MNI variants use different registration algorithms, numbers of subjects averaged, and tissue segmentation methods. The differences are subtle (1-2mm) but can affect voxel-level analyses. A great overview over the different MNI variants is provided in the [Lead DBS documentation](https://www.lead-dbs.org/about-the-mni-spaces/)
 
-### Quick Reference
+## How Lacuna detects spaces
 
-| Property | MNI152NLin6Asym (2mm) | MNI152NLin2009cAsym (1mm) |
-|----------|----------------------|--------------------------|
-| Dimensions | 91 x 109 x 91 | 193 x 229 x 193 |
-| Voxel size | 2mm | 1mm |
-| Affine origin | (-90, -126, -72) | (-96, -132, -78) |
+For analyses you explicitly specify the space via the `--space` flag in the CLI.
 
-### Why Multiple MNI Spaces?
-
-Different MNI variants use different registration algorithms, numbers of subjects averaged, and tissue segmentation methods. The differences are subtle (1-2mm) but can affect voxel-level analyses.
-
-## How Lacuna Detects Space
-
-Lacuna auto-detects the coordinate space of your mask through two methods:
+In addition, Lacuna validates this against the auto-detected the coordinate space of your mask. Auto-detection is based on:
 
 1. **BIDS filename parsing**: Extracts space and resolution from entities like `space-MNI152NLin6Asym_res-2` in the filename
 2. **NIfTI affine matching**: Compares the image affine matrix against known reference affines for each supported space
 
-If both are available, Lacuna validates that they agree. You can also explicitly specify the space via the `--space` flag in the CLI or the `space` parameter in the API.
-
-## Automatic Transformation
+## Automatic transformation
 
 When you run an analysis, Lacuna automatically transforms your mask to match the target data. This happens transparently before the analysis begins:
 
-1. **Determine target space**: Each analysis type sets its target based on the connectome or atlas being used
-2. **Compare spaces**: Lacuna checks if the mask is already in the target space and resolution
-3. **Transform if needed**: Applies the appropriate transformation strategy
+1. Each analysis type internally sets its target based on the connectome or atlas being used
+2. Lacuna checks if the mask is already in the target space and resolution
+3. Applies the appropriate transformation strategy
 
-### Transformation Strategies
+### Transformation strategies
 
 | Source → Target | Method | Description |
 |----------------|--------|-------------|
@@ -109,11 +87,11 @@ Lacuna automatically selects the interpolation method based on the image content
 | Integer label maps | Nearest neighbor | Preserves discrete labels |
 | Continuous data | Cubic B-spline | Smooth resampling |
 
-### MNI152NLin2009b (Internal)
+### MNI152NLin2009b (internal)
 
 The dTOR985 structural connectome is defined in MNI152NLin2009bAsym space. This space is not accepted as user input — Lacuna converts between 2009c and 2009b internally using affine-aware regridding (no nonlinear warp needed, since the 2009 variants share MNI world coordinates).
 
-## TemplateFlow Integration
+## TemplateFlow integration
 
 Lacuna uses [TemplateFlow](https://templateflow.org) to manage templates and spatial transforms. Templates and warp fields are downloaded automatically on first use and cached locally.
 
@@ -125,12 +103,9 @@ When you run an analysis, Lacuna:
 
 No manual template management is required.
 
-## Troubleshooting
+## Verify the space of your mask
 
-### Results don't make anatomical sense
-
-Your mask may be in a different space than expected. Verify with:
-
+### Compare affine
 ```python
 import nibabel as nib
 
@@ -140,18 +115,14 @@ print(f"Voxel size: {img.header.get_zooms()[:3]}")
 print(f"Affine origin: {img.affine[:3, 3]}")
 ```
 
-Compare against the Quick Reference table above.
+Compare against:
 
-### Results appear left-right flipped
-
-Check the orientation:
-
-```python
-import nibabel as nib
-
-img = nib.load("lesion.nii.gz")
-print(nib.aff2axcodes(img.affine))  # Should be ('R', 'A', 'S')
-```
+| Space | Resolution | Dimensions | Affine origin |
+|-------|-----------|------------|---------------|
+| MNI152NLin6Asym | 1mm | 182 x 218 x 182 | (-91, -126, -72) |
+| MNI152NLin6Asym | 2mm | 91 x 109 x 91 | (-91, -126, -72) |
+| MNI152NLin2009cAsym | 1mm | 193 x 229 x 193 | (-96, -132, -78) |
+| MNI152NLin2009cAsym | 2mm | 97 x 115 x 97 | (-96, -132, -78) |
 
 ### Visual verification
 
@@ -160,11 +131,11 @@ Overlay your mask on the MNI template to confirm alignment:
 ```python
 from nilearn import plotting, datasets
 
-template = datasets.load_mni152_template(resolution=2)
+template = datasets.load_mni152_template(resolution=1)
 plotting.plot_roi("lesion.nii.gz", bg_img=template, title="Lesion in MNI space")
 plotting.show()
 ```
 
-## See Also
+## See also
 
-- [Spatial Normalization](../how-to/spatial-normalization.md) — How to get your masks into MNI space
+- [Spatial normalization](../how-to/spatial-normalization.ipynb) — How to get your masks into MNI space

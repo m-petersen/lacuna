@@ -45,19 +45,18 @@ pip install git+https://github.com/m-petersen/lacuna
 
 ```bash
 # Create a tutorial dataset with synthetic lesion masks
-lacuna tutorial my_dataset --raw
+lacuna tutorial my_dataset
 
-# Convert a directory of NIfTI masks into a BIDS dataset
-lacuna bidsify my_dataset my_dataset_bids
+# Fetch the HCP1065 structural tractogram
+lacuna fetch hcp1065 --output-dir connectomes
 
-# Run a regional damage analysis
-lacuna run rd my_dataset_bids output --parcel-atlases Schaefer2018_100Parcels7Networks
-
-# Collect results into group-level tables
-lacuna collect output --pattern "*schaefer2018*" --output-dir /tmp/group_outputs()
+# Run structural network mapping
+lacuna run snm my_dataset output \
+    --connectome-path connectomes/hcp1065.tck \
+    --mask-space MNI152NLin6Asym
 ```
 
-For the full walkthrough, see the [Getting Started](tutorials/getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
+For the full walkthrough, see the [Getting started](tutorials/getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
 
 ## Documentation
 

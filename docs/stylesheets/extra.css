@@ -41,13 +41,7 @@
     flex-direction: column; /* Stacks code above output without the side gap */
 }
 
-/* Hide Jupyter cell tags */
-.celltag,
-.cell-tag,
-.jp-Cell-tag,
-.tag_container,
-.cell_tag,
-div[class*="celltag"],
-div[class*="cell-tag"] {
+/* Hide Jupyter cell tag toolbar (e.g. "remove_output" labels above cells) */
+.celltoolbar {
     display: none !important;
 }

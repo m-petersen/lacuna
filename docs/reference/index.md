@@ -6,21 +6,17 @@ Technical reference documentation for Lacuna.
 
 <div class="grid cards" markdown>
 
--   **Command-Line Interface**
+-   [**Command-line interface**](cli/index.md)
 
     ---
 
     Complete CLI documentation with commands, options, and examples.
 
-    [CLI Reference](cli/index.md)
-
--   **Python API**
+-   [**Python API**](api/lacuna/index.md)
 
     ---
 
     Auto-generated API reference from source code docstrings.
-
-    [API Reference](api/lacuna/index.md)
 
 </div>
 

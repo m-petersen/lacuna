@@ -6,6 +6,7 @@
     * [Regional Damage](tutorials/regional-damage.ipynb)
 * [How-to Guides](how-to/index.md)
     * [Spatial Normalization](how-to/spatial-normalization.ipynb)
+    * [Docker](how-to/docker.ipynb)
 * [Explanation](explanation/index.md)
     * [Coordinate Spaces](explanation/coordinate-spaces.md)
 * [Reference](reference/index.md)
