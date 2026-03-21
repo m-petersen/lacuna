@@ -64,7 +64,7 @@ services:
   production:
     build:
       context: .
-      dockerfile: Dockerfile.production
+      dockerfile: Dockerfile
     volumes:
       - ./tests/fixtures:/data:ro
       - ./output:/output
@@ -75,7 +75,7 @@ services:
   example:
     build:
       context: .
-      dockerfile: Dockerfile.production
+      dockerfile: Dockerfile
     volumes:
       - ${BIDS_DIR:-./tests/fixtures/bids}:/data:ro
       - ${OUTPUT_DIR:-./output}:/output
