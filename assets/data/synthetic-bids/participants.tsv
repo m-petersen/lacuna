@@ -1,0 +1,4 @@
+participant_id	age	sex	handedness	lesion_etiology
+sub-01	65	M	R	stroke
+sub-02	62	F	R	stroke
+sub-03	74	F	R	stroke

@@ -1,0 +1,14 @@
+{
+    "Name": "Synthetic Lesion Dataset",
+    "BIDSVersion": "",
+    "DatasetType": "derivative",
+    "License": "CC0",
+    "Authors": ["Lacuna Documentation"],
+    "Description": "Synthetic lesion masks for Lacuna documentation tutorials. These are example files for learning purposes only.",
+    "GeneratedBy": [
+        {
+            "Name": "Lacuna Documentation",
+            "Description": "Synthetic data for tutorials"
+        }
+    ]
+}
