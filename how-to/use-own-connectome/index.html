@@ -1482,7 +1482,7 @@
 <p>Run network mapping analyses using connectome data that was not fetched via <code>lacuna fetch</code>.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Lacuna installed (<a href="installation.md">Installation</a>)</li>
+<li>Lacuna installed</li>
 <li>For functional connectomes: an HDF5 file with voxel-wise timeseries data</li>
 <li>For structural connectomes: a <code>.tck</code> tractogram file (MRtrix3 format)</li>
 <li>Data in MNI space</li>
@@ -1566,7 +1566,7 @@
 <p>Your structural connectome must be a <code>.tck</code> file (MRtrix3 streamlines format) in MNI space.</p>
 <div class="admonition warning">
 <p class="admonition-title">MRtrix3 required</p>
-<p>Structural network mapping requires MRtrix3 to be installed. See <a href="setup-mrtrix3.md">Setup MRtrix3</a>.</p>
+<p>Structural network mapping requires MRtrix3 to be installed.</p>
 </div>
 <h3 id="via-the-cli_1">Via the CLI<a class="headerlink" href="#via-the-cli_1" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>lacuna<span class="w"> </span>run<span class="w"> </span>snm<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
@@ -1614,9 +1614,7 @@
 </div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="fetch-connectomes.md">Fetch Connectomes</a> — Downloading bundled connectomes</li>
-<li><a href="run-flnm.md">Run Functional LNM</a> — Functional network mapping workflow</li>
-<li><a href="run-slnm.md">Run Structural LNM</a> — Structural network mapping workflow</li>
+<li><a href="../docker/">Docker Guide</a> — Running Lacuna in Docker</li>
 <li><a href="../../explanation/coordinate-spaces/">Coordinate Spaces</a> — Understanding MNI spaces</li>
 </ul>
 
