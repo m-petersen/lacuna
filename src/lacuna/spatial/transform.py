@@ -85,7 +85,9 @@ class TransformationStrategy:
 
     def determine_direction(
         self, source: CoordinateSpace, target: CoordinateSpace
-    ) -> Literal["forward", "reverse", "regrid", "chain_forward", "chain_reverse", "resample", "none"]:
+    ) -> Literal[
+        "forward", "reverse", "regrid", "chain_forward", "chain_reverse", "resample", "none"
+    ]:
         """Determine transformation direction based on source and target spaces.
 
         Parameters
@@ -288,9 +290,7 @@ class TransformationStrategy:
             (target_space.identifier, target_space.resolution),
             target_space.reference_affine,
         )
-        target_shape = REFERENCE_SHAPES.get(
-            (target_space.identifier, target_space.resolution)
-        )
+        target_shape = REFERENCE_SHAPES.get((target_space.identifier, target_space.resolution))
         if target_shape is None:
             raise ValueError(
                 f"No reference shape for {target_space.identifier}@{target_space.resolution}mm. "

@@ -79,9 +79,7 @@ def temp_functional_connectome(tmp_path):
 class TestSNMComputeFlagValidation:
     """Test that SNM compute flags require parcellation_name."""
 
-    def test_compute_disconnectivity_matrix_without_parcellation_raises(
-        self, temp_connectome
-    ):
+    def test_compute_disconnectivity_matrix_without_parcellation_raises(self, temp_connectome):
         from lacuna.analysis.structural_network_mapping import (
             StructuralNetworkMapping,
         )
@@ -93,9 +91,7 @@ class TestSNMComputeFlagValidation:
                 check_dependencies=False,
             )
 
-    def test_compute_roi_disconnection_without_parcellation_raises(
-        self, temp_connectome
-    ):
+    def test_compute_roi_disconnection_without_parcellation_raises(self, temp_connectome):
         from lacuna.analysis.structural_network_mapping import (
             StructuralNetworkMapping,
         )

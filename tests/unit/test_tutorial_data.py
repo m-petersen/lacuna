@@ -227,9 +227,7 @@ class TestSetupTutorialRawMasks:
             original = nib.load(get_subject_mask_path(subject_id))
             numeric_id = subject_id.removeprefix("sub-")
             raw = nib.load(target / f"{numeric_id}.nii.gz")
-            np.testing.assert_array_equal(
-                original.get_fdata(), raw.get_fdata()
-            )
+            np.testing.assert_array_equal(original.get_fdata(), raw.get_fdata())
 
     def test_existing_directory_raises_error(self, tmp_path):
         """setup_tutorial_raw_masks() raises error if target exists."""

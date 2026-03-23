@@ -179,7 +179,9 @@ class TestDetermineDirection:
 
     def _make_space(self, identifier, resolution=2):
         affine = REFERENCE_AFFINES.get((identifier, resolution), np.eye(4))
-        return CoordinateSpace(identifier=identifier, resolution=resolution, reference_affine=affine)
+        return CoordinateSpace(
+            identifier=identifier, resolution=resolution, reference_affine=affine
+        )
 
     def test_none_same_space_same_resolution(self):
         source = self._make_space("MNI152NLin6Asym", 2)
@@ -261,9 +263,9 @@ class TestRegridOperation:
         result_world = result.affine[:3, :3] @ np.array(peak_vox) + result.affine[:3, 3]
 
         # World coordinates should be within one voxel (2mm) of the original
-        assert np.allclose(world_xyz, result_world, atol=2.0), (
-            f"World coordinate mismatch: original {world_xyz}, regridded {result_world}"
-        )
+        assert np.allclose(
+            world_xyz, result_world, atol=2.0
+        ), f"World coordinate mismatch: original {world_xyz}, regridded {result_world}"
 
     def test_regrid_output_shape_matches_reference(self):
         """Regridded image should have the target space's reference shape."""
@@ -282,9 +284,9 @@ class TestRegridOperation:
         result = TransformationStrategy().apply_regrid(img_b, target)
 
         expected_shape = REFERENCE_SHAPES[("MNI152NLin2009cAsym", 2)]
-        assert result.shape == expected_shape, (
-            f"Expected shape {expected_shape}, got {result.shape}"
-        )
+        assert (
+            result.shape == expected_shape
+        ), f"Expected shape {expected_shape}, got {result.shape}"
 
 
 class TestAtlasTransformation:

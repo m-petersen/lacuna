@@ -127,9 +127,14 @@ class TestRunSubcommandParsing:
 
         args = parser.parse_args(
             [
-                "run", "snm", str(bids_dir), str(output_dir),
-                "--connectome-path", str(conn_path),
-                "--parcel-atlases", "Schaefer2018_100Parcels7Networks",
+                "run",
+                "snm",
+                str(bids_dir),
+                str(output_dir),
+                "--connectome-path",
+                str(conn_path),
+                "--parcel-atlases",
+                "Schaefer2018_100Parcels7Networks",
                 "--compute-disconnectivity-matrix",
                 "--compute-roi-disconnection",
             ]
@@ -360,9 +365,7 @@ class TestCollectSubcommand:
         parser = build_parser()
         derivatives_dir = tmp_path / "output"
 
-        args = parser.parse_args(
-            ["collect", str(derivatives_dir), "--pattern", "*lesion*"]
-        )
+        args = parser.parse_args(["collect", str(derivatives_dir), "--pattern", "*lesion*"])
 
         # Parser stores pattern as-is; main.py transforms it for glob matching
         assert args.pattern == "*lesion*"

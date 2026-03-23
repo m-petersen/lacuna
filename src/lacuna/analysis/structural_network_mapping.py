@@ -274,7 +274,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         self.compute_roi_disconnection = compute_roi_disconnection
 
         # Validate: compute flags require parcellation_name
-        if (compute_disconnectivity_matrix or compute_roi_disconnection) and not self.parcellation_names:
+        if (
+            compute_disconnectivity_matrix or compute_roi_disconnection
+        ) and not self.parcellation_names:
             flags = []
             if compute_disconnectivity_matrix:
                 flags.append("compute_disconnectivity_matrix")
@@ -733,7 +735,9 @@ class StructuralNetworkMapping(BaseAnalysis):
             # Compute summary statistics (this will load data temporarily but release it)
             disconn_array = np.nan_to_num(disconn_map.get_fdata(), nan=0.0, posinf=0.0, neginf=0.0)
             positive_mask = disconn_array > 0
-            mean_disconnection = float(np.mean(disconn_array[positive_mask])) if np.any(positive_mask) else 0.0
+            mean_disconnection = (
+                float(np.mean(disconn_array[positive_mask])) if np.any(positive_mask) else 0.0
+            )
 
             # Free memory immediately after computing statistics
             del disconn_array
@@ -843,7 +847,9 @@ class StructuralNetworkMapping(BaseAnalysis):
                 self.compute_disconnectivity_matrix or self.compute_roi_disconnection
             ):
                 for atlas_info in self._atlases:
-                    self.logger.info(f"Computing connectivity matrices for '{atlas_info['name']}'...")
+                    self.logger.info(
+                        f"Computing connectivity matrices for '{atlas_info['name']}'..."
+                    )
                     connectivity_results = self._compute_connectivity_matrices(
                         mask_data=mask_data,
                         mask_tck_path=mask_tck_path,
@@ -963,9 +969,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             # so reuse if already computed for this subject
             intact_tck_path = temp_dir_path / f"{subject_id}_intact.tck"
             if not intact_tck_path.exists():
-                self.logger.info(
-                    "Computing intact (post-disconnection) tractogram", indent_level=1
-                )
+                self.logger.info("Computing intact (post-disconnection) tractogram", indent_level=1)
                 exclude_mask_path = temp_dir_path / f"{subject_id}_exclude_mask.nii.gz"
                 nib.save(mask_data.mask_img, exclude_mask_path)
 

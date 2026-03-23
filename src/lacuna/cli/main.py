@@ -82,7 +82,11 @@ class RunConfig:
 
         # Common analysis options
         # Note: SNM uses parcellation_name (set below), not parcel_names
-        if hasattr(args, "parcel_atlases") and args.parcel_atlases and args.analysis not in ("snm", "structuralnetworkmapping"):
+        if (
+            hasattr(args, "parcel_atlases")
+            and args.parcel_atlases
+            and args.analysis not in ("snm", "structuralnetworkmapping")
+        ):
             analysis_options["parcel_names"] = args.parcel_atlases
         if hasattr(args, "custom_parcellation") and args.custom_parcellation:
             analysis_options["custom_parcellation"] = args.custom_parcellation
@@ -110,7 +114,11 @@ class RunConfig:
             analysis_options["return_in_input_space"] = False
 
         # SNM-specific options
-        if hasattr(args, "parcel_atlases") and args.parcel_atlases and args.analysis in ("snm", "structuralnetworkmapping"):
+        if (
+            hasattr(args, "parcel_atlases")
+            and args.parcel_atlases
+            and args.analysis in ("snm", "structuralnetworkmapping")
+        ):
             analysis_options["parcellation_name"] = args.parcel_atlases
         if hasattr(args, "compute_disconnectivity_matrix") and args.compute_disconnectivity_matrix:
             analysis_options["compute_disconnectivity_matrix"] = True
@@ -122,8 +130,10 @@ class RunConfig:
         # Pass nprocs to analysis as n_jobs
         nprocs = getattr(args, "nprocs", -1)
         if nprocs != 1 and args.analysis in (
-            "snm", "structuralnetworkmapping",
-            "fnm", "functionalnetworkmapping",
+            "snm",
+            "structuralnetworkmapping",
+            "fnm",
+            "functionalnetworkmapping",
         ):
             analysis_options["n_jobs"] = nprocs
         if hasattr(args, "show_mrtrix_output") and args.show_mrtrix_output:
@@ -330,7 +340,13 @@ def _handle_collect_command(args: Namespace) -> int:
     matched_files = [
         f for f in Path(derivatives_dir).rglob(glob_pattern) if not f.name.startswith("group_")
     ]
-    n_subjects = len({f.parent.parent.parent.name for f in matched_files if f.parent.parent.parent.name.startswith("sub-")})
+    n_subjects = len(
+        {
+            f.parent.parent.parent.name
+            for f in matched_files
+            if f.parent.parent.parent.name.startswith("sub-")
+        }
+    )
     logger.info(f"Found {len(matched_files)} file(s) across {n_subjects} subject(s)")
 
     try:
@@ -343,7 +359,9 @@ def _handle_collect_command(args: Namespace) -> int:
 
         if not created_files:
             if not overwrite:
-                logger.info("No new files created (all outputs already exist). Use --overwrite to replace.")
+                logger.info(
+                    "No new files created (all outputs already exist). Use --overwrite to replace."
+                )
             else:
                 logger.warning("No parcelstats files found to aggregate")
             return EXIT_SUCCESS
@@ -418,7 +436,9 @@ def _show_atlases_info() -> int:
     schaefer_key = "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg"
     tian_key = "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg"
 
-    print_atlas_group("Schaefer Cortical Parcellations", schaefer, schaefer_key if schaefer else None)
+    print_atlas_group(
+        "Schaefer Cortical Parcellations", schaefer, schaefer_key if schaefer else None
+    )
     print_atlas_group("Tian Subcortical Parcellations", tian, tian_key if tian else None)
     print_atlas_group("Combined Cortical + Subcortical", combined)
     print_atlas_group("Other Parcellations", other)

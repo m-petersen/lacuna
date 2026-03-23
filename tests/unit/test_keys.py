@@ -335,7 +335,11 @@ class TestFormatBidsExportFilename:
         """Verify underscores only appear between BIDS key-value pairs."""
         test_cases = [
             ("atlas-Schaefer2018_100Parcels7Networks_source-InputMask", "values", "parcelstats"),
-            ("atlas-TianSubcortex_3TS1_source-RegionalDamage_desc-damage_score", "values", "parcelstats"),
+            (
+                "atlas-TianSubcortex_3TS1_source-RegionalDamage_desc-damage_score",
+                "values",
+                "parcelstats",
+            ),
         ]
 
         # BIDS entity pattern: key-value where key is lowercase letters, value is alphanumeric

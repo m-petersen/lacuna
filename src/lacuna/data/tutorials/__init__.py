@@ -276,8 +276,7 @@ def setup_tutorial_raw_masks(
     if target.exists():
         if not overwrite:
             raise FileExistsError(
-                f"Target directory already exists: {target}. "
-                "Use overwrite=True to replace it."
+                f"Target directory already exists: {target}. " "Use overwrite=True to replace it."
             )
         shutil.rmtree(target)
 

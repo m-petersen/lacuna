@@ -256,9 +256,7 @@ def merge_trk_to_tck(
         raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
     if output_path.suffix != ".tck":
-        raise ValueError(
-            f"Output must be .tck format, got: {output_path.suffix}"
-        )
+        raise ValueError(f"Output must be .tck format, got: {output_path.suffix}")
 
     if output_path.exists() and not overwrite:
         print(f"Output file already exists: {output_path}")
@@ -287,7 +285,9 @@ def merge_trk_to_tck(
             f"All {len(trk_files)} tract files were excluded by patterns: {exclude_patterns}"
         )
 
-    print(f"Found {len(filtered_files)} tract files ({len(trk_files) - len(filtered_files)} excluded)")
+    print(
+        f"Found {len(filtered_files)} tract files ({len(trk_files) - len(filtered_files)} excluded)"
+    )
 
     # Load and merge streamlines
     all_streamlines = []
@@ -320,9 +320,7 @@ def merge_trk_to_tck(
         tck = TckFile(tractogram)
         tck.save(str(output_path))
     except Exception as e:
-        raise RuntimeError(
-            f"Failed to save merged tractogram: {e}"
-        ) from e
+        raise RuntimeError(f"Failed to save merged tractogram: {e}") from e
 
     print(f"Merge complete: {output_path}")
     return output_path

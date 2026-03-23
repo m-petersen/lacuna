@@ -127,6 +127,7 @@ class TestAtlasRegistryContract:
         assert tian_s1.resolution == 1
         assert "subcort" in tian_s1.description.lower()
 
+
 class TestAtlasLoaderContract:
     """Contract tests for atlas loading functionality."""
 

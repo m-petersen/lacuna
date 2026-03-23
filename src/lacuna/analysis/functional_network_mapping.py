@@ -227,9 +227,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.method = method
         self.pini_percentile = pini_percentile
         if not (1 <= pini_percentile <= 100):
-            raise ValueError(
-                f"pini_percentile must be between 1 and 100, got {pini_percentile}"
-            )
+            raise ValueError(f"pini_percentile must be between 1 and 100, got {pini_percentile}")
         self.n_jobs = n_jobs
         self.compute_p_map = compute_p_map
         self.fdr_alpha = fdr_alpha
@@ -1251,17 +1249,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 f"(n_jobs={effective_n_jobs})"
             )
             pairs = Parallel(n_jobs=effective_n_jobs, backend="loky")(
-                delayed(_aggregate_one)(i, mask_info)
-                for i, mask_info in enumerate(mask_batch)
+                delayed(_aggregate_one)(i, mask_info) for i, mask_info in enumerate(mask_batch)
             )
             processed_results = dict(pairs)
         else:
             processed_results = {}
             for i, mask_info in enumerate(mask_batch):
                 subject_id = self._format_subject_id(mask_info["mask_data"])
-                self.logger.info(
-                    f"Aggregating results for: {subject_id}", indent_level=1
-                )
+                self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
                 idx, result = _aggregate_one(i, mask_info)
                 processed_results[idx] = result
 

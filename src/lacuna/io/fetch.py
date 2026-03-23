@@ -309,8 +309,7 @@ def fetch_gsp1000(
         if stale_test_data:
             if verbose:
                 print(
-                    "Existing HDF5 appears to be from test mode "
-                    "— overwriting with full dataset"
+                    "Existing HDF5 appears to be from test mode " "— overwriting with full dataset"
                 )
             warn_list.append("Overwriting stale test-mode HDF5 data")
         else:
@@ -714,7 +713,8 @@ def _register_dtor985(
             name=register_name,
             space=source.space,
             tractogram_path=tck_path,
-            description=source.description or f"Downloaded via fetch_dtor985 ({source.n_subjects} subjects)",
+            description=source.description
+            or f"Downloaded via fetch_dtor985 ({source.n_subjects} subjects)",
         )
         return True
     except Exception as e:
@@ -957,7 +957,8 @@ def _register_hcp1065(
             name=register_name,
             space=source.space,
             tractogram_path=tck_path,
-            description=source.description or f"Downloaded via fetch_hcp1065 ({source.n_subjects} subjects)",
+            description=source.description
+            or f"Downloaded via fetch_hcp1065 ({source.n_subjects} subjects)",
         )
         return True
     except Exception as e:
