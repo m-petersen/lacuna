@@ -43,5 +43,4 @@ lacuna tutorial ./my_tutorial --force
 
 ## See Also
 
-- [Getting Started (CLI)](../../tutorials/getting-started-cli.ipynb) — CLI tutorial notebook
-- [Getting Started (API)](../../tutorials/getting-started-api.ipynb) — API tutorial notebook
+- [Getting Started](../../tutorials/getting-started.ipynb) — Tutorial notebook

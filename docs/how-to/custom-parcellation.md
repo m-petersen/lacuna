@@ -8,7 +8,7 @@ Run regional damage analysis using a custom parcellation atlas that is not bundl
 
 ## Prerequisites
 
-- Lacuna installed ([Installation](installation.md))
+- Lacuna installed
 - A parcellation NIfTI file (3D integer-labeled or 4D probabilistic)
 - A labels file mapping region IDs to names
 - Both files in MNI space (MNI152NLin6Asym or MNI152NLin2009cAsym)
@@ -160,6 +160,5 @@ lacuna info atlases
 
 ## See also
 
-- [Regional Damage](regional-damage.md) — Running regional damage analysis
+- [Regional Damage Tutorial](../tutorials/regional-damage.ipynb) — Running regional damage analysis
 - [Coordinate Spaces](../explanation/coordinate-spaces.md) — Understanding MNI spaces
-- [Registry Pattern](../explanation/registries.md) — How the registry system works

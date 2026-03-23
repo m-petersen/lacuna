@@ -8,7 +8,7 @@ Run network mapping analyses using connectome data that was not fetched via `lac
 
 ## Prerequisites
 
-- Lacuna installed ([Installation](installation.md))
+- Lacuna installed
 - For functional connectomes: an HDF5 file with voxel-wise timeseries data
 - For structural connectomes: a `.tck` tractogram file (MRtrix3 format)
 - Data in MNI space
@@ -83,7 +83,7 @@ register_functional_connectome(
 Your structural connectome must be a `.tck` file (MRtrix3 streamlines format) in MNI space.
 
 !!! warning "MRtrix3 required"
-    Structural network mapping requires MRtrix3 to be installed. See [Setup MRtrix3](setup-mrtrix3.md).
+    Structural network mapping requires MRtrix3 to be installed.
 
 ### Via the CLI
 
@@ -142,7 +142,5 @@ lacuna info connectomes
 
 ## See also
 
-- [Fetch Connectomes](fetch-connectomes.md) — Downloading bundled connectomes
-- [Run Functional LNM](run-flnm.md) — Functional network mapping workflow
-- [Run Structural LNM](run-slnm.md) — Structural network mapping workflow
+- [Docker Guide](docker.ipynb) — Running Lacuna in Docker
 - [Coordinate Spaces](../explanation/coordinate-spaces.md) — Understanding MNI spaces

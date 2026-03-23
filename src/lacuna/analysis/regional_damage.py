@@ -47,10 +47,6 @@ class RegionalDamage(ParcelAggregation):
         Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
         If None, all registered atlases are processed.
         Use list_parcellations() to see available atlases.
-    threshold : float | None, default=None
-        Threshold for binary mask conversion. If None, no thresholding is applied.
-        For probabilistic atlases: minimum probability to consider a voxel
-        as belonging to a region (0.0-1.0).
 
     Raises
     ------

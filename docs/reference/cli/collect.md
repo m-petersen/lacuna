@@ -50,4 +50,4 @@ lacuna collect /bids /output --overwrite
 ## See Also
 
 - [Batch Processing](../../how-to/batch-processing.md) — Processing multiple subjects
-- [Export BIDS](../../how-to/export-bids.md) — Exporting results
+- [Use Your Own Connectome](../../how-to/use-own-connectome.md) — Using custom connectomes

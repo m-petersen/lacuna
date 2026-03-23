@@ -30,5 +30,5 @@ lacuna info connectomes
 
 ## See Also
 
-- [Fetch Connectomes](../../how-to/fetch-connectomes.md) — Downloading connectomes
-- [Configure TemplateFlow](../../how-to/templateflow.md) — Setting up brain templates
+- [Custom Parcellation](../../how-to/custom-parcellation.md) — Using custom brain parcellations
+- [Use Your Own Connectome](../../how-to/use-own-connectome.md) — Using custom connectomes

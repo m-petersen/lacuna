@@ -50,4 +50,4 @@ lacuna bidsify ./masks ./bids_masks --space MNI152NLin2009cAsym
 
 ## See Also
 
-- [Export BIDS](../../how-to/export-bids.md) — Exporting analysis results in BIDS format
+- [Batch Processing](../../how-to/batch-processing.md) — Processing multiple subjects

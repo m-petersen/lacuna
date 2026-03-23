@@ -5,7 +5,7 @@ hide:
 
 # Lacuna
 
-A scientific Python package for advanced brain lesion analysis.
+A Python package for advanced brain lesion analysis.
 
 Lacuna bridges the gap between individual lesion masks and normative brain data.
 It provides a reproducible, BIDS-compatible workflow for lesion network mapping

@@ -179,6 +179,5 @@ lacuna fetch gsp1000 --api-key YOUR_KEY
 
 ## See also
 
-- [Fetch Connectomes guide](../../how-to/fetch-connectomes.md)
-- [Run Functional LNM](../../how-to/run-flnm.md)
-- [Run Structural LNM](../../how-to/run-slnm.md)
+- [Use Your Own Connectome](../../how-to/use-own-connectome.md)
+- [Docker Guide](../../how-to/docker.ipynb)

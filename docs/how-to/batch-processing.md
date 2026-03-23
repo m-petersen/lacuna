@@ -8,7 +8,7 @@ Analyze multiple lesion masks simultaneously, leveraging parallel processing for
 
 ## Prerequisites
 
-- Lacuna installed ([Installation Guide](installation.md))
+- Lacuna installed
 - Multiple lesion masks in MNI space
 - Sufficient RAM for parallel processing
 
