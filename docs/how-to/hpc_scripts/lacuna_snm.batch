@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH --job-name=lacuna_snm
+#SBATCH --output=logs/lacuna_%A_%a.out
+#SBATCH --error=logs/lacuna_%A_%a.err
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+
+# --- 1. Initialization ---
+module load apptainer
+mkdir -p logs
+
+BATCH_SIZE=${BATCH_SIZE:-20}
+
+# --- 2. Configuration & Paths ---
+# Adapt these paths to your cluster and project
+BIDS_DIR=/path/to/bids
+OUTPUT_DIR=/path/to/output
+CONNECTOMES_DIR=/path/to/connectomes
+SIF_IMAGE=/path/to/lacuna.sif
+
+# Use node-local temp for large tractogram I/O
+export LACUNA_CACHE_DIR=$TMPDIR/lacuna
+export LACUNA_TMP_DIR=$TMPDIR/lacuna
+
+mkdir -p "$OUTPUT_DIR" "$LACUNA_CACHE_DIR"
+
+# Copy tractogram to node-local storage for faster I/O
+cp "$CONNECTOMES_DIR"/dTOR_full_tractogram.tck "$LACUNA_CACHE_DIR"/
+
+# --- 3. Subject Slicing ---
+mapfile -t ALL_SUBJECTS < <(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d -printf "%f\n" | sed 's/sub-//' | sort)
+
+START_INDEX=$(( SLURM_ARRAY_TASK_ID * BATCH_SIZE ))
+SUBJECT_SUBSET=( "${ALL_SUBJECTS[@]:$START_INDEX:$BATCH_SIZE}" )
+
+if [ ${#SUBJECT_SUBSET[@]} -eq 0 ]; then
+    echo "No subjects for array task $SLURM_ARRAY_TASK_ID (start index: $START_INDEX). Exiting."
+    exit 0
+fi
+
+echo "--- Job Array ID: $SLURM_ARRAY_TASK_ID ---"
+echo "Processing ${#SUBJECT_SUBSET[@]} subjects starting at index $START_INDEX"
+echo "Subjects: ${SUBJECT_SUBSET[*]}"
+
+# --- 4. Run structural network mapping ---
+apptainer run \
+    --bind "$BIDS_DIR":/bids:ro \
+    --bind "$OUTPUT_DIR":/output \
+    --bind "$LACUNA_CACHE_DIR":/lacuna_cache \
+    --env LACUNA_CACHE_DIR="/lacuna_cache" \
+    --env LACUNA_TMP_DIR="/lacuna_cache" \
+    "$SIF_IMAGE" run snm \
+    /bids /output \
+    --participant-label ${SUBJECT_SUBSET[*]} \
+    --mask-space MNI152NLin6Asym \
+    --connectome-path /lacuna_cache/dTOR_full_tractogram.tck \
+    --compute-roi-disconnection \
+    --compute-disconnectivity-matrix \
+    --parcel-atlases Schaefer2018_100Parcels7Networks \
+    --output-resolution 2 \
+    --nprocs -1 \
+    --verbose
+
+rm -rf "$LACUNA_CACHE_DIR"

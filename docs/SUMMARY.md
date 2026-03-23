@@ -7,6 +7,8 @@
 * [How-to Guides](how-to/index.md)
     * [Spatial Normalization](how-to/spatial-normalization.ipynb)
     * [Docker](how-to/docker.ipynb)
+    * [Apptainer](how-to/apptainer.ipynb)
+    * [HPC](how-to/hpc.md)
 * [Explanation](explanation/index.md)
     * [Coordinate Spaces](explanation/coordinate-spaces.md)
 * [Reference](reference/index.md)

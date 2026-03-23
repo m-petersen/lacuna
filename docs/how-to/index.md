@@ -16,4 +16,16 @@ Practical guides for specific tasks when working with Lacuna.
 
     Run Lacuna analyses in a Docker container without local installation.
 
+-   [**Apptainer**](apptainer.ipynb)
+
+    ---
+
+    Run Lacuna using Apptainer/Singularity containers without local installation.
+
+-   [**HPC**](hpc.md)
+
+    ---
+
+    Set up SLURM job arrays to process large datasets on a cluster.
+
 </div>
