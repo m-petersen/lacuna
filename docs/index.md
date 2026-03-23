@@ -62,36 +62,28 @@ For the full walkthrough, see the [Getting started](tutorials/getting-started.ip
 
 <div class="grid cards" markdown>
 
--   **Tutorials**
+-   [**Tutorials**](tutorials/index.md)
 
     ---
 
     Step-by-step Jupyter notebook tutorials covering each analysis type.
 
-    [Start learning](tutorials/index.md)
-
--   **How-to Guides**
+-   [**How-to guides**](how-to/index.md)
 
     ---
 
-    Practical guides for specific tasks like spatial normalization.
+    Practical guides for specific tasks beyond core analysis workflows.
 
-    [Find a guide](how-to/index.md)
-
--   **Reference**
+-   [**Reference**](reference/index.md)
 
     ---
 
     CLI commands, options, and auto-generated API documentation.
 
-    [Browse reference](reference/index.md)
-
--   **Explanation**
+-   [**Explanation**](explanation/index.md)
 
     ---
 
-    Background on coordinate spaces and Lacuna's design.
-
-    [Learn concepts](explanation/index.md)
+    Background knowledge for using the package.
 
 </div>
