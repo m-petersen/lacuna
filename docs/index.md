@@ -20,12 +20,6 @@ and regional damage quantification.
 
 !!! warning "This project is under active development and has not yet been fully validated. Use with caution."
 
-## Install
-
-```bash
-pip install git+https://github.com/m-petersen/lacuna
-```
-
 ## Analyses
 
 <div class="grid cards" markdown>
@@ -49,6 +43,12 @@ pip install git+https://github.com/m-petersen/lacuna
     Quantify regional damage by measuring lesion overlap with standard brain parcellation atlases.
 
 </div>
+
+## Install
+
+```bash
+pip install git+https://github.com/m-petersen/lacuna
+```
 
 ## Usage
 
