@@ -3,6 +3,9 @@ hide:
   - navigation
 ---
 
+<div style="display: flex; align-items: center; gap: 2rem;" markdown>
+<div markdown>
+
 # Lacuna
 
 A Python package for advanced brain lesion analysis.
@@ -10,6 +13,10 @@ A Python package for advanced brain lesion analysis.
 Lacuna bridges the gap between individual lesion masks and normative brain data.
 It provides a reproducible, BIDS-compatible workflow for lesion network mapping
 and regional damage quantification.
+
+</div>
+<img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;">
+</div>
 
 !!! warning "This project is under active development and has not yet been fully validated. Use with caution."
 
