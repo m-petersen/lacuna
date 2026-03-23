@@ -40,5 +40,4 @@ Technical reference documentation for Lacuna.
 
 ## About This Reference
 
-This reference documentation is auto-generated from NumPy-style docstrings
-in the source code using [mkdocstrings](https://mkdocstrings.github.io/).
+This Python API reference documentation is auto-generated using [mkdocstrings](https://mkdocstrings.github.io/).
