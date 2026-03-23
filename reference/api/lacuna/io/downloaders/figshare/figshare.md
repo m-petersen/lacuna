@@ -1,1 +1,0 @@
-::: lacuna.io.downloaders.figshare

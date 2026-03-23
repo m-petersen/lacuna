@@ -1,1 +1,0 @@
-::: lacuna.assets.transforms.loader
