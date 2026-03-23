@@ -4,7 +4,7 @@
     * [Functional network mapping](tutorials/functional-network-mapping.ipynb)
     * [Structural network mapping](tutorials/structural-network-mapping.ipynb)
     * [Regional damage](tutorials/regional-damage.ipynb)
-* [How-to Guides](how-to/index.md)
+* [How-to guides](how-to/index.md)
     * [Spatial normalization](how-to/spatial-normalization.ipynb)
     * [Docker](how-to/docker.ipynb)
     * [Apptainer](how-to/apptainer.ipynb)

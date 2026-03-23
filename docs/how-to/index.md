@@ -1,4 +1,4 @@
-# How-to Guides
+# How-to guides
 
 Practical guides for specific tasks when working with Lacuna.
 
