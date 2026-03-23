@@ -1,4 +1,4 @@
-# Fetch Command
+# Fetch command
 
 The `lacuna fetch` command downloads and sets up connectomes for lesion network mapping analysis.
 
@@ -179,5 +179,4 @@ lacuna fetch gsp1000 --api-key YOUR_KEY
 
 ## See also
 
-- [Use Your Own Connectome](../../how-to/use-own-connectome.md)
 - [Docker Guide](../../how-to/docker.ipynb)

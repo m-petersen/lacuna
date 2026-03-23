@@ -1,22 +1,13 @@
 # MANIFEST.in - Include additional files in source distributions
 
-# Include all data files in the ldk.data package
+# Include all data files in the lacuna.data package
 recursive-include src/lacuna/data *.nii.gz
 recursive-include src/lacuna/data *.txt
 recursive-include src/lacuna/data *.md
-
-# Include CLI configuration templates
-include src/lacuna/cli/default_config.yaml
-
-# Include templates specifically
-include src/lacuna/data/templates/MNI152_T1_1mm.nii.gz
-include src/lacuna/data/templates/MNI152_T1_2mm.nii.gz
-include src/lacuna/data/templates/README.md
+recursive-include src/lacuna/data *.tsv
 
 # Include documentation
 include README.md
-include LICENSE
-include CHANGELOG.md
 
 # Exclude unnecessary files
 global-exclude __pycache__

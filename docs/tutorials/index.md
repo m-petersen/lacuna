@@ -2,9 +2,9 @@
 
 Welcome to the tutorials! These guides will teach you how to work with Lacuna.
 
-The tutorials are self-contained Jupyter notebooks. You can run them locally or via the Colab links provided in each tutorial.
+The tutorials are self-contained Jupyter notebooks. You can run them locally or on [Colab](https://colab.research.google.com/) via the links provided in each tutorial.
 
-Start with the getting started tutorial, then explore the analysis-specific guides:
+Start with the getting started tutorial, then explore the analysis-specific guides.
 
 <div class="grid cards" markdown>
 

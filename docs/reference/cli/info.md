@@ -1,4 +1,4 @@
-# Info Command
+# Info command
 
 The `lacuna info` command displays information about available resources.
 
@@ -30,5 +30,4 @@ lacuna info connectomes
 
 ## See Also
 
-- [Custom Parcellation](../../how-to/custom-parcellation.md) — Using custom brain parcellations
-- [Use Your Own Connectome](../../how-to/use-own-connectome.md) — Using custom connectomes
+- [How-to Guides](../../how-to/index.md)

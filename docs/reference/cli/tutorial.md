@@ -1,4 +1,4 @@
-# Tutorial Command
+# Tutorial command
 
 The `lacuna tutorial` command sets up a tutorial dataset for learning Lacuna.
 

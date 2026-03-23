@@ -1,4 +1,4 @@
-# Bidsify Command
+# Bidsify command
 
 The `lacuna bidsify` command converts a directory of NIfTI mask files to BIDS format.
 
@@ -50,4 +50,4 @@ lacuna bidsify ./masks ./bids_masks --space MNI152NLin2009cAsym
 
 ## See Also
 
-- [Batch Processing](../../how-to/batch-processing.md) — Processing multiple subjects
+- [How-to Guides](../../how-to/index.md)

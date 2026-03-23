@@ -1,4 +1,4 @@
-# Run Command
+# Run command
 
 The `lacuna run` command runs lesion network mapping analyses on BIDS datasets.
 

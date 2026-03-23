@@ -1,4 +1,4 @@
-# CLI Reference
+# CLI
 
 Command-line interface documentation for Lacuna.
 
@@ -14,17 +14,11 @@ lacuna <command> [options]
 
 <div class="grid cards" markdown>
 
--   [**Run**](run.md)
+-   [**Bidsify**](bidsify.md)
 
     ---
 
-    Run lesion analyses (regional damage, functional and structural network mapping).
-
--   [**Fetch**](fetch.md)
-
-    ---
-
-    Download normative connectomes and other assets to the local cache.
+    Convert a directory of NIfTI mask files to BIDS format.
 
 -   [**Collect**](collect.md)
 
@@ -32,17 +26,23 @@ lacuna <command> [options]
 
     Aggregate subject-level parcelstats into group-level tables.
 
+-   [**Fetch**](fetch.md)
+
+    ---
+
+    Download normative connectomes and other assets to the local cache.
+
 -   [**Info**](info.md)
 
     ---
 
     Display available resources (atlases, connectomes).
 
--   [**Bidsify**](bidsify.md)
+-   [**Run**](run.md)
 
     ---
 
-    Convert a directory of NIfTI mask files to BIDS format.
+    Run lesion analyses (regional damage, functional and structural network mapping).
 
 -   [**Tutorial**](tutorial.md)
 

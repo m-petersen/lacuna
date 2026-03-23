@@ -1,4 +1,4 @@
-# Collect Command
+# Collect command
 
 The `lacuna collect` command aggregates subject-level parcelstats into group-level tables.
 
@@ -49,5 +49,4 @@ lacuna collect /bids /output --overwrite
 
 ## See Also
 
-- [Batch Processing](../../how-to/batch-processing.md) — Processing multiple subjects
-- [Use Your Own Connectome](../../how-to/use-own-connectome.md) — Using custom connectomes
+- [How-to Guides](../../how-to/index.md)

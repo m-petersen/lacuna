@@ -6,6 +6,8 @@ name: Fast Tests (Local)
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
 
 jobs:
   test-fast:

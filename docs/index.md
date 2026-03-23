@@ -11,6 +11,8 @@ Lacuna bridges the gap between individual lesion masks and normative brain data.
 It provides a reproducible, BIDS-compatible workflow for lesion network mapping
 and regional damage quantification.
 
+!!! warning "This project is under active development and has not yet been fully validated. Use with caution."
+
 ## Install
 
 ```bash

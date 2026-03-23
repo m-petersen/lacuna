@@ -68,8 +68,7 @@ services:
     volumes:
       - ./tests/fixtures:/data:ro
       - ./output:/output
-      - ./work:/work
-    command: /data /output participant --help
+    command: --help
 
   # Example run with BIDS dataset
   example:
@@ -77,14 +76,12 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ${BIDS_DIR:-./tests/fixtures/bids}:/data:ro
+      - ${BIDS_DIR:-./tests/fixtures/bids}:/bids:ro
       - ${OUTPUT_DIR:-./output}:/output
-      - ${TMP_DIR:-./tmp}:/tmp
       - ${CONNECTOME_DIR:-./connectomes}:/connectomes:ro
     environment:
       - TEMPLATEFLOW_HOME=/templateflow
-      - LACUNA_TMP_DIR=/tmp
-    command: |
-      /data /output participant
-      --tmp-dir /tmp
+    command: >
+      run rd /bids /output
+      --parcel-atlases Schaefer2018_100Parcels7Networks
       -v

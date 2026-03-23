@@ -69,7 +69,7 @@ Use pytest markers for fine-grained control:
 
 **All test commands use pytest-xdist (`-n auto`) for parallel execution** (3-8x speedup).
 
-See `docs/testing_strategy.md` for comprehensive testing guide.
+See the `Makefile` for all available test commands.
 
 ### When to Use What
 
@@ -146,7 +146,7 @@ Version automatically derived from git tags via setuptools-scm:
 - `pyproject.toml` - Package metadata and dependencies
 - `.github/workflows/` - CI workflows (call make commands)
 
-See `DEVELOPMENT.md` for detailed workflow documentation.
+See the `Makefile` for available commands.
 
 ## Recent Changes
 - 008-mkdocs-documentation: Added Python 3.10+ (documentation tooling) + mkdocs, mkdocs-material, mkdocstrings[python], mkdocs-gen-files, mkdocs-literate-nav
