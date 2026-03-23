@@ -14,8 +14,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.core.spaces import CoordinateSpace
-from lacuna.core.spaces import REFERENCE_AFFINES
+from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
 from lacuna.spatial.transform import (
     TransformationStrategy,
     _canonicalize_space_variant,

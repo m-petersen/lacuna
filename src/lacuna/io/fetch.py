@@ -310,7 +310,7 @@ def fetch_gsp1000(
             if verbose:
                 print(
                     "Existing HDF5 appears to be from test mode "
-                    f"— overwriting with full dataset"
+                    "— overwriting with full dataset"
                 )
             warn_list.append("Overwriting stale test-mode HDF5 data")
         else:

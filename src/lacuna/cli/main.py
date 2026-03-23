@@ -330,7 +330,7 @@ def _handle_collect_command(args: Namespace) -> int:
     matched_files = [
         f for f in Path(derivatives_dir).rglob(glob_pattern) if not f.name.startswith("group_")
     ]
-    n_subjects = len(set(f.parent.parent.parent.name for f in matched_files if f.parent.parent.parent.name.startswith("sub-")))
+    n_subjects = len({f.parent.parent.parent.name for f in matched_files if f.parent.parent.parent.name.startswith("sub-")})
     logger.info(f"Found {len(matched_files)} file(s) across {n_subjects} subject(s)")
 
     try:
@@ -410,7 +410,7 @@ def _show_atlases_info() -> int:
         if citation_key:
             citation = get_atlas_citation(citation_key)
             if not citation.startswith("No citation"):
-                print(f"\n  Citation:")
+                print("\n  Citation:")
                 for line in citation.strip().splitlines():
                     print(f"    {line}")
 
@@ -469,7 +469,7 @@ def _show_connectomes_info() -> int:
             space_note += " (native: MNI152NLin2009aAsym)"
         print(f"             {source.n_subjects} subjects, {space_note} space")
         if source.citation:
-            print(f"             Citation:")
+            print("             Citation:")
             for line in source.citation.strip().splitlines():
                 print(f"               {line}")
     print()

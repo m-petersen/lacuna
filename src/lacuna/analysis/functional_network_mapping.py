@@ -1254,7 +1254,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 delayed(_aggregate_one)(i, mask_info)
                 for i, mask_info in enumerate(mask_batch)
             )
-            processed_results = {idx: result for idx, result in pairs}
+            processed_results = dict(pairs)
         else:
             processed_results = {}
             for i, mask_info in enumerate(mask_batch):

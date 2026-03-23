@@ -173,8 +173,6 @@ class TestFetchHcp1065Integration:
 
     def test_fetch_hcp1065_with_mocked_download(self, tmp_path):
         """fetch_hcp1065 should work with mocked downloader and merger."""
-        import zipfile
-
         from lacuna.io import fetch_hcp1065
         from lacuna.io.downloaders.github import GithubReleaseDownloader
 
