@@ -14,53 +14,41 @@ lacuna <command> [options]
 
 <div class="grid cards" markdown>
 
--   **Run**
+-   [**Run**](run.md)
 
     ---
 
     Run lesion analyses (regional damage, functional and structural network mapping).
 
-    [Run](run.md)
-
--   **Fetch**
+-   [**Fetch**](fetch.md)
 
     ---
 
     Download normative connectomes and other assets to the local cache.
 
-    [Fetch](fetch.md)
-
--   **Collect**
+-   [**Collect**](collect.md)
 
     ---
 
     Aggregate subject-level parcelstats into group-level tables.
 
-    [Collect](collect.md)
-
--   **Info**
+-   [**Info**](info.md)
 
     ---
 
     Display available resources (atlases, connectomes).
 
-    [Info](info.md)
-
--   **Bidsify**
+-   [**Bidsify**](bidsify.md)
 
     ---
 
     Convert a directory of NIfTI mask files to BIDS format.
 
-    [Bidsify](bidsify.md)
-
--   **Tutorial**
+-   [**Tutorial**](tutorial.md)
 
     ---
 
     Setup tutorial data for learning Lacuna.
-
-    [Tutorial](tutorial.md)
 
 </div>
 
