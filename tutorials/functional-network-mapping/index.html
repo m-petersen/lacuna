@@ -612,10 +612,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#obtain-parcel-level-network-mapping-scores" class="md-nav__link">
+  <a href="#obtain-parcel-level-lesion-network-scores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Obtain parcel-level network mapping scores
+        Obtain parcel-level lesion network scores
       
     </span>
   </a>
@@ -1468,10 +1468,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#obtain-parcel-level-network-mapping-scores" class="md-nav__link">
+  <a href="#obtain-parcel-level-lesion-network-scores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Obtain parcel-level network mapping scores
+        Obtain parcel-level lesion network scores
       
     </span>
   </a>
@@ -2549,7 +2549,7 @@ plotting.plot_stat_map(tmap_img,
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="obtain-parcel-level-network-mapping-scores">Obtain parcel-level network mapping scores<a class="anchor-link" href="#obtain-parcel-level-network-mapping-scores">¶</a></h2>
+<h2 id="obtain-parcel-level-lesion-network-scores">Obtain parcel-level lesion network scores<a class="anchor-link" href="#obtain-parcel-level-lesion-network-scores">¶</a></h2>
 </div>
 </div>
 </div>
@@ -2785,7 +2785,7 @@ yab.plot_cortical(
 <h2 id="run-functional-network-mapping-on-multiple-subjects">Run functional network mapping on multiple subjects<a class="anchor-link" href="#run-functional-network-mapping-on-multiple-subjects">¶</a></h2><p>Lacuna supports processing multiple subjects within a single run. If the <code>--participant-label</code> flag is omitted, the pipeline automatically executes for all subjects detected in the BIDS dataset. Using <code>--verbose</code> enables inspection of the detected lesion masks.</p>
 <p>Execution strategies are internally optimized per analysis type. For functional network mapping, subjects are processed in parallel, and multi-subject computation is implemented via vectorization. This improves throughput but has implications for memory usage.</p>
 <p>These optimizations allow large cohorts to be processed efficiently with relatively modest computational overhead. However, RAM consumption scales with the number of subjects and should be monitored accordingly.</p>
-<p>Internally, Lacuna loads batches of lesion masks alongside batches of resting-state fMRI data from the connectome, which together determine memory usage. Resource demands can be controlled in two ways: (1) limiting the number of lesion masks processed simultaneously via <code>lacuna run fnm (...) --batch-size &lt;N&gt;</code>, and (2) reducing the connectome batch size during retrieval using <code>lacuna fetch GSP1000 (...) --batches &lt;N&gt;</code>.</p>
+<p>Internally, Lacuna loads batches of lesion masks alongside batches of resting-state fMRI data from the connectome, which together determine memory usage. Resource demands can be controlled in two ways: (1) limiting the number of lesion masks processed simultaneously via <code>lacuna run fnm (...) --batch-size &lt;N&gt;</code>, and (2) changing the connectome batch number during retrieval using <code>lacuna fetch GSP1000 (...) --batches &lt;N&gt;</code> (more batches ⟶ less size per batch ⟶ less memory demands).</p>
 <p>For demonstration purposes, replicate the first tutorial subject to create a dataset of 40 subjects instead of 3.</p>
 </div>
 </div>
@@ -2796,7 +2796,7 @@ yab.plot_cortical(
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [57]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
@@ -2819,9 +2819,9 @@ yab.plot_cortical(
 <span class="n">src_id</span> <span class="o">=</span> <span class="s2">"01"</span>
 <span class="n">src_file</span> <span class="o">=</span> <span class="n">tutorial_data</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub-</span><span class="si">{</span><span class="n">src_id</span><span class="si">}</span><span class="s2">"</span> <span class="o">/</span> <span class="s2">"ses-01"</span> <span class="o">/</span> <span class="s2">"anat"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub-</span><span class="si">{</span><span class="n">src_id</span><span class="si">}</span><span class="s2">_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz"</span>
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">41</span><span class="p">):</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">):</span>
 
-    <span class="n">sub_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">sub_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">"</span>
     
     <span class="n">target_dir</span> <span class="o">=</span> <span class="n">tutorial_data_multiple</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub-</span><span class="si">{</span><span class="n">sub_id</span><span class="si">}</span><span class="s2">"</span> <span class="o">/</span> <span class="s2">"ses-01"</span> <span class="o">/</span> <span class="s2">"anat"</span>
     <span class="n">target_file</span> <span class="o">=</span> <span class="n">target_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"sub-</span><span class="si">{</span><span class="n">sub_id</span><span class="si">}</span><span class="s2">_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz"</span>
@@ -2840,9 +2840,9 @@ tutorial_data_multiple = Path("/tmp/tutorial_bids_multiple")
 src_id = "01"
 src_file = tutorial_data / f"sub-{src_id}" / "ses-01" / "anat" / f"sub-{src_id}_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz"
 
-for i in range(0, 41):
+for i in range(0, 40):
 
-    sub_id = f"{i:02d}"
+    sub_id = f"{i+1:02d}"
     
     target_dir = tutorial_data_multiple / f"sub-{sub_id}" / "ses-01" / "anat"
     target_file = target_dir / f"sub-{sub_id}_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz"
@@ -2861,7 +2861,7 @@ for i in range(0, 41):
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [58]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-9">
@@ -2888,11 +2888,10 @@ for i in range(0, 41):
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>sub-00	sub-05	sub-10	sub-15	sub-20	sub-25	sub-30	sub-35	sub-40
-sub-01	sub-06	sub-11	sub-16	sub-21	sub-26	sub-31	sub-36
-sub-02	sub-07	sub-12	sub-17	sub-22	sub-27	sub-32	sub-37
-sub-03	sub-08	sub-13	sub-18	sub-23	sub-28	sub-33	sub-38
-sub-04	sub-09	sub-14	sub-19	sub-24	sub-29	sub-34	sub-39
+<pre>sub-01	sub-05	sub-09	sub-13	sub-17	sub-21	sub-25	sub-29	sub-33	sub-37
+sub-02	sub-06	sub-10	sub-14	sub-18	sub-22	sub-26	sub-30	sub-34	sub-38
+sub-03	sub-07	sub-11	sub-15	sub-19	sub-23	sub-27	sub-31	sub-35	sub-39
+sub-04	sub-08	sub-12	sub-16	sub-20	sub-24	sub-28	sub-32	sub-36	sub-40
 </pre>
 </div>
 </div>
@@ -2910,13 +2909,13 @@ sub-04	sub-09	sub-14	sub-19	sub-24	sub-29	sub-34	sub-39
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a373a0e2">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a373a0e2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [51]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-10">
@@ -2946,56 +2945,6 @@ sub-04	sub-09	sub-14	sub-19	sub-24	sub-29	sub-34	sub-39
     --batch-size 10 \
     --nprocs -1 \
     --verbose</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>2026-03-20 09:50:25 - lacuna.cli.main - INFO - Lacuna CLI starting
-2026-03-20 09:50:25 - lacuna.cli.main - INFO - Input: /tmp/tutorial_bids
-2026-03-20 09:50:25 - lacuna.cli.main - INFO - Output directory: /tmp/outputs_fnm
-2026-03-20 09:50:25 - lacuna.cli.main - INFO - Analysis: fnm
-2026-03-20 09:50:25 - lacuna.cli.main - INFO - Registering functional connectome: processed
-2026-03-20 09:50:25 - lacuna.cli.main - INFO - Running analysis: FunctionalNetworkMapping
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - 
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - ============================================================
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - DISCOVERY SUMMARY
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - ============================================================
-2026-03-20 09:50:29 - lacuna.cli.main - INFO -   Total mask images: 39
-2026-03-20 09:50:29 - lacuna.cli.main - INFO -   Unique subjects:   39
-2026-03-20 09:50:29 - lacuna.cli.main - INFO -   Unique sessions:   1
-2026-03-20 09:50:29 - lacuna.cli.main - INFO -   Labels:            acuteinfarct
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - ============================================================
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - 
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - Batch processing: 39 masks in batches of 39
-2026-03-20 09:50:29 - lacuna.cli.main - INFO - 
-─── FunctionalNetworkMapping ───
-FunctionalNetworkMapping:   0%|                        | 0/39 [00:00&lt;?, ?mask/s]2026-03-20 09:50:29 - lacuna.analysis - INFO - Vectorized batch processing: 39 masks
-2026-03-20 09:50:29 - lacuna.analysis - INFO - Loaded connectome metadata
-2026-03-20 09:50:29 - lacuna.analysis - INFO -   connectome_batches: 1
-2026-03-20 09:50:29 - lacuna.analysis - INFO -   mask_shape: (91, 109, 91)
-2026-03-20 09:50:29 - lacuna.analysis - INFO -   n_masks: 39
-2026-03-20 09:50:31 - lacuna.analysis - INFO - Processing connectome batches...
-2026-03-20 09:51:39 - lacuna.analysis - INFO - Batch completed in 68.55s [1/1]
-2026-03-20 09:51:39 - lacuna.analysis - INFO - Batch processing complete
-2026-03-20 09:51:39 - lacuna.analysis - INFO -   n_batches: 1
-2026-03-20 09:51:39 - lacuna.analysis - INFO -   total_time: 68.55s
-2026-03-20 09:51:39 - lacuna.analysis - INFO -   avg_time_per_batch: 68.55s
-2026-03-20 09:51:39 - lacuna.analysis - INFO - Aggregating results...
-2026-03-20 09:51:39 - lacuna.analysis - INFO - Aggregating 39 subjects in parallel (n_jobs=-1)
-2026-03-20 09:52:45 - lacuna.analysis - INFO - Batch processing complete
-2026-03-20 09:52:45 - lacuna.analysis - INFO -   n_masks_processed: 39
-FunctionalNetworkMapping: 100%|███████████████| 39/39 [02:16&lt;00:00,  3.49s/mask]
-2026-03-20 09:54:50 - lacuna.cli.main - INFO - Successfully processed 39 subject(s)
-2026-03-20 09:54:50 - lacuna.cli.main - INFO - Results saved to: /tmp/outputs_fnm
-2026-03-20 09:54:50 - lacuna.cli.main - INFO - Lacuna CLI completed successfully
-</pre>
 </div>
 </div>
 </div>
