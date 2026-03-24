@@ -57,7 +57,7 @@ SNM is the most resource-intensive analysis. The script copies the tractogram to
 
 ## Submit scripts
 
-Each submit script counts the subjects in the BIDS directory, calculates how many array tasks are needed, and submits the corresponding batch script:
+Each submit script counts the subjects, calculates how many array tasks are needed, and submits the corresponding batch script. You can pass specific subject names as arguments to process a subset; if none are given, all subjects in `BIDS_DIR` are submitted:
 
 ```bash title="submit_fnm_jobs.sh"
 --8<-- "docs/how-to/hpc_scripts/submit_fnm_jobs.sh"
@@ -67,7 +67,12 @@ Usage:
 
 ```bash
 # Edit BIDS_DIR in the submit script, then:
+
+# Submit all subjects
 bash submit_fnm_jobs.sh
+
+# Submit specific subjects only
+bash submit_fnm_jobs.sh sub-001 sub-002 sub-003
 ```
 
 The SNM submit script (`submit_snm_jobs.sh`) follows the same pattern.

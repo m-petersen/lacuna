@@ -30,7 +30,13 @@ mkdir -p "$OUTPUT_DIR" "$LACUNA_CACHE_DIR"
 cp "$CONNECTOMES_DIR"/dTOR_full_tractogram.tck "$LACUNA_CACHE_DIR"/
 
 # --- 3. Subject Slicing ---
-mapfile -t ALL_SUBJECTS < <(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d -printf "%f\n" | sed 's/sub-//' | sort)
+# Use SUBJECT_LIST if provided (comma-separated), otherwise discover from BIDS_DIR
+if [ -n "${SUBJECT_LIST:-}" ]; then
+    IFS=',' read -ra ALL_SUBJECTS <<< "$SUBJECT_LIST"
+    ALL_SUBJECTS=( $(printf '%s\n' "${ALL_SUBJECTS[@]}" | sed 's/^sub-//' | sort) )
+else
+    mapfile -t ALL_SUBJECTS < <(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d -printf "%f\n" | sed 's/sub-//' | sort)
+fi
 
 START_INDEX=$(( SLURM_ARRAY_TASK_ID * BATCH_SIZE ))
 SUBJECT_SUBSET=( "${ALL_SUBJECTS[@]:$START_INDEX:$BATCH_SIZE}" )

@@ -4,8 +4,17 @@
 BATCH_SIZE=200
 BIDS_DIR="/path/to/bids"
 
-# --- Count subjects ---
-num_subjects=$(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d | wc -l)
+# --- Determine subjects ---
+# Pass subject names as arguments to process a subset, e.g.:
+#   bash submit_fnm_jobs.sh sub-001 sub-002 sub-003
+# If no arguments are given, all subjects in BIDS_DIR are used.
+if [ $# -gt 0 ]; then
+    num_subjects=$#
+    SUBJECT_LIST=$(IFS=,; echo "$*")
+else
+    num_subjects=$(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d | wc -l)
+    SUBJECT_LIST=""
+fi
 
 if [ "$num_subjects" -eq 0 ]; then
     echo "Error: No subjects found in $BIDS_DIR"
@@ -21,4 +30,4 @@ echo "Found $num_subjects subjects."
 echo "Batch size: $BATCH_SIZE"
 echo "Submitting $num_batches jobs (array indices 0-$array_limit)."
 
-sbatch --array=0-$array_limit --export=BATCH_SIZE=$BATCH_SIZE,ALL lacuna_fnm.batch
+sbatch --array=0-$array_limit --export=BATCH_SIZE=$BATCH_SIZE,SUBJECT_LIST="$SUBJECT_LIST",ALL lacuna_fnm.batch
