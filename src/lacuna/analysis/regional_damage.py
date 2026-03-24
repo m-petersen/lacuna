@@ -21,7 +21,16 @@ Examples
 >>> print(result.results["RegionalDamage"])
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from lacuna.analysis.parcel_aggregation import ParcelAggregation
+from lacuna.core.keys import build_result_key
+
+if TYPE_CHECKING:
+    from lacuna.core.data_types import DataContainer
+    from lacuna.core.subject_data import SubjectData
 
 
 class RegionalDamage(ParcelAggregation):
@@ -155,6 +164,71 @@ class RegionalDamage(ParcelAggregation):
                 f"Found values: {unique_vals}\n"
                 f"Use thresholding or binarization to convert continuous maps."
             )
+
+    def _run_analysis(self, mask_data: SubjectData) -> dict[str, DataContainer]:
+        """
+        Compute percentage and binary regional damage for all atlases.
+
+        Extends parent to add binary damage results (1 if region has any
+        overlap with the mask, 0 otherwise) alongside percentage results.
+
+        Parameters
+        ----------
+        mask_data : SubjectData
+            Validated lesion data.
+
+        Returns
+        -------
+        dict[str, DataContainer]
+            Dictionary with both percentage and binary ParcelData objects.
+        """
+        from lacuna.core.data_types import ParcelData
+
+        # Get percentage results from parent (keyed as InputMask)
+        parent_results = super()._run_analysis(mask_data)
+
+        # Re-key percentage results and derive binary results
+        results = {}
+        for key, result in parent_results.items():
+            if not isinstance(result, ParcelData):
+                # Keep non-ParcelData results (e.g., intermediates) as-is
+                results[key] = result
+                continue
+
+            # Re-key percentage result: atlas-{atlas}_source-RegionalDamage_desc-damagepct
+            pct_key = build_result_key(
+                atlas=result.name,
+                source="RegionalDamage",
+                desc="damagepct",
+            )
+            results[pct_key] = result
+
+            # Derive binary result: >0 → 1, else → 0
+            binary_data = {
+                region: 1.0 if value > 0 else 0.0
+                for region, value in result.data.items()
+            }
+
+            binary_parcel = ParcelData(
+                name=result.name,
+                data=binary_data,
+                parcel_names=result.parcel_names,
+                aggregation_method="binary",
+                metadata={
+                    **result.metadata,
+                    "derived_from": "percent",
+                    "description": "Binary damage indicator (1 = any overlap, 0 = none)",
+                },
+            )
+
+            binary_key = build_result_key(
+                atlas=result.name,
+                source="RegionalDamage",
+                desc="damagebin",
+            )
+            results[binary_key] = binary_parcel
+
+        return results
 
     def _get_parameters(self) -> dict:
         """Get analysis parameters for provenance and display.

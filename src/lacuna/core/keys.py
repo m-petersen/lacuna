@@ -210,6 +210,7 @@ EXPORT_SOURCE_ABBREVIATIONS = {
     "StructuralNetworkMapping": "snm",
     "RegionalDamage": "regionaldamage",
     "ParcelAggregation": "parcelaggregation",
+    "RegionalDamage": "regionaldamage",
 }
 
 # Mapping of desc values to their source analysis - for constructing combined desc
@@ -217,6 +218,11 @@ DESC_TO_SOURCE_MAPPING = {
     "inputmask": "inputmask",
     "maskimg": "inputmask",  # Legacy
     "mask_img": "inputmask",  # Legacy
+    # RegionalDamage outputs
+    "damagebin": "regionaldamage",
+    "damage_bin": "regionaldamage",
+    "damagepct": "regionaldamage",
+    "damage_pct": "regionaldamage",
     # FNM outputs - correlation and derived maps
     "rmap": "fnm",
     "correlationmap": "fnm",  # Legacy alias
@@ -236,8 +242,10 @@ DESC_TO_SOURCE_MAPPING = {
     "pfdrthresholdmap": "fnm",
     "pfdr_threshold_map": "fnm",
     # SNM outputs - maps
-    "disconnectionmap": "snm",
-    "disconnection_map": "snm",
+    "disconnectionpct": "snm",
+    "disconnection_pct": "snm",
+    "disconnectiontdi": "snm",
+    "disconnection_tdi": "snm",
     "streamlinecount": "snm",
     "streamline_count": "snm",
     # SNM outputs - connectivity matrices
@@ -401,8 +409,8 @@ def format_bids_export_filename(
     >>> format_bids_export_filename("rmap", "map")
     'desc-fnm_rmap'
 
-    >>> format_bids_export_filename("disconnection_map", "map")
-    'desc-snm_disconnectionmap'
+    >>> format_bids_export_filename("disconnection_pct", "map")
+    'desc-snm_disconnectionpct'
     """
     # Convert internal suffix to BIDS suffix (may be empty for VoxelMaps)
     bids_suffix = BIDS_SUFFIX_MAPPING.get(suffix, suffix)
@@ -466,7 +474,7 @@ def format_bids_export_filename(
 
         if "atlas" not in parsed and export_source in ("fnm", "snm"):
             # No parcellation - this is a VoxelMap output from FNM/SNM
-            # Use format: desc-fnm_rmap or desc-snm_disconnectionmap
+            # Use format: desc-fnm_rmap or desc-snm_disconnectionpct
             parts.append(f"desc-{export_source}")
             parts.append(f"{bids_desc}")
         else:

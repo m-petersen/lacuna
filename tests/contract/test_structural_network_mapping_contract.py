@@ -144,7 +144,7 @@ def test_structural_network_mapping_result_structure(temp_connectome):
 
     # Document expected result structure
     expected_keys = {
-        "disconnection_map",  # NIfTI image showing voxel-level disconnection
+        "disconnection_pct",  # NIfTI image showing voxel-level disconnection
         "mean_disconnection",  # Summary statistic
         "lesion_tck_count",  # Number of streamlines passing through lesion
     }
@@ -387,7 +387,7 @@ def test_results_include_connectivity_matrices_when_atlas_provided():
 
     # Expected result structure when atlas is provided:
     expected_keys_with_atlas = {
-        "disconnection_map",  # Always present
+        "disconnection_pct",  # Always present
         "mean_disconnection",  # Always present
         "lesion_streamline_count",  # Always present
         "metadata",  # Always present
@@ -399,7 +399,7 @@ def test_results_include_connectivity_matrices_when_atlas_provided():
 
     # When atlas is None, connectivity matrices should not be in results
     expected_keys_without_atlas = {
-        "disconnection_map",
+        "disconnection_pct",
         "mean_disconnection",
         "lesion_streamline_count",
         "metadata",

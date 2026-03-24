@@ -185,12 +185,15 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
-    # Format: atlas-{atlas}_source-InputMask
+    # Format: atlas-{atlas}_source-RegionalDamage_desc-damagepct / damagebin
     atlas_results = result.results["RegionalDamage"]
-    assert build_result_key("test_atlas", "SubjectData") in atlas_results
+    pct_key = build_result_key("test_atlas", "RegionalDamage", "damagepct")
+    bin_key = build_result_key("test_atlas", "RegionalDamage", "damagebin")
+    assert pct_key in atlas_results
+    assert bin_key in atlas_results
 
-    # Get the ParcelData for this atlas
-    roi_result = atlas_results[build_result_key("test_atlas", "SubjectData")]
+    # Get the percentage ParcelData for this atlas
+    roi_result = atlas_results[pct_key]
     results_dict = roi_result.get_data()
 
     # Should contain ROI-level damage percentages
@@ -201,6 +204,11 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
         assert isinstance(key, str)
         assert isinstance(value, (int, float))
         assert 0 <= value <= 100  # Percentage
+
+    # Binary results should be 0 or 1
+    bin_result = atlas_results[bin_key]
+    for key, value in bin_result.get_data().items():
+        assert value in (0.0, 1.0)
 
 
 def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path):
@@ -239,14 +247,16 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
-    # Format: atlas-{atlas}_source-InputMask
+    # Format: atlas-{atlas}_source-RegionalDamage_desc-damagepct / damagebin
     atlas_results = result.results["RegionalDamage"]
-    assert build_result_key("atlas_3d", "SubjectData") in atlas_results
-    assert build_result_key("atlas_4d", "SubjectData") in atlas_results
+    assert build_result_key("atlas_3d", "RegionalDamage", "damagepct") in atlas_results
+    assert build_result_key("atlas_4d", "RegionalDamage", "damagepct") in atlas_results
+    assert build_result_key("atlas_3d", "RegionalDamage", "damagebin") in atlas_results
+    assert build_result_key("atlas_4d", "RegionalDamage", "damagebin") in atlas_results
 
-    # Each atlas should have its own ParcelData
-    results_3d = atlas_results[build_result_key("atlas_3d", "SubjectData")].get_data()
-    results_4d = atlas_results[build_result_key("atlas_4d", "SubjectData")].get_data()
+    # Each atlas should have its own ParcelData for both pct and binary
+    results_3d = atlas_results[build_result_key("atlas_3d", "RegionalDamage", "damagepct")].get_data()
+    results_4d = atlas_results[build_result_key("atlas_4d", "RegionalDamage", "damagepct")].get_data()
     assert len(results_3d) > 0
     assert len(results_4d) > 0
 

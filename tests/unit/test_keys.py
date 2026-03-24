@@ -260,8 +260,8 @@ class TestFormatBidsExportFilename:
 
     def test_simple_snm_key_uses_desc_prefix(self):
         """SNM simple keys use desc-snm_maptype format."""
-        result = format_bids_export_filename("disconnectionmap", "map")
-        assert result == "desc-snm_disconnectionmap"
+        result = format_bids_export_filename("disconnectionpct", "map")
+        assert result == "desc-snm_disconnectionpct"
 
     def test_simple_key_becomes_suffix_for_unknown(self):
         """Unknown simple keys become the suffix directly (no desc- prefix)."""

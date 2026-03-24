@@ -411,11 +411,11 @@ def test_atlas_aggregation_cross_analysis_source_syntax(synthetic_mask_img, loca
 
     # Add mock result from previous analysis
     network_map = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_mask_img.affine)
-    mask_data._results["StructuralNetworkMapping"] = {"disconnection_map": network_map}
+    mask_data._results["StructuralNetworkMapping"] = {"disconnection_pct": network_map}
 
     # Should accept "Analysis.key" syntax
     analysis = ParcelAggregation(
-        source="StructuralNetworkMapping.disconnection_map",
+        source="StructuralNetworkMapping.disconnection_pct",
         aggregation="mean",
         parcel_names=[local_test_atlas],
     )
@@ -441,12 +441,12 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     )
 
     # Add mock disconnection map
-    disconnection_map = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_mask_img.affine)
-    mask_data._results["StructuralNetworkMapping"] = {"disconnection_map": disconnection_map}
+    disconnection_pct = nib.Nifti1Image(np.random.randn(64, 64, 64), synthetic_mask_img.affine)
+    mask_data._results["StructuralNetworkMapping"] = {"disconnection_pct": disconnection_pct}
 
     # Run aggregation on disconnection map
     analysis = ParcelAggregation(
-        source="StructuralNetworkMapping.disconnection_map",
+        source="StructuralNetworkMapping.disconnection_pct",
         aggregation="mean",
         parcel_names=[local_test_atlas],
     )
@@ -455,13 +455,13 @@ def test_atlas_aggregation_result_keys_include_source_context(synthetic_mask_img
     atlas_results = result.results["ParcelAggregation"]
 
     # Result key should include source context in BIDS format
-    # Should be "atlas-Schaefer100_desc-disconnection_map" (snake_case)
+    # Should be "atlas-Schaefer100_desc-disconnection_pct" (snake_case)
     result_keys = list(atlas_results.keys())
     assert len(result_keys) > 0
 
     # At least one key should reference the source (snake_case format)
     has_source_context = any(
-        "disconnection_map" in key or "disconnection" in key.lower() for key in result_keys
+        "disconnection_pct" in key or "disconnection" in key.lower() for key in result_keys
     )
     assert has_source_context, f"Expected source context in keys, got: {result_keys}"
 

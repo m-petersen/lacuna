@@ -142,7 +142,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     ...     n_jobs=8,
     ... )
     >>> result = analysis.run(lesion)
-    >>> disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
+    >>> disconn_map = result.results["StructuralNetworkMapping"]["disconnection_pct"]
     >>> disconn_map.orthoview()
 
     **Batch processing:**
@@ -157,7 +157,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     >>>
     >>> # Save results
     >>> for result in results:
-    ...     disconn_map = result.results["StructuralNetworkMapping"]["disconnection_map"]
+    ...     disconn_map = result.results["StructuralNetworkMapping"]["disconnection_pct"]
     ...     nib.save(disconn_map, f"output/{subject_id}_disconn.nii.gz")
 
     Notes
@@ -666,10 +666,10 @@ class StructuralNetworkMapping(BaseAnalysis):
         -------
         dict[str, AnalysisResult]
             Dictionary mapping result names to results:
-            - 'disconnection_map': VoxelMapResult for disconnection map
-            - 'summary_statistics': MiscResult for summary statistics
-            - 'mask_tractogram': TractogramResult (if keep_intermediate=True)
-            - 'mask_tdi': VoxelMapResult (if keep_intermediate=True)
+            - 'disconnection_pct': VoxelMap for disconnection percentage map
+            - 'disconnection_tdi': VoxelMap for raw streamline count (lesion TDI)
+            - 'summary_statistics': ScalarMetric for summary statistics
+            - 'mask_tractogram': Tractogram (if keep_intermediate=True)
             - Connectivity results (if atlas provided): see _compute_connectivity_matrices
 
         Notes
@@ -760,7 +760,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # VoxelMapResult for disconnection map
             disconnection_result = VoxelMap(
-                name="disconnection_map",
+                name="disconnection_pct",
                 data=final_disconn_map,
                 space=self.tractogram_space,
                 resolution=float(self.output_resolution),
@@ -772,7 +772,24 @@ class StructuralNetworkMapping(BaseAnalysis):
                     "keep_intermediate": self.keep_intermediate,
                 },
             )
-            results["disconnection_map"] = disconnection_result
+            results["disconnection_pct"] = disconnection_result
+
+            # VoxelMap for raw streamline count (lesion TDI)
+            mask_tdi_data = nib.load(mask_tdi_path).get_fdata()
+            final_mask_tdi = nib.Nifti1Image(
+                mask_tdi_data, disconn_map.affine, disconn_map.header
+            )
+            disconnection_tdi_result = VoxelMap(
+                name="disconnection_tdi",
+                data=final_mask_tdi,
+                space=self.tractogram_space,
+                resolution=float(self.output_resolution),
+                metadata={
+                    "description": "Track density image for mask-filtered tractogram (raw streamline counts)",
+                    "tractogram": str(self.tractogram_path),
+                },
+            )
+            results["disconnection_tdi"] = disconnection_tdi_result
 
             # MiscResult for summary statistics
             summary_result = ScalarMetric(
@@ -804,21 +821,6 @@ class StructuralNetworkMapping(BaseAnalysis):
                     },
                 )
                 results["mask_tractogram"] = mask_tractogram_result
-
-                # Add mask TDI as VoxelMap (loaded into memory)
-                mask_tdi_path = temp_dir_path / "mask_tdi.nii.gz"
-                if mask_tdi_path.exists():
-                    mask_tdi_img = nib.load(mask_tdi_path)
-                    mask_tdi_result = VoxelMap(
-                        name="mask_tdi",
-                        data=mask_tdi_img,
-                        space=self.tractogram_space,
-                        resolution=self.output_resolution,
-                        metadata={
-                            "description": "Track density image for mask-filtered tractogram",
-                        },
-                    )
-                    results["mask_tdi"] = mask_tdi_result
 
                 # Add warped atlases if transformed
                 for atlas_info in self._atlases:

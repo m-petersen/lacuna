@@ -85,8 +85,8 @@ class TestStructuralNetworkMappingIntegration:
 
         # Verify results
         assert isinstance(result, SubjectData)
-        assert result.disconnection_map is not None
-        assert result.disconnection_map.shape == lesion.mask_img.shape
+        assert result.disconnection_pct is not None
+        assert result.disconnection_pct.shape == lesion.mask_img.shape
 
         # Should NOT have connectivity matrices
         assert "lesion_connectivity_matrix" not in result.metadata
@@ -110,7 +110,7 @@ class TestStructuralNetworkMappingIntegration:
         result = analysis.run(lesion)
 
         # Verify voxel-wise results
-        assert result.disconnection_map is not None
+        assert result.disconnection_pct is not None
 
         # Verify connectivity matrix results
         assert "lesion_connectivity_matrix" in result.metadata

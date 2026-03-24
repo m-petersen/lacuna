@@ -193,7 +193,7 @@ class TestAggregateParcelstats:
         sub_dir.mkdir(parents=True)
 
         # Create two different parcelstats types
-        for output_type in ["fnm_desc-rmap", "snm_desc-disconnectionmap"]:
+        for output_type in ["fnm_desc-rmap", "snm_desc-disconnectionpct"]:
             tsv_path = sub_dir / f"sub-001_ses-01_label-lesion_source-{output_type}_parcelstats.tsv"
             df = pd.DataFrame({"region": ["A", "B"], "value": [0.1, 0.2]})
             df.to_csv(tsv_path, sep="\t", index=False)
@@ -244,7 +244,7 @@ class TestAggregateParcelstatsIntegration:
             # SNM parcelstats
             snm_tsv = (
                 sub_dir
-                / f"sub-{sub_id}_ses-{ses_id}_label-{label}_atlas-schaefer2018_desc-100parcels7networks_source-snm_desc-disconnectionmap_parcelstats.tsv"
+                / f"sub-{sub_id}_ses-{ses_id}_label-{label}_atlas-schaefer2018_desc-100parcels7networks_source-snm_desc-disconnectionpct_parcelstats.tsv"
             )
             df = pd.DataFrame(
                 {
