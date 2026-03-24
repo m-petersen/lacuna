@@ -56,7 +56,7 @@ pip install git+https://github.com/m-petersen/lacuna
 # Create a tutorial dataset with synthetic lesion masks
 lacuna tutorial my_dataset
 
-# Fetch the HCP1065 structural tractogram
+# Fetch the HCP1065 tractogram
 lacuna fetch hcp1065 --output-dir connectomes
 
 # Run structural network mapping
