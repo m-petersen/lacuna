@@ -5,11 +5,11 @@
 <h1 align="center">Lacuna</h1>
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-m--petersen.github.io%2Flacuna-blue)](https://m-petersen.github.io/lacuna)
 [![status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/m-petersen/lacuna)
 
-A scientific Python package for advanced brain lesion analysis. Lacuna bridges the gap between individual lesion masks and normative brain data, providing a reproducible, BIDS-compatible workflow for lesion network mapping and regional damage quantification.
+A scientific Python package for advanced brain lesion analysis. Lacuna bridges the gap between individual lesion masks and normative brain data, providing a reproducible workflow for lesion network mapping and regional damage quantification.
 
 > **Warning**
 > Lacuna is under active development and not yet stable. APIs may change without notice. Use in research at your own discretion.
