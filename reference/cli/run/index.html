@@ -1328,10 +1328,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#bids-dataset-structure" class="md-nav__link">
+  <a href="#expected-directory-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BIDS dataset structure
+        Expected directory structure
       
     </span>
   </a>
@@ -1870,10 +1870,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#bids-dataset-structure" class="md-nav__link">
+  <a href="#expected-directory-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BIDS dataset structure
+        Expected directory structure
       
     </span>
   </a>
@@ -1928,7 +1928,7 @@
 
 
 <h1 id="run-command">Run command<a class="headerlink" href="#run-command" title="Permanent link">&para;</a></h1>
-<p>The <code>lacuna run</code> command runs lesion network mapping analyses on BIDS datasets.</p>
+<p>The <code>lacuna run</code> command runs lesion network mapping analyses on derivative lesion mask datasets organized with BIDS-style naming conventions.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna run &lt;analysis&gt; &lt;bids_dir&gt; &lt;output_dir&gt; [options]
 </span></code></pre></div>
@@ -1972,7 +1972,7 @@
 <tbody>
 <tr>
 <td><code>bids_dir</code></td>
-<td>Root folder of BIDS dataset (sub-XXXXX folders at top level), OR path to a single NIfTI mask file for quick analysis</td>
+<td>Root folder of dataset using BIDS-style naming (<code>sub-XXXXX</code> folders at top level), OR path to a single NIfTI mask file for quick analysis</td>
 </tr>
 <tr>
 <td><code>output_dir</code></td>
@@ -2078,14 +2078,18 @@
 <tbody>
 <tr>
 <td><code>--parcel-atlases ATLAS [...]</code></td>
-<td><strong>(required)</strong> Atlas names to use. Use <code>lacuna info atlases</code> to list available atlases.</td>
+<td>Atlas names to use. Use <code>lacuna info atlases</code> to list available atlases.</td>
 </tr>
 <tr>
-<td><code>--custom-parcellation NIFTI LABELS</code></td>
-<td>Custom parcellation: NIfTI file path and labels file path. Can be specified multiple times.</td>
+<td><code>--custom-parcellation NIFTI LABELS SPACE</code></td>
+<td>Custom parcellation: NIfTI file path, labels file path, and coordinate space (e.g., <code>MNI152NLin6Asym</code>). Can be specified multiple times.</td>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>At least one of <code>--parcel-atlases</code> or <code>--custom-parcellation</code> must be provided.</p>
+</div>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Basic regional damage with one atlas</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>Schaefer2018_100Parcels7Networks
@@ -2096,8 +2100,12 @@
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># With custom parcellation</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span>--parcel-atlases<span class="w"> </span>Schaefer2018_100Parcels7Networks<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.tsv
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.txt<span class="w"> </span>MNI152NLin6Asym
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Mix bundled and custom atlases</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span>--parcel-atlases<span class="w"> </span>Schaefer2018_100Parcels7Networks<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.txt<span class="w"> </span>MNI152NLin6Asym
 </span></code></pre></div>
 <hr />
 <h2 id="lacuna-run-fnm-functional-network-mapping"><code>lacuna run fnm</code> — Functional Network Mapping<a class="headerlink" href="#lacuna-run-fnm-functional-network-mapping" title="Permanent link">&para;</a></h2>
@@ -2158,6 +2166,10 @@
 <td><code>--parcel-atlases ATLAS [...]</code></td>
 <td>Aggregate FNM outputs to these atlases. Use <code>lacuna info atlases</code> to list.</td>
 </tr>
+<tr>
+<td><code>--custom-parcellation NIFTI LABELS SPACE</code></td>
+<td>Custom parcellation for aggregation: NIfTI file path, labels file path, and coordinate space. Can be specified multiple times.</td>
+</tr>
 </tbody>
 </table>
 <h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
@@ -2202,6 +2214,10 @@
 <td>Atlas for connectivity matrices. Use <code>lacuna info atlases</code> to list.</td>
 </tr>
 <tr>
+<td><code>--custom-parcellation NIFTI LABELS SPACE</code></td>
+<td>Custom parcellation: NIfTI file path, labels file path, and coordinate space. Can be specified multiple times.</td>
+</tr>
+<tr>
 <td><code>--compute-roi-disconnection</code></td>
 <td>Compute per-ROI disconnection values</td>
 </tr>
@@ -2236,7 +2252,7 @@
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span>--nprocs<span class="w"> </span><span class="m">4</span>
 </span></code></pre></div>
 <h2 id="input-requirements">Input Requirements<a class="headerlink" href="#input-requirements" title="Permanent link">&para;</a></h2>
-<h3 id="bids-dataset-structure">BIDS dataset structure<a class="headerlink" href="#bids-dataset-structure" title="Permanent link">&para;</a></h3>
+<h3 id="expected-directory-structure">Expected directory structure<a class="headerlink" href="#expected-directory-structure" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>my_study/
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── dataset_description.json
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>├── sub-001/
@@ -2259,7 +2275,7 @@
 <tbody>
 <tr>
 <td><code>dataset_description.json</code></td>
-<td>BIDS dataset metadata</td>
+<td>Dataset metadata (BIDS-style)</td>
 </tr>
 <tr>
 <td><code>*_mask.nii.gz</code></td>
