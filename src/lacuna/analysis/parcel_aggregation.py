@@ -264,12 +264,18 @@ class ParcelAggregation(BaseAnalysis):
         # Will be populated in _validate_inputs (thread-safe)
         self.atlases = []
         self._atlases_lock = threading.Lock()
+        # Cache for loaded+transformed atlas images, keyed by
+        # (atlas_path, input_space, input_resolution) to avoid redundant
+        # disk I/O and spatial transformations across subjects
+        self._atlas_cache: dict[tuple, "nib.Nifti1Image"] = {}
 
     def __getstate__(self):
         """Exclude non-picklable lock from serialization for multiprocessing."""
         state = self.__dict__.copy()
         # Remove the lock - it can't be pickled
         state.pop("_atlases_lock", None)
+        # Don't serialize the atlas cache - rebuild in new process
+        state.pop("_atlas_cache", None)
         return state
 
     def __setstate__(self, state):
@@ -277,6 +283,8 @@ class ParcelAggregation(BaseAnalysis):
         self.__dict__.update(state)
         # Recreate the lock in the new process
         self._atlases_lock = threading.Lock()
+        # Recreate empty atlas cache in the new process
+        self._atlas_cache = {}
 
     def _normalize_sources(self, source: str | list[str] | dict[str, str | list[str]]) -> list[str]:
         """
@@ -942,19 +950,26 @@ class ParcelAggregation(BaseAnalysis):
                 atlas_space = atlas_info.get("space")
                 atlas_resolution = atlas_info.get("resolution")
 
-                # Load atlas image
-                atlas_img = nib.load(atlas_info["atlas_path"])
-
-                # Transform atlas to match input data space if needed
-                atlas_img = self._ensure_atlas_matches_input_space(
-                    atlas_img=atlas_img,
-                    atlas_space=atlas_space,
-                    atlas_resolution=atlas_resolution,
-                    input_space=input_space,
-                    input_resolution=input_resolution,
-                    input_affine=source_img.affine,
-                    parcellation_name=parcellation_name,
+                # Load and transform atlas (cached across subjects)
+                cache_key = (
+                    atlas_info["atlas_path"],
+                    input_space,
+                    input_resolution,
                 )
+                if cache_key in self._atlas_cache:
+                    atlas_img = self._atlas_cache[cache_key]
+                else:
+                    atlas_img = nib.load(atlas_info["atlas_path"])
+                    atlas_img = self._ensure_atlas_matches_input_space(
+                        atlas_img=atlas_img,
+                        atlas_space=atlas_space,
+                        atlas_resolution=atlas_resolution,
+                        input_space=input_space,
+                        input_resolution=input_resolution,
+                        input_affine=source_img.affine,
+                        parcellation_name=parcellation_name,
+                    )
+                    self._atlas_cache[cache_key] = atlas_img
 
                 # Store warped atlas as intermediate if requested
                 if self.keep_intermediate:
