@@ -255,8 +255,12 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     assert build_result_key("atlas_4d", "RegionalDamage", "damagebin") in atlas_results
 
     # Each atlas should have its own ParcelData for both pct and binary
-    results_3d = atlas_results[build_result_key("atlas_3d", "RegionalDamage", "damagepct")].get_data()
-    results_4d = atlas_results[build_result_key("atlas_4d", "RegionalDamage", "damagepct")].get_data()
+    results_3d = atlas_results[
+        build_result_key("atlas_3d", "RegionalDamage", "damagepct")
+    ].get_data()
+    results_4d = atlas_results[
+        build_result_key("atlas_4d", "RegionalDamage", "damagepct")
+    ].get_data()
     assert len(results_3d) > 0
     assert len(results_4d) > 0
 

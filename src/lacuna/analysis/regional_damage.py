@@ -205,8 +205,7 @@ class RegionalDamage(ParcelAggregation):
 
             # Derive binary result: >0 → 1, else → 0
             binary_data = {
-                region: 1.0 if value > 0 else 0.0
-                for region, value in result.data.items()
+                region: 1.0 if value > 0 else 0.0 for region, value in result.data.items()
             }
 
             binary_parcel = ParcelData(

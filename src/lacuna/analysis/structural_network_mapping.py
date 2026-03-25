@@ -776,9 +776,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
             # VoxelMap for raw streamline count (lesion TDI)
             mask_tdi_data = nib.load(mask_tdi_path).get_fdata()
-            final_mask_tdi = nib.Nifti1Image(
-                mask_tdi_data, disconn_map.affine, disconn_map.header
-            )
+            final_mask_tdi = nib.Nifti1Image(mask_tdi_data, disconn_map.affine, disconn_map.header)
             disconnection_tdi_result = VoxelMap(
                 name="disconnection_tdi",
                 data=final_mask_tdi,

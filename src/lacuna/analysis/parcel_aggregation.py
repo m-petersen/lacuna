@@ -267,7 +267,7 @@ class ParcelAggregation(BaseAnalysis):
         # Cache for loaded+transformed atlas images, keyed by
         # (atlas_path, input_space, input_resolution) to avoid redundant
         # disk I/O and spatial transformations across subjects
-        self._atlas_cache: dict[tuple, "nib.Nifti1Image"] = {}
+        self._atlas_cache: dict[tuple, nib.Nifti1Image] = {}
 
     def __getstate__(self):
         """Exclude non-picklable lock from serialization for multiprocessing."""
