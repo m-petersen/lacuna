@@ -59,6 +59,7 @@ plugins:
   - mkdocs-jupyter:
       execute: false
       include_source: true
+      include: ["*.ipynb"]
       remove_tag_config:
         remove_cell_tags:
           - remove_cell
