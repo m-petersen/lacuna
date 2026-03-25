@@ -2500,7 +2500,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
@@ -2530,8 +2530,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <pre>sub-01_ses-01_desc-provenance.json
 sub-01_ses-01_label-acuteinfarct_summarystatistics_stats.json
 sub-01_ses-01_space-MNI152NLin2009cAsym_label-acuteinfarct_mask.nii.gz
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionpct.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionpct.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectiontdi.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectiontdi.nii.gz
 </pre>
 </div>
 </div>
@@ -2555,7 +2557,7 @@ sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
@@ -2571,7 +2573,7 @@ sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nibabel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nilearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">plotting</span>
 
-<span class="n">disconnection_path</span> <span class="o">=</span> <span class="s1">'/tmp/outputs_snm_run1/sub-01/ses-01/anat/sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap.nii.gz'</span>
+<span class="n">disconnection_path</span> <span class="o">=</span> <span class="s1">'/tmp/outputs_snm_run1/sub-01/ses-01/anat/sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionpct.nii.gz'</span>
 <span class="n">disconnection_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">disconnection_path</span><span class="p">)</span>
 
 <span class="n">disconnection_map</span> <span class="o">=</span> <span class="n">plotting</span><span class="o">.</span><span class="n">plot_stat_map</span><span class="p">(</span><span class="n">disconnection_img</span><span class="p">,</span> 
@@ -2585,7 +2587,7 @@ sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap
 <div class="clipboard-copy-txt" id="cell-6">import nibabel as nib
 from nilearn import plotting
 
-disconnection_path = '/tmp/outputs_snm_run1/sub-01/ses-01/anat/sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionmap.nii.gz'
+disconnection_path = '/tmp/outputs_snm_run1/sub-01/ses-01/anat/sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-snm_disconnectionpct.nii.gz'
 disconnection_img = nib.load(disconnection_path)
 
 disconnection_map = plotting.plot_stat_map(disconnection_img, 
