@@ -28,9 +28,9 @@ export LACUNA_TMP_DIR=$LACUNA_CACHE_DIR
 mkdir -p "$OUTPUT_DIR" "$LACUNA_CACHE_DIR"
 
 # --- 3. Subject Slicing ---
-# Use SUBJECT_LIST if provided (comma-separated), otherwise discover from BIDS_DIR
+# Use SUBJECT_LIST if provided, otherwise discover from BIDS_DIR
 if [ -n "${SUBJECT_LIST:-}" ]; then
-    IFS=',' read -ra ALL_SUBJECTS <<< "$SUBJECT_LIST"
+    read -ra ALL_SUBJECTS <<< "$SUBJECT_LIST"
     ALL_SUBJECTS=( $(printf '%s\n' "${ALL_SUBJECTS[@]}" | sed 's/^sub-//' | sort) )
 else
     mapfile -t ALL_SUBJECTS < <(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d -printf "%f\n" | sed 's/sub-//' | sort)
