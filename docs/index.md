@@ -11,8 +11,8 @@ hide:
 A Python package for advanced brain lesion analysis.
 
 Lacuna bridges the gap between individual lesion masks and normative brain data.
-It provides a reproducible, BIDS-compatible workflow for lesion network mapping
-and regional damage quantification.
+It provides a reproducible workflow for lesion network mapping
+and regional damage quantification, using BIDS-style naming conventions for input and output organization.
 
 </div>
 <img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;">

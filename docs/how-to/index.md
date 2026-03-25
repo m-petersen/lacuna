@@ -28,4 +28,10 @@ Practical guides for specific tasks when working with Lacuna.
 
     Set up SLURM job arrays to process large datasets on a cluster.
 
+-   [**Custom atlases**](custom-atlases.ipynb)
+
+    ---
+
+    Use your own parcellation atlases with Regional Damage, SNM, or FNM.
+
 </div>

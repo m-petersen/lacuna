@@ -35,7 +35,7 @@ Technical reference documentation for Lacuna.
 
 ### I/O & Processing
 
-- `lacuna.io` — BIDS dataset loading and export
+- `lacuna.io` — Dataset loading and export (BIDS-style naming)
 - `lacuna.batch` — Parallel batch processing
 
 ## About This Reference

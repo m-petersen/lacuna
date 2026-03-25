@@ -4,7 +4,7 @@ Command-line interface documentation for Lacuna.
 
 ## Overview
 
-Lacuna provides a subcommand-based CLI for running lesion network mapping analyses, managing connectomes, and working with BIDS datasets.
+Lacuna provides a subcommand-based CLI for running lesion network mapping analyses, managing connectomes, and organizing data using BIDS-style naming conventions.
 
 ```
 lacuna <command> [options]
