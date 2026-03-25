@@ -708,6 +708,67 @@ def _register_connectome_from_path(
         analysis_options["connectome_name"] = auto_name
 
 
+def _register_custom_parcellations(
+    analysis_options: dict[str, Any], analysis_class_name: str
+) -> None:
+    """Register custom parcellations from --custom-parcellation arguments.
+
+    Registers each custom parcellation in the global registry and appends the
+    registered name to the appropriate parcel_names/parcellation_name list so
+    the analysis picks it up.
+
+    Parameters
+    ----------
+    analysis_options : dict
+        The analysis options dictionary (modified in place).
+    analysis_class_name : str
+        The name of the analysis class being run.
+    """
+    custom_parcellations = analysis_options.pop("custom_parcellation", None)
+    if not custom_parcellations:
+        return
+
+    import nibabel as nib
+
+    from lacuna.assets.parcellations.registry import register_parcellation_from_files
+
+    registered_names = []
+    for nifti_path, labels_path, space in custom_parcellations:
+        nifti_path = Path(nifti_path)
+        if not nifti_path.exists():
+            raise FileNotFoundError(f"Custom parcellation file not found: {nifti_path}")
+
+        # Derive name from filename stem
+        name = nifti_path.name.replace(".nii.gz", "").replace(".nii", "")
+
+        # Detect resolution from voxel size
+        img = nib.load(nifti_path)
+        voxel_sizes = img.header.get_zooms()[:3]
+        resolution = round(min(voxel_sizes))
+
+        logger.info(f"Registering custom parcellation: {name} (space={space}, res={resolution}mm)")
+        register_parcellation_from_files(
+            name=name,
+            parcellation_path=nifti_path,
+            labels_path=labels_path,
+            space=space,
+            resolution=resolution,
+            description=f"Custom parcellation registered from CLI: {nifti_path.name}",
+        )
+        registered_names.append(name)
+
+    # Append to the appropriate parcel names key
+    if analysis_class_name == "StructuralNetworkMapping":
+        existing = analysis_options.get("parcellation_name") or []
+        if isinstance(existing, str):
+            existing = [existing]
+        analysis_options["parcellation_name"] = existing + registered_names
+    else:
+        # RegionalDamage and FNM post-processing both use parcel_names
+        existing = analysis_options.get("parcel_names") or []
+        analysis_options["parcel_names"] = existing + registered_names
+
+
 def _run_analysis_workflow(config: RunConfig) -> int:
     """Run the analysis workflow based on configuration."""
     from lacuna import SubjectData
@@ -736,6 +797,9 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
     # Register connectome from path for FNM/SNM analyses
     _register_connectome_from_path(config.analysis_options, analysis_class_name)
+
+    # Register custom parcellations before building analysis steps
+    _register_custom_parcellations(config.analysis_options, analysis_class_name)
 
     # Extract parcel_names for FNM post-processing (FNM doesn't accept parcel_names)
     fnm_parcel_names = None

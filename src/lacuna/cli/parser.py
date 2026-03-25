@@ -395,18 +395,17 @@ def _build_rd_parser(subparsers) -> None:
         "--parcel-atlases",
         nargs="+",
         type=str,
-        required=True,
         metavar="ATLAS",
         help="Atlas names to use. Use 'lacuna info atlases' to list available atlases.",
     )
     g_rd.add_argument(
         "--custom-parcellation",
-        nargs=2,
+        nargs=3,
         action="append",
-        metavar=("NIFTI", "LABELS"),
+        metavar=("NIFTI", "LABELS", "SPACE"),
         help=(
-            "Custom parcellation: NIfTI file path and labels file path. "
-            "Can be specified multiple times."
+            "Custom parcellation: NIfTI file path, labels file path, and "
+            "coordinate space (e.g., MNI152NLin6Asym). Can be specified multiple times."
         ),
     )
 
@@ -519,6 +518,16 @@ def _build_fnm_parser(subparsers) -> None:
         metavar="ATLAS",
         help="Aggregate FNM outputs to these atlases. Use 'lacuna info atlases' to list.",
     )
+    g_parcels.add_argument(
+        "--custom-parcellation",
+        nargs=3,
+        action="append",
+        metavar=("NIFTI", "LABELS", "SPACE"),
+        help=(
+            "Custom parcellation: NIfTI file path, labels file path, and "
+            "coordinate space (e.g., MNI152NLin6Asym). Can be specified multiple times."
+        ),
+    )
 
 
 def _build_snm_parser(subparsers) -> None:
@@ -622,6 +631,16 @@ def _build_snm_parser(subparsers) -> None:
         "--show-mrtrix-output",
         action="store_true",
         help="Display MRtrix3 command output",
+    )
+    g_snm.add_argument(
+        "--custom-parcellation",
+        nargs=3,
+        action="append",
+        metavar=("NIFTI", "LABELS", "SPACE"),
+        help=(
+            "Custom parcellation: NIfTI file path, labels file path, and "
+            "coordinate space (e.g., MNI152NLin6Asym). Can be specified multiple times."
+        ),
     )
 
 
