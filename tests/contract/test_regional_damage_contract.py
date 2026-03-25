@@ -207,7 +207,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
 
     # Binary results should be 0 or 1
     bin_result = atlas_results[bin_key]
-    for key, value in bin_result.get_data().items():
+    for _key, value in bin_result.get_data().items():
         assert value in (0.0, 1.0)
 
 

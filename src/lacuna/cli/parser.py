@@ -378,6 +378,16 @@ def _build_rd_parser(subparsers) -> None:
         metavar="N",
         help="Number of parallel processes for subject processing (-1 for all CPUs)",
     )
+    g_perf.add_argument(
+        "--batch-size",
+        type=int,
+        default=-1,
+        metavar="N",
+        help=(
+            "Number of subjects to process before writing outputs (-1 for all). "
+            "Lower values produce incremental output and reduce peak memory."
+        ),
+    )
 
     # RegionalDamage-specific options
     g_rd = rd_parser.add_argument_group("RegionalDamage options")
@@ -542,6 +552,16 @@ def _build_snm_parser(subparsers) -> None:
         default=-1,
         metavar="N",
         help="Number of threads for MRtrix3 processing (-1 for all CPUs)",
+    )
+    g_perf.add_argument(
+        "--batch-size",
+        type=int,
+        default=-1,
+        metavar="N",
+        help=(
+            "Number of subjects to process before writing outputs (-1 for all). "
+            "Lower values produce incremental output and reduce peak memory."
+        ),
     )
     g_perf.add_argument(
         "-w",

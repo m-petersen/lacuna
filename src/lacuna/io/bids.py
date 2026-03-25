@@ -209,11 +209,34 @@ def load_bids_dataset(
 
     if not matching_files:
         subject_msg = f" for subjects {subjects}" if subjects else ""
-        raise BidsError(
+        # Build diagnostic message
+        diag_parts = [
             f"No files matching pattern '{pattern}' with suffix '{suffix}'{subject_msg} "
-            f"found in: {bids_root}\n"
-            f"Searched {'recursively' if recursive else 'non-recursively'}."
-        )
+            f"found in: {bids_root}",
+            f"Searched {'recursively' if recursive else 'non-recursively'}.",
+        ]
+        if subjects and all_files:
+            # Files exist but were filtered out — show what was found
+            n_pattern = len([f for f in all_files if any(
+                fnmatch.fnmatch(
+                    f.name[:-7] if f.name.endswith(".nii.gz") else f.name[:-4] if f.name.endswith(".nii") else f.name,
+                    p,
+                )
+                for p in (f"*{pattern}*", pattern, f"{pattern}*", f"*{pattern}")
+            )])
+            diag_parts.append(
+                f"Found {len(all_files)} file(s) with suffix '{suffix}', "
+                f"{n_pattern} matched pattern '{pattern}', "
+                f"but none matched subjects {subjects}."
+            )
+            # Show sample filenames to help debugging
+            sample = [f.name for f in all_files[:5]]
+            diag_parts.append(f"Sample files found: {sample}")
+        elif not all_files:
+            diag_parts.append(
+                f"No files with suffix '{suffix}' exist under {bids_root}."
+            )
+        raise BidsError("\n".join(diag_parts))
 
     # Load each file as SubjectData
     mask_data_dict = {}

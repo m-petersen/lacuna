@@ -210,7 +210,6 @@ EXPORT_SOURCE_ABBREVIATIONS = {
     "StructuralNetworkMapping": "snm",
     "RegionalDamage": "regionaldamage",
     "ParcelAggregation": "parcelaggregation",
-    "RegionalDamage": "regionaldamage",
 }
 
 # Mapping of desc values to their source analysis - for constructing combined desc
