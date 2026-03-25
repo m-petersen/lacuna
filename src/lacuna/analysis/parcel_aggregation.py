@@ -866,8 +866,19 @@ class ParcelAggregation(BaseAnalysis):
         if atlas_space is None:
             return atlas_img
 
-        # Check if spaces are equivalent (handles aliases like aAsym == cAsym)
-        from lacuna.core.spaces import spaces_are_equivalent
+        # Validate declared space against image header
+        from lacuna.core.spaces import detect_space_from_header, spaces_are_equivalent
+
+        detected = detect_space_from_header(atlas_img)
+        if detected is not None:
+            detected_space, _ = detected
+            if not spaces_are_equivalent(detected_space, atlas_space):
+                self.logger.warning(
+                    f"Parcellation '{parcellation_name}': declared space is "
+                    f"'{atlas_space}' but image header matches "
+                    f"'{detected_space}'. If the declared space is wrong, "
+                    f"results will be silently incorrect."
+                )
 
         if spaces_are_equivalent(atlas_space, input_space):
             # Same space or equivalent alias - no coordinate transformation needed
