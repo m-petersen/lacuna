@@ -21,8 +21,8 @@ CONNECTOMES_DIR=/path/to/connectomes
 SIF_IMAGE=/path/to/lacuna.sif
 
 # Use node-local temp for large tractogram I/O
-export LACUNA_CACHE_DIR=$TMPDIR/lacuna
-export LACUNA_TMP_DIR=$TMPDIR/lacuna
+export LACUNA_CACHE_DIR=/tmp/lacuna_cache
+export LACUNA_TMP_DIR=/tmp/lacuna_tmp
 
 mkdir -p "$OUTPUT_DIR" "$LACUNA_CACHE_DIR"
 
@@ -66,8 +66,8 @@ apptainer run \
     --compute-disconnectivity-matrix \
     --parcel-atlases Schaefer2018_100Parcels7Networks \
     --output-resolution 2 \
-    --batch-size 5 \
-    --nprocs -1 \
+    --batch-size 10 \
+    --nprocs $SLURM_CPUS_PER_TASK \
     --verbose
 
 rm -rf "$LACUNA_CACHE_DIR"
