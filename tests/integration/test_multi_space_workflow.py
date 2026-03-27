@@ -16,7 +16,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.core.spaces import REFERENCE_AFFINES, CoordinateSpace
+from lacuna.core.spaces import REFERENCE_AFFINES, REFERENCE_SHAPES, CoordinateSpace
 from lacuna.core.subject_data import SubjectData
 
 
@@ -66,8 +66,7 @@ def lesion_nlin6_2mm():
 @pytest.fixture
 def lesion_nlin2009c_2mm():
     """Create a synthetic lesion in MNI152NLin2009cAsym space at 2mm resolution."""
-    # MNI152NLin2009cAsym 2mm has shape (91, 109, 91)
-    shape = (91, 109, 91)
+    shape = REFERENCE_SHAPES[("MNI152NLin2009cAsym", 2)]  # (97, 115, 97)
     data = np.zeros(shape, dtype=np.uint8)
 
     # Create small spherical lesion in left frontal lobe
@@ -109,7 +108,7 @@ def lesion_nlin2009c_2mm():
 @pytest.fixture
 def atlas_nlin2009c_2mm(tmp_path):
     """Create a synthetic atlas in MNI152NLin2009cAsym space at 2mm resolution."""
-    shape = (91, 109, 91)
+    shape = REFERENCE_SHAPES[("MNI152NLin2009cAsym", 2)]  # (97, 115, 97)
     data = np.zeros(shape, dtype=np.int16)
 
     # Create 3 simple regions

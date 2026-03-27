@@ -283,7 +283,8 @@ class StructuralNetworkMapping(BaseAnalysis):
             if compute_roi_disconnection:
                 flags.append("compute_roi_disconnection")
             raise ValueError(
-                f"{' and '.join(flags)} requires parcellation_name to be specified. "
+                f"{' and '.join(flags)} requires parcellation_name to be specified "
+                f"(via --parcel-atlases or --custom-parcellation). "
                 f"Use list_parcellations() to see available options."
             )
 

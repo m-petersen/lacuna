@@ -180,14 +180,14 @@ class TestParcelAggregationSpaceHandling:
         """Create atlas image in MNI152NLin2009cAsym space."""
         affine = np.array(
             [
-                [-2.0, 0.0, 0.0, 90.0],
-                [0.0, 2.0, 0.0, -126.0],
-                [0.0, 0.0, 2.0, -72.0],
+                [2.0, 0.0, 0.0, -96.0],
+                [0.0, 2.0, 0.0, -132.0],
+                [0.0, 0.0, 2.0, -78.0],
                 [0.0, 0.0, 0.0, 1.0],
             ]
         )
-        # Atlas with integer labels
-        data = np.zeros((91, 109, 91))
+        # Atlas with integer labels — use actual NLin2009cAsym@2mm dimensions
+        data = np.zeros((97, 115, 97))
         data[40:50, 50:60, 40:50] = 1  # Region 1
         data[50:60, 50:60, 40:50] = 2  # Region 2
 

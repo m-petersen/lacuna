@@ -866,18 +866,35 @@ class ParcelAggregation(BaseAnalysis):
         if atlas_space is None:
             return atlas_img
 
-        # Validate declared space against image header
-        from lacuna.core.spaces import detect_space_from_header, spaces_are_equivalent
+        # Validate declared space against image header (affine and shape)
+        from lacuna.core.spaces import (
+            REFERENCE_SHAPES,
+            detect_space_from_header,
+            spaces_are_equivalent,
+        )
 
         detected = detect_space_from_header(atlas_img)
+        if detected is None:
+            # Affine check failed (e.g. flipped data strides) — fall back to
+            # shape + voxel-size matching, which is orientation-independent.
+            img_shape = atlas_img.shape[:3]
+            voxel_size = round(float(atlas_img.header.get_zooms()[0]), 1)
+            shape_to_space = {
+                shape: space
+                for (space, res), shape in REFERENCE_SHAPES.items()
+                if res == voxel_size
+            }
+            if img_shape in shape_to_space:
+                detected = (shape_to_space[img_shape], voxel_size)
+
         if detected is not None:
             detected_space, _ = detected
             if not spaces_are_equivalent(detected_space, atlas_space):
-                self.logger.warning(
+                raise ValueError(
                     f"Parcellation '{parcellation_name}': declared space is "
                     f"'{atlas_space}' but image header matches "
-                    f"'{detected_space}'. If the declared space is wrong, "
-                    f"results will be silently incorrect."
+                    f"'{detected_space}'. Check that the correct coordinate "
+                    f"space was specified for this atlas."
                 )
 
         if spaces_are_equivalent(atlas_space, input_space):

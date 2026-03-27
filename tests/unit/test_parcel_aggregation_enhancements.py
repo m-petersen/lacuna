@@ -1,5 +1,6 @@
 """Test ParcelAggregation enhancements (T138, T139, T142)."""
 
+import logging
 import warnings
 
 import nibabel as nib
@@ -384,4 +385,113 @@ class TestAtlasResamplingLogging:
             # Note: resampling messages are print(), not log()
             assert len(caplog.records) == 0 or all(
                 record.levelno >= logging.WARNING for record in caplog.records
+            )
+
+
+class TestSpaceMismatchWarning:
+    """Test that _ensure_atlas_matches_input_space warns on space mismatch."""
+
+    def _make_atlas(self, shape, voxel_size, affine_sign=1):
+        """Create a synthetic atlas image with given dimensions."""
+        origin = {
+            (182, 218, 182): (-91.0, -126.0, -72.0),
+            (193, 229, 193): (-96.0, -132.0, -78.0),
+            (97, 115, 97): (-96.0, -132.0, -78.0),
+            (91, 109, 91): (-91.0, -126.0, -72.0),
+        }.get(shape, (-91.0, -126.0, -72.0))
+
+        affine = np.diag([affine_sign * voxel_size, voxel_size, voxel_size, 1.0])
+        affine[:3, 3] = [
+            -affine_sign * origin[0] if affine_sign == -1 else origin[0],
+            origin[1],
+            origin[2],
+        ]
+
+        data = np.zeros(shape, dtype=np.int16)
+        data[10:20, 10:20, 10:20] = 1
+        return nib.Nifti1Image(data, affine)
+
+    def test_error_on_wrong_declared_space_standard_affine(self):
+        """NLin6Asym atlas with canonical affine declared as NLin2009cAsym."""
+        atlas_img = self._make_atlas((182, 218, 182), 1.0, affine_sign=1)
+        analysis = ParcelAggregation(parcel_names=["dummy"])
+
+        with pytest.raises(ValueError, match="MNI152NLin6Asym"):
+            analysis._ensure_atlas_matches_input_space(
+                atlas_img=atlas_img,
+                atlas_space="MNI152NLin2009cAsym",
+                atlas_resolution=1,
+                input_space="MNI152NLin2009cAsym",
+                input_resolution=1,
+                input_affine=np.eye(4),
+                parcellation_name="test_atlas",
+            )
+
+    def test_error_on_wrong_declared_space_flipped_strides(self):
+        """NLin6Asym atlas with FSL-style flipped strides declared as NLin2009cAsym.
+
+        This is the XTRACT atlas scenario: dimensions 182x218x182 at 1mm but
+        affine has -1 on the first diagonal (neurological convention).
+        detect_space_from_header() fails, so the shape-based fallback must catch it.
+        """
+        atlas_img = self._make_atlas((182, 218, 182), 1.0, affine_sign=-1)
+        analysis = ParcelAggregation(parcel_names=["dummy"])
+
+        with pytest.raises(ValueError, match="MNI152NLin6Asym"):
+            analysis._ensure_atlas_matches_input_space(
+                atlas_img=atlas_img,
+                atlas_space="MNI152NLin2009cAsym",
+                atlas_resolution=1,
+                input_space="MNI152NLin2009cAsym",
+                input_resolution=1,
+                input_affine=np.eye(4),
+                parcellation_name="test_atlas_flipped",
+            )
+
+    def test_no_error_when_space_matches(self):
+        """NLin6Asym atlas correctly declared as NLin6Asym — no error."""
+        atlas_img = self._make_atlas((182, 218, 182), 1.0, affine_sign=1)
+        analysis = ParcelAggregation(parcel_names=["dummy"])
+
+        # Should not raise
+        analysis._ensure_atlas_matches_input_space(
+            atlas_img=atlas_img,
+            atlas_space="MNI152NLin6Asym",
+            atlas_resolution=1,
+            input_space="MNI152NLin6Asym",
+            input_resolution=1,
+            input_affine=np.eye(4),
+            parcellation_name="test_atlas_correct",
+        )
+
+    def test_no_error_for_unknown_dimensions(self):
+        """Atlas with non-standard dimensions — no error (can't detect space)."""
+        atlas_img = self._make_atlas((100, 120, 100), 1.5, affine_sign=1)
+        analysis = ParcelAggregation(parcel_names=["dummy"])
+
+        # Should not raise — unknown dimensions can't be validated
+        analysis._ensure_atlas_matches_input_space(
+            atlas_img=atlas_img,
+            atlas_space="MNI152NLin6Asym",
+            atlas_resolution=1,
+            input_space="MNI152NLin6Asym",
+            input_resolution=1,
+            input_affine=np.eye(4),
+            parcellation_name="test_atlas_unknown",
+        )
+
+    def test_error_2009c_declared_as_nlin6(self):
+        """NLin2009cAsym atlas (2mm) declared as NLin6Asym."""
+        atlas_img = self._make_atlas((97, 115, 97), 2.0, affine_sign=1)
+        analysis = ParcelAggregation(parcel_names=["dummy"])
+
+        with pytest.raises(ValueError, match="MNI152NLin2009cAsym"):
+            analysis._ensure_atlas_matches_input_space(
+                atlas_img=atlas_img,
+                atlas_space="MNI152NLin6Asym",
+                atlas_resolution=2,
+                input_space="MNI152NLin6Asym",
+                input_resolution=2,
+                input_affine=np.eye(4),
+                parcellation_name="test_atlas_2009c",
             )

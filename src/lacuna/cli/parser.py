@@ -400,12 +400,13 @@ def _build_rd_parser(subparsers) -> None:
     )
     g_rd.add_argument(
         "--custom-parcellation",
-        nargs=3,
+        nargs=4,
         action="append",
-        metavar=("NIFTI", "LABELS", "SPACE"),
+        metavar=("NAME", "NIFTI", "LABELS", "SPACE"),
         help=(
-            "Custom parcellation: NIfTI file path, labels file path, and "
-            "coordinate space (e.g., MNI152NLin6Asym). Can be specified multiple times."
+            "Custom parcellation: a short name for output labelling, NIfTI file "
+            "path, labels file path, and coordinate space (e.g., MNI152NLin6Asym). "
+            "Can be specified multiple times."
         ),
     )
 
@@ -520,12 +521,13 @@ def _build_fnm_parser(subparsers) -> None:
     )
     g_parcels.add_argument(
         "--custom-parcellation",
-        nargs=3,
+        nargs=4,
         action="append",
-        metavar=("NIFTI", "LABELS", "SPACE"),
+        metavar=("NAME", "NIFTI", "LABELS", "SPACE"),
         help=(
-            "Custom parcellation: NIfTI file path, labels file path, and "
-            "coordinate space (e.g., MNI152NLin6Asym). Can be specified multiple times."
+            "Custom parcellation: a short name for output labelling, NIfTI file "
+            "path, labels file path, and coordinate space (e.g., MNI152NLin6Asym). "
+            "Can be specified multiple times."
         ),
     )
 
@@ -601,12 +603,12 @@ def _build_snm_parser(subparsers) -> None:
     g_snm.add_argument(
         "--compute-disconnectivity-matrix",
         action="store_true",
-        help="Compute disconnectivity matrices (requires --parcel-atlases)",
+        help="Compute disconnectivity matrices (requires --parcel-atlases or --custom-parcellation)",
     )
     g_snm.add_argument(
         "--compute-roi-disconnection",
         action="store_true",
-        help="Compute per-ROI disconnection values (requires --parcel-atlases)",
+        help="Compute per-ROI disconnection values (requires --parcel-atlases or --custom-parcellation)",
     )
     g_snm.add_argument(
         "--output-resolution",
@@ -634,12 +636,13 @@ def _build_snm_parser(subparsers) -> None:
     )
     g_snm.add_argument(
         "--custom-parcellation",
-        nargs=3,
+        nargs=4,
         action="append",
-        metavar=("NIFTI", "LABELS", "SPACE"),
+        metavar=("NAME", "NIFTI", "LABELS", "SPACE"),
         help=(
-            "Custom parcellation: NIfTI file path, labels file path, and "
-            "coordinate space (e.g., MNI152NLin6Asym). Can be specified multiple times."
+            "Custom parcellation: a short name for output labelling, NIfTI file "
+            "path, labels file path, and coordinate space (e.g., MNI152NLin6Asym). "
+            "Can be specified multiple times."
         ),
     )
 

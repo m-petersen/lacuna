@@ -68,7 +68,7 @@ Computes lesion overlap with brain parcellations (atlases). For each parcel, cal
 | Option | Description |
 |--------|-------------|
 | `--parcel-atlases ATLAS [...]` | Atlas names to use. Use `lacuna info atlases` to list available atlases. |
-| `--custom-parcellation NIFTI LABELS SPACE` | Custom parcellation: NIfTI file path, labels file path, and coordinate space (e.g., `MNI152NLin6Asym`). Can be specified multiple times. |
+| `--custom-parcellation NAME NIFTI LABELS SPACE` | Custom parcellation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space (e.g., `MNI152NLin6Asym`). Can be specified multiple times. |
 
 !!! note
     At least one of `--parcel-atlases` or `--custom-parcellation` must be provided.
@@ -85,12 +85,12 @@ lacuna run rd /bids /output \
 
 # With custom parcellation
 lacuna run rd /bids /output \
-    --custom-parcellation /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
+    --custom-parcellation MyAtlas /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
 
 # Mix bundled and custom atlases
 lacuna run rd /bids /output \
     --parcel-atlases Schaefer2018_100Parcels7Networks \
-    --custom-parcellation /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
+    --custom-parcellation MyAtlas /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
 ```
 
 ---
@@ -117,7 +117,7 @@ Computes functional connectivity disruption using a normative functional connect
 | Option | Description |
 |--------|-------------|
 | `--parcel-atlases ATLAS [...]` | Aggregate FNM outputs to these atlases. Use `lacuna info atlases` to list. |
-| `--custom-parcellation NIFTI LABELS SPACE` | Custom parcellation for aggregation: NIfTI file path, labels file path, and coordinate space. Can be specified multiple times. |
+| `--custom-parcellation NAME NIFTI LABELS SPACE` | Custom parcellation for aggregation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space. Can be specified multiple times. |
 
 ### Examples
 
@@ -154,8 +154,9 @@ Computes white matter disconnection using tractography. Generates disconnection 
 |--------|-------------|
 | `--connectome-path PATH` | **(required)** Path to `.tck` tractogram file (from `lacuna fetch dtor985`) |
 | `--parcel-atlas NAME` | Atlas for connectivity matrices. Use `lacuna info atlases` to list. |
-| `--custom-parcellation NIFTI LABELS SPACE` | Custom parcellation: NIfTI file path, labels file path, and coordinate space. Can be specified multiple times. |
-| `--compute-roi-disconnection` | Compute per-ROI disconnection values |
+| `--custom-parcellation NAME NIFTI LABELS SPACE` | Custom parcellation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space. Can be specified multiple times. |
+| `--compute-disconnectivity-matrix` | Compute disconnectivity matrices (requires `--parcel-atlases` or `--custom-parcellation`) |
+| `--compute-roi-disconnection` | Compute per-ROI disconnection values (requires `--parcel-atlases` or `--custom-parcellation`) |
 | `--output-resolution {1,2}` | Output resolution in mm (default: 2) |
 | `--no-cache-tdi` | Disable TDI caching (enabled by default) |
 | `--no-return-input-space` | Keep outputs in connectome space (default: transform to input space) |

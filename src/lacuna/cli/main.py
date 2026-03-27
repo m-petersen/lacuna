@@ -170,19 +170,19 @@ class RunConfig:
         # SNM flag dependency validation
         if self.analysis in ("snm", "structuralnetworkmapping"):
             opts = self.analysis_options
-            has_atlas = "parcellation_name" in opts
+            has_atlas = "parcellation_name" in opts or opts.get("custom_parcellation")
             has_disconn = opts.get("compute_disconnectivity_matrix", False)
             has_roi = opts.get("compute_roi_disconnection", False)
 
             if has_atlas and not (has_disconn or has_roi):
                 raise ValueError(
-                    "--parcel-atlases requires at least one of "
+                    "--parcel-atlases/--custom-parcellation requires at least one of "
                     "--compute-disconnectivity-matrix or --compute-roi-disconnection"
                 )
             if (has_disconn or has_roi) and not has_atlas:
                 raise ValueError(
                     "--compute-disconnectivity-matrix and --compute-roi-disconnection "
-                    "require --parcel-atlases. Use 'lacuna info atlases' to list available atlases."
+                    "require --parcel-atlases or --custom-parcellation."
                 )
             if has_atlas:
                 # parcellation_name is now a list for SNM
@@ -575,7 +575,7 @@ def _handle_tutorial_command(args: Namespace) -> int:
             print("\nThe tutorial dataset includes:")
             print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
             print("  - Binary lesion masks in MNI152NLin6Asym space")
-            print("  - BIDS-compliant structure")
+            print("  - BIDS-style structure")
         return EXIT_SUCCESS
 
     except FileExistsError:
@@ -733,13 +733,10 @@ def _register_custom_parcellations(
     from lacuna.assets.parcellations.registry import register_parcellation_from_files
 
     registered_names = []
-    for nifti_path, labels_path, space in custom_parcellations:
+    for name, nifti_path, labels_path, space in custom_parcellations:
         nifti_path = Path(nifti_path)
         if not nifti_path.exists():
             raise FileNotFoundError(f"Custom parcellation file not found: {nifti_path}")
-
-        # Derive name from filename stem
-        name = nifti_path.name.replace(".nii.gz", "").replace(".nii", "")
 
         # Detect resolution from voxel size
         img = nib.load(nifti_path)
