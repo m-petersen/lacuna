@@ -184,7 +184,7 @@ class RunConfig:
                     "--compute-disconnectivity-matrix and --compute-roi-disconnection "
                     "require --parcel-atlases or --custom-parcellation."
                 )
-            if has_atlas:
+            if has_atlas and "parcellation_name" in opts:
                 # parcellation_name is now a list for SNM
                 names = opts["parcellation_name"]
                 if isinstance(names, str):
