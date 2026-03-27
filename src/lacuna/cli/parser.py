@@ -59,7 +59,8 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
             "  info      Display available resources (atlases, connectomes)\n"
-            "  tutorial  Setup tutorial data for learning Lacuna\n\n"
+            "  tutorial  Setup tutorial data for learning Lacuna\n"
+            "  audit     Check which subjects have complete outputs\n\n"
             "Examples:\n"
             "  lacuna tutorial ./my_tutorial\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
@@ -91,6 +92,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     _build_info_parser(subparsers)
     _build_bidsify_parser(subparsers)
     _build_tutorial_parser(subparsers)
+    _build_audit_parser(subparsers)
 
     return parser
 
@@ -868,3 +870,174 @@ def _build_tutorial_parser(subparsers) -> None:
             "Use this to practice the bidsify workflow."
         ),
     )
+
+
+def _add_shared_audit_arguments(parser: ArgumentParser) -> None:
+    """Add arguments shared by all audit analysis subcommands."""
+    parser.add_argument(
+        "bids_dir",
+        type=Path,
+        help="Root folder of BIDS dataset (sub-XXXXX folders at top level)",
+    )
+    parser.add_argument(
+        "output_dir",
+        type=Path,
+        help="Output directory to audit for existing results",
+    )
+
+    g_bids = parser.add_argument_group("BIDS filtering options")
+    g_bids.add_argument(
+        "--participant-label",
+        "--participant_label",
+        nargs="+",
+        type=_drop_sub,
+        metavar="LABEL",
+        help="Subject IDs to check (without sub- prefix)",
+    )
+    g_bids.add_argument(
+        "--session-id",
+        "--session_id",
+        nargs="+",
+        metavar="SESSION",
+        help="Session IDs to check (without ses- prefix)",
+    )
+    g_bids.add_argument(
+        "--pattern",
+        type=str,
+        metavar="GLOB",
+        help="Glob pattern to filter mask files (e.g., '*label-WMH*')",
+    )
+    g_bids.add_argument(
+        "--mask-space",
+        type=str,
+        choices=["MNI152NLin6Asym", "MNI152NLin2009cAsym"],
+        metavar="SPACE",
+        help=(
+            "Coordinate space of input masks "
+            "(MNI152NLin6Asym or MNI152NLin2009cAsym). "
+            "Required if not detectable from filename or sidecar JSON."
+        ),
+    )
+
+    g_out = parser.add_argument_group("Output options")
+    g_out.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help=(
+            "Suppress all output except missing subject IDs (one per line). "
+            "Useful for shell scripting."
+        ),
+    )
+    g_out.add_argument(
+        "--output-file",
+        type=Path,
+        metavar="PATH",
+        help="Write missing subject IDs to a file (one per line).",
+    )
+
+
+def _build_audit_parser(subparsers) -> None:
+    """Add the audit subcommand parser."""
+    audit_parser = subparsers.add_parser(
+        "audit",
+        help="Check which subjects have complete outputs",
+        description=(
+            "Audit an output directory to identify subjects with missing results.\n\n"
+            "Reads the same BIDS input directory as 'lacuna run' to enumerate\n"
+            "expected subjects, then checks whether output files exist.\n\n"
+            "Available analyses:\n"
+            "  rd   - Check for parcelstats TSV files (RegionalDamage)\n"
+            "  fnm  - Check for functional rmap NIfTI files\n"
+            "  snm  - Check for disconnection NIfTI files\n\n"
+            "Examples:\n"
+            "  lacuna audit rd /bids /output\n"
+            "  lacuna audit rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
+            "  lacuna audit rd /bids /output --output-file missing.txt\n"
+            "  lacuna audit fnm /bids /output --quiet\n"
+            "  lacuna audit snm /bids /output --participant-label 001 002"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    audit_subparsers = audit_parser.add_subparsers(
+        dest="analysis",
+        title="analyses",
+        description="Use 'lacuna audit <analysis> --help' for analysis-specific options.",
+        metavar="<analysis>",
+    )
+
+    _build_audit_rd_parser(audit_subparsers)
+    _build_audit_fnm_parser(audit_subparsers)
+    _build_audit_snm_parser(audit_subparsers)
+
+
+def _build_audit_rd_parser(subparsers) -> None:
+    """Add the audit rd subcommand parser."""
+    rd_parser = subparsers.add_parser(
+        "rd",
+        aliases=["regionaldamage"],
+        help="Check for RegionalDamage parcelstats outputs",
+        description=(
+            "Check which subjects have RegionalDamage parcelstats TSV outputs.\n\n"
+            "By default, any '*source-regionaldamage*parcelstats.tsv' file in a\n"
+            "subject's output directory counts as complete. If --parcel-atlases is\n"
+            "given, each named atlas is checked individually.\n\n"
+            "Examples:\n"
+            "  lacuna audit rd /bids /output\n"
+            "  lacuna audit rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
+            "  lacuna audit rd /bids /output --output-file missing.txt"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_audit_arguments(rd_parser)
+
+    g_rd = rd_parser.add_argument_group("RegionalDamage options")
+    g_rd.add_argument(
+        "--parcel-atlases",
+        nargs="+",
+        type=str,
+        metavar="ATLAS",
+        help=(
+            "Atlas name(s) to check individually. If omitted, any parcelstats "
+            "TSV file counts as complete. Use 'lacuna info atlases' to list."
+        ),
+    )
+
+
+def _build_audit_fnm_parser(subparsers) -> None:
+    """Add the audit fnm subcommand parser."""
+    fnm_parser = subparsers.add_parser(
+        "fnm",
+        aliases=["functionalnetworkmapping"],
+        help="Check for FunctionalNetworkMapping rmap outputs",
+        description=(
+            "Check which subjects have FunctionalNetworkMapping rmap NIfTI outputs.\n\n"
+            "A subject is considered complete if a '*desc-fnm_rmap.nii.gz' file\n"
+            "exists in their output directory.\n\n"
+            "Examples:\n"
+            "  lacuna audit fnm /bids /output\n"
+            "  lacuna audit fnm /bids /output --quiet"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_audit_arguments(fnm_parser)
+
+
+def _build_audit_snm_parser(subparsers) -> None:
+    """Add the audit snm subcommand parser."""
+    snm_parser = subparsers.add_parser(
+        "snm",
+        aliases=["structuralnetworkmapping"],
+        help="Check for StructuralNetworkMapping disconnection outputs",
+        description=(
+            "Check which subjects have StructuralNetworkMapping disconnection outputs.\n\n"
+            "A subject is considered complete if a '*desc-snm_disconnectionpct.nii.gz'\n"
+            "file exists in their output directory.\n\n"
+            "Examples:\n"
+            "  lacuna audit snm /bids /output\n"
+            "  lacuna audit snm /bids /output --output-file missing.txt"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_audit_arguments(snm_parser)

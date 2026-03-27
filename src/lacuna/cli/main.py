@@ -248,6 +248,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_bidsify_command(args)
     elif args.command == "tutorial":
         return _handle_tutorial_command(args)
+    elif args.command == "audit":
+        return _handle_audit_command(args)
     else:
         # No command specified - show help
         parser.print_help()
@@ -585,6 +587,229 @@ def _handle_tutorial_command(args: Namespace) -> int:
     except Exception as e:
         print(f"Error setting up tutorial data: {e}")
         return EXIT_GENERAL_ERROR
+
+
+def _check_subject_complete(
+    anat_dir: Path,
+    analysis: str,
+    parcel_atlases: list[str] | None,
+) -> tuple[str, list[str]]:
+    """Check whether expected output files exist for a subject/session.
+
+    Returns
+    -------
+    tuple of (status, missing)
+        status : "complete" | "missing"
+        missing : list of descriptions of what was not found
+    """
+    norm = analysis.lower()
+
+    if not anat_dir.exists():
+        if norm in ("rd", "regionaldamage"):
+            sentinel = "*source-regionaldamage*parcelstats.tsv"
+        elif norm in ("fnm", "functionalnetworkmapping"):
+            sentinel = "*desc-fnm_rmap.nii.gz"
+        elif norm in ("snm", "structuralnetworkmapping"):
+            sentinel = "*desc-snm_disconnectionpct.nii.gz"
+        else:
+            sentinel = f"<unknown analysis '{analysis}'>"
+        return "missing", [sentinel]
+
+    if norm in ("rd", "regionaldamage"):
+        all_matches = list(anat_dir.glob("*source-regionaldamage*parcelstats.tsv"))
+        if parcel_atlases:
+            missing = []
+            for atlas in parcel_atlases:
+                atlas_fragment = atlas.replace("_", "").lower()
+                hits = [f for f in all_matches if atlas_fragment in f.name.lower()]
+                if not hits:
+                    missing.append(atlas)
+            return ("complete" if not missing else "missing", missing)
+        else:
+            return (
+                "complete" if all_matches else "missing",
+                [] if all_matches else ["*source-regionaldamage*parcelstats.tsv"],
+            )
+
+    elif norm in ("fnm", "functionalnetworkmapping"):
+        hits = list(anat_dir.glob("*desc-fnm_rmap.nii.gz"))
+        return (
+            "complete" if hits else "missing",
+            [] if hits else ["*desc-fnm_rmap.nii.gz"],
+        )
+
+    elif norm in ("snm", "structuralnetworkmapping"):
+        hits = list(anat_dir.glob("*desc-snm_disconnectionpct.nii.gz"))
+        return (
+            "complete" if hits else "missing",
+            [] if hits else ["*desc-snm_disconnectionpct.nii.gz"],
+        )
+
+    return "missing", [f"unknown analysis '{analysis}'"]
+
+
+def _discover_bids_subjects(
+    bids_dir: Path,
+    pattern: str,
+    participant_label: list[str] | None,
+) -> list[dict]:
+    """Discover subjects in a BIDS directory without loading NIfTI images.
+
+    Returns a list of metadata dicts with subject_id and session_id only.
+    Deduplicates by (subject_id, session_id) — one entry per unique pair.
+    """
+    import fnmatch as _fnmatch
+    import re
+
+    from lacuna.io.bids import _parse_bids_entities
+
+    suffix = "_mask.nii.gz"
+    all_files = list(bids_dir.rglob(f"*{suffix}"))
+
+    # Filter by filename pattern
+    matching_files = []
+    for fp in all_files:
+        stem = fp.name
+        if stem.endswith(".nii.gz"):
+            stem = stem[:-7]
+        if (
+            _fnmatch.fnmatch(stem, f"*{pattern}*")
+            or _fnmatch.fnmatch(stem, pattern)
+            or _fnmatch.fnmatch(stem, f"{pattern}*")
+            or _fnmatch.fnmatch(stem, f"*{pattern}")
+        ):
+            matching_files.append(fp)
+
+    # Filter by participant label
+    if participant_label:
+        normalized = {(s[4:] if s.startswith("sub-") else s) for s in participant_label}
+        matching_files = [
+            fp
+            for fp in matching_files
+            if (m := re.search(r"sub-([^/_]+)", str(fp))) and m.group(1) in normalized
+        ]
+
+    # Deduplicate by (subject_id, session_id)
+    seen: set[tuple] = set()
+    results = []
+    for fp in sorted(matching_files):
+        meta = _parse_bids_entities(fp.name)
+        sub_id = meta.get("subject_id")
+        ses_id = meta.get("session_id")
+        if sub_id and (sub_id, ses_id) not in seen:
+            seen.add((sub_id, ses_id))
+            results.append({"subject_id": sub_id, "session_id": ses_id})
+
+    return results
+
+
+def _handle_audit_command(args: Namespace) -> int:
+    """Handle the audit subcommand."""
+    analysis: str | None = getattr(args, "analysis", None)
+    if not analysis:
+        from lacuna.cli.parser import build_parser
+
+        build_parser().parse_args(["audit", "--help"])
+        return EXIT_SUCCESS
+
+    bids_dir: Path = args.bids_dir
+    output_dir: Path = args.output_dir
+    participant_label: list[str] | None = getattr(args, "participant_label", None)
+    session_id: list[str] | None = getattr(args, "session_id", None)
+    pattern: str | None = getattr(args, "pattern", None)
+    parcel_atlases: list[str] | None = getattr(args, "parcel_atlases", None)
+    quiet: bool = getattr(args, "quiet", False)
+    output_file: Path | None = getattr(args, "output_file", None)
+
+    if not bids_dir.exists():
+        print(f"Error: BIDS directory does not exist: {bids_dir}", file=sys.stderr)
+        return EXIT_INVALID_ARGS
+
+    bids_pattern = _build_pattern(session_id, pattern)
+    subject_metas = _discover_bids_subjects(bids_dir, bids_pattern, participant_label)
+
+    if not subject_metas:
+        print("No subjects found in BIDS dataset.", file=sys.stderr)
+        return EXIT_BIDS_ERROR
+
+    if not quiet:
+        print(
+            f"\nAuditing {analysis} outputs in {output_dir} for {len(subject_metas)} subject(s)...\n"
+        )
+
+    # Audit each subject
+    rows: list[dict] = []
+    for meta in subject_metas:
+        sub_id: str = meta["subject_id"]
+        ses_id: str | None = meta["session_id"]
+
+        anat_dir = output_dir / sub_id
+        if ses_id:
+            anat_dir = anat_dir / ses_id
+        anat_dir = anat_dir / "anat"
+
+        status, missing = _check_subject_complete(anat_dir, analysis, parcel_atlases)
+        rows.append(
+            {"subject_id": sub_id, "session_id": ses_id, "status": status, "missing": missing}
+        )
+
+    # Deduplicated sorted list of missing bare subject IDs
+    missing_subject_ids = sorted(
+        {r["subject_id"].removeprefix("sub-") for r in rows if r["status"] == "missing"}
+    )
+
+    # Write to file if requested (always, regardless of --quiet)
+    if output_file:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(
+            "\n".join(missing_subject_ids) + ("\n" if missing_subject_ids else "")
+        )
+
+    if quiet:
+        for sub_id in missing_subject_ids:
+            print(sub_id)
+        return EXIT_SUCCESS if not missing_subject_ids else EXIT_GENERAL_ERROR
+
+    # Human-readable table
+    has_sessions = any(r["session_id"] for r in rows)
+    sub_width = max(len("Subject"), max(len(r["subject_id"]) for r in rows)) + 2
+    sep_width = sub_width + (12 if has_sessions else 0) + 22
+
+    if has_sessions:
+        print(f"{'Subject':<{sub_width}}{'Session':<12}Status")
+    else:
+        print(f"{'Subject':<{sub_width}}Status")
+    print("-" * sep_width)
+
+    for r in rows:
+        if r["status"] == "complete":
+            status_str = "complete"
+        else:
+            detail = ", ".join(r["missing"])
+            status_str = "MISSING" + (f"  ({detail})" if detail else "")
+
+        if has_sessions:
+            ses = r["session_id"] or "-"
+            print(f"{r['subject_id']:<{sub_width}}{ses:<12}{status_str}")
+        else:
+            print(f"{r['subject_id']:<{sub_width}}{status_str}")
+
+    n_complete = sum(1 for r in rows if r["status"] == "complete")
+    n_total = len(rows)
+    print(f"\n{'=' * sep_width}")
+    print(f"Summary: {n_complete} / {n_total} complete, {n_total - n_complete} missing")
+    print(f"{'=' * sep_width}\n")
+
+    if missing_subject_ids:
+        label_str = " ".join(missing_subject_ids)
+        print("Rerun missing subjects:")
+        print(f"  lacuna run {analysis} {bids_dir} {output_dir} --participant-label {label_str}\n")
+        if output_file:
+            print(f"Missing subject IDs written to: {output_file}\n")
+    else:
+        print("All subjects are complete.\n")
+
+    return EXIT_SUCCESS if not missing_subject_ids else EXIT_GENERAL_ERROR
 
 
 def _register_connectome_from_path(

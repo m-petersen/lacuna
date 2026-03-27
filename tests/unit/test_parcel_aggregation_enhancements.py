@@ -338,7 +338,6 @@ class TestAtlasResamplingLogging:
 
     def test_resampling_logged_at_debug(self, sample_mask_data, caplog, local_test_atlas):
         """Test atlas resampling is logged at DEBUG level."""
-        import logging
 
         # Create mismatched data to trigger resampling
         shape = (15, 15, 15)
@@ -369,7 +368,6 @@ class TestAtlasResamplingLogging:
 
     def test_no_resampling_log_at_quiet(self, sample_mask_data, caplog, capsys, local_test_atlas):
         """Test atlas resampling not logged at quiet level."""
-        import logging
 
         analysis = ParcelAggregation(
             parcel_names=[local_test_atlas],
