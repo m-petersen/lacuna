@@ -2081,8 +2081,8 @@
 <td>Atlas names to use. Use <code>lacuna info atlases</code> to list available atlases.</td>
 </tr>
 <tr>
-<td><code>--custom-parcellation NIFTI LABELS SPACE</code></td>
-<td>Custom parcellation: NIfTI file path, labels file path, and coordinate space (e.g., <code>MNI152NLin6Asym</code>). Can be specified multiple times.</td>
+<td><code>--custom-parcellation NAME NIFTI LABELS SPACE</code></td>
+<td>Custom parcellation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space (e.g., <code>MNI152NLin6Asym</code>). Can be specified multiple times.</td>
 </tr>
 </tbody>
 </table>
@@ -2100,12 +2100,12 @@
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># With custom parcellation</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.txt<span class="w"> </span>MNI152NLin6Asym
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>MyAtlas<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.txt<span class="w"> </span>MNI152NLin6Asym
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Mix bundled and custom atlases</span>
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span>--parcel-atlases<span class="w"> </span>Schaefer2018_100Parcels7Networks<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.txt<span class="w"> </span>MNI152NLin6Asym
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span>--custom-parcellation<span class="w"> </span>MyAtlas<span class="w"> </span>/path/to/my_atlas.nii.gz<span class="w"> </span>/path/to/labels.txt<span class="w"> </span>MNI152NLin6Asym
 </span></code></pre></div>
 <hr />
 <h2 id="lacuna-run-fnm-functional-network-mapping"><code>lacuna run fnm</code> — Functional Network Mapping<a class="headerlink" href="#lacuna-run-fnm-functional-network-mapping" title="Permanent link">&para;</a></h2>
@@ -2167,8 +2167,8 @@
 <td>Aggregate FNM outputs to these atlases. Use <code>lacuna info atlases</code> to list.</td>
 </tr>
 <tr>
-<td><code>--custom-parcellation NIFTI LABELS SPACE</code></td>
-<td>Custom parcellation for aggregation: NIfTI file path, labels file path, and coordinate space. Can be specified multiple times.</td>
+<td><code>--custom-parcellation NAME NIFTI LABELS SPACE</code></td>
+<td>Custom parcellation for aggregation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space. Can be specified multiple times.</td>
 </tr>
 </tbody>
 </table>
@@ -2214,12 +2214,16 @@
 <td>Atlas for connectivity matrices. Use <code>lacuna info atlases</code> to list.</td>
 </tr>
 <tr>
-<td><code>--custom-parcellation NIFTI LABELS SPACE</code></td>
-<td>Custom parcellation: NIfTI file path, labels file path, and coordinate space. Can be specified multiple times.</td>
+<td><code>--custom-parcellation NAME NIFTI LABELS SPACE</code></td>
+<td>Custom parcellation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space. Can be specified multiple times.</td>
+</tr>
+<tr>
+<td><code>--compute-disconnectivity-matrix</code></td>
+<td>Compute disconnectivity matrices (requires <code>--parcel-atlases</code> or <code>--custom-parcellation</code>)</td>
 </tr>
 <tr>
 <td><code>--compute-roi-disconnection</code></td>
-<td>Compute per-ROI disconnection values</td>
+<td>Compute per-ROI disconnection values (requires <code>--parcel-atlases</code> or <code>--custom-parcellation</code>)</td>
 </tr>
 <tr>
 <td><code>--output-resolution {1,2}</code></td>

@@ -10,7 +10,7 @@ BIDS_DIR="/path/to/bids"
 # If no arguments are given, all subjects in BIDS_DIR are used.
 if [ $# -gt 0 ]; then
     num_subjects=$#
-    SUBJECT_LIST=$(IFS=,; echo "$*")
+    SUBJECT_LIST="$*"
 else
     num_subjects=$(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d | wc -l)
     SUBJECT_LIST=""

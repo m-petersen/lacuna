@@ -20,17 +20,16 @@ OUTPUT_DIR=/path/to/output
 CONNECTOMES_DIR=/path/to/connectomes
 SIF_IMAGE=/path/to/lacuna.sif
 
-# Unique cache per job ID to prevent write-conflicts between array tasks
-CACHE_ROOT=/path/to/scratch/.cache_slurm
-export LACUNA_CACHE_DIR=$CACHE_ROOT/$SLURM_ARRAY_TASK_ID
-export LACUNA_TMP_DIR=$LACUNA_CACHE_DIR
+# Unique cache per job to prevent write-conflicts between array tasks
+export LACUNA_CACHE_DIR=/tmp/lacuna_cache
+export LACUNA_TMP_DIR=/tmp/lacuna_tmp
 
 mkdir -p "$OUTPUT_DIR" "$LACUNA_CACHE_DIR"
 
 # --- 3. Subject Slicing ---
-# Use SUBJECT_LIST if provided (comma-separated), otherwise discover from BIDS_DIR
+# Use SUBJECT_LIST if provided, otherwise discover from BIDS_DIR
 if [ -n "${SUBJECT_LIST:-}" ]; then
-    IFS=',' read -ra ALL_SUBJECTS <<< "$SUBJECT_LIST"
+    read -ra ALL_SUBJECTS <<< "$SUBJECT_LIST"
     ALL_SUBJECTS=( $(printf '%s\n' "${ALL_SUBJECTS[@]}" | sed 's/^sub-//' | sort) )
 else
     mapfile -t ALL_SUBJECTS < <(find "$BIDS_DIR" -maxdepth 1 -name "sub-*" -type d -printf "%f\n" | sed 's/sub-//' | sort)
@@ -67,7 +66,7 @@ apptainer run \
     --output-resolution 2 \
     --parcel-atlases Schaefer2018_100Parcels7Networks \
     --batch-size -1 \
-    --nprocs -1 \
+    --nprocs $SLURM_CPUS_PER_TASK \
     --verbose
 
 rm -rf "$LACUNA_CACHE_DIR"
