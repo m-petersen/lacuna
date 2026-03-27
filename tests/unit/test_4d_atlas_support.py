@@ -401,7 +401,7 @@ class Test4DParcelAggregation:
 
             # Check results - using BIDS-style keys
             damage_results = result.results["RegionalDamage"]
-            expected_key = "atlas-Test4DAtlas_Aggregation_source-InputMask"
+            expected_key = "atlas-Test4DAtlas_Aggregation_source-RegionalDamage_desc-damagepct"
             assert expected_key in damage_results
 
             # Get region data

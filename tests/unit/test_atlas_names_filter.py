@@ -61,10 +61,10 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should only have atlas_B results
-            # Keys use BIDS-style format: atlas-{atlas}_source-InputMask
-            assert build_result_key("atlas_B", "SubjectData") in atlas_results
-            assert build_result_key("atlas_A", "SubjectData") not in atlas_results
-            assert build_result_key("atlas_C", "SubjectData") not in atlas_results
+            # Keys use BIDS-style format: atlas-{atlas}_source-RegionalDamage_desc-damagepct
+            assert build_result_key("atlas_B", "RegionalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") not in atlas_results
+            assert build_result_key("atlas_C", "RegionalDamage", "damagepct") not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
             analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_C"])
@@ -72,9 +72,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
-            assert build_result_key("atlas_A", "SubjectData") in atlas_results
-            assert build_result_key("atlas_B", "SubjectData") not in atlas_results
-            assert build_result_key("atlas_C", "SubjectData") in atlas_results
+            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_B", "RegionalDamage", "damagepct") not in atlas_results
+            assert build_result_key("atlas_C", "RegionalDamage", "damagepct") in atlas_results
 
             # Test 3: Explicitly use all local test atlases (avoid bundled atlases that require TemplateFlow)
             # Note: parcel_names=None would process all registered atlases including bundled ones,
@@ -84,9 +84,9 @@ class TestAtlasNamesFilter:
             atlas_results = result.results["RegionalDamage"]
 
             # Should have all three local atlases
-            assert build_result_key("atlas_A", "SubjectData") in atlas_results
-            assert build_result_key("atlas_B", "SubjectData") in atlas_results
-            assert build_result_key("atlas_C", "SubjectData") in atlas_results
+            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_B", "RegionalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_C", "RegionalDamage", "damagepct") in atlas_results
 
     def test_atlas_names_warns_if_not_found(self):
         """Test that warning is issued if requested atlas not found."""
