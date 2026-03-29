@@ -14,11 +14,11 @@ lacuna <command> [options]
 
 <div class="grid cards" markdown>
 
--   [**Audit**](audit.md)
+-   [**Check**](check.md)
 
     ---
 
-    Check which subjects have complete outputs and identify missing runs.
+    Validate input masks and check output completeness.
 
 -   [**Bidsify**](bidsify.md)
 
@@ -77,7 +77,7 @@ lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches
 lacuna collect /bids /output
 
 # Check for missing outputs after a batch run
-lacuna audit rd /bids /output
+lacuna check rd /bids /output
 
 # List available atlases
 lacuna info atlases
