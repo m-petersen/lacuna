@@ -405,8 +405,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_voxel_indices, resampled_mask_img = self._get_mask_voxel_indices(mask_data)
 
         if len(mask_voxel_indices) == 0:
-            msg = "No mask voxels overlap with connectome mask"
-            raise ValidationError(msg)
+            self.logger.warning(
+                "No mask voxels overlap with connectome brain mask after resampling "
+                "— producing zero-valued network maps"
+            )
+            return self._build_empty_mask_results()
 
         self.logger.success(f"Found {len(mask_voxel_indices):,} overlapping mask voxels")
 
@@ -1176,10 +1179,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
             voxel_indices, _ = self._get_mask_voxel_indices(mask_data)
 
             if len(voxel_indices) == 0:
-                raise ValidationError(
-                    f"No overlap for {subject_id}: mask has no voxels within connectome brain mask "
-                    f"after resampling to {self.TARGET_SPACE}. Please check spatial alignment."
+                self.logger.warning(
+                    f"No overlap for {subject_id}: mask has no voxels within connectome "
+                    f"brain mask after resampling to {self.TARGET_SPACE} "
+                    f"— will produce zero-valued network maps"
                 )
+                empty_mask_indices[i] = self._build_empty_mask_results()
+                continue
 
             mask_batch.append(
                 {
