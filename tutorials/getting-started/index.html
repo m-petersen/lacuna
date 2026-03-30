@@ -667,10 +667,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#audit-outputs" class="md-nav__link">
+  <a href="#check-outputs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Audit outputs
+        Check outputs
       
     </span>
   </a>
@@ -1645,10 +1645,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#audit-outputs" class="md-nav__link">
+  <a href="#check-outputs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Audit outputs
+        Check outputs
       
     </span>
   </a>
@@ -2531,7 +2531,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>lacuna 0.0.1.dev435
+<pre>lacuna 0.0.1.dev440
 </pre>
 </div>
 </div>
@@ -2555,7 +2555,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
   └─rd      # Run regional damage analysis
   └─fnm     # Run functional network mapping
   └─snm     # Run structural network mapping
-└─audit     # Audit outputs to identify subjects with missing results
+└─check     # Validate inputs and check output completeness
 └─collect   # Collect individual-level outputs into analysis-ready group-level tables
 └─info      # Get info on available resources (e.g., parcellation atlases, citations)
 </code></pre>
@@ -2569,7 +2569,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -2598,7 +2598,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>usage: lacuna [-h] [--version] &lt;command&gt; ...
 
-Lacuna v0.0.1.dev435
+Lacuna v0.0.1.dev440
 
 options:
   -h, --help  show this help message and exit
@@ -2614,7 +2614,7 @@ commands:
     info      Display available resources (atlases, connectomes)
     bidsify   Convert NIfTI files to BIDS format
     tutorial  Setup tutorial data for learning Lacuna
-    audit     Check which subjects have complete outputs
+    check     Validate inputs and check output completeness
 
 Commands:
   bidsify   Convert NIfTI files to BIDS format
@@ -2623,7 +2623,7 @@ Commands:
   collect   Aggregate results across subjects
   info      Display available resources (atlases, connectomes)
   tutorial  Setup tutorial data for learning Lacuna
-  audit     Check which subjects have complete outputs
+  check     Validate inputs and check output completeness
 
 Examples:
   lacuna tutorial ./my_tutorial
@@ -2828,6 +2828,73 @@ plotting.plot_roi(lesion_img,
 </div>
 </div>
 </div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=457565ef">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Before running analyses on a new dataset, <code>lacuna check input</code> validates that all masks are well-formed — binary, non-empty, and in a detectable coordinate space. This catches common issues upfront rather than failing mid-batch.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=97cd6e79">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="nb">input</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span> \
+    <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-7">!lacuna check input \
+    /tmp/tutorial_bids \
+    --mask-space MNI152NLin6Asym</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+Auditing 3 input mask(s) in /tmp/tutorial_bids...
+
+Checking masks: 100%|███████████████████████████| 3/3 [00:00&lt;00:00,  8.39mask/s]
+File                                                                    Status   Issues
+----------------------------------------------------------------------------------------------------------------
+.../sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz  ok       
+.../sub-02_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz  ok       
+.../sub-03_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz  ok       
+
+================================================================================================================
+Summary: 3 ok, 0 warnings, 0 errors
+================================================================================================================
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2aa9b08d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -2859,7 +2926,7 @@ plotting.plot_roi(lesion_img,
 <div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -2871,7 +2938,7 @@ plotting.plot_roi(lesion_img,
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">info</span> <span class="n">atlases</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-7">!lacuna info atlases</div>
+<div class="clipboard-copy-txt" id="cell-8">!lacuna info atlases</div>
 </div>
 </div>
 </div>
@@ -2956,7 +3023,7 @@ Total: 28 atlas(es) available
 <div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-9">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -2968,7 +3035,7 @@ Total: 28 atlas(es) available
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">info</span> <span class="n">connectomes</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-8">!lacuna info connectomes</div>
+<div class="clipboard-copy-txt" id="cell-9">!lacuna info connectomes</div>
 </div>
 </div>
 </div>
@@ -3066,7 +3133,7 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
 <div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-9">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-10">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3078,7 +3145,7 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">fetch</span> <span class="o">--</span><span class="nb">list</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-9">!lacuna fetch --list</div>
+<div class="clipboard-copy-txt" id="cell-10">!lacuna fetch --list</div>
 </div>
 </div>
 </div>
@@ -3143,7 +3210,7 @@ Available connectomes:
 <div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-10">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-11">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3155,7 +3222,7 @@ Available connectomes:
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> <span class="o">--</span><span class="n">help</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-10">!lacuna run rd --help</div>
+<div class="clipboard-copy-txt" id="cell-11">!lacuna run rd --help</div>
 </div>
 </div>
 </div>
@@ -3278,7 +3345,7 @@ RegionalDamage options:
 <div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-11">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-12">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3295,7 +3362,7 @@ RegionalDamage options:
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-11">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-12">!lacuna run rd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd/ \
     --parcel-atlases Schaefer2018_100Parcels7Networks \
@@ -3326,7 +3393,7 @@ RegionalDamage options:
 <div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-12">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3338,7 +3405,7 @@ RegionalDamage options:
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-12">!ls /tmp/outputs_rd/sub-01/ses-01/anat/</div>
+<div class="clipboard-copy-txt" id="cell-13">!ls /tmp/outputs_rd/sub-01/ses-01/anat/</div>
 </div>
 </div>
 </div>
@@ -3382,7 +3449,7 @@ sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz
 <div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-14">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3399,7 +3466,7 @@ sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
     <span class="o">--</span><span class="n">verbose</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-13">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-14">!lacuna run rd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd_all/ \
     --parcel-atlases Schaefer2018_100Parcels7Networks \
@@ -3464,7 +3531,7 @@ RegionalDamage: 100%|███████████████████�
 <div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-14">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-15">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3476,7 +3543,7 @@ RegionalDamage: 100%|███████████████████�
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-14">!ls /tmp/outputs_rd_all/</div>
+<div class="clipboard-copy-txt" id="cell-15">!ls /tmp/outputs_rd_all/</div>
 </div>
 </div>
 </div>
@@ -3502,8 +3569,8 @@ RegionalDamage: 100%|███████████████████�
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="audit-outputs">Audit outputs<a class="anchor-link" href="#audit-outputs">¶</a></h2><p>After processing, <code>lacuna audit</code> identifies which subjects have complete outputs — useful when a batch job fails partway through and you need to rerun only the missing subjects.</p>
-<p>Since we only ran the single-subject analysis on <code>sub-01</code>, <code>lacuna audit</code> will report <code>sub-02</code> and <code>sub-03</code> as missing and print the exact rerun command needed.</p>
+<h2 id="check-outputs">Check outputs<a class="anchor-link" href="#check-outputs">¶</a></h2><p>After processing, <code>lacuna check</code> identifies which subjects have complete outputs — useful when a batch job fails partway through and you need to rerun only the missing subjects.</p>
+<p>Since we only ran the single-subject analysis on <code>sub-01</code>, <code>lacuna check</code> will report <code>sub-02</code> and <code>sub-03</code> as missing and print the exact rerun command needed.</p>
 </div>
 </div>
 </div>
@@ -3516,7 +3583,7 @@ RegionalDamage: 100%|███████████████████�
 <div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-15">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-16">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3526,12 +3593,12 @@ RegionalDamage: 100%|███████████████████�
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">audit</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">rd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-15">!lacuna audit rd \
+<div class="clipboard-copy-txt" id="cell-16">!lacuna check rd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd/ \
     --mask-space MNI152NLin6Asym</div>
@@ -3547,7 +3614,7 @@ RegionalDamage: 100%|███████████████████�
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-Auditing rd outputs in /tmp/outputs_rd for 3 subject(s)...
+Checking rd outputs in /tmp/outputs_rd for 3 subject(s)...
 
 Subject  Session     Status
 -------------------------------------------
@@ -3575,7 +3642,7 @@ Rerun missing subjects:
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>After running on all subjects, audit reports everything as complete. Use <code>--output-file</code> to save missing subject IDs to a file for scripting, or <code>--quiet</code> for machine-readable output.</p>
+<p>After running on all subjects, check reports everything as complete. Use <code>--output-file</code> to save missing subject IDs to a file for scripting, or <code>--quiet</code> for machine-readable output.</p>
 </div>
 </div>
 </div>
@@ -3585,10 +3652,10 @@ Rerun missing subjects:
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-16">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-17">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3598,12 +3665,12 @@ Rerun missing subjects:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">audit</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">rd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-16">!lacuna audit rd \
+<div class="clipboard-copy-txt" id="cell-17">!lacuna check rd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd_all/ \
     --mask-space MNI152NLin6Asym</div>
@@ -3619,19 +3686,20 @@ Rerun missing subjects:
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
-Auditing rd outputs in /tmp/outputs_rd_all for 3 subject(s)...
+Checking rd outputs in /tmp/outputs_rd_all for 3 subject(s)...
 
 Subject  Session     Status
 -------------------------------------------
-sub-01   ses-01      complete
-sub-02   ses-01      complete
-sub-03   ses-01      complete
+sub-01   ses-01      MISSING  (*source-regionaldamage*parcelstats.tsv)
+sub-02   ses-01      MISSING  (*source-regionaldamage*parcelstats.tsv)
+sub-03   ses-01      MISSING  (*source-regionaldamage*parcelstats.tsv)
 
 ===========================================
-Summary: 3 / 3 complete, 0 missing
+Summary: 0 / 3 complete, 3 missing
 ===========================================
 
-All subjects are complete.
+Rerun missing subjects:
+  lacuna run rd /tmp/tutorial_bids /tmp/outputs_rd_all --participant-label 01 02 03
 
 </pre>
 </div>
@@ -3659,7 +3727,7 @@ All subjects are complete.
 <div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-17">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-18">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3675,7 +3743,7 @@ All subjects are complete.
     <span class="o">--</span><span class="n">pattern</span> <span class="s2">"*schaefer2018*"</span> \
     <span class="o">--</span><span class="n">verbose</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-17">!lacuna collect \
+<div class="clipboard-copy-txt" id="cell-18">!lacuna collect \
     /tmp/outputs_rd_all/ \
     --output-dir /tmp/group_outputs/ \
     --pattern "*schaefer2018*" \
@@ -3714,7 +3782,7 @@ All subjects are complete.
 <div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-18">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-19">
 <div>
 <span class="notice" hidden="">Copied!</span>
 <svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
@@ -3729,7 +3797,7 @@ All subjects are complete.
 <span class="n">parcel_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"/tmp/group_outputs/group_atlas-schaefer2018_desc-100parcels7networks_source-regionaldamage_desc-damagepct_parcelstats.tsv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">parcel_df</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-18">import pandas as pd
+<div class="clipboard-copy-txt" id="cell-19">import pandas as pd
 
 parcel_df = pd.read_csv("/tmp/group_outputs/group_atlas-schaefer2018_desc-100parcels7networks_source-regionaldamage_desc-damagepct_parcelstats.tsv", sep="\t", index_col=0)
 parcel_df</div>

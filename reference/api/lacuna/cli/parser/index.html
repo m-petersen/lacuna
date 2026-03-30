@@ -1587,7 +1587,7 @@ subcommand-based structure:</p>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>            <span class="s2">&quot;  collect   Aggregate results across subjects</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>            <span class="s2">&quot;  info      Display available resources (atlases, connectomes)</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>            <span class="s2">&quot;  tutorial  Setup tutorial data for learning Lacuna</span><span class="se">\n</span><span class="s2">&quot;</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>            <span class="s2">&quot;  audit     Check which subjects have complete outputs</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>            <span class="s2">&quot;  check     Validate inputs and check output completeness</span><span class="se">\n\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>            <span class="s2">&quot;Examples:</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>            <span class="s2">&quot;  lacuna tutorial ./my_tutorial</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>            <span class="s2">&quot;  lacuna fetch gsp1000 --api-key </span><span class="se">\\</span><span class="s2">$DATAVERSE_API_KEY</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1619,7 +1619,7 @@ subcommand-based structure:</p>
 </span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a>    <span class="n">_build_info_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a>    <span class="n">_build_bidsify_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="n">_build_tutorial_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">_build_audit_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">_build_check_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="k">return</span> <span class="n">parser</span>
 </span></code></pre></div></td></tr></table></div>
