@@ -395,6 +395,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "Mask loaded", details={"shape": str(mask_shape), "n_voxels": n_voxels}
             )
 
+        # Empty masks: produce zero-valued output maps
+        if mask_data.is_empty_mask:
+            self.logger.warning("Empty mask detected — producing zero-valued network maps")
+            return self._build_empty_mask_results()
+
         # Get mask voxel indices and resampled mask (computed once, reused for all batches)
         self.logger.info("Computing mask-connectome overlap...")
         mask_voxel_indices, resampled_mask_img = self._get_mask_voxel_indices(mask_data)
@@ -780,6 +785,55 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.logger.success(f"Analysis complete ({len(results)} results)")
         return results
 
+    def _build_empty_mask_results(self) -> dict[str, "AnalysisResult"]:
+        """Build zero-valued results for an empty mask.
+
+        Returns the same structure as a normal analysis run (rmap, zmap,
+        summarystatistics) but with all-zero NIfTI maps.
+        """
+        # Use connectome mask info for output shape/affine
+        if self._mask_info is None:
+            self._load_mask_info()
+
+        mask_shape = self._mask_info["mask_shape"]
+        mask_affine = self._mask_info["mask_affine"]
+
+        zero_vol = np.zeros(mask_shape, dtype=np.float32)
+
+        results: dict[str, AnalysisResult] = {}
+
+        results["rmap"] = VoxelMap(
+            name="rmap",
+            data=nib.Nifti1Image(zero_vol.copy(), mask_affine),
+            space=self.output_space,
+            resolution=self.output_resolution,
+            metadata={"method": self.method, "empty_mask": True},
+        )
+
+        results["zmap"] = VoxelMap(
+            name="zmap",
+            data=nib.Nifti1Image(zero_vol.copy(), mask_affine),
+            space=self.output_space,
+            resolution=self.output_resolution,
+            metadata={"method": self.method, "empty_mask": True},
+        )
+
+        results["summarystatistics"] = ScalarMetric(
+            name="summarystatistics",
+            data={
+                "mean": 0.0,
+                "std": 0.0,
+                "max": 0.0,
+                "min": 0.0,
+                "n_subjects": 0,
+                "n_batches": 0,
+                "empty_mask": True,
+            },
+            metadata={"method": self.method},
+        )
+
+        return results
+
     def _load_mask_info(self) -> tuple:
         """Load mask information from first connectome file.
 
@@ -1102,10 +1156,21 @@ class FunctionalNetworkMapping(BaseAnalysis):
             },
         )
 
-        # Prepare all masks with resampling if needed
+        # Track empty masks — they get zero-valued results without batch processing
+        empty_mask_indices: dict[int, dict] = {}
+        for i, mask_data in enumerate(mask_data_list):
+            if mask_data.is_empty_mask:
+                subject_id = self._format_subject_id(mask_data)
+                self.logger.warning(
+                    f"Empty mask for {subject_id} — will produce zero-valued network maps"
+                )
+                empty_mask_indices[i] = self._build_empty_mask_results()
+
         mask_batch = []
 
         for i, mask_data in enumerate(mask_data_list):
+            if i in empty_mask_indices:
+                continue
             subject_id = self._format_subject_id(mask_data)
 
             voxel_indices, _ = self._get_mask_voxel_indices(mask_data)
@@ -1259,6 +1324,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 self.logger.info(f"Aggregating results for: {subject_id}", indent_level=1)
                 idx, result = _aggregate_one(i, mask_info)
                 processed_results[idx] = result
+
+        # Merge empty-mask results back in at their original indices
+        for idx, empty_result in empty_mask_indices.items():
+            processed_results[idx] = empty_result
 
         # Build final results list in original input order
         results = [processed_results[k] for k in sorted(processed_results)]

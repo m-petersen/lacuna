@@ -55,6 +55,7 @@ class RunConfig:
     tmp_dir: Path | None = None
     overwrite: bool = False
     keep_intermediate: bool = False
+    skip_empty_masks: bool = False
     verbose_count: int = 0
     # Analysis-specific options stored as dict
     analysis_options: dict[str, Any] | None = None
@@ -152,6 +153,7 @@ class RunConfig:
             tmp_dir=getattr(args, "tmp_dir", None),
             overwrite=getattr(args, "overwrite", False),
             keep_intermediate=getattr(args, "keep_intermediate", False),
+            skip_empty_masks=getattr(args, "skip_empty_masks", False),
             verbose_count=getattr(args, "verbose_count", 0),
             analysis_options=analysis_options,
         )
@@ -248,8 +250,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_bidsify_command(args)
     elif args.command == "tutorial":
         return _handle_tutorial_command(args)
-    elif args.command == "audit":
-        return _handle_audit_command(args)
+    elif args.command == "check":
+        return _handle_check_command(args)
     else:
         # No command specified - show help
         parser.print_help()
@@ -589,6 +591,249 @@ def _handle_tutorial_command(args: Namespace) -> int:
         return EXIT_GENERAL_ERROR
 
 
+def _check_input_mask(filepath: Path, mask_space: str | None) -> dict:
+    """Validate a single input mask file.
+
+    Returns a dict with keys: path, status ("ok"|"warning"|"error"),
+    issues (list[str]), shape, voxel_size.
+    """
+    import nibabel as nib
+    import numpy as np
+
+    result: dict = {
+        "path": filepath,
+        "status": "ok",
+        "issues": [],
+        "shape": None,
+        "voxel_size": None,
+    }
+
+    # 1. Load file
+    try:
+        img = nib.load(filepath)
+    except Exception as e:
+        result["status"] = "error"
+        result["issues"].append(f"cannot load: {e}")
+        return result
+
+    result["shape"] = img.shape[:3]
+    result["voxel_size"] = tuple(round(float(v), 2) for v in img.header.get_zooms()[:3])
+
+    # 2. 3D check
+    if len(img.shape) != 3:
+        result["status"] = "error"
+        result["issues"].append(f"not 3D (shape: {img.shape})")
+        return result
+
+    data = np.asarray(img.dataobj)
+
+    # 3. Binary check
+    unique = np.unique(data)
+    if not np.all(np.isin(unique, [0, 1])):
+        result["status"] = "error"
+        vals = ", ".join(str(v) for v in unique[:6])
+        if len(unique) > 6:
+            vals += ", ..."
+        result["issues"].append(f"not binary (values: {vals})")
+
+    # 4. Empty check
+    n_nonzero = int(np.count_nonzero(data))
+    if n_nonzero == 0:
+        result["status"] = "error"
+        result["issues"].append("empty mask (0 non-zero voxels)")
+    elif n_nonzero < 10:
+        # 6. Small lesion warning
+        if result["status"] == "ok":
+            result["status"] = "warning"
+        result["issues"].append(f"very small ({n_nonzero} voxels)")
+
+    # 5. Space detection and consistency
+    from lacuna.core.spaces import detect_space_from_header
+    from lacuna.io.bids import _parse_bids_entities
+
+    entities = _parse_bids_entities(filepath.name)
+    filename_space = entities.get("space")
+    detected = detect_space_from_header(img)
+    detected_space = detected[0] if detected else None
+
+    if not filename_space and detected_space is None and mask_space is None:
+        if result["status"] == "ok":
+            result["status"] = "error"
+        result["issues"].append("space not detectable (no space- in filename, unknown affine)")
+    elif filename_space and detected_space:
+        # Check that the space declared in the filename matches the affine/shape
+        from lacuna.core.spaces import spaces_are_equivalent
+
+        if not spaces_are_equivalent(filename_space, detected_space):
+            if result["status"] == "ok":
+                result["status"] = "error"
+            result["issues"].append(
+                f"space mismatch: filename says '{filename_space}' but affine matches '{detected_space}'"
+            )
+
+    # Record the effective space for cross-dataset consistency checking
+    result["space"] = filename_space or detected_space or mask_space
+
+    return result
+
+
+def _discover_mask_files(
+    bids_dir: Path,
+    pattern: str,
+    participant_label: list[str] | None,
+) -> list[Path]:
+    """Discover mask files in a BIDS directory, applying filters."""
+    import fnmatch as _fnmatch
+    import re
+
+    suffix = "_mask.nii.gz"
+    all_files = sorted(bids_dir.rglob(f"*{suffix}"))
+
+    matching_files = []
+    for fp in all_files:
+        stem = fp.name[:-7] if fp.name.endswith(".nii.gz") else fp.name
+        if (
+            _fnmatch.fnmatch(stem, f"*{pattern}*")
+            or _fnmatch.fnmatch(stem, pattern)
+            or _fnmatch.fnmatch(stem, f"{pattern}*")
+            or _fnmatch.fnmatch(stem, f"*{pattern}")
+        ):
+            matching_files.append(fp)
+
+    if participant_label:
+        normalized = {(s[4:] if s.startswith("sub-") else s) for s in participant_label}
+        matching_files = [
+            fp
+            for fp in matching_files
+            if (m := re.search(r"sub-([^/_]+)", str(fp))) and m.group(1) in normalized
+        ]
+
+    return matching_files
+
+
+def _handle_check_input(args: Namespace) -> int:
+    """Handle the 'lacuna check input' subcommand."""
+    from collections import Counter
+
+    bids_dir: Path = args.bids_dir
+    participant_label: list[str] | None = getattr(args, "participant_label", None)
+    session_id: list[str] | None = getattr(args, "session_id", None)
+    pattern: str | None = getattr(args, "pattern", None)
+    mask_space: str | None = getattr(args, "mask_space", None)
+    quiet: bool = getattr(args, "quiet", False)
+    output_file: Path | None = getattr(args, "output_file", None)
+
+    if not bids_dir.exists():
+        print(f"Error: BIDS directory does not exist: {bids_dir}", file=sys.stderr)
+        return EXIT_INVALID_ARGS
+
+    bids_pattern = _build_pattern(session_id, pattern)
+    mask_files = _discover_mask_files(bids_dir, bids_pattern, participant_label)
+
+    if not mask_files:
+        print("No mask files found in BIDS dataset.", file=sys.stderr)
+        return EXIT_BIDS_ERROR
+
+    if not quiet:
+        print(f"\nChecking {len(mask_files)} input mask(s) in {bids_dir}...\n")
+
+    # Check each mask
+    from tqdm import tqdm
+
+    results = [
+        _check_input_mask(fp, mask_space)
+        for fp in tqdm(mask_files, desc="Checking masks", unit="mask", disable=quiet)
+    ]
+
+    # 7. Consistency check: flag shapes that differ from the majority
+    shape_counts: Counter = Counter()
+    for r in results:
+        if r["shape"] is not None and r["voxel_size"] is not None:
+            shape_counts[(r["shape"], r["voxel_size"])] += 1
+
+    if shape_counts:
+        majority_key = shape_counts.most_common(1)[0][0]
+        for r in results:
+            key = (r["shape"], r["voxel_size"])
+            if key != (None, None) and key != majority_key:
+                if r["status"] == "ok":
+                    r["status"] = "warning"
+                r["issues"].append(
+                    f"dimensions {r['shape']} differ from majority {majority_key[0]}"
+                )
+
+    # 8. Cross-dataset space consistency: warn if masks have different detected spaces
+    space_counts: Counter = Counter()
+    for r in results:
+        if r.get("space"):
+            space_counts[r["space"]] += 1
+
+    if len(space_counts) > 1:
+        majority_space = space_counts.most_common(1)[0][0]
+        for r in results:
+            if r.get("space") and r["space"] != majority_space:
+                if r["status"] == "ok":
+                    r["status"] = "warning"
+                r["issues"].append(f"space '{r['space']}' differs from majority '{majority_space}'")
+
+    # Collect error paths
+    error_paths = [str(r["path"].relative_to(bids_dir)) for r in results if r["status"] == "error"]
+
+    # Write to file if requested
+    if output_file:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text("\n".join(error_paths) + ("\n" if error_paths else ""))
+
+    if quiet:
+        for p in error_paths:
+            print(p)
+        return EXIT_SUCCESS if not error_paths else EXIT_GENERAL_ERROR
+
+    # Human-readable table
+    max_path = max(
+        len("File"),
+        max(len(str(r["path"].relative_to(bids_dir))) for r in results),
+    )
+    max_path = min(max_path, 70)  # cap column width
+    sep_width = max_path + 12 + 30
+
+    print(f"{'File':<{max_path}}  {'Status':<9}Issues")
+    print("-" * sep_width)
+
+    for r in results:
+        rel = str(r["path"].relative_to(bids_dir))
+        if len(rel) > max_path:
+            rel = "..." + rel[-(max_path - 3) :]
+        status = r["status"].upper() if r["status"] != "ok" else "ok"
+        issues = "; ".join(r["issues"]) if r["issues"] else ""
+        print(f"{rel:<{max_path}}  {status:<9}{issues}")
+
+    n_ok = sum(1 for r in results if r["status"] == "ok")
+    n_warn = sum(1 for r in results if r["status"] == "warning")
+    n_err = sum(1 for r in results if r["status"] == "error")
+
+    print(f"\n{'=' * sep_width}")
+    print(f"Summary: {n_ok} ok, {n_warn} warnings, {n_err} errors")
+    print(f"{'=' * sep_width}")
+
+    # Problems summary: list only files with issues so they're easy to find
+    problem_results = [r for r in results if r["status"] != "ok"]
+    if problem_results:
+        print(f"\nProblems ({len(problem_results)}):\n")
+        for r in problem_results:
+            rel = str(r["path"].relative_to(bids_dir))
+            status = r["status"].upper()
+            issues = "; ".join(r["issues"])
+            print(f"  [{status}] {rel}")
+            print(f"         {issues}")
+        print()
+
+    if output_file and error_paths:
+        print(f"Error file paths written to: {output_file}\n")
+
+    return EXIT_SUCCESS if n_err == 0 else EXIT_GENERAL_ERROR
+
+
 def _check_subject_complete(
     anat_dir: Path,
     analysis: str,
@@ -703,14 +948,18 @@ def _discover_bids_subjects(
     return results
 
 
-def _handle_audit_command(args: Namespace) -> int:
-    """Handle the audit subcommand."""
+def _handle_check_command(args: Namespace) -> int:
+    """Handle the check subcommand."""
     analysis: str | None = getattr(args, "analysis", None)
     if not analysis:
         from lacuna.cli.parser import build_parser
 
-        build_parser().parse_args(["audit", "--help"])
+        build_parser().parse_args(["check", "--help"])
         return EXIT_SUCCESS
+
+    # Input check is a separate path — no output_dir needed
+    if analysis == "input":
+        return _handle_check_input(args)
 
     bids_dir: Path = args.bids_dir
     output_dir: Path = args.output_dir
@@ -734,10 +983,10 @@ def _handle_audit_command(args: Namespace) -> int:
 
     if not quiet:
         print(
-            f"\nAuditing {analysis} outputs in {output_dir} for {len(subject_metas)} subject(s)...\n"
+            f"\nChecking {analysis} outputs in {output_dir} for {len(subject_metas)} subject(s)...\n"
         )
 
-    # Audit each subject
+    # Check each subject
     rows: list[dict] = []
     for meta in subject_metas:
         sub_id: str = meta["subject_id"]
@@ -1094,11 +1343,18 @@ def _run_analysis_workflow(config: RunConfig) -> int:
             from tqdm import tqdm
 
             processed_count = 0
+            empty_mask_subjects = []
             for subject_data in tqdm(
                 subjects_list,
                 desc="Processing subjects",
                 disable=not config.verbose,
             ):
+                if subject_data.is_empty_mask:
+                    sid = subject_data.metadata.get("subject_id", "unknown")
+                    empty_mask_subjects.append(sid)
+                    if config.skip_empty_masks:
+                        logger.info(f"Skipping empty mask: {sid}")
+                        continue
                 result = _process_single_subject(subject_data, steps, config, export=True)
                 if result == EXIT_SUCCESS:
                     processed_count += 1
@@ -1106,6 +1362,14 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                     logger.warning("Subject processing failed, continuing...")
 
             logger.info(f"Successfully processed {processed_count} subject(s)")
+            if empty_mask_subjects:
+                action = (
+                    "skipped" if config.skip_empty_masks else "processed with zero-valued outputs"
+                )
+                logger.warning(
+                    f"{len(empty_mask_subjects)} subject(s) had empty masks "
+                    f"({action}): {', '.join(empty_mask_subjects)}"
+                )
             result = EXIT_SUCCESS if processed_count > 0 else EXIT_ANALYSIS_ERROR
 
         if result == EXIT_SUCCESS:
@@ -1177,6 +1441,28 @@ def _process_batch(
     actual_batch_size = n_subjects if batch_size == -1 else min(batch_size, n_subjects)
 
     logger.info(f"Batch processing: {n_subjects} masks in batches of {actual_batch_size}")
+
+    # Report and optionally filter empty masks
+    empty_mask_subjects = [
+        s.metadata.get("subject_id", "unknown") for s in subjects_list if s.is_empty_mask
+    ]
+    if empty_mask_subjects:
+        if config.skip_empty_masks:
+            subjects_list = [s for s in subjects_list if not s.is_empty_mask]
+            logger.warning(
+                f"{len(empty_mask_subjects)} subject(s) with empty masks "
+                f"skipped: {', '.join(empty_mask_subjects)}"
+            )
+            n_subjects = len(subjects_list)
+            if n_subjects == 0:
+                logger.error("No subjects remaining after skipping empty masks")
+                return EXIT_ANALYSIS_ERROR
+            actual_batch_size = n_subjects if batch_size == -1 else min(batch_size, n_subjects)
+        else:
+            logger.warning(
+                f"{len(empty_mask_subjects)} subject(s) have empty masks "
+                f"(zero-valued outputs will be produced): {', '.join(empty_mask_subjects)}"
+            )
 
     # Build analysis instances
     analyses = []

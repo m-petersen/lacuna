@@ -683,6 +683,11 @@ class StructuralNetworkMapping(BaseAnalysis):
         # Get subject ID for informative output
         subject_id = mask_data.metadata.get("subject_id", "unknown")
 
+        # Handle empty masks: produce zero-valued output maps
+        if mask_data.is_empty_mask:
+            self.logger.warning("Empty mask detected — producing zero-valued disconnection maps")
+            return self._build_empty_mask_results(mask_data)
+
         # Log analysis start
         self.logger.info("Filtering tractogram by mask...")
 
@@ -887,6 +892,114 @@ class StructuralNetworkMapping(BaseAnalysis):
             import shutil
 
             shutil.rmtree(temp_dir_path, ignore_errors=True)
+
+    def _build_empty_mask_results(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
+        """Build zero-valued results for an empty mask.
+
+        Parameters
+        ----------
+        mask_data : SubjectData
+            Empty-mask subject data (already in tractogram space).
+
+        Returns
+        -------
+        dict[str, AnalysisResult]
+            Zero-valued VoxelMaps and summary statistics matching the
+            structure returned by the normal analysis path.
+        """
+        # Load template to get output shape and affine
+        template_img = nib.load(self.template)
+        template_shape = template_img.shape[:3]
+        template_affine = template_img.affine
+
+        zero_vol = np.zeros(template_shape, dtype=np.float32)
+
+        results: dict[str, AnalysisResult] = {}
+
+        results["disconnection_pct"] = VoxelMap(
+            name="disconnection_pct",
+            data=nib.Nifti1Image(zero_vol.copy(), template_affine),
+            space=self.tractogram_space,
+            resolution=float(self.output_resolution),
+            metadata={
+                "tractogram": str(self.tractogram_path),
+                "whole_brain_tdi": str(self.whole_brain_tdi),
+                "template": str(self.template),
+                "empty_mask": True,
+            },
+        )
+
+        results["disconnection_tdi"] = VoxelMap(
+            name="disconnection_tdi",
+            data=nib.Nifti1Image(zero_vol.copy(), template_affine),
+            space=self.tractogram_space,
+            resolution=float(self.output_resolution),
+            metadata={
+                "description": "Track density image for mask-filtered tractogram (raw streamline counts)",
+                "tractogram": str(self.tractogram_path),
+                "empty_mask": True,
+            },
+        )
+
+        results["summarystatistics"] = ScalarMetric(
+            name="summarystatistics",
+            data={
+                "mean_disconnection": 0.0,
+                "mask_streamline_count": 0,
+                "empty_mask": True,
+            },
+            metadata={"tractogram": str(self.tractogram_path)},
+        )
+
+        # Compute connectivity matrices with zeros if atlas provided
+        if self._atlases and (
+            self.compute_disconnectivity_matrix or self.compute_roi_disconnection
+        ):
+            for atlas_info in self._atlases:
+                parc_name = atlas_info["name"]
+                labels = atlas_info["labels"]
+                n_labels = len(labels)
+
+                if self.compute_disconnectivity_matrix:
+                    zero_matrix = np.zeros((n_labels, n_labels), dtype=np.float32)
+                    for suffix in ["full", "mask", "disconnectivitypct"]:
+                        key = build_result_key(
+                            atlas=parc_name,
+                            source="StructuralNetworkMapping",
+                            desc=f"connectivity{suffix}",
+                        )
+                        results[key] = ConnectivityMatrix(
+                            name=key,
+                            data=zero_matrix.copy(),
+                            labels=labels,
+                            metadata={
+                                "parcellation_name": parc_name,
+                                "empty_mask": True,
+                            },
+                        )
+
+                if self.compute_roi_disconnection:
+                    zero_values = dict.fromkeys(labels, 0.0)
+                    key = build_result_key(
+                        atlas=parc_name,
+                        source="StructuralNetworkMapping",
+                        desc="roidisconnectionpct",
+                    )
+                    results[key] = ParcelData(
+                        name=parc_name,
+                        data=zero_values,
+                        parcel_names=[parc_name],
+                        metadata={
+                            "parcellation_name": parc_name,
+                            "empty_mask": True,
+                        },
+                    )
+
+        # Transform to input space if requested
+        if self.return_in_input_space:
+            results = self._transform_results_to_input_space(results, mask_data)
+
+        return results
 
     def _compute_connectivity_matrices(
         self,

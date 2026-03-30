@@ -22,18 +22,16 @@ class ValidationError(LacunaError, ValueError):
 class EmptyMaskError(ValidationError):
     """Raised when a mask contains no non-zero voxels."""
 
-    def __init__(self, subject_id: str | None = None):
+    def __init__(self, subject_id: str | None = None, detail: str | None = None):
         self.subject_id = subject_id
         if subject_id:
-            message = (
-                f"Empty mask for '{subject_id}': mask contains no non-zero voxels. "
-                "Please ensure mask files contain valid lesion data."
-            )
+            message = f"Empty mask for '{subject_id}': mask contains no non-zero voxels. "
         else:
-            message = (
-                "Empty mask: mask contains no non-zero voxels. "
-                "Please ensure mask files contain valid lesion data."
-            )
+            message = "Empty mask: mask contains no non-zero voxels. "
+        if detail:
+            message += detail
+        else:
+            message += "Please ensure mask files contain valid lesion data."
         super().__init__(message)
 
 

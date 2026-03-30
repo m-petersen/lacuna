@@ -20,6 +20,7 @@ from lacuna.assets.parcellations.registry import (
     unregister_parcellation,
 )
 from lacuna.core.data_types import ParcelData
+from lacuna.core.keys import build_result_key
 from lacuna.core.spaces import CoordinateSpace
 from lacuna.spatial.transform import transform_image
 
@@ -464,7 +465,7 @@ class Test4DParcelAggregation:
             damage_results = result.results["RegionalDamage"]
 
             # Verify we got results for the atlas (BIDS-style naming)
-            expected_key = "atlas-Test4D_VaryingOverlap_source-InputMask"
+            expected_key = build_result_key("Test4D_VaryingOverlap", "RegionalDamage", "damagepct")
             assert expected_key in damage_results
             region_data = damage_results[expected_key].get_data()
             assert len(region_data) > 0
@@ -550,12 +551,14 @@ class TestMixed3DAnd4DAtlases:
             damage_results = result.results["RegionalDamage"]
 
             # Should have results from both atlases (BIDS-style keys)
-            assert "atlas-Mixed3D_source-InputMask" in damage_results
-            assert "atlas-Mixed4D_source-InputMask" in damage_results
+            key_3d = build_result_key("Mixed3D", "RegionalDamage", "damagepct")
+            key_4d = build_result_key("Mixed4D", "RegionalDamage", "damagepct")
+            assert key_3d in damage_results
+            assert key_4d in damage_results
 
             # Each should have region data
-            mixed3d_data = damage_results["atlas-Mixed3D_source-InputMask"].get_data()
-            mixed4d_data = damage_results["atlas-Mixed4D_source-InputMask"].get_data()
+            mixed3d_data = damage_results[key_3d].get_data()
+            mixed4d_data = damage_results[key_4d].get_data()
             assert len(mixed3d_data) > 0
             assert len(mixed4d_data) > 0
 
@@ -618,7 +621,7 @@ class TestRegionalDamageOutputAPI:
             ), "RegionalDamage results should be a dict, not list"
 
             # Should have the atlas with BIDS-style key
-            expected_key = "atlas-TestOutputAPI_source-InputMask"
+            expected_key = build_result_key("TestOutputAPI", "RegionalDamage", "damagepct")
             assert expected_key in damage_results
 
             # Get the ROI result

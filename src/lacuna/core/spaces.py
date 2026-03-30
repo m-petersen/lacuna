@@ -354,6 +354,8 @@ def detect_space_from_header(
     """Detect coordinate space from image affine matrix.
 
     Compares the image affine against known reference affines.
+    Handles radiological-convention images (negative strides) by
+    canonicalizing to RAS+ orientation before comparison.
 
     Parameters
     ----------
@@ -375,9 +377,38 @@ def detect_space_from_header(
     """
     img_affine = img.affine
 
+    # First try direct affine comparison (fast path for neurological convention)
     for (space, resolution), ref_affine in REFERENCE_AFFINES.items():
         diff = np.abs(img_affine - ref_affine)
         if np.all(diff < tolerance):
+            return (space, resolution)
+
+    # If direct match failed, check for radiological-convention images.
+    # Radiological images have negative strides (e.g. [-1, 2, 3]) so the
+    # raw affine differs, but the voxel grid covers the same physical space.
+    # We match by: same shape, same voxel sizes, and field-of-view center
+    # within one voxel of the reference.
+    for (space, resolution), ref_affine in REFERENCE_AFFINES.items():
+        ref_shape = REFERENCE_SHAPES.get((space, resolution))
+        if ref_shape is None or img.shape[:3] != ref_shape:
+            continue
+        # Voxel sizes must match (absolute values, ignoring stride sign)
+        img_voxel_sizes = np.abs(np.diag(img_affine[:3, :3]))
+        ref_voxel_sizes = np.abs(np.diag(ref_affine[:3, :3]))
+        if not np.allclose(img_voxel_sizes, ref_voxel_sizes, atol=tolerance):
+            continue
+        # Check off-diagonals are zero (no oblique transforms)
+        off_diag = img_affine[:3, :3].copy()
+        np.fill_diagonal(off_diag, 0)
+        if not np.allclose(off_diag, 0, atol=tolerance):
+            continue
+        # Compare FOV centers: the center voxel maps to the same world coord
+        # regardless of storage direction, with at most 1-voxel jitter from
+        # the LR flip (which shifts the grid by voxel_size in the flipped axis).
+        center_voxel = (np.array(img.shape[:3]) - 1) / 2.0
+        img_center = img_affine[:3, :3] @ center_voxel + img_affine[:3, 3]
+        ref_center = ref_affine[:3, :3] @ center_voxel + ref_affine[:3, 3]
+        if np.all(np.abs(img_center - ref_center) <= resolution + tolerance):
             return (space, resolution)
 
     return None
@@ -431,19 +462,11 @@ def get_image_space(
     detected_resolution = None
     attempted_methods = []
 
-    # Try filename detection
-    if filepath is not None:
-        result = detect_space_from_filename(filepath)
-        if result is not None:
-            detected_space, detected_resolution = result
-        attempted_methods.append("filename")
-
-    # Try header detection
-    if detected_space is None:
-        result = detect_space_from_header(img)
-        if result is not None:
-            detected_space, detected_resolution = result
-        attempted_methods.append("header")
+    # Detect space from image affine only (not filename or sidecar metadata)
+    result = detect_space_from_header(img)
+    if result is not None:
+        detected_space, detected_resolution = result
+    attempted_methods.append("header")
 
     # Use declared space if provided
     if declared_space is not None:

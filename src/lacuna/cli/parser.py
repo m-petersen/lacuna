@@ -60,7 +60,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "  collect   Aggregate results across subjects\n"
             "  info      Display available resources (atlases, connectomes)\n"
             "  tutorial  Setup tutorial data for learning Lacuna\n"
-            "  audit     Check which subjects have complete outputs\n\n"
+            "  check     Validate inputs and check output completeness\n\n"
             "Examples:\n"
             "  lacuna tutorial ./my_tutorial\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
@@ -92,7 +92,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     _build_info_parser(subparsers)
     _build_bidsify_parser(subparsers)
     _build_tutorial_parser(subparsers)
-    _build_audit_parser(subparsers)
+    _build_check_parser(subparsers)
 
     return parser
 
@@ -332,6 +332,14 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
         "--overwrite",
         action="store_true",
         help="Overwrite existing output files",
+    )
+    g_other.add_argument(
+        "--skip-empty-masks",
+        action="store_true",
+        help=(
+            "Skip subjects with empty masks (no non-zero voxels) instead of "
+            "processing them. Skipped subjects are reported in the run summary."
+        ),
     )
     g_other.add_argument(
         "--keep-intermediate",
@@ -872,8 +880,8 @@ def _build_tutorial_parser(subparsers) -> None:
     )
 
 
-def _add_shared_audit_arguments(parser: ArgumentParser) -> None:
-    """Add arguments shared by all audit analysis subcommands."""
+def _add_shared_check_arguments(parser: ArgumentParser) -> None:
+    """Add arguments shared by all check analysis subcommands."""
     parser.add_argument(
         "bids_dir",
         type=Path,
@@ -882,7 +890,7 @@ def _add_shared_audit_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "output_dir",
         type=Path,
-        help="Output directory to audit for existing results",
+        help="Output directory to check for existing results",
     )
 
     g_bids = parser.add_argument_group("BIDS filtering options")
@@ -937,43 +945,47 @@ def _add_shared_audit_arguments(parser: ArgumentParser) -> None:
     )
 
 
-def _build_audit_parser(subparsers) -> None:
-    """Add the audit subcommand parser."""
-    audit_parser = subparsers.add_parser(
-        "audit",
-        help="Check which subjects have complete outputs",
+def _build_check_parser(subparsers) -> None:
+    """Add the check subcommand parser."""
+    check_parser = subparsers.add_parser(
+        "check",
+        help="Validate inputs and check output completeness",
         description=(
-            "Audit an output directory to identify subjects with missing results.\n\n"
-            "Reads the same BIDS input directory as 'lacuna run' to enumerate\n"
-            "expected subjects, then checks whether output files exist.\n\n"
-            "Available analyses:\n"
-            "  rd   - Check for parcelstats TSV files (RegionalDamage)\n"
-            "  fnm  - Check for functional rmap NIfTI files\n"
-            "  snm  - Check for disconnection NIfTI files\n\n"
+            "Validate input masks before a run, or check output completeness after.\n\n"
+            "Use 'lacuna check input' to catch common mask issues (non-binary,\n"
+            "empty, missing space) before committing to a long batch run.\n"
+            "Use 'lacuna check rd|fnm|snm' to identify subjects with missing outputs.\n\n"
+            "Available checks:\n"
+            "  input - Validate input masks (binary, non-empty, space)\n"
+            "  rd    - Check for parcelstats TSV files (RegionalDamage)\n"
+            "  fnm   - Check for functional rmap NIfTI files\n"
+            "  snm   - Check for disconnection NIfTI files\n\n"
             "Examples:\n"
-            "  lacuna audit rd /bids /output\n"
-            "  lacuna audit rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
-            "  lacuna audit rd /bids /output --output-file missing.txt\n"
-            "  lacuna audit fnm /bids /output --quiet\n"
-            "  lacuna audit snm /bids /output --participant-label 001 002"
+            "  lacuna check input /bids\n"
+            "  lacuna check rd /bids /output\n"
+            "  lacuna check rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
+            "  lacuna check rd /bids /output --output-file missing.txt\n"
+            "  lacuna check fnm /bids /output --quiet\n"
+            "  lacuna check snm /bids /output --participant-label 001 002"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
 
-    audit_subparsers = audit_parser.add_subparsers(
+    check_subparsers = check_parser.add_subparsers(
         dest="analysis",
         title="analyses",
-        description="Use 'lacuna audit <analysis> --help' for analysis-specific options.",
+        description="Use 'lacuna check <analysis> --help' for analysis-specific options.",
         metavar="<analysis>",
     )
 
-    _build_audit_rd_parser(audit_subparsers)
-    _build_audit_fnm_parser(audit_subparsers)
-    _build_audit_snm_parser(audit_subparsers)
+    _build_check_input_parser(check_subparsers)
+    _build_check_rd_parser(check_subparsers)
+    _build_check_fnm_parser(check_subparsers)
+    _build_check_snm_parser(check_subparsers)
 
 
-def _build_audit_rd_parser(subparsers) -> None:
-    """Add the audit rd subcommand parser."""
+def _build_check_rd_parser(subparsers) -> None:
+    """Add the check rd subcommand parser."""
     rd_parser = subparsers.add_parser(
         "rd",
         aliases=["regionaldamage"],
@@ -984,13 +996,13 @@ def _build_audit_rd_parser(subparsers) -> None:
             "subject's output directory counts as complete. If --parcel-atlases is\n"
             "given, each named atlas is checked individually.\n\n"
             "Examples:\n"
-            "  lacuna audit rd /bids /output\n"
-            "  lacuna audit rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
-            "  lacuna audit rd /bids /output --output-file missing.txt"
+            "  lacuna check rd /bids /output\n"
+            "  lacuna check rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
+            "  lacuna check rd /bids /output --output-file missing.txt"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_audit_arguments(rd_parser)
+    _add_shared_check_arguments(rd_parser)
 
     g_rd = rd_parser.add_argument_group("RegionalDamage options")
     g_rd.add_argument(
@@ -1005,8 +1017,8 @@ def _build_audit_rd_parser(subparsers) -> None:
     )
 
 
-def _build_audit_fnm_parser(subparsers) -> None:
-    """Add the audit fnm subcommand parser."""
+def _build_check_fnm_parser(subparsers) -> None:
+    """Add the check fnm subcommand parser."""
     fnm_parser = subparsers.add_parser(
         "fnm",
         aliases=["functionalnetworkmapping"],
@@ -1016,16 +1028,16 @@ def _build_audit_fnm_parser(subparsers) -> None:
             "A subject is considered complete if a '*desc-fnm_rmap.nii.gz' file\n"
             "exists in their output directory.\n\n"
             "Examples:\n"
-            "  lacuna audit fnm /bids /output\n"
-            "  lacuna audit fnm /bids /output --quiet"
+            "  lacuna check fnm /bids /output\n"
+            "  lacuna check fnm /bids /output --quiet"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_audit_arguments(fnm_parser)
+    _add_shared_check_arguments(fnm_parser)
 
 
-def _build_audit_snm_parser(subparsers) -> None:
-    """Add the audit snm subcommand parser."""
+def _build_check_snm_parser(subparsers) -> None:
+    """Add the check snm subcommand parser."""
     snm_parser = subparsers.add_parser(
         "snm",
         aliases=["structuralnetworkmapping"],
@@ -1035,9 +1047,87 @@ def _build_audit_snm_parser(subparsers) -> None:
             "A subject is considered complete if a '*desc-snm_disconnectionpct.nii.gz'\n"
             "file exists in their output directory.\n\n"
             "Examples:\n"
-            "  lacuna audit snm /bids /output\n"
-            "  lacuna audit snm /bids /output --output-file missing.txt"
+            "  lacuna check snm /bids /output\n"
+            "  lacuna check snm /bids /output --output-file missing.txt"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_audit_arguments(snm_parser)
+    _add_shared_check_arguments(snm_parser)
+
+
+def _build_check_input_parser(subparsers) -> None:
+    """Add the check input subcommand parser."""
+    input_parser = subparsers.add_parser(
+        "input",
+        help="Validate input masks before running analyses",
+        description=(
+            "Validate input mask files in a BIDS directory.\n\n"
+            "Checks each mask for common issues that would cause analysis failures:\n"
+            "  - File loadable by nibabel\n"
+            "  - 3D image (not 4D or 2D)\n"
+            "  - Binary (only values 0 and 1)\n"
+            "  - Non-empty (at least 1 non-zero voxel)\n"
+            "  - Coordinate space detectable\n"
+            "  - Filename space consistent with affine\n"
+            "  - Lesion not suspiciously small (<10 voxels)\n"
+            "  - Consistent dimensions and spaces across dataset\n\n"
+            "Examples:\n"
+            "  lacuna check input /bids\n"
+            "  lacuna check input /bids --mask-space MNI152NLin6Asym\n"
+            "  lacuna check input /bids --output-file problems.txt"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    input_parser.add_argument(
+        "bids_dir",
+        type=Path,
+        help="Root folder of BIDS dataset (sub-XXXXX folders at top level)",
+    )
+
+    g_bids = input_parser.add_argument_group("BIDS filtering options")
+    g_bids.add_argument(
+        "--participant-label",
+        "--participant_label",
+        nargs="+",
+        type=_drop_sub,
+        metavar="LABEL",
+        help="Subject IDs to check (without sub- prefix)",
+    )
+    g_bids.add_argument(
+        "--session-id",
+        "--session_id",
+        nargs="+",
+        metavar="SESSION",
+        help="Session IDs to check (without ses- prefix)",
+    )
+    g_bids.add_argument(
+        "--pattern",
+        type=str,
+        metavar="GLOB",
+        help="Glob pattern to filter mask files (e.g., '*label-WMH*')",
+    )
+    g_bids.add_argument(
+        "--mask-space",
+        type=str,
+        choices=["MNI152NLin6Asym", "MNI152NLin2009cAsym"],
+        metavar="SPACE",
+        help=(
+            "Coordinate space of input masks. Providing this suppresses "
+            "'space not detectable' errors for files without space- in the filename."
+        ),
+    )
+
+    g_out = input_parser.add_argument_group("Output options")
+    g_out.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Print only paths with errors (one per line).",
+    )
+    g_out.add_argument(
+        "--output-file",
+        type=Path,
+        metavar="PATH",
+        help="Write paths with errors to a file (one per line).",
+    )

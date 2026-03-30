@@ -130,7 +130,7 @@ class TestAtlasNamesFilter:
 
             # Should still process atlas_A successfully
             atlas_results = result.results["RegionalDamage"]
-            assert build_result_key("atlas_A", "SubjectData") in atlas_results
+            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") in atlas_results
 
     def test_atlas_names_raises_if_none_found(self):
         """Test that error is raised if no matching atlases found."""

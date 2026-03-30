@@ -13,10 +13,9 @@ import pytest
 class TestSubjectValidation:
     """Unit tests for SubjectData.validate() method."""
 
-    def test_empty_mask_raises_error_on_creation(self):
-        """Test that empty lesion masks raise EmptyMaskError at creation time."""
+    def test_empty_mask_accepted_with_flag(self):
+        """Test that empty lesion masks are accepted and flagged."""
         from lacuna import SubjectData
-        from lacuna.core.exceptions import EmptyMaskError
 
         # Create empty mask (all zeros)
         shape = (64, 64, 64)
@@ -26,17 +25,18 @@ class TestSubjectValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        # Should raise EmptyMaskError at creation time
-        with pytest.raises(EmptyMaskError, match="Empty mask"):
-            SubjectData(
-                mask_img=mask_img,
-                metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
-            )
+        # Should succeed but flag the mask as empty
+        subject = SubjectData(
+            mask_img=mask_img,
+            metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
+        )
+        assert subject.is_empty_mask is True
 
-    def test_empty_mask_error_includes_subject_id(self):
-        """Test that EmptyMaskError includes subject_id in message."""
+    def test_empty_mask_warning_includes_subject_id(self, caplog):
+        """Test that empty mask warning includes subject_id."""
+        import logging
+
         from lacuna import SubjectData
-        from lacuna.core.exceptions import EmptyMaskError
 
         # Create empty mask (all zeros)
         shape = (64, 64, 64)
@@ -46,9 +46,8 @@ class TestSubjectValidation:
 
         mask_img = nib.Nifti1Image(data, affine)
 
-        # Should include subject_id in error message
-        with pytest.raises(EmptyMaskError, match="sub-test-subject"):
-            SubjectData(
+        with caplog.at_level(logging.WARNING, logger="lacuna"):
+            subject = SubjectData(
                 mask_img=mask_img,
                 metadata={
                     "subject_id": "sub-test-subject",
@@ -56,6 +55,26 @@ class TestSubjectValidation:
                     "resolution": 2,
                 },
             )
+        assert subject.is_empty_mask is True
+        assert "sub-test-subject" in caplog.text
+
+    def test_nonempty_mask_not_flagged(self):
+        """Test that non-empty masks have is_empty_mask=False."""
+        from lacuna import SubjectData
+
+        shape = (64, 64, 64)
+        data = np.zeros(shape, dtype=np.uint8)
+        data[30:35, 30:35, 30:35] = 1
+        affine = np.eye(4)
+        affine[0, 0] = affine[1, 1] = affine[2, 2] = 2.0
+
+        mask_img = nib.Nifti1Image(data, affine)
+
+        subject = SubjectData(
+            mask_img=mask_img,
+            metadata={"subject_id": "test", "space": "MNI152NLin6Asym", "resolution": 2},
+        )
+        assert subject.is_empty_mask is False
 
     def test_validate_suspicious_voxel_size_no_warning(self):
         """Test that unusual voxel sizes are allowed with correct resolution declaration.

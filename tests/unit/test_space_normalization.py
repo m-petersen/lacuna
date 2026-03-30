@@ -160,16 +160,16 @@ class TestParcelAggregationSpaceHandling:
         """Create SubjectData in MNI152NLin2009bAsym space."""
         from lacuna.core.subject_data import SubjectData
 
-        # 2mm MNI affine
+        # 2mm MNI152NLin2009bAsym affine (origin: -98, -134, -72)
         affine = np.array(
             [
-                [-2.0, 0.0, 0.0, 90.0],
-                [0.0, 2.0, 0.0, -126.0],
+                [2.0, 0.0, 0.0, -98.0],
+                [0.0, 2.0, 0.0, -134.0],
                 [0.0, 0.0, 2.0, -72.0],
                 [0.0, 0.0, 0.0, 1.0],
             ]
         )
-        img = nib.Nifti1Image(np.ones((91, 109, 91)), affine)
+        img = nib.Nifti1Image(np.ones((99, 117, 95)), affine)
 
         return SubjectData(
             mask_img=img, metadata={"space": "MNI152NLin2009bAsym", "resolution": 2.0}

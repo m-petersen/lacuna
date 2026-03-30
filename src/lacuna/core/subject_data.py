@@ -156,13 +156,23 @@ class SubjectData:
                 "Please binarize your lesion mask before creating SubjectDataData."
             )
 
-        # Validate mask is not empty
-        if not np.any(mask_data > 0):
-            from lacuna.core.exceptions import EmptyMaskError
+        # Check if mask is empty (no non-zero voxels)
+        self._is_empty_mask = not np.any(mask_data > 0)
+        if self._is_empty_mask:
+            import logging
 
-            # Try to get subject_id from metadata for better error message
             subject_id = metadata.get("subject_id") if metadata else None
-            raise EmptyMaskError(subject_id)
+            logger = logging.getLogger("lacuna")
+            if subject_id:
+                logger.warning(
+                    f"Empty mask for '{subject_id}': mask contains no non-zero voxels. "
+                    "Analyses will produce zero-valued outputs for this subject."
+                )
+            else:
+                logger.warning(
+                    "Empty mask: mask contains no non-zero voxels. "
+                    "Analyses will produce zero-valued outputs for this subject."
+                )
 
         # Store image
         self._mask_img = mask_img
@@ -214,7 +224,15 @@ class SubjectData:
                 )
             self._space = declared_space
         elif declared_space is not None:
-            # Declared but not detected - trust user
+            # Declared but not detected — warn user that we can't verify
+            import logging
+
+            logging.getLogger("lacuna").warning(
+                f"Cannot verify declared space '{declared_space}' from image affine. "
+                "The image affine does not match any known template reference. "
+                "Proceeding with declared space — results may be incorrect if "
+                "the image is not actually in this coordinate space."
+            )
             self._space = declared_space
         elif detected_space is not None:
             # Auto-detected from image affine
@@ -316,12 +334,17 @@ class SubjectData:
         str or None
             Detected space identifier, or None if cannot be determined.
         """
+        from .spaces import SpaceDetectionError
+
         try:
             from .spaces import get_image_space
 
             detected = get_image_space(img)
             if detected is not None:
                 return detected.identifier
+        except SpaceDetectionError:
+            # Affine doesn't match any known reference — legitimate
+            return None
         except Exception:
             pass
         return None
@@ -785,6 +808,11 @@ class SubjectData:
         return self._space
 
     # Read-only properties
+
+    @property
+    def is_empty_mask(self) -> bool:
+        """Whether the mask contains no non-zero voxels."""
+        return self._is_empty_mask
 
     @property
     def mask_img(self) -> nib.Nifti1Image:
