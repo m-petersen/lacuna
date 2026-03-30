@@ -2283,6 +2283,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h1 id="spatial-normalization-to-mni-space">Spatial normalization to MNI space<a class="anchor-link" href="#spatial-normalization-to-mni-space">¶</a></h1><p>Lacuna expects lesion masks to be in MNI space. This guide demonstrates how to register a brain image and its associated lesion mask to the MNI template using <a href="https://antspy.readthedocs.io/">ANTsPy</a>.</p>
 <p>We use ANTsPy's built-in test data (the CH2 brain) to create a fully reproducible example. In practice, the moving image would be your subject's native-space T1w scan.</p>
 <p>You can also use ANTs via <a href="https://github.com/ANTsX/ANTsR">R</a> or directly via the <a href="https://stnava.github.io/ANTs/">terminal</a>. Besides ANTs, several alternative registration approaches are available. In our experience, the deep learning–based method <a href="https://surfer.nmr.mgh.harvard.edu/fswiki/EasyReg">EasyReg</a> (implemented in FreeSurfer) performs well and is substantially faster than the ANTs SyN algorithm demonstrated here.</p>
+<p><strong>What you'll learn:</strong></p>
+<ul>
+<li>Register a brain image to MNI space with ANTsPy</li>
+<li>Apply the warp to a lesion mask</li>
+<li>Verify registration quality</li>
+</ul>
 <p><a href="https://colab.research.google.com/github/m-petersen/lacuna/blob/main/docs/how-to/spatial-normalization.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
 </div>
 </div>
@@ -2921,16 +2927,6 @@ Unique values: [0. 1.]
 <div class="clipboard-copy-txt" id="cell-11">ants.image_write(lesion_mni, "/tmp/lesion_MNI.nii.gz")</div>
 </div>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=n16rwxr2lpj">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 </div>
 </div>
 </div>
