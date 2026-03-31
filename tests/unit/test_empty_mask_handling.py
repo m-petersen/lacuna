@@ -255,26 +255,26 @@ class TestSkipEmptyMasksFlag:
     """Tests for the --skip-empty-masks CLI flag."""
 
     @pytest.mark.fast
-    def test_skip_flag_exists_in_parser(self):
-        """The --skip-empty-masks flag is recognized by the argument parser."""
+    def test_on_empty_flag_exists_in_parser(self):
+        """The --on-empty flag is recognized by the argument parser."""
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
-        args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out", "--skip-empty-masks"])
-        assert args.skip_empty_masks is True
+        args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out", "--on-empty", "skip"])
+        assert args.on_empty == "skip"
 
     @pytest.mark.fast
-    def test_skip_flag_defaults_to_false(self):
-        """Without the flag, skip_empty_masks defaults to False."""
+    def test_on_empty_defaults_to_warn(self):
+        """Without the flag, on_empty defaults to 'warn'."""
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
         args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out"])
-        assert args.skip_empty_masks is False
+        assert args.on_empty == "warn"
 
     @pytest.mark.fast
-    def test_runconfig_carries_skip_flag(self):
-        """RunConfig.from_args propagates skip_empty_masks."""
+    def test_runconfig_carries_on_empty_flag(self):
+        """RunConfig.from_args propagates on_empty."""
         from lacuna.cli.main import RunConfig
         from lacuna.cli.parser import build_parser
 
@@ -285,11 +285,12 @@ class TestSkipEmptyMasksFlag:
                 "rd",
                 "/tmp/in",
                 "/tmp/out",
-                "--skip-empty-masks",
+                "--on-empty",
+                "skip",
             ]
         )
         config = RunConfig.from_args(args)
-        assert config.skip_empty_masks is True
+        assert config.on_empty == "skip"
 
     @pytest.mark.fast
     def test_sequential_skips_empty_masks(self, tmp_path, caplog):
@@ -326,7 +327,7 @@ class TestSkipEmptyMasksFlag:
             bids_dir=dataset_root,
             output_dir=output_dir,
             analysis="rd",
-            skip_empty_masks=True,
+            on_empty="skip",
             space="MNI152NLin6Asym",
             verbose_count=1,
             analysis_options={},
@@ -365,7 +366,7 @@ class TestSkipEmptyMasksFlag:
             bids_dir=dataset_root,
             output_dir=output_dir,
             analysis="rd",
-            skip_empty_masks=False,
+            on_empty="warn",
             space="MNI152NLin6Asym",
             verbose_count=1,
             analysis_options={},

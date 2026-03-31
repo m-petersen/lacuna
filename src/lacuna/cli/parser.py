@@ -334,11 +334,15 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
         help="Overwrite existing output files",
     )
     g_other.add_argument(
-        "--skip-empty-masks",
-        action="store_true",
+        "--on-empty",
+        choices=["warn", "skip", "error"],
+        default="warn",
         help=(
-            "Skip subjects with empty masks (no non-zero voxels) instead of "
-            "processing them. Skipped subjects are reported in the run summary."
+            "Behavior when a subject has an empty mask (no non-zero voxels) or "
+            "no overlap with the analysis network/atlas: "
+            "warn (default, process with zero-valued outputs), "
+            "skip (exclude from processing), or "
+            "error (raise error and halt processing)."
         ),
     )
     g_other.add_argument(
@@ -933,7 +937,7 @@ def _add_shared_check_arguments(parser: ArgumentParser) -> None:
         "-q",
         action="store_true",
         help=(
-            "Suppress all output except missing subject IDs (one per line). "
+            "Suppress all output except missing/empty subject IDs (one per line). "
             "Useful for shell scripting."
         ),
     )
@@ -941,7 +945,16 @@ def _add_shared_check_arguments(parser: ArgumentParser) -> None:
         "--output-file",
         type=Path,
         metavar="PATH",
-        help="Write missing subject IDs to a file (one per line).",
+        help="Write missing/empty subject IDs to a file (one per line).",
+    )
+    g_out.add_argument(
+        "--check-content",
+        action="store_true",
+        help=(
+            "Inspect output file content to detect empty (all-zero) results. "
+            "Without this flag, only file existence is checked. "
+            "Adds overhead of reading sidecar JSON / TSV files."
+        ),
     )
 
 

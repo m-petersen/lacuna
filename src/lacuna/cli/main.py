@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from argparse import Namespace
 
+from lacuna.core.exceptions import ValidationError
 from lacuna.core.subject_data import SubjectData
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class RunConfig:
     tmp_dir: Path | None = None
     overwrite: bool = False
     keep_intermediate: bool = False
-    skip_empty_masks: bool = False
+    on_empty: str = "warn"  # "warn", "skip", or "error"
     verbose_count: int = 0
     # Analysis-specific options stored as dict
     analysis_options: dict[str, Any] | None = None
@@ -153,7 +154,7 @@ class RunConfig:
             tmp_dir=getattr(args, "tmp_dir", None),
             overwrite=getattr(args, "overwrite", False),
             keep_intermediate=getattr(args, "keep_intermediate", False),
-            skip_empty_masks=getattr(args, "skip_empty_masks", False),
+            on_empty=getattr(args, "on_empty", "warn"),
             verbose_count=getattr(args, "verbose_count", 0),
             analysis_options=analysis_options,
         )
@@ -834,17 +835,92 @@ def _handle_check_input(args: Namespace) -> int:
     return EXIT_SUCCESS if n_err == 0 else EXIT_GENERAL_ERROR
 
 
+def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
+    """Check whether an output file contains only zeros / empty-mask data.
+
+    For NIfTI files (fnm, snm): reads the companion JSON sidecar and checks
+    Metadata.empty_mask. Falls back to loading the NIfTI if no sidecar exists.
+
+    For TSV files (rd): reads the file and checks if all numeric values are 0.
+
+    Parameters
+    ----------
+    filepath : Path
+        Path to the output file to check.
+    analysis_type : str
+        Analysis type: 'rd', 'regionaldamage', 'fnm', 'functionalnetworkmapping',
+        'snm', or 'structuralnetworkmapping'.
+
+    Returns
+    -------
+    bool
+        True if output is empty (all zeros), False otherwise.
+    """
+    import json
+
+    norm = analysis_type.lower()
+
+    if norm in ("rd", "regionaldamage"):
+        # Read TSV and check if all numeric columns are zero
+        try:
+            import pandas as pd
+
+            df = pd.read_csv(filepath, sep="\t")
+            numeric_cols = df.select_dtypes(include="number")
+            if numeric_cols.empty:
+                return True  # No numeric data
+            return (numeric_cols == 0).all().all()
+        except Exception:
+            return False  # If we can't read it, assume non-empty
+
+    else:  # FNM or SNM -- try sidecar first
+        sidecar_path = filepath.with_suffix("").with_suffix(".json")
+        if sidecar_path.exists():
+            try:
+                with open(sidecar_path) as f:
+                    data = json.load(f)
+                meta = data.get("Metadata", {})
+                if meta.get("empty_mask") is True:
+                    return True
+                # If sidecar exists but no empty_mask key, assume non-empty
+                return False
+            except Exception:
+                pass  # Fall through to NIfTI loading
+
+        # No sidecar or failed to read -- fall back to loading NIfTI
+        try:
+            import nibabel as nib
+            import numpy as np
+
+            img = nib.load(filepath)
+            return not np.any(img.get_fdata() > 0)
+        except Exception:
+            return False  # If we can't read it, assume non-empty
+
+
 def _check_subject_complete(
     anat_dir: Path,
     analysis: str,
     parcel_atlases: list[str] | None,
+    check_content: bool = False,
 ) -> tuple[str, list[str]]:
     """Check whether expected output files exist for a subject/session.
+
+    Parameters
+    ----------
+    anat_dir : Path
+        Anatomy directory for the subject/session.
+    analysis : str
+        Analysis type: 'rd', 'fnm', 'snm', etc.
+    parcel_atlases : list[str] | None
+        For RD: list of expected atlas names. If None, any parcelstats file counts as complete.
+    check_content : bool
+        If True, inspect file content to detect empty (all-zero) outputs.
 
     Returns
     -------
     tuple of (status, missing)
-        status : "complete" | "missing"
+        status : "complete" | "empty" | "missing"
         missing : list of descriptions of what was not found
     """
     norm = analysis.lower()
@@ -869,26 +945,37 @@ def _check_subject_complete(
                 hits = [f for f in all_matches if atlas_fragment in f.name.lower()]
                 if not hits:
                     missing.append(atlas)
-            return ("complete" if not missing else "missing", missing)
+            if missing:
+                return "missing", missing
+            # All atlases found -- check content if requested
+            if check_content and all(_is_output_empty(f, norm) for f in all_matches):
+                return "empty", []
+            return "complete", []
         else:
-            return (
-                "complete" if all_matches else "missing",
-                [] if all_matches else ["*source-regionaldamage*parcelstats.tsv"],
-            )
+            if not all_matches:
+                return "missing", ["*source-regionaldamage*parcelstats.tsv"]
+            # Files exist -- check content if requested
+            if check_content and all(_is_output_empty(f, norm) for f in all_matches):
+                return "empty", []
+            return "complete", []
 
     elif norm in ("fnm", "functionalnetworkmapping"):
         hits = list(anat_dir.glob("*desc-fnm_rmap.nii.gz"))
-        return (
-            "complete" if hits else "missing",
-            [] if hits else ["*desc-fnm_rmap.nii.gz"],
-        )
+        if not hits:
+            return "missing", ["*desc-fnm_rmap.nii.gz"]
+        # Files exist -- check content if requested
+        if check_content and all(_is_output_empty(f, norm) for f in hits):
+            return "empty", []
+        return "complete", []
 
     elif norm in ("snm", "structuralnetworkmapping"):
         hits = list(anat_dir.glob("*desc-snm_disconnectionpct.nii.gz"))
-        return (
-            "complete" if hits else "missing",
-            [] if hits else ["*desc-snm_disconnectionpct.nii.gz"],
-        )
+        if not hits:
+            return "missing", ["*desc-snm_disconnectionpct.nii.gz"]
+        # Files exist -- check content if requested
+        if check_content and all(_is_output_empty(f, norm) for f in hits):
+            return "empty", []
+        return "complete", []
 
     return "missing", [f"unknown analysis '{analysis}'"]
 
@@ -969,6 +1056,7 @@ def _handle_check_command(args: Namespace) -> int:
     parcel_atlases: list[str] | None = getattr(args, "parcel_atlases", None)
     quiet: bool = getattr(args, "quiet", False)
     output_file: Path | None = getattr(args, "output_file", None)
+    check_content: bool = getattr(args, "check_content", False)
 
     if not bids_dir.exists():
         print(f"Error: BIDS directory does not exist: {bids_dir}", file=sys.stderr)
@@ -997,14 +1085,17 @@ def _handle_check_command(args: Namespace) -> int:
             anat_dir = anat_dir / ses_id
         anat_dir = anat_dir / "anat"
 
-        status, missing = _check_subject_complete(anat_dir, analysis, parcel_atlases)
+        status, missing = _check_subject_complete(anat_dir, analysis, parcel_atlases, check_content)
         rows.append(
             {"subject_id": sub_id, "session_id": ses_id, "status": status, "missing": missing}
         )
 
-    # Deduplicated sorted list of missing bare subject IDs
+    # Deduplicated sorted lists of missing/empty bare subject IDs
     missing_subject_ids = sorted(
         {r["subject_id"].removeprefix("sub-") for r in rows if r["status"] == "missing"}
+    )
+    empty_subject_ids = sorted(
+        {r["subject_id"].removeprefix("sub-") for r in rows if r["status"] == "empty"}
     )
 
     # Write to file if requested (always, regardless of --quiet)
@@ -1017,7 +1108,14 @@ def _handle_check_command(args: Namespace) -> int:
     if quiet:
         for sub_id in missing_subject_ids:
             print(sub_id)
-        return EXIT_SUCCESS if not missing_subject_ids else EXIT_GENERAL_ERROR
+        if check_content:
+            for sub_id in empty_subject_ids:
+                print(f"{sub_id}\tempty")
+        if missing_subject_ids:
+            return EXIT_GENERAL_ERROR
+        if empty_subject_ids:
+            return 2  # EXIT_EMPTY_OUTPUTS
+        return EXIT_SUCCESS
 
     # Human-readable table
     has_sessions = any(r["session_id"] for r in rows)
@@ -1033,6 +1131,8 @@ def _handle_check_command(args: Namespace) -> int:
     for r in rows:
         if r["status"] == "complete":
             status_str = "complete"
+        elif r["status"] == "empty":
+            status_str = "EMPTY  (all-zero output)"
         else:
             detail = ", ".join(r["missing"])
             status_str = "MISSING" + (f"  ({detail})" if detail else "")
@@ -1044,9 +1144,16 @@ def _handle_check_command(args: Namespace) -> int:
             print(f"{r['subject_id']:<{sub_width}}{status_str}")
 
     n_complete = sum(1 for r in rows if r["status"] == "complete")
+    n_empty = sum(1 for r in rows if r["status"] == "empty")
+    n_missing = sum(1 for r in rows if r["status"] == "missing")
     n_total = len(rows)
     print(f"\n{'=' * sep_width}")
-    print(f"Summary: {n_complete} / {n_total} complete, {n_total - n_complete} missing")
+    summary = f"Summary: {n_complete} / {n_total} complete"
+    if n_missing > 0:
+        summary += f", {n_missing} missing"
+    if n_empty > 0:
+        summary += f", {n_empty} empty"
+    print(summary)
     print(f"{'=' * sep_width}\n")
 
     if missing_subject_ids:
@@ -1055,10 +1162,15 @@ def _handle_check_command(args: Namespace) -> int:
         print(f"  lacuna run {analysis} {bids_dir} {output_dir} --participant-label {label_str}\n")
         if output_file:
             print(f"Missing subject IDs written to: {output_file}\n")
-    else:
-        print("All subjects are complete.\n")
+        return EXIT_GENERAL_ERROR
 
-    return EXIT_SUCCESS if not missing_subject_ids else EXIT_GENERAL_ERROR
+    if empty_subject_ids:
+        print(f"Note: {len(empty_subject_ids)} subject(s) produced empty (all-zero) outputs.")
+        print("This typically means the input mask had no overlap with the analysis atlas/network.\n")
+        return 2  # EXIT_EMPTY_OUTPUTS
+
+    print("All subjects are complete.\n")
+    return EXIT_SUCCESS
 
 
 def _register_connectome_from_path(
@@ -1352,9 +1464,14 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                 if subject_data.is_empty_mask:
                     sid = subject_data.metadata.get("subject_id", "unknown")
                     empty_mask_subjects.append(sid)
-                    if config.skip_empty_masks:
+                    if config.on_empty == "skip":
                         logger.info(f"Skipping empty mask: {sid}")
                         continue
+                    elif config.on_empty == "error":
+                        raise ValidationError(
+                            f"Empty mask for {sid}: no non-zero voxels. "
+                            f"Use --on-empty warn or skip to handle gracefully."
+                        )
                 result = _process_single_subject(subject_data, steps, config, export=True)
                 if result == EXIT_SUCCESS:
                     processed_count += 1
@@ -1363,12 +1480,14 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
             logger.info(f"Successfully processed {processed_count} subject(s)")
             if empty_mask_subjects:
-                action = (
-                    "skipped" if config.skip_empty_masks else "processed with zero-valued outputs"
-                )
+                action_str = {
+                    "skip": "skipped",
+                    "warn": "processed with zero-valued outputs",
+                    "error": "halted processing"
+                }.get(config.on_empty, "processed")
                 logger.warning(
                     f"{len(empty_mask_subjects)} subject(s) had empty masks "
-                    f"({action}): {', '.join(empty_mask_subjects)}"
+                    f"({action_str}): {', '.join(empty_mask_subjects)}"
                 )
             result = EXIT_SUCCESS if processed_count > 0 else EXIT_ANALYSIS_ERROR
 
@@ -1447,7 +1566,7 @@ def _process_batch(
         s.metadata.get("subject_id", "unknown") for s in subjects_list if s.is_empty_mask
     ]
     if empty_mask_subjects:
-        if config.skip_empty_masks:
+        if config.on_empty == "skip":
             subjects_list = [s for s in subjects_list if not s.is_empty_mask]
             logger.warning(
                 f"{len(empty_mask_subjects)} subject(s) with empty masks "
@@ -1458,7 +1577,15 @@ def _process_batch(
                 logger.error("No subjects remaining after skipping empty masks")
                 return EXIT_ANALYSIS_ERROR
             actual_batch_size = n_subjects if batch_size == -1 else min(batch_size, n_subjects)
-        else:
+        elif config.on_empty == "error":
+            msg = (
+                f"{len(empty_mask_subjects)} subject(s) have empty masks: "
+                f"{', '.join(empty_mask_subjects)}. "
+                f"Use --on-empty warn or skip to handle gracefully."
+            )
+            logger.error(msg)
+            raise ValidationError(msg)
+        else:  # "warn"
             logger.warning(
                 f"{len(empty_mask_subjects)} subject(s) have empty masks "
                 f"(zero-valued outputs will be produced): {', '.join(empty_mask_subjects)}"
