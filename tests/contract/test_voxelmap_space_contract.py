@@ -62,7 +62,7 @@ class TestVoxelMapSpaceContract:
         try:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_connectome",
-                parcellation_name="Schaefer2018_100Parcels7Networks",
+                parcellation_name="schaefer2018parcels100networks7",
                 return_in_input_space=False,
                 check_dependencies=False,
             )
@@ -77,7 +77,7 @@ class TestVoxelMapSpaceContract:
         try:
             analysis = StructuralNetworkMapping(
                 connectome_name="test_connectome",
-                parcellation_name="Schaefer2018_100Parcels7Networks",
+                parcellation_name="schaefer2018parcels100networks7",
                 return_in_input_space=True,
                 check_dependencies=False,
             )

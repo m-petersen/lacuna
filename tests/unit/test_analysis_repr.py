@@ -285,14 +285,14 @@ class TestStructuralNetworkMappingRepr:
 
             analysis = StructuralNetworkMapping(
                 connectome_name="test_struct_atlas",
-                parcellation_name="Schaefer2018_100Parcels7Networks",
+                parcellation_name="schaefer2018parcels100networks7",
                 compute_disconnectivity_matrix=True,
                 check_dependencies=False,
             )
 
             repr_str = repr(analysis)
 
-            assert "parcellation_name='Schaefer2018_100Parcels7Networks'" in repr_str
+            assert "parcellation_name='schaefer2018parcels100networks7'" in repr_str
             assert "compute_disconnectivity_matrix=True" in repr_str
         finally:
             unregister_structural_connectome("test_struct_atlas")
@@ -316,7 +316,7 @@ class TestStructuralNetworkMappingRepr:
 
             analysis = StructuralNetworkMapping(
                 connectome_name="test_struct_str",
-                parcellation_name="Schaefer2018_100Parcels7Networks",
+                parcellation_name="schaefer2018parcels100networks7",
                 n_jobs=4,
                 verbose=False,
                 check_dependencies=False,
@@ -327,7 +327,7 @@ class TestStructuralNetworkMappingRepr:
             assert "StructuralNetworkMapping Analysis" in str_output
             assert "Configuration:" in str_output
             assert "connectome_name: test_struct_str" in str_output
-            assert "parcellation_name: Schaefer2018_100Parcels7Networks" in str_output
+            assert "parcellation_name: schaefer2018parcels100networks7" in str_output
             assert "n_jobs: 4" in str_output
         finally:
             unregister_structural_connectome("test_struct_str")
@@ -350,7 +350,7 @@ class TestRegionalDamageRepr:
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
         analysis = RegionalDamage(
-            parcel_names=["TianSubcortex_3TS1", "Schaefer2018_100Parcels7Networks"]
+            parcel_names=["tian2020parcels16", "schaefer2018parcels100networks7"]
         )
 
         repr_str = repr(analysis)
@@ -384,7 +384,7 @@ class TestParcelAggregationRepr:
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
         analysis = ParcelAggregation(
-            parcel_names=["TianSubcortex_3TS1", "Schaefer2018_100Parcels7Networks"],
+            parcel_names=["tian2020parcels16", "schaefer2018parcels100networks7"],
             source="maskimg",
             aggregation="percent",
         )

@@ -134,13 +134,13 @@ class TestRunSubcommandParsing:
                 "--connectome-path",
                 str(conn_path),
                 "--parcel-atlases",
-                "Schaefer2018_100Parcels7Networks",
+                "schaefer2018parcels100networks7",
                 "--compute-disconnectivity-matrix",
                 "--compute-roi-disconnection",
             ]
         )
 
-        assert args.parcel_atlases == ["Schaefer2018_100Parcels7Networks"]
+        assert args.parcel_atlases == ["schaefer2018parcels100networks7"]
         assert args.compute_disconnectivity_matrix is True
         assert args.compute_roi_disconnection is True
 

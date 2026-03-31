@@ -90,14 +90,14 @@ class TestStructuralNetworkMappingIntegration:
 
         # Should NOT have connectivity matrices
         assert "lesion_connectivity_matrix" not in result.metadata
-        assert "disconnectivity_percent" not in result.metadata
+        assert "disconnectionpct" not in result.metadata
 
     def test_analysis_with_bundled_atlas(self, test_data_paths):
         """Test analysis with bundled Schaefer100 atlas and disconnectivity matrix."""
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
@@ -114,14 +114,14 @@ class TestStructuralNetworkMappingIntegration:
 
         # Verify connectivity matrix results
         assert "lesion_connectivity_matrix" in result.metadata
-        assert "disconnectivity_percent" in result.metadata
+        assert "disconnectionpct" in result.metadata
         assert "full_connectivity_matrix" in result.metadata
         assert "matrix_statistics" in result.metadata
 
         # Verify matrix properties
         lesion_matrix = result.metadata["lesion_connectivity_matrix"]
         full_matrix = result.metadata["full_connectivity_matrix"]
-        disconn_pct = result.metadata["disconnectivity_percent"]
+        disconn_pct = result.metadata["disconnectionpct"]
 
         assert lesion_matrix.shape == (100, 100)
         assert full_matrix.shape == (100, 100)
@@ -142,7 +142,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_roi_disconnection=True,
             n_jobs=2,
             verbose=False,
@@ -173,7 +173,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             compute_roi_disconnection=True,
             n_jobs=2,
@@ -197,7 +197,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             compute_roi_disconnection=True,
             n_jobs=2,
@@ -221,7 +221,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
@@ -254,7 +254,7 @@ class TestStructuralNetworkMappingIntegration:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
@@ -314,7 +314,7 @@ class TestEdgeCases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
@@ -335,7 +335,7 @@ class TestEdgeCases:
         analysis = StructuralNetworkMapping(
             tractogram_path=test_data_paths["tractogram"],
             whole_brain_tdi=test_data_paths["tdi"],
-            parcellation_name="Schaefer2018_100Parcels7Networks",
+            parcellation_name="schaefer2018parcels100networks7",
             compute_disconnectivity_matrix=True,
             n_jobs=2,
             verbose=False,
@@ -344,7 +344,7 @@ class TestEdgeCases:
         lesion = SubjectData.from_file(test_data_paths["lesion"])
         result = analysis.run(lesion)
 
-        disconn_pct = result.metadata["disconnectivity_percent"]
+        disconn_pct = result.metadata["disconnectionpct"]
 
         # Should not have NaN or Inf values
         assert not np.any(np.isnan(disconn_pct))
@@ -361,8 +361,8 @@ class TestDifferentAtlases:
     @pytest.mark.parametrize(
         "atlas_name,expected_n_parcels",
         [
-            ("Schaefer2018_100Parcels7Networks", 100),
-            ("Schaefer2018_200Parcels7Networks", 200),
+            ("schaefer2018parcels100networks7", 100),
+            ("schaefer2018parcels200networks7", 200),
         ],
     )
     def test_bundled_atlases(self, test_data_paths, atlas_name, expected_n_parcels):

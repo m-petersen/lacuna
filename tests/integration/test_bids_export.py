@@ -58,7 +58,7 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
     # Add provenance
     prov = create_provenance_record(
         function="compute_regional_damage",
-        parameters={"atlas": "Schaefer2018_100Parcels7Networks"},
+        parameters={"atlas": "schaefer2018parcels100networks7"},
         version="0.1.0",
     )
     lesion_with_results = lesion_with_results.add_provenance(prov)

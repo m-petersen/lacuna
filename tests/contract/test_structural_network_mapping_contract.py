@@ -346,9 +346,9 @@ def test_parcellation_accepts_bundled_name(temp_connectome):
     # Should accept bundled atlas name
     analysis = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        parcellation_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="schaefer2018parcels100networks7",
     )
-    assert analysis.parcellation_name == "Schaefer2018_100Parcels7Networks"
+    assert analysis.parcellation_name == "schaefer2018parcels100networks7"
 
 
 @pytest.mark.skipif(not _check_mrtrix(), reason="MRtrix3 not available")
@@ -360,7 +360,7 @@ def test_compute_disconnectivity_matrix_parameter(temp_connectome):
     # Should have compute_disconnectivity_matrix parameter
     analysis = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        parcellation_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="schaefer2018parcels100networks7",
         compute_disconnectivity_matrix=True,
     )
     assert analysis.compute_disconnectivity_matrix is True
@@ -374,7 +374,7 @@ def test_compute_roi_disconnection_parameter(temp_connectome):
 
     analysis = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        parcellation_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="schaefer2018parcels100networks7",
         compute_roi_disconnection=True,
     )
     assert analysis.compute_roi_disconnection is True
@@ -392,7 +392,7 @@ def test_results_include_connectivity_matrices_when_atlas_provided():
         "lesion_streamline_count",  # Always present
         "metadata",  # Always present
         "lesion_connectivity_matrix",  # Present when atlas provided
-        "disconnectivity_percent",  # Present when atlas provided
+        "disconnectionpct",  # Present when atlas provided
         "full_connectivity_matrix",  # Present when atlas provided
         "matrix_statistics",  # Present when atlas provided
     }
@@ -444,7 +444,7 @@ def test_lesioned_connectivity_optional(temp_connectome):
     # Default: both flags False
     analysis1 = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        parcellation_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="schaefer2018parcels100networks7",
     )
     assert analysis1.compute_disconnectivity_matrix is False
     assert analysis1.compute_roi_disconnection is False
@@ -452,7 +452,7 @@ def test_lesioned_connectivity_optional(temp_connectome):
     # Explicit: compute_disconnectivity_matrix=True
     analysis2 = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        parcellation_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="schaefer2018parcels100networks7",
         compute_disconnectivity_matrix=True,
     )
     assert analysis2.compute_disconnectivity_matrix is True
@@ -460,7 +460,7 @@ def test_lesioned_connectivity_optional(temp_connectome):
     # Explicit: compute_roi_disconnection=True
     analysis3 = StructuralNetworkMapping(
         connectome_name=temp_connectome,
-        parcellation_name="Schaefer2018_100Parcels7Networks",
+        parcellation_name="schaefer2018parcels100networks7",
         compute_roi_disconnection=True,
     )
     assert analysis3.compute_roi_disconnection is True

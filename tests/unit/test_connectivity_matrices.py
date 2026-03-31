@@ -38,7 +38,7 @@ class TestConnectivityMatrixComputation:
         with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
             analysis = StructuralNetworkMapping(
                 connectome_name="test_mock_connectome",
-                parcellation_name="Schaefer2018_100Parcels7Networks",
+                parcellation_name="schaefer2018parcels100networks7",
                 n_jobs=1,
             )
             analysis._parcellation_resolved = Path("/fake/atlas.nii.gz")
@@ -343,7 +343,7 @@ class TestMatrixDimensions:
                 with patch("lacuna.analysis.structural_network_mapping.check_mrtrix_available"):
                     analysis = StructuralNetworkMapping(
                         connectome_name="test_matrix_dims",
-                        parcellation_name="Schaefer2018_100Parcels7Networks",
+                        parcellation_name="schaefer2018parcels100networks7",
                         n_jobs=1,
                     )
                     analysis._parcellation_resolved = Path("/fake/atlas.nii.gz")

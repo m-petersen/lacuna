@@ -54,15 +54,15 @@ def test_atlas_metadata_bundled():
 def test_atlas_registry_has_bundled_atlases():
     """Test that registry contains expected bundled atlases."""
     # Check for Schaefer atlases (actual names with 2018 and full parcel count)
-    assert "Schaefer2018_100Parcels7Networks" in PARCELLATION_REGISTRY
-    assert "Schaefer2018_200Parcels7Networks" in PARCELLATION_REGISTRY
-    assert "Schaefer2018_400Parcels7Networks" in PARCELLATION_REGISTRY
-    assert "Schaefer2018_1000Parcels7Networks" in PARCELLATION_REGISTRY
+    assert "schaefer2018parcels100networks7" in PARCELLATION_REGISTRY
+    assert "schaefer2018parcels200networks7" in PARCELLATION_REGISTRY
+    assert "schaefer2018parcels400networks7" in PARCELLATION_REGISTRY
+    assert "schaefer2018parcels1000networks7" in PARCELLATION_REGISTRY
 
     # Check for Tian atlases (actual names with full details)
-    assert "TianSubcortex_3TS1" in PARCELLATION_REGISTRY
-    assert "TianSubcortex_3TS2" in PARCELLATION_REGISTRY
-    assert "TianSubcortex_3TS3" in PARCELLATION_REGISTRY
+    assert "tian2020parcels16" in PARCELLATION_REGISTRY
+    assert "tian2020parcels32" in PARCELLATION_REGISTRY
+    assert "tian2020parcels50" in PARCELLATION_REGISTRY
 
     # HCP1065 was removed — verify it's not in the registry
     assert "HCP1065_thr0p1" not in PARCELLATION_REGISTRY
@@ -101,7 +101,7 @@ def test_list_parcellations_filter_by_space():
 
     # Should include Schaefer atlases
     names = [a.name for a in nlin6_atlases]
-    assert "Schaefer2018_100Parcels7Networks" in names
+    assert "schaefer2018parcels100networks7" in names
 
 
 def test_list_parcellations_filter_by_resolution():
@@ -113,7 +113,7 @@ def test_list_parcellations_filter_by_resolution():
 
     # Schaefer atlases are at 1mm resolution
     names = [a.name for a in res1_atlases]
-    assert any("Schaefer" in name for name in names)
+    assert any("schaefer" in name for name in names)
 
 
 def test_list_parcellations_check_region_counts():
@@ -177,7 +177,7 @@ def test_register_parcellation_overwrites_with_warning():
     """Test that registering an existing atlas name raises ValueError."""
     # Create atlas with same name as existing one
     duplicate = ParcellationMetadata(
-        name="Schaefer2018_100Parcels7Networks",
+        name="schaefer2018parcels100networks7",
         space="MNI152NLin6Asym",
         resolution=2,
         parcellation_filename="duplicate_atlas.nii.gz",
@@ -193,9 +193,9 @@ def test_register_parcellation_overwrites_with_warning():
 
 def test_schaefer_atlas_metadata():
     """Test specific Schaefer atlas metadata."""
-    schaefer400 = PARCELLATION_REGISTRY["Schaefer2018_400Parcels7Networks"]
+    schaefer400 = PARCELLATION_REGISTRY["schaefer2018parcels400networks7"]
 
-    assert schaefer400.name == "Schaefer2018_400Parcels7Networks"
+    assert schaefer400.name == "schaefer2018parcels400networks7"
     assert "Schaefer" in schaefer400.parcellation_filename
     assert schaefer400.space == "MNI152NLin6Asym"
     assert schaefer400.resolution == 1
@@ -206,9 +206,9 @@ def test_schaefer_atlas_metadata():
 
 def test_tian_atlas_metadata():
     """Test specific Tian atlas metadata."""
-    tian_s2 = PARCELLATION_REGISTRY["TianSubcortex_3TS2"]
+    tian_s2 = PARCELLATION_REGISTRY["tian2020parcels32"]
 
-    assert tian_s2.name == "TianSubcortex_3TS2"
+    assert tian_s2.name == "tian2020parcels32"
     assert "Tian" in tian_s2.parcellation_filename
     assert tian_s2.space == "MNI152NLin6Asym"
     assert tian_s2.resolution == 1

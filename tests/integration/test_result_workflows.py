@@ -22,7 +22,7 @@ def test_end_to_end_result_access_workflow(synthetic_mask_img):
     # Run atlas aggregation (which should generate per-atlas results)
     # Use parcellation names that are registered in the system
     analysis = ParcelAggregation(
-        parcel_names=["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
+        parcel_names=["schaefer2018parcels100networks7", "tian2020parcels16"]
     )
     result = analysis.run(mask_data)
 
@@ -52,8 +52,8 @@ def test_multiple_analyses_result_access(synthetic_mask_img):
     )
 
     # Run two different analyses using registered parcellation
-    result = ParcelAggregation(parcel_names=["TianSubcortex_3TS1"]).run(mask_data)
-    result = RegionalDamage(parcel_names=["TianSubcortex_3TS1"]).run(result)
+    result = ParcelAggregation(parcel_names=["tian2020parcels16"]).run(mask_data)
+    result = RegionalDamage(parcel_names=["tian2020parcels16"]).run(result)
 
     # Both analyses should have results
     assert "ParcelAggregation" in result.results

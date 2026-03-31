@@ -60,7 +60,7 @@ def test_atlas_aggregation_accepts_nibabel_image(sample_nifti_image):
     analysis = ParcelAggregation(
         source="maskimg",
         aggregation="percent",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
     )
 
     # Should accept nibabel image directly
@@ -83,7 +83,7 @@ def test_atlas_aggregation_nibabel_image_returns_correct_type(sample_nifti_image
     analysis = ParcelAggregation(
         source="maskimg",
         aggregation="mean",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
     )
 
     result = analysis.run(sample_nifti_image)
@@ -102,7 +102,7 @@ def test_atlas_aggregation_accepts_nibabel_image_list(sample_nifti_images):
     analysis = ParcelAggregation(
         source="maskimg",
         aggregation="percent",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
     )
 
     # Should accept list of nibabel images
@@ -128,7 +128,7 @@ def test_atlas_aggregation_nibabel_list_preserves_order(sample_nifti_images):
     analysis = ParcelAggregation(
         source="maskimg",
         aggregation="percent",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
     )
 
     results = analysis.run(sample_nifti_images)
@@ -155,7 +155,7 @@ def test_atlas_aggregation_nibabel_list_batch_processing(sample_nifti_images):
     analysis = ParcelAggregation(
         source="maskimg",
         aggregation="mean",
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
     )
 
     # Should handle batch processing
@@ -174,7 +174,7 @@ def test_atlas_aggregation_nibabel_works_with_multiple_atlases(sample_nifti_imag
     analysis = ParcelAggregation(
         source="maskimg",
         aggregation="percent",
-        parcel_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7", "schaefer2018parcels200networks7"],
     )
 
     # Should return single ParcelData with combined atlas data
@@ -201,7 +201,7 @@ def test_atlas_aggregation_nibabel_different_aggregations(sample_nifti_image):
         analysis = ParcelAggregation(
             source="maskimg",
             aggregation=aggregation,
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            parcel_names=["schaefer2018parcels100networks7"],
         )
 
         result = analysis.run(sample_nifti_image)

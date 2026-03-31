@@ -42,11 +42,11 @@ def batch_results_with_parcel_data():
         parcel_data = ParcelData(
             name="parcelmeans",
             data={"region_A": 0.5 + i * 0.1, "region_B": 0.3 + i * 0.1, "region_C": 0.8 - i * 0.1},
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            parcel_names=["schaefer2018parcels100networks7"],
         )
         # build_result_key(parc, source, desc)
         parcel_key = build_result_key(
-            "Schaefer2018_100Parcels7Networks", "ParcelAggregation", "parcelmeans"
+            "schaefer2018parcels100networks7", "ParcelAggregation", "parcelmeans"
         )
 
         # Create mask_data with results, then add to batch
@@ -64,7 +64,7 @@ class TestExtractContract:
         from lacuna.batch.extract import extract
 
         extracted = extract(
-            batch_results_with_parcel_data, pattern="*Schaefer2018_100Parcels7Networks*"
+            batch_results_with_parcel_data, pattern="*schaefer2018parcels100networks7*"
         )
 
         assert isinstance(extracted, dict)
@@ -75,7 +75,7 @@ class TestExtractContract:
         from lacuna.batch.extract import extract
 
         extracted = extract(
-            batch_results_with_parcel_data, pattern="*Schaefer2018_100Parcels7Networks*"
+            batch_results_with_parcel_data, pattern="*schaefer2018parcels100networks7*"
         )
 
         # Should use subject_id from metadata
@@ -88,7 +88,7 @@ class TestExtractContract:
         from lacuna.batch.extract import extract
 
         extracted = extract(
-            batch_results_with_parcel_data, pattern="*Schaefer2018_100Parcels7Networks*"
+            batch_results_with_parcel_data, pattern="*schaefer2018parcels100networks7*"
         )
 
         # When there's only one matching result per subject, extract returns values directly
@@ -116,7 +116,7 @@ class TestExtractContract:
 
         extracted = extract(
             batch_results_with_parcel_data,
-            pattern="*Schaefer2018_100Parcels7Networks*",
+            pattern="*schaefer2018parcels100networks7*",
             unwrap=True,
         )
 
@@ -132,7 +132,7 @@ class TestExtractContract:
 
         extracted = extract(
             batch_results_with_parcel_data,
-            pattern="*Schaefer2018_100Parcels7Networks*",
+            pattern="*schaefer2018parcels100networks7*",
             unwrap=False,
         )
 
@@ -150,7 +150,7 @@ class TestExtractErrorHandling:
         from lacuna.batch.extract import extract
 
         with pytest.raises(ValueError, match="batch_results is empty"):
-            extract({}, pattern="*Schaefer2018_100Parcels7Networks*")
+            extract({}, pattern="*schaefer2018parcels100networks7*")
 
     def test_no_matching_results_raises_error(self, batch_results_with_parcel_data):
         """extract() should raise ValueError when no results match filters."""

@@ -33,9 +33,9 @@ class TestAtlasRegistryBasics:
 
         # Check for specific bundled atlases
         parcel_names = [a.name for a in atlases]
-        assert "Schaefer2018_100Parcels7Networks" in parcel_names
-        assert "Schaefer2018_200Parcels7Networks" in parcel_names
-        assert "TianSubcortex_3TS1" in parcel_names
+        assert "schaefer2018parcels100networks7" in parcel_names
+        assert "schaefer2018parcels200networks7" in parcel_names
+        assert "tian2020parcels16" in parcel_names
 
     def test_filter_atlases_by_space(self):
         """Test filtering atlases by coordinate space."""
@@ -53,10 +53,10 @@ class TestAtlasRegistryBasics:
 
     def test_load_bundled_atlas(self):
         """Test loading a bundled atlas."""
-        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
+        atlas = load_parcellation("schaefer2018parcels100networks7")
 
         # Check metadata
-        assert atlas.metadata.name == "Schaefer2018_100Parcels7Networks"
+        assert atlas.metadata.name == "schaefer2018parcels100networks7"
         assert atlas.metadata.space == "MNI152NLin6Asym"
         assert atlas.metadata.resolution == 1
         assert atlas.metadata.n_regions == 100
@@ -101,7 +101,7 @@ class TestAtlasRegistryWithAnalysis:
         """Test atlas aggregation using bundled atlas from registry."""
         # Use Schaefer100 atlas (1mm resolution, same space as lesion)
         analysis = ParcelAggregation(
-            source="maskimg", aggregation="mean", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="maskimg", aggregation="mean", parcel_names=["schaefer2018parcels100networks7"]
         )
 
         result = analysis.run(synthetic_lesion)
@@ -111,7 +111,7 @@ class TestAtlasRegistryWithAnalysis:
         aggregation_results = result.results["ParcelAggregation"]
 
         # Should have ParcelData for Schaefer100 (BIDS-style key format)
-        expected_key = build_result_key("Schaefer2018_100Parcels7Networks", "SubjectData")
+        expected_key = build_result_key("schaefer2018parcels100networks7", "SubjectData")
         assert expected_key in aggregation_results
         roi_result = aggregation_results[expected_key]
         region_data = roi_result.get_data()
@@ -129,7 +129,7 @@ class TestAtlasRegistryWithAnalysis:
         analysis = ParcelAggregation(
             source="maskimg",
             aggregation="percent",
-            parcel_names=["Schaefer2018_100Parcels7Networks", "Schaefer2018_200Parcels7Networks"],
+            parcel_names=["schaefer2018parcels100networks7", "schaefer2018parcels200networks7"],
         )
 
         result = analysis.run(synthetic_lesion)
@@ -137,8 +137,8 @@ class TestAtlasRegistryWithAnalysis:
         aggregation_results = result.results["ParcelAggregation"]
 
         # Should have results from both atlases (BIDS-style key format)
-        schaefer100_key = build_result_key("Schaefer2018_100Parcels7Networks", "SubjectData")
-        schaefer200_key = build_result_key("Schaefer2018_200Parcels7Networks", "SubjectData")
+        schaefer100_key = build_result_key("schaefer2018parcels100networks7", "SubjectData")
+        schaefer200_key = build_result_key("schaefer2018parcels200networks7", "SubjectData")
         assert schaefer100_key in aggregation_results
         assert schaefer200_key in aggregation_results
 
@@ -156,9 +156,9 @@ class TestAtlasRegistryWithAnalysis:
             source="maskimg",
             aggregation="mean",
             parcel_names=[
-                "Schaefer2018_100Parcels7Networks",
-                "Schaefer2018_200Parcels7Networks",
-                "TianSubcortex_3TS1",
+                "schaefer2018parcels100networks7",
+                "schaefer2018parcels200networks7",
+                "tian2020parcels16",
             ],
         )
 
@@ -168,12 +168,12 @@ class TestAtlasRegistryWithAnalysis:
 
         # Should have results from all three atlases (BIDS-style key format)
         has_schaefer100 = any(
-            "Schaefer2018_100Parcels7Networks" in k for k in aggregation_results.keys()
+            "schaefer2018parcels100networks7" in k for k in aggregation_results.keys()
         )
         has_schaefer200 = any(
-            "Schaefer2018_200Parcels7Networks" in k for k in aggregation_results.keys()
+            "schaefer2018parcels200networks7" in k for k in aggregation_results.keys()
         )
-        has_tian = any("TianSubcortex_3TS1" in k for k in aggregation_results.keys())
+        has_tian = any("tian2020parcels16" in k for k in aggregation_results.keys())
 
         assert has_schaefer100, "Should have Schaefer100 results"
         assert has_schaefer200, "Should have Schaefer200 results"

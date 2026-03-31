@@ -104,7 +104,7 @@ def test_atlas_transformed_when_space_mismatch():
                             # Initialize analysis with atlas
                             analysis = StructuralNetworkMapping(
                                 connectome_name="test_struct_connectome",
-                                parcellation_name="Schaefer2018_100Parcels7Networks",
+                                parcellation_name="schaefer2018parcels100networks7",
                                 cache_tdi=False,
                                 check_dependencies=False,
                             )
@@ -224,7 +224,7 @@ def test_atlas_not_transformed_when_space_matches():
                             # Initialize analysis with atlas - same space as atlas
                             analysis = StructuralNetworkMapping(
                                 connectome_name="test_struct_no_transform",
-                                parcellation_name="Schaefer2018_100Parcels7Networks",
+                                parcellation_name="schaefer2018parcels100networks7",
                                 cache_tdi=False,
                                 check_dependencies=False,
                             )
@@ -331,7 +331,7 @@ def test_atlas_transformation_uses_correct_resolution():
                             output_res = 2
                             analysis = StructuralNetworkMapping(
                                 connectome_name="test_struct_resolution",
-                                parcellation_name="Schaefer2018_100Parcels7Networks",
+                                parcellation_name="schaefer2018parcels100networks7",
                                 cache_tdi=False,
                                 check_dependencies=False,
                             )

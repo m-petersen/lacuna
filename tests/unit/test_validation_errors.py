@@ -343,6 +343,7 @@ class TestCLIAtlasNameValidation:
         if not available:
             pytest.skip("No parcellations registered")
 
+        slug = available[0]
         bids_dir = tmp_path / "bids"
         bids_dir.mkdir()
         output_dir = tmp_path / "output"
@@ -351,7 +352,7 @@ class TestCLIAtlasNameValidation:
             bids_dir=bids_dir,
             output_dir=output_dir,
             analysis="rd",
-            analysis_options={"parcel_names": [available[0]]},
+            analysis_options={"parcel_names": [slug]},
         )
-        # Should not raise
+        # Should not raise — slug is a valid registry name
         config.validate()

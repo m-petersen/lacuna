@@ -34,12 +34,12 @@ def test_parcel_data_creation():
     pdata = ParcelData(
         name="test_parcel",
         data=data,
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
         aggregation_method="mean",
     )
 
     assert pdata.name == "test_parcel"
-    assert pdata.parcel_names == ["Schaefer2018_100Parcels7Networks"]
+    assert pdata.parcel_names == ["schaefer2018parcels100networks7"]
     assert pdata.aggregation_method == "mean"
     assert pdata.get_data() == data
 
@@ -121,7 +121,7 @@ def test_parcel_data_metadata_preservation():
     pdata = ParcelData(
         name="test_parcel",
         data=data,
-        parcel_names=["Schaefer2018_100Parcels7Networks"],
+        parcel_names=["schaefer2018parcels100networks7"],
         aggregation_method="mean",
         metadata={"source": "network_map", "threshold": 0.0, "n_regions": 2},
     )

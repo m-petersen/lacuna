@@ -41,10 +41,10 @@ class TestMultiAtlasAnalysisWorkflow:
     def test_regional_damage_with_single_atlas(self, tutorial_mask_data):
         """RegionalDamage can use a single named atlas."""
         # Use specific parcellation by name
-        analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"])
+        analysis = RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
         # Validate it was configured correctly
-        assert analysis.parcel_names == ["Schaefer2018_100Parcels7Networks"]
+        assert analysis.parcel_names == ["schaefer2018parcels100networks7"]
         assert analysis.aggregation == "percent"
 
     def test_regional_damage_with_multiple_atlases(self, tutorial_mask_data):
@@ -52,27 +52,27 @@ class TestMultiAtlasAnalysisWorkflow:
         # Use multiple parcellations by name
         analysis = RegionalDamage(
             parcel_names=[
-                "Schaefer2018_100Parcels7Networks",
-                "Schaefer2018_200Parcels7Networks",
+                "schaefer2018parcels100networks7",
+                "schaefer2018parcels200networks7",
             ]
         )
 
         # Validate it was configured correctly
         assert len(analysis.parcel_names) == 2
-        assert "Schaefer2018_100Parcels7Networks" in analysis.parcel_names
-        assert "Schaefer2018_200Parcels7Networks" in analysis.parcel_names
+        assert "schaefer2018parcels100networks7" in analysis.parcel_names
+        assert "schaefer2018parcels200networks7" in analysis.parcel_names
 
     def test_parcel_aggregation_with_named_atlas(self, tutorial_mask_data):
         """ParcelAggregation can use named parcellation from registry."""
         # Use parcellation by name with different aggregation
         analysis = ParcelAggregation(
-            parcel_names=["TianSubcortex_3TS2"],
+            parcel_names=["tian2020parcels32"],
             source="maskimg",
             aggregation="mean",
         )
 
         # Validate configuration
-        assert analysis.parcel_names == ["TianSubcortex_3TS2"]
+        assert analysis.parcel_names == ["tian2020parcels32"]
         assert analysis.aggregation == "mean"
 
     def test_regional_damage_default_parcellations(self, tutorial_mask_data):
@@ -133,9 +133,9 @@ class TestAtlasDiscovery:
         parcel_names = [a.name for a in all_atlases]
 
         # Should include Schaefer parcellations with full names
-        assert "Schaefer2018_100Parcels7Networks" in parcel_names
-        assert "Schaefer2018_200Parcels7Networks" in parcel_names
-        assert "Schaefer2018_400Parcels7Networks" in parcel_names
+        assert "schaefer2018parcels100networks7" in parcel_names
+        assert "schaefer2018parcels200networks7" in parcel_names
+        assert "schaefer2018parcels400networks7" in parcel_names
 
         # Should include Tian subcortical atlases
         assert any("Tian" in name for name in parcel_names)
@@ -147,15 +147,15 @@ class TestAtlasLoadingInDifferentSpaces:
     def test_load_parcellation_returns_correct_metadata(self):
         """load_parcellation() returns atlas with correct metadata."""
         # Load atlas
-        atlas = load_parcellation("Schaefer2018_400Parcels7Networks")
+        atlas = load_parcellation("schaefer2018parcels400networks7")
 
         # Should have correct metadata
-        assert atlas.metadata.name == "Schaefer2018_400Parcels7Networks"
+        assert atlas.metadata.name == "schaefer2018parcels400networks7"
         assert atlas.metadata.n_regions == 400
 
     def test_load_parcellation_returns_nifti_image(self):
         """load_parcellation() returns a proper NIfTI image."""
-        atlas = load_parcellation("Schaefer2018_100Parcels7Networks")
+        atlas = load_parcellation("schaefer2018parcels100networks7")
 
         # Should return Parcellation with image data
         assert hasattr(atlas, "image")
@@ -167,9 +167,9 @@ class TestAtlasLoadingInDifferentSpaces:
     def test_load_different_schaefer_parcellations(self):
         """Can load different Schaefer parcellation scales."""
         atlases = [
-            "Schaefer2018_100Parcels7Networks",
-            "Schaefer2018_200Parcels7Networks",
-            "Schaefer2018_400Parcels7Networks",
+            "schaefer2018parcels100networks7",
+            "schaefer2018parcels200networks7",
+            "schaefer2018parcels400networks7",
         ]
         expected_regions = [100, 200, 400]
 

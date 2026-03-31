@@ -29,13 +29,13 @@ class TestParseBidsFilename:
 
     def test_parse_complex_filename(self):
         """Test parsing a complex BIDS filename with atlas entities."""
-        filename = "sub-CAS001_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-rmap_parcelstats.tsv"
+        filename = "sub-CAS001_ses-01_label-acuteinfarct_method-fnm_atlas-schaefer2018parcels100networks7_desc-rmap_parcelstats.tsv"
         result = _parse_bids_filename(filename)
         assert result["sub"] == "CAS001"
         assert result["ses"] == "01"
         assert result["label"] == "acuteinfarct"
-        assert result["atlas"] == "schaefer2018"
-        assert result["source"] == "fnm"
+        assert result["atlas"] == "schaefer2018parcels100networks7"
+        assert result["method"] == "fnm"
 
     def test_parse_no_session(self):
         """Test parsing filename without session."""
@@ -86,7 +86,7 @@ class TestAggregateParcelstats:
             # Create parcelstats TSV for each subject
             tsv_path = (
                 sub_dir
-                / f"sub-{sub_id}_ses-01_label-lesion_atlas-schaefer_desc-100parcels_source-fnm_desc-rmap_parcelstats.tsv"
+                / f"sub-{sub_id}_ses-01_label-lesion_method-fnm_atlas-schaefer100parcels_desc-rmap_parcelstats.tsv"
             )
             df = pd.DataFrame(
                 {
@@ -193,8 +193,8 @@ class TestAggregateParcelstats:
         sub_dir.mkdir(parents=True)
 
         # Create two different parcelstats types
-        for output_type in ["fnm_desc-rmap", "snm_desc-disconnectionpct"]:
-            tsv_path = sub_dir / f"sub-001_ses-01_label-lesion_source-{output_type}_parcelstats.tsv"
+        for output_type in ["method-fnm_desc-rmap", "method-snm_desc-disconnectionpct"]:
+            tsv_path = sub_dir / f"sub-001_ses-01_label-lesion_{output_type}_parcelstats.tsv"
             df = pd.DataFrame({"region": ["A", "B"], "value": [0.1, 0.2]})
             df.to_csv(tsv_path, sep="\t", index=False)
 
@@ -231,7 +231,7 @@ class TestAggregateParcelstatsIntegration:
             # FNM parcelstats
             fnm_tsv = (
                 sub_dir
-                / f"sub-{sub_id}_ses-{ses_id}_label-{label}_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-rmap_parcelstats.tsv"
+                / f"sub-{sub_id}_ses-{ses_id}_label-{label}_method-fnm_atlas-schaefer2018parcels100networks7_desc-rmap_parcelstats.tsv"
             )
             df = pd.DataFrame(
                 {
@@ -244,7 +244,7 @@ class TestAggregateParcelstatsIntegration:
             # SNM parcelstats
             snm_tsv = (
                 sub_dir
-                / f"sub-{sub_id}_ses-{ses_id}_label-{label}_atlas-schaefer2018_desc-100parcels7networks_source-snm_desc-disconnectionpct_parcelstats.tsv"
+                / f"sub-{sub_id}_ses-{ses_id}_label-{label}_method-snm_atlas-schaefer2018parcels100networks7_desc-disconnectionpct_parcelstats.tsv"
             )
             df = pd.DataFrame(
                 {

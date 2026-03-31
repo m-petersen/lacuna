@@ -82,7 +82,7 @@ class TestParcelAggregationOutputs:
         # Use a real bundled atlas instead of trying to mock everything
         # Note: This may return empty results if lesion doesn't overlap with atlas
         # The test is primarily checking the return type structure
-        analysis = ParcelAggregation(parcel_names=["Schaefer2018_100Parcels7Networks"])
+        analysis = ParcelAggregation(parcel_names=["schaefer2018parcels100networks7"])
 
         results = analysis._run_analysis(sample_mask_data)
 
@@ -92,7 +92,7 @@ class TestParcelAggregationOutputs:
 
     def test_atlas_aggregation_returns_roi_result(self, sample_mask_data, mock_atlas_file):
         """ParcelAggregation returns ParcelData with region data."""
-        analysis = ParcelAggregation(parcel_names=["Schaefer2018_100Parcels7Networks"])
+        analysis = ParcelAggregation(parcel_names=["schaefer2018parcels100networks7"])
 
         results = analysis._run_analysis(sample_mask_data)
 
@@ -112,7 +112,7 @@ class TestParcelAggregationOutputs:
     def test_atlas_aggregation_roi_result_has_metadata(self, sample_mask_data, mock_atlas_file):
         """ParcelData from ParcelAggregation includes analysis metadata."""
         analysis = ParcelAggregation(
-            parcel_names=["Schaefer2018_100Parcels7Networks"], aggregation="percent"
+            parcel_names=["schaefer2018parcels100networks7"], aggregation="percent"
         )
 
         results = analysis._run_analysis(sample_mask_data)

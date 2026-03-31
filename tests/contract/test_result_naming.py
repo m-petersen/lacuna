@@ -21,7 +21,7 @@ class TestBIDSStyleResultKeys:
         """ParcelAggregation should generate BIDS-style keys.
 
         Format: atlas-{atlas}_source-{source}[_desc-{description}]
-        Example: atlas-Schaefer2018_100Parcels7Networks_source-InputMask
+        Example: atlas-schaefer2018parcels100networks7_source-InputMask
         """
         # Create simple test mask
         data = np.zeros((10, 10, 10))
@@ -38,7 +38,7 @@ class TestBIDSStyleResultKeys:
         analysis = ParcelAggregation(
             source="maskimg",
             aggregation="percent",
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            parcel_names=["schaefer2018parcels100networks7"],
         )
 
         result = analysis.run(mask_data)
@@ -77,7 +77,7 @@ class TestBIDSStyleResultKeys:
         )
 
         # Run analysis
-        analysis = RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"])
+        analysis = RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
         result = analysis.run(mask_data)
 
@@ -111,7 +111,7 @@ class TestResultKeyComponents:
 
         # Test ParcelAggregation
         analysis = ParcelAggregation(
-            source="maskimg", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="maskimg", parcel_names=["schaefer2018parcels100networks7"]
         )
         result = analysis.run(mask_data)
 
@@ -139,7 +139,7 @@ class TestResultKeyComponents:
 
         # Test ParcelAggregation
         analysis = ParcelAggregation(
-            source="maskimg", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="maskimg", parcel_names=["schaefer2018parcels100networks7"]
         )
         result = analysis.run(mask_data)
 
@@ -170,7 +170,7 @@ class TestResultKeyComponents:
 
         # Test ParcelAggregation
         analysis = ParcelAggregation(
-            source="maskimg", parcel_names=["Schaefer2018_100Parcels7Networks"]
+            source="maskimg", parcel_names=["schaefer2018parcels100networks7"]
         )
         result = analysis.run(mask_data)
 

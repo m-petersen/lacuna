@@ -79,13 +79,13 @@ class TestAtlasRegistryContract:
 
         # Based on src/lacuna/data/atlases/ contents
         expected_atlases = [
-            "Schaefer2018_100Parcels7Networks",
-            "Schaefer2018_200Parcels7Networks",
-            "Schaefer2018_400Parcels7Networks",
-            "Schaefer2018_1000Parcels7Networks",
-            "TianSubcortex_3TS1",
-            "TianSubcortex_3TS2",
-            "TianSubcortex_3TS3",
+            "schaefer2018parcels100networks7",
+            "schaefer2018parcels200networks7",
+            "schaefer2018parcels400networks7",
+            "schaefer2018parcels1000networks7",
+            "tian2020parcels16",
+            "tian2020parcels32",
+            "tian2020parcels50",
         ]
 
         for atlas_name in expected_atlases:
@@ -109,20 +109,20 @@ class TestAtlasRegistryContract:
         """Schaefer atlases must have correct metadata."""
         from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY
 
-        schaefer_100 = PARCELLATION_REGISTRY["Schaefer2018_100Parcels7Networks"]
+        schaefer_100 = PARCELLATION_REGISTRY["schaefer2018parcels100networks7"]
         assert schaefer_100.space == "MNI152NLin6Asym"
         assert schaefer_100.resolution == 1
         assert schaefer_100.n_regions == 100
         assert "7" in schaefer_100.name or len(schaefer_100.networks) == 7
 
-        schaefer_400 = PARCELLATION_REGISTRY["Schaefer2018_400Parcels7Networks"]
+        schaefer_400 = PARCELLATION_REGISTRY["schaefer2018parcels400networks7"]
         assert schaefer_400.n_regions == 400
 
     def test_tian_atlases_metadata(self):
         """Tian subcortical atlases must have correct metadata."""
         from lacuna.assets.parcellations.registry import PARCELLATION_REGISTRY
 
-        tian_s1 = PARCELLATION_REGISTRY["TianSubcortex_3TS1"]
+        tian_s1 = PARCELLATION_REGISTRY["tian2020parcels16"]
         assert tian_s1.space == "MNI152NLin6Asym"
         assert tian_s1.resolution == 1
         assert "subcort" in tian_s1.description.lower()
@@ -350,7 +350,7 @@ class TestAtlasRegistrationContract:
 
         # Try to register with name that already exists
         metadata = ParcellationMetadata(
-            name="Schaefer2018_100Parcels7Networks",  # Already exists
+            name="schaefer2018parcels100networks7",  # Already exists
             space="MNI152NLin6Asym",
             resolution=1,
             description="Duplicate",

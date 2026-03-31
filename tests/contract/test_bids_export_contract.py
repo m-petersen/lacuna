@@ -91,7 +91,7 @@ def sample_parcel_data():
             "Right_Hippocampus": 0.12,
             "Left_Amygdala": 0.78,
         },
-        parcel_names=["TianSubcortex_3TS1"],
+        parcel_names=["tian2020parcels16"],
         metadata={"subject_id": "sub-003"},
     )
 

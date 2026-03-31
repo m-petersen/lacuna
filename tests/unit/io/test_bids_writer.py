@@ -110,7 +110,7 @@ class TestExportBidsDerivatives:
 
         # Find lesion mask file
         anat_dir = output_dir / "sub-001" / "anat"
-        mask_files = list(anat_dir.glob("*label-lesion_mask.nii.gz"))
+        mask_files = list(anat_dir.glob("*label-lesion_space-*_mask.nii.gz"))
 
         assert len(mask_files) == 1
         assert "space-MNI152NLin6Asym" in mask_files[0].name
@@ -123,7 +123,7 @@ class TestExportBidsDerivatives:
         export_bids_derivatives(mock_subject_data, output_dir, export_lesion_mask=False)
 
         anat_dir = output_dir / "sub-001" / "anat"
-        mask_files = list(anat_dir.glob("*label-lesion_mask.nii.gz"))
+        mask_files = list(anat_dir.glob("*label-lesion_space-*_mask.nii.gz"))
 
         assert len(mask_files) == 0
 

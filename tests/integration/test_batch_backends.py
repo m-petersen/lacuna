@@ -140,10 +140,10 @@ def tutorial_lesions():
 def bundled_atlas_analysis():
     """Create RegionalDamage analysis using bundled atlas.
 
-    Uses Schaefer2018_100Parcels7Networks which is bundled with the package
+    Uses schaefer2018parcels100networks7 which is bundled with the package
     and can be loaded by loky worker processes.
     """
-    return RegionalDamage(parcel_names=["Schaefer2018_100Parcels7Networks"])
+    return RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
 
 class TestThreadingBackend:

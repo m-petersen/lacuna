@@ -269,11 +269,11 @@ class TestParcelAggregationParcellationParam:
         analysis = ParcelAggregation(
             source="maskimg",
             aggregation="mean",
-            parcel_names=["Schaefer2018_100Parcels7Networks"],
+            parcel_names=["schaefer2018parcels100networks7"],
         )
 
         assert hasattr(analysis, "parcel_names")
-        assert analysis.parcel_names == ["Schaefer2018_100Parcels7Networks"]
+        assert analysis.parcel_names == ["schaefer2018parcels100networks7"]
 
     def test_parcel_aggregation_parcel_names_optional(self):
         """Test parcel_names is optional (defaults to all)."""
