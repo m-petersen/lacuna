@@ -484,12 +484,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
         std_z_map = np.std(all_z_maps_array, axis=0, ddof=1)
         with np.errstate(divide="ignore", invalid="ignore"):
             std_error_map_flat = std_z_map / np.sqrt(total_subjects)
-            t_map_flat = np.divide(
+            t_map_flat = np.zeros_like(mean_z_map)
+            np.divide(
                 mean_z_map,
                 std_error_map_flat,
+                out=t_map_flat,
                 where=(std_error_map_flat != 0),
             )
-            t_map_flat = np.nan_to_num(t_map_flat)
 
         # Compute p-values from t-statistics (two-tailed)
         p_map_flat = None
@@ -1332,8 +1333,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 processed_results[idx] = result
 
         # Merge empty-mask results back in at their original indices
+        # Wrap raw result dicts into SubjectData to match _aggregate_one output
         for idx, empty_result in empty_mask_indices.items():
-            processed_results[idx] = empty_result
+            processed_results[idx] = mask_data_list[idx].add_result(
+                self.__class__.__name__, empty_result
+            )
 
         # Build final results list in original input order
         results = [processed_results[k] for k in sorted(processed_results)]
@@ -1522,12 +1526,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Compute t-statistics (always computed)
         with np.errstate(divide="ignore", invalid="ignore"):
             std_error_map = std_z_map / np.sqrt(total_subjects)
-            t_map_flat = np.divide(
+            t_map_flat = np.zeros_like(mean_z_map)
+            np.divide(
                 mean_z_map,
                 std_error_map,
+                out=t_map_flat,
                 where=(std_error_map != 0),
             )
-            t_map_flat = np.nan_to_num(t_map_flat)
 
         # Compute p-values from t-statistics (two-tailed)
         p_map_flat = None
@@ -1794,12 +1799,13 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             std_error_map = std_z_map / np.sqrt(total_subjects)
-            t_map_flat = np.divide(
+            t_map_flat = np.zeros_like(mean_z_map)
+            np.divide(
                 mean_z_map,
                 std_error_map,
+                out=t_map_flat,
                 where=(std_error_map != 0),
             )
-            t_map_flat = np.nan_to_num(t_map_flat)
 
         # Create 3D volumes
         correlation_map_3d = np.zeros(mask_shape, dtype=np.float32)
