@@ -679,10 +679,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#empty-and-no-overlap-masks" class="md-nav__link">
+  <a href="#zero-valued-outputs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Empty and no-overlap masks
+        Zero-valued outputs
       
     </span>
   </a>
@@ -1674,10 +1674,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#empty-and-no-overlap-masks" class="md-nav__link">
+  <a href="#zero-valued-outputs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Empty and no-overlap masks
+        Zero-valued outputs
       
     </span>
   </a>
@@ -3755,8 +3755,11 @@ All subjects are complete.
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="empty-and-no-overlap-masks">Empty and no-overlap masks<a class="anchor-link" href="#empty-and-no-overlap-masks">¶</a></h3><p>Some subjects may produce all-zero outputs. This happens when the mask is entirely empty (no non-zero voxels) or when the mask has no overlap with the analysis atlas or connectome. For example, <code>sub-02</code> in the tutorial dataset has a cerebellar lesion — since the Schaefer atlas only covers cortex, all regional damage values for that subject are zero.</p>
-<p>Lacuna handles these cases: by default it processes the subject, writes valid zero-valued output files, and logs a warning. Use <code>--on-empty</code> to change this behaviour:</p>
+<h3 id="zero-valued-outputs">Zero-valued outputs<a class="anchor-link" href="#zero-valued-outputs">¶</a></h3><p>Some subjects may produce all-zero outputs. There are two distinct reasons for this:</p>
+<ul>
+<li><strong>No spatial overlap</strong> — the mask is valid but does not intersect the analysis atlas or connectome. For example, <code>sub-02</code> in the tutorial dataset has a cerebellar lesion — since the Schaefer atlas only covers cortex, all regional damage values are zero. This is expected behaviour and not an error.</li>
+<li><strong>Empty mask</strong> — the mask image contains no non-zero voxels at all (e.g., a failed segmentation). Use <code>--on-empty</code> to control how Lacuna handles these at run time:</li>
+</ul>
 <table>
 <thead>
 <tr>
@@ -3779,7 +3782,7 @@ All subjects are complete.
 </tr>
 </tbody>
 </table>
-<p>To detect which subjects produced empty outputs after a run, pass <code>--check-content</code> to <code>lacuna check</code>. This inspects file contents rather than just checking existence, and reports affected subjects as <code>EMPTY</code>.</p>
+<p>To detect which subjects produced all-zero outputs after a run (regardless of cause), pass <code>--check-content</code> to <code>lacuna check</code>. This inspects file contents rather than just checking existence, and reports affected subjects as <code>EMPTY</code>.</p>
 </div>
 </div>
 </div>
@@ -3789,7 +3792,7 @@ All subjects are complete.
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [25]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [26]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-18">
