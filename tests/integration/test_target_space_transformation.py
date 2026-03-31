@@ -221,16 +221,17 @@ def test_target_space_class_attributes_exist():
 
 def test_error_when_lesion_missing_space_metadata():
     """Test that analysis raises error when lesion data lacks space metadata."""
-    # Create lesion without space metadata
+    # Create lesion with an affine that doesn't match any known template,
+    # so auto-detection fails and the missing 'space' parameter triggers an error
     shape = (91, 109, 91)
     data = np.zeros(shape)
     data[45:50, 54:59, 45:50] = 1
 
     affine = np.array(
         [
-            [-2.0, 0.0, 0.0, 90.0],
-            [0.0, 2.0, 0.0, -126.0],
-            [0.0, 0.0, 2.0, -72.0],
+            [3.0, 0.0, 0.0, 0.0],
+            [0.0, 3.0, 0.0, 0.0],
+            [0.0, 0.0, 3.0, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]
     )

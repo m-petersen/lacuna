@@ -1166,7 +1166,9 @@ def _handle_check_command(args: Namespace) -> int:
 
     if empty_subject_ids:
         print(f"Note: {len(empty_subject_ids)} subject(s) produced empty (all-zero) outputs.")
-        print("This typically means the input mask had no overlap with the analysis atlas/network.\n")
+        print(
+            "This typically means the input mask had no overlap with the analysis atlas/network.\n"
+        )
         return 2  # EXIT_EMPTY_OUTPUTS
 
     print("All subjects are complete.\n")
@@ -1483,7 +1485,7 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                 action_str = {
                     "skip": "skipped",
                     "warn": "processed with zero-valued outputs",
-                    "error": "halted processing"
+                    "error": "halted processing",
                 }.get(config.on_empty, "processed")
                 logger.warning(
                     f"{len(empty_mask_subjects)} subject(s) had empty masks "
