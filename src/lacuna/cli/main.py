@@ -911,8 +911,9 @@ def _check_subject_complete(
     analysis: str,
     parcel_atlases: list[str] | None,
     check_content: bool = False,
+    label: str | None = None,
 ) -> tuple[str, list[str]]:
-    """Check whether expected output files exist for a subject/session.
+    """Check whether expected output files exist for a subject/session/label.
 
     Parameters
     ----------
@@ -924,6 +925,9 @@ def _check_subject_complete(
         For RD: list of expected atlas names. If None, any parcelstats file counts as complete.
     check_content : bool
         If True, inspect file content to detect empty (all-zero) outputs.
+    label : str | None
+        Lesion label (e.g. 'WMH', 'acuteinfarct'). When provided, glob patterns
+        are narrowed to only match outputs for this specific label.
 
     Returns
     -------
@@ -932,20 +936,21 @@ def _check_subject_complete(
         missing : list of descriptions of what was not found
     """
     norm = analysis.lower()
+    label_glob = f"*label-{label}_*" if label else "*"
 
     if not anat_dir.exists():
         if norm in ("rd", "regionaldamage"):
-            sentinel = "*method-rd*parcelstats.tsv"
+            sentinel = f"{label_glob}method-rd*parcelstats.tsv"
         elif norm in ("fnm", "functionalnetworkmapping"):
-            sentinel = "*method-fnm*desc-rmap*.nii.gz"
+            sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
         elif norm in ("snm", "structuralnetworkmapping"):
-            sentinel = "*method-snm*desc-disconnectionpct*.nii.gz"
+            sentinel = f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"
         else:
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
 
     if norm in ("rd", "regionaldamage"):
-        all_matches = list(anat_dir.glob("*method-rd*parcelstats.tsv"))
+        all_matches = list(anat_dir.glob(f"{label_glob}method-rd*parcelstats.tsv"))
         if parcel_atlases:
             missing = []
             for atlas in parcel_atlases:
@@ -961,25 +966,25 @@ def _check_subject_complete(
             return "complete", []
         else:
             if not all_matches:
-                return "missing", ["*method-rd*parcelstats.tsv"]
+                return "missing", [f"{label_glob}method-rd*parcelstats.tsv"]
             # Files exist -- check content if requested
             if check_content and all(_is_output_empty(f, norm) for f in all_matches):
                 return "empty", []
             return "complete", []
 
     elif norm in ("fnm", "functionalnetworkmapping"):
-        hits = list(anat_dir.glob("*method-fnm*desc-rmap*.nii.gz"))
+        hits = list(anat_dir.glob(f"{label_glob}method-fnm*desc-rmap*.nii.gz"))
         if not hits:
-            return "missing", ["*method-fnm*desc-rmap*.nii.gz"]
+            return "missing", [f"{label_glob}method-fnm*desc-rmap*.nii.gz"]
         # Files exist -- check content if requested
         if check_content and all(_is_output_empty(f, norm) for f in hits):
             return "empty", []
         return "complete", []
 
     elif norm in ("snm", "structuralnetworkmapping"):
-        hits = list(anat_dir.glob("*method-snm*desc-disconnectionpct*.nii.gz"))
+        hits = list(anat_dir.glob(f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"))
         if not hits:
-            return "missing", ["*method-snm*desc-disconnectionpct*.nii.gz"]
+            return "missing", [f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"]
         # Files exist -- check content if requested
         if check_content and all(_is_output_empty(f, norm) for f in hits):
             return "empty", []
@@ -995,8 +1000,9 @@ def _discover_bids_subjects(
 ) -> list[dict]:
     """Discover subjects in a BIDS directory without loading NIfTI images.
 
-    Returns a list of metadata dicts with subject_id and session_id only.
-    Deduplicates by (subject_id, session_id) — one entry per unique pair.
+    Returns a list of metadata dicts with subject_id, session_id, and label.
+    Deduplicates by (subject_id, session_id, label) — one entry per unique
+    combination, so subjects with multiple lesion labels get separate entries.
     """
     import fnmatch as _fnmatch
     import re
@@ -1029,16 +1035,18 @@ def _discover_bids_subjects(
             if (m := re.search(r"sub-([^/_]+)", str(fp))) and m.group(1) in normalized
         ]
 
-    # Deduplicate by (subject_id, session_id)
+    # Deduplicate by (subject_id, session_id, label)
     seen: set[tuple] = set()
     results = []
     for fp in sorted(matching_files):
         meta = _parse_bids_entities(fp.name)
         sub_id = meta.get("subject_id")
         ses_id = meta.get("session_id")
-        if sub_id and (sub_id, ses_id) not in seen:
-            seen.add((sub_id, ses_id))
-            results.append({"subject_id": sub_id, "session_id": ses_id})
+        label = meta.get("label")
+        key = (sub_id, ses_id, label)
+        if sub_id and key not in seen:
+            seen.add(key)
+            results.append({"subject_id": sub_id, "session_id": ses_id, "label": label})
 
     return results
 
@@ -1079,23 +1087,32 @@ def _handle_check_command(args: Namespace) -> int:
 
     if not quiet:
         print(
-            f"\nChecking {analysis} outputs in {output_dir} for {len(subject_metas)} subject(s)...\n"
+            f"\nChecking {analysis} outputs in {output_dir} for {len(subject_metas)} subject/label(s)...\n"
         )
 
-    # Check each subject
+    # Check each subject/label combination
     rows: list[dict] = []
     for meta in subject_metas:
         sub_id: str = meta["subject_id"]
         ses_id: str | None = meta["session_id"]
+        label: str | None = meta.get("label")
 
         anat_dir = output_dir / sub_id
         if ses_id:
             anat_dir = anat_dir / ses_id
         anat_dir = anat_dir / "anat"
 
-        status, missing = _check_subject_complete(anat_dir, analysis, parcel_atlases, check_content)
+        status, missing = _check_subject_complete(
+            anat_dir, analysis, parcel_atlases, check_content, label=label
+        )
         rows.append(
-            {"subject_id": sub_id, "session_id": ses_id, "status": status, "missing": missing}
+            {
+                "subject_id": sub_id,
+                "session_id": ses_id,
+                "label": label,
+                "status": status,
+                "missing": missing,
+            }
         )
 
     # Deduplicated sorted lists of missing/empty bare subject IDs
@@ -1127,13 +1144,22 @@ def _handle_check_command(args: Namespace) -> int:
 
     # Human-readable table
     has_sessions = any(r["session_id"] for r in rows)
+    has_labels = any(r.get("label") for r in rows)
     sub_width = max(len("Subject"), max(len(r["subject_id"]) for r in rows)) + 2
-    sep_width = sub_width + (12 if has_sessions else 0) + 22
+    label_width = (
+        max(len("Label"), max((len(r.get("label") or "-") for r in rows), default=5)) + 2
+        if has_labels
+        else 0
+    )
+    sep_width = sub_width + (12 if has_sessions else 0) + label_width + 22
 
+    header = f"{'Subject':<{sub_width}}"
     if has_sessions:
-        print(f"{'Subject':<{sub_width}}{'Session':<12}Status")
-    else:
-        print(f"{'Subject':<{sub_width}}Status")
+        header += f"{'Session':<12}"
+    if has_labels:
+        header += f"{'Label':<{label_width}}"
+    header += "Status"
+    print(header)
     print("-" * sep_width)
 
     for r in rows:
@@ -1145,11 +1171,13 @@ def _handle_check_command(args: Namespace) -> int:
             detail = ", ".join(r["missing"])
             status_str = "MISSING" + (f"  ({detail})" if detail else "")
 
+        line = f"{r['subject_id']:<{sub_width}}"
         if has_sessions:
-            ses = r["session_id"] or "-"
-            print(f"{r['subject_id']:<{sub_width}}{ses:<12}{status_str}")
-        else:
-            print(f"{r['subject_id']:<{sub_width}}{status_str}")
+            line += f"{(r['session_id'] or '-'):<12}"
+        if has_labels:
+            line += f"{(r.get('label') or '-'):<{label_width}}"
+        line += status_str
+        print(line)
 
     n_complete = sum(1 for r in rows if r["status"] == "complete")
     n_empty = sum(1 for r in rows if r["status"] == "empty")

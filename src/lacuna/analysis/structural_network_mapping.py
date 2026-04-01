@@ -1075,7 +1075,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                     )
 
                 if self.compute_roi_disconnection:
-                    zero_values = {label: 0.0 for label in atlas_labels}
+                    zero_values = dict.fromkeys(atlas_labels, 0.0)
                     key = build_result_key(
                         atlas=parc_name,
                         source="StructuralNetworkMapping",
