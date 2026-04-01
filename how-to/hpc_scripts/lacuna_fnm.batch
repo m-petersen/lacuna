@@ -64,7 +64,7 @@ apptainer run \
     --fdr-alpha 0.05 \
     --t-threshold 9 \
     --output-resolution 2 \
-    --parcel-atlases Schaefer2018_100Parcels7Networks \
+    --parcel-atlases schaefer2018parcels100networks7 \
     --batch-size -1 \
     --nprocs $SLURM_CPUS_PER_TASK \
     --verbose

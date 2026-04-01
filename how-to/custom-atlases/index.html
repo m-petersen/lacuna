@@ -2779,8 +2779,8 @@ Use 'lacuna info atlases' to see available atlases.
 
 Examples:
   lacuna run rd /bids /output
-  lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks
-  lacuna run rd /bids /output --parcel-atlases Schaefer2018_400Parcels17Networks TianSubcortex_3TS2
+  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7
+  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
 
 positional arguments:
   bids_dir              Root folder of BIDS dataset (sub-XXXXX folders at top
@@ -3143,7 +3143,7 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_combined</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
-    <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">Schaefer2018_100Parcels7Networks</span> \
+    <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
     <span class="o">--</span><span class="n">custom</span><span class="o">-</span><span class="n">parcellation</span> \
         <span class="n">XTRACT</span> \
         <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">xtract</span><span class="o">-</span><span class="n">maxprob5</span><span class="o">-</span><span class="mi">1</span><span class="n">mm</span><span class="o">.</span><span class="n">nii</span><span class="o">.</span><span class="n">gz</span> \
@@ -3155,7 +3155,7 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
     /tmp/outputs_rd_combined/ \
     --participant-label 01 \
     --mask-space MNI152NLin6Asym \
-    --parcel-atlases Schaefer2018_100Parcels7Networks \
+    --parcel-atlases schaefer2018parcels100networks7 \
     --custom-parcellation \
         XTRACT \
         /tmp/xtract-maxprob5-1mm.nii.gz \
@@ -3200,14 +3200,14 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>sub-01_ses-01_desc-provenance.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-regionaldamage_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-regionaldamage_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-regionaldamage_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-regionaldamage_desc-damagepct_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-xtract_source-regionaldamage_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-xtract_source-regionaldamage_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-xtract_source-regionaldamage_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-xtract_source-regionaldamage_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-rd_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-rd_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-rd_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-rd_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-xtract_method-rd_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-xtract_method-rd_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-xtract_method-rd_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-xtract_method-rd_desc-damagepct_parcelstats.tsv
 sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz
 </pre>
 </div>

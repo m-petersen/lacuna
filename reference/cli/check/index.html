@@ -1664,17 +1664,17 @@
 <tr>
 <td><code>rd</code></td>
 <td><code>regionaldamage</code></td>
-<td><code>*source-regionaldamage*parcelstats.tsv</code></td>
+<td><code>*method-rd*parcelstats.tsv</code></td>
 </tr>
 <tr>
 <td><code>fnm</code></td>
 <td><code>functionalnetworkmapping</code></td>
-<td><code>*desc-fnm_rmap.nii.gz</code></td>
+<td><code>*method-fnm*desc-rmap*.nii.gz</code></td>
 </tr>
 <tr>
 <td><code>snm</code></td>
 <td><code>structuralnetworkmapping</code></td>
-<td><code>*desc-snm_disconnectionpct.nii.gz</code></td>
+<td><code>*method-snm*desc-disconnectionpct*.nii.gz</code></td>
 </tr>
 </tbody>
 </table>
@@ -1771,7 +1771,7 @@
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Check specific atlas</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>Schaefer2018_400Parcels7Networks
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels400networks7
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Write missing subjects and use for rerun</span>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--output-file<span class="w"> </span>missing.txt

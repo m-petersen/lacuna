@@ -1639,11 +1639,11 @@ with threading backends when accessing shared atlas resources.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
+                <p>Names of atlases from the registry to process (e.g., "schaefer2018parcels100networks7").
 If None, all registered atlases are processed.
 Use register_parcellation() or register_parcellationes_from_directory() to add custom atlases.
 If None, all parcellations found in atlas_dir will be processed.
-Example: ["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]</p>
+Example: ["schaefer2018parcels100networks7", "tian2020parcels16"]</p>
               </div>
             </td>
             <td>
@@ -1716,7 +1716,7 @@ Example: ["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]</p>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">ParcelAggregation</span><span class="p">(</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gp">... </span>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;maskimg&quot;</span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="gp">... </span>    <span class="n">aggregation</span><span class="o">=</span><span class="s2">&quot;percent&quot;</span><span class="p">,</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gp">... </span>    <span class="n">parcel_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Schaefer2018_100Parcels7Networks&quot;</span><span class="p">,</span> <span class="s2">&quot;TianSubcortex_3TS1&quot;</span><span class="p">]</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gp">... </span>    <span class="n">parcel_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;schaefer2018parcels100networks7&quot;</span><span class="p">,</span> <span class="s2">&quot;tian2020parcels16&quot;</span><span class="p">]</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="gp">... </span><span class="p">)</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="gp">&gt;&gt;&gt;</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Register custom atlases first, then use them</span>
@@ -3193,11 +3193,11 @@ BaseAnalysis : Parent class defining analysis interface</p>
 </span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="sd">        - &quot;median&quot;: Median value across ROI voxels</span>
 </span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">        - &quot;std&quot;: Standard deviation across ROI voxels</span>
 </span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="sd">    parcel_names : list of str or None, default=None</span>
-</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">        Names of atlases from the registry to process (e.g., &quot;Schaefer2018_100Parcels7Networks&quot;).</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">        Names of atlases from the registry to process (e.g., &quot;schaefer2018parcels100networks7&quot;).</span>
 </span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><span class="sd">        If None, all registered atlases are processed.</span>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">        Use register_parcellation() or register_parcellationes_from_directory() to add custom atlases.</span>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><span class="sd">        If None, all parcellations found in atlas_dir will be processed.</span>
-</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><span class="sd">        Example: [&quot;Schaefer2018_100Parcels7Networks&quot;, &quot;TianSubcortex_3TS1&quot;]</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><span class="sd">        Example: [&quot;schaefer2018parcels100networks7&quot;, &quot;tian2020parcels16&quot;]</span>
 </span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>
 </span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="sd">    Raises</span>
 </span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><span class="sd">    ------</span>
@@ -3233,7 +3233,7 @@ BaseAnalysis : Parent class defining analysis interface</p>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">    &gt;&gt;&gt; analysis = ParcelAggregation(</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">    ...     source=&quot;maskimg&quot;,</span>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">    ...     aggregation=&quot;percent&quot;,</span>
-</span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    ...     parcel_names=[&quot;Schaefer2018_100Parcels7Networks&quot;, &quot;TianSubcortex_3TS1&quot;]</span>
+</span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    ...     parcel_names=[&quot;schaefer2018parcels100networks7&quot;, &quot;tian2020parcels16&quot;]</span>
 </span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">    ... )</span>
 </span><span id="__span-0-166"><a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">    &gt;&gt;&gt;</span>
 </span><span id="__span-0-167"><a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">    &gt;&gt;&gt; # Register custom atlases first, then use them</span>

@@ -2464,7 +2464,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [34]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
@@ -2480,7 +2480,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nibabel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nilearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">plotting</span>
 
-<span class="n">tmap_path</span> <span class="o">=</span> <span class="s1">'/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_tmap.nii.gz'</span>
+<span class="n">tmap_path</span> <span class="o">=</span> <span class="s1">'/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fnm_space-MNI152NLin6Asym_desc-tmap.nii.gz'</span>
 <span class="n">tmap_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">tmap_path</span><span class="p">)</span>
 
 <span class="n">plotting</span><span class="o">.</span><span class="n">plot_stat_map</span><span class="p">(</span><span class="n">tmap_img</span><span class="p">,</span> 
@@ -2496,7 +2496,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="clipboard-copy-txt" id="cell-4">import nibabel as nib
 from nilearn import plotting
 
-tmap_path = '/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_tmap.nii.gz'
+tmap_path = '/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fnm_space-MNI152NLin6Asym_desc-tmap.nii.gz'
 tmap_img = nib.load(tmap_path)
 
 plotting.plot_stat_map(tmap_img, 
@@ -2517,7 +2517,7 @@ plotting.plot_stat_map(tmap_img,
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[34]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>&lt;nilearn.plotting.displays._slicers.OrthoSlicer at 0x7f39f29ea3e0&gt;</pre>
 </div>
@@ -2589,7 +2589,7 @@ plotting.plot_stat_map(tmap_img,
     <span class="o">--</span><span class="n">connectome</span><span class="o">-</span><span class="n">path</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">gsp1000_data</span><span class="o">/</span><span class="n">processed</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
-    <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">Schaefer2018_200Parcels7Networks</span> <span class="n">Schaefer2018_400Parcels7Networks</span> \
+    <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels200networks7</span> <span class="n">schaefer2018parcels400networks7</span> \
     <span class="o">--</span><span class="n">verbose</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">!lacuna run fnm \
@@ -2598,7 +2598,7 @@ plotting.plot_stat_map(tmap_img,
     --connectome-path /tmp/gsp1000_data/processed/ \
     --participant-label 01 \
     --mask-space MNI152NLin6Asym \
-    --parcel-atlases Schaefer2018_200Parcels7Networks Schaefer2018_400Parcels7Networks \
+    --parcel-atlases schaefer2018parcels200networks7 schaefer2018parcels400networks7 \
     --verbose</div>
 </div>
 </div>
@@ -2639,37 +2639,37 @@ plotting.plot_stat_map(tmap_img,
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>sub-01_ses-01_desc-provenance.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-rmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-rmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-tmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-tmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-zmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-zmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-200parcels7networks_source-fnm_desc-rmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-200parcels7networks_source-fnm_desc-rmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-200parcels7networks_source-fnm_desc-tmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-200parcels7networks_source-fnm_desc-tmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-200parcels7networks_source-fnm_desc-zmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-200parcels7networks_source-fnm_desc-zmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-rmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-rmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-tmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-tmap_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-zmap_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-zmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-fnm_desc-rmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-fnm_desc-rmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-fnm_desc-tmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-fnm_desc-tmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-fnm_desc-zmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels100networks7_method-fnm_desc-zmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels200networks7_method-fnm_desc-rmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels200networks7_method-fnm_desc-rmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels200networks7_method-fnm_desc-tmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels200networks7_method-fnm_desc-tmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels200networks7_method-fnm_desc-zmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels200networks7_method-fnm_desc-zmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels400networks7_method-fnm_desc-rmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels400networks7_method-fnm_desc-rmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels400networks7_method-fnm_desc-tmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels400networks7_method-fnm_desc-tmap_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels400networks7_method-fnm_desc-zmap_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018parcels400networks7_method-fnm_desc-zmap_parcelstats.tsv
 sub-01_ses-01_label-acuteinfarct_summarystatistics_stats.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_pfdrmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_pfdrmap.nii.gz
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_pfdrthresholdmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_pfdrthresholdmap.nii.gz
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_pmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_pmap.nii.gz
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_rmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_rmap.nii.gz
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_tmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_tmap.nii.gz
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_zmap.json
-sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_desc-fnm_zmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-pfdrmap.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-pfdrmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-pfdrthresholdmap.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-pfdrthresholdmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-pmap.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-pmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-rmap.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-rmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-tmap.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-tmap.nii.gz
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-zmap.json
+sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_method-fnm_desc-zmap.nii.gz
 sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz
 </pre>
 </div>
@@ -2718,7 +2718,7 @@ sub-01_ses-01_space-MNI152NLin6Asym_label-acuteinfarct_mask.nii.gz
 <span class="n">pv</span><span class="o">.</span><span class="n">global_theme</span><span class="o">.</span><span class="n">notebook</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="n">pv</span><span class="o">.</span><span class="n">start_xvfb</span><span class="p">()</span>
 
-<span class="n">file_path</span> <span class="o">=</span> <span class="s2">"/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-rmap_parcelstats.tsv"</span>
+<span class="n">file_path</span> <span class="o">=</span> <span class="s2">"/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fnm_atlas-schaefer2018parcels400networks7_desc-rmap_parcelstats.tsv"</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">values</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
@@ -2744,7 +2744,7 @@ pv.set_jupyter_backend('static')
 pv.global_theme.notebook = True
 pv.start_xvfb()
 
-file_path = "/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_atlas-schaefer2018_desc-400parcels7networks_source-fnm_desc-rmap_parcelstats.tsv"
+file_path = "/tmp/outputs_fnm/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fnm_atlas-schaefer2018parcels400networks7_desc-rmap_parcelstats.tsv"
 
 df = pd.read_csv(file_path, sep="\t", index_col=0)
 values = df.values.flatten()
