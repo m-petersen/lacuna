@@ -53,7 +53,7 @@ class RegionalDamage(ParcelAggregation):
     Parameters
     ----------
     parcel_names : list of str or None, default=None
-        Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
+        Names of atlases from the registry to process (e.g., "schaefer2018parcels100networks7").
         If None, all registered atlases are processed.
         Use list_parcellations() to see available atlases.
 
@@ -86,7 +86,7 @@ class RegionalDamage(ParcelAggregation):
     >>>
     >>> # Process only specific atlases
     >>> analysis = RegionalDamage(
-    ...     parcel_names=["Schaefer2018_100Parcels7Networks"]
+    ...     parcel_names=["schaefer2018parcels100networks7"]
     ... )
     >>> result = analysis.run(mask)
 

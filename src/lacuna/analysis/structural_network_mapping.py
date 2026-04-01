@@ -183,6 +183,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         parcellation_name: str | list[str] | None = None,
         compute_disconnectivity_matrix: bool = False,
         compute_roi_disconnection: bool = False,
+        include_streamline_counts: bool = False,
         output_resolution: Literal[1, 2] = 2,
         cache_tdi: bool = True,
         n_jobs: int = 1,
@@ -207,6 +208,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         compute_roi_disconnection : bool, default=False
             If True and parcellation_name provided, compute per-ROI disconnection
             percentages and intact (post-disconnection) connectivity matrix.
+        include_streamline_counts : bool, default=False
+            If True, include raw streamline count outputs (disconnection_tdi VoxelMap).
+            By default, only percentage-based outputs are produced.
         output_resolution : {1, 2}, default=2
             Output resolution in mm (must match connectome resolution).
         cache_tdi : bool, default=True
@@ -272,6 +276,7 @@ class StructuralNetworkMapping(BaseAnalysis):
 
         self.compute_disconnectivity_matrix = compute_disconnectivity_matrix
         self.compute_roi_disconnection = compute_roi_disconnection
+        self.include_streamline_counts = include_streamline_counts
 
         # Validate: compute flags require parcellation_name
         if (
@@ -780,20 +785,23 @@ class StructuralNetworkMapping(BaseAnalysis):
             )
             results["disconnection_pct"] = disconnection_result
 
-            # VoxelMap for raw streamline count (lesion TDI)
-            mask_tdi_data = nib.load(mask_tdi_path).get_fdata()
-            final_mask_tdi = nib.Nifti1Image(mask_tdi_data, disconn_map.affine, disconn_map.header)
-            disconnection_tdi_result = VoxelMap(
-                name="disconnection_tdi",
-                data=final_mask_tdi,
-                space=self.tractogram_space,
-                resolution=float(self.output_resolution),
-                metadata={
-                    "description": "Track density image for mask-filtered tractogram (raw streamline counts)",
-                    "tractogram": str(self.tractogram_path),
-                },
-            )
-            results["disconnection_tdi"] = disconnection_tdi_result
+            # VoxelMap for raw streamline count (lesion TDI) - optional
+            if self.include_streamline_counts:
+                mask_tdi_data = nib.load(mask_tdi_path).get_fdata()
+                final_mask_tdi = nib.Nifti1Image(
+                    mask_tdi_data, disconn_map.affine, disconn_map.header
+                )
+                disconnection_tdi_result = VoxelMap(
+                    name="disconnection_tdi",
+                    data=final_mask_tdi,
+                    space=self.tractogram_space,
+                    resolution=float(self.output_resolution),
+                    metadata={
+                        "description": "Track density image for mask-filtered tractogram (raw streamline counts)",
+                        "tractogram": str(self.tractogram_path),
+                    },
+                )
+                results["disconnection_tdi"] = disconnection_tdi_result
 
             # MiscResult for summary statistics
             summary_result = ScalarMetric(
@@ -929,17 +937,18 @@ class StructuralNetworkMapping(BaseAnalysis):
             },
         )
 
-        results["disconnection_tdi"] = VoxelMap(
-            name="disconnection_tdi",
-            data=nib.Nifti1Image(zero_vol.copy(), template_affine),
-            space=self.tractogram_space,
-            resolution=float(self.output_resolution),
-            metadata={
-                "description": "Track density image for mask-filtered tractogram (raw streamline counts)",
-                "tractogram": str(self.tractogram_path),
-                "empty_mask": True,
-            },
-        )
+        if self.include_streamline_counts:
+            results["disconnection_tdi"] = VoxelMap(
+                name="disconnection_tdi",
+                data=nib.Nifti1Image(zero_vol.copy(), template_affine),
+                space=self.tractogram_space,
+                resolution=float(self.output_resolution),
+                metadata={
+                    "description": "Track density image for mask-filtered tractogram (raw streamline counts)",
+                    "tractogram": str(self.tractogram_path),
+                    "empty_mask": True,
+                },
+            )
 
         results["summarystatistics"] = ScalarMetric(
             name="summarystatistics",
@@ -960,37 +969,127 @@ class StructuralNetworkMapping(BaseAnalysis):
                 labels = atlas_info["labels"]
                 n_labels = len(labels)
 
+                # Get atlas labels as ordered list
+                atlas_labels = [f"region_{i}" for i in range(n_labels)]
+                if labels is not None:
+                    sorted_regions = sorted(labels.items())
+                    atlas_labels = [name for region_id, name in sorted_regions]
+
                 if self.compute_disconnectivity_matrix:
                     zero_matrix = np.zeros((n_labels, n_labels), dtype=np.float32)
-                    for suffix in ["full", "mask", "disconnectivitypct"]:
-                        key = build_result_key(
-                            atlas=parc_name,
-                            source="StructuralNetworkMapping",
-                            desc=f"connectivity{suffix}",
-                        )
-                        results[key] = ConnectivityMatrix(
-                            name=key,
-                            data=zero_matrix.copy(),
-                            labels=labels,
-                            metadata={
-                                "parcellation_name": parc_name,
-                                "empty_mask": True,
-                            },
-                        )
+
+                    # mask_connectivity_matrix
+                    mask_conn_key = build_result_key(
+                        atlas=parc_name,
+                        source="StructuralNetworkMapping",
+                        desc="mask_connectivity_matrix",
+                    )
+                    results[mask_conn_key] = ConnectivityMatrix(
+                        name="mask_connectivity_matrix",
+                        matrix=zero_matrix.copy(),
+                        region_labels=atlas_labels,
+                        matrix_type="structural",
+                        metadata={
+                            "atlas": parc_name,
+                            "empty_mask": True,
+                        },
+                    )
+
+                    # disconnectionpct
+                    disconn_key = build_result_key(
+                        atlas=parc_name,
+                        source="StructuralNetworkMapping",
+                        desc="disconnectionpct",
+                    )
+                    results[disconn_key] = ConnectivityMatrix(
+                        name="disconnectionpct",
+                        matrix=zero_matrix.copy(),
+                        region_labels=atlas_labels,
+                        matrix_type="structural",
+                        metadata={
+                            "atlas": parc_name,
+                            "description": "Percentage of streamlines disconnected by mask",
+                            "empty_mask": True,
+                        },
+                    )
+
+                    # full_connectivity_matrix
+                    full_conn_key = build_result_key(
+                        atlas=parc_name,
+                        source="StructuralNetworkMapping",
+                        desc="full_connectivity_matrix",
+                    )
+                    results[full_conn_key] = ConnectivityMatrix(
+                        name="full_connectivity_matrix",
+                        matrix=zero_matrix.copy(),
+                        region_labels=atlas_labels,
+                        matrix_type="structural",
+                        metadata={
+                            "atlas": parc_name,
+                            "description": "Full brain connectivity matrix (reference)",
+                            "empty_mask": True,
+                        },
+                    )
+
+                    # intact_connectivity_matrix
+                    intact_conn_key = build_result_key(
+                        atlas=parc_name,
+                        source="StructuralNetworkMapping",
+                        desc="intact_connectivity_matrix",
+                    )
+                    results[intact_conn_key] = ConnectivityMatrix(
+                        name="intact_connectivity_matrix",
+                        matrix=zero_matrix.copy(),
+                        region_labels=atlas_labels,
+                        matrix_type="structural",
+                        metadata={
+                            "atlas": parc_name,
+                            "description": "Intact connectivity excluding disconnected streamlines",
+                            "empty_mask": True,
+                        },
+                    )
+
+                    # matrix_statistics
+                    matrix_stats_key = build_result_key(
+                        atlas=parc_name,
+                        source="StructuralNetworkMapping",
+                        desc="matrix_statistics",
+                    )
+                    results[matrix_stats_key] = ScalarMetric(
+                        name="matrix_statistics",
+                        data={
+                            "n_parcels": n_labels,
+                            "n_edges_total": 0,
+                            "n_edges_affected": 0,
+                            "percent_edges_affected": 0.0,
+                            "mean_disconnection_percent": 0.0,
+                            "max_disconnection_percent": 0.0,
+                            "mean_degree_reduction": 0.0,
+                            "max_degree_reduction": 0.0,
+                            "most_affected_parcel": atlas_labels[0] if atlas_labels else "N/A",
+                        },
+                        metadata={
+                            "atlas": parc_name,
+                            "empty_mask": True,
+                        },
+                    )
 
                 if self.compute_roi_disconnection:
-                    zero_values = dict.fromkeys(labels, 0.0)
+                    zero_values = {label: 0.0 for label in atlas_labels}
                     key = build_result_key(
                         atlas=parc_name,
                         source="StructuralNetworkMapping",
                         desc="roidisconnectionpct",
                     )
                     results[key] = ParcelData(
-                        name=parc_name,
+                        name="roidisconnectionpct",
                         data=zero_values,
-                        parcel_names=[parc_name],
+                        region_labels=atlas_labels,
+                        aggregation_method="percent",
                         metadata={
-                            "parcellation_name": parc_name,
+                            "atlas": parc_name,
+                            "description": "Percentage of streamlines disconnected per ROI",
+                            "unit": "percent",
                             "empty_mask": True,
                         },
                     )
@@ -1141,9 +1240,9 @@ class StructuralNetworkMapping(BaseAnalysis):
         )
         results[mask_conn_key] = mask_connectivity_result
 
-        # ConnectivityMatrixResult for disconnectivity percentage
+        # ConnectivityMatrixResult for disconnection percentage
         disconn_result = ConnectivityMatrix(
-            name="disconnectivity_percent",
+            name="disconnectionpct",
             matrix=disconn_pct,
             region_labels=atlas_labels,
             matrix_type="structural",
@@ -1155,7 +1254,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         disconn_pct_key = build_result_key(
             atlas=parc_name,
             source="StructuralNetworkMapping",
-            desc="disconnectivity_percent",
+            desc="disconnectionpct",
         )
         results[disconn_pct_key] = disconn_result
 
@@ -1211,7 +1310,7 @@ class StructuralNetworkMapping(BaseAnalysis):
                 label: float(roi_disconnection_pct[i]) for i, label in enumerate(atlas_labels)
             }
             roi_disconnection_result = ParcelData(
-                name="roi_disconnection",
+                name="roidisconnectionpct",
                 data=roi_disconnection_data,
                 region_labels=atlas_labels,
                 aggregation_method="percent",
@@ -1224,7 +1323,7 @@ class StructuralNetworkMapping(BaseAnalysis):
             roi_disconnection_key = build_result_key(
                 atlas=parc_name,
                 source="StructuralNetworkMapping",
-                desc="roi_disconnection",
+                desc="roidisconnectionpct",
             )
             results[roi_disconnection_key] = roi_disconnection_result
 

@@ -138,7 +138,7 @@ class TestAtlasDiscovery:
         assert "schaefer2018parcels400networks7" in parcel_names
 
         # Should include Tian subcortical atlases
-        assert any("Tian" in name for name in parcel_names)
+        assert any("tian" in name for name in parcel_names)
 
 
 class TestAtlasLoadingInDifferentSpaces:
@@ -181,7 +181,7 @@ class TestAtlasLoadingInDifferentSpaces:
         """Can load Tian subcortical atlas scales."""
         # Check which Tian atlases exist
         all_atlases = list_parcellations()
-        tian_names = [a.name for a in all_atlases if "Tian" in a.name]
+        tian_names = [a.name for a in all_atlases if "tian" in a.name]
 
         # Should have at least one Tian atlas
         assert len(tian_names) >= 1

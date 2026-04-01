@@ -141,7 +141,7 @@ def test_list_parcellations_combined_filters():
 
     # Should include Schaefer atlases
     names = {a.name for a in filtered}
-    assert any("Schaefer" in name for name in names)
+    assert any("schaefer" in name for name in names)
 
 
 def test_register_parcellation():

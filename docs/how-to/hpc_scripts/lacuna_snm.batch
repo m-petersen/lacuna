@@ -64,7 +64,7 @@ apptainer run \
     --connectome-path /lacuna_cache/dTOR_full_tractogram.tck \
     --compute-roi-disconnection \
     --compute-disconnectivity-matrix \
-    --parcel-atlases Schaefer2018_100Parcels7Networks \
+    --parcel-atlases schaefer2018parcels100networks7 \
     --output-resolution 2 \
     --batch-size 10 \
     --nprocs $SLURM_CPUS_PER_TASK \

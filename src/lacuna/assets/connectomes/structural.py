@@ -170,7 +170,7 @@ def list_structural_connectomes(
     >>>
     >>> # Filter by atlas
     >>> schaefer_connectomes = list_structural_connectomes(
-    ...     atlas="Schaefer2018_100Parcels7Networks"
+    ...     atlas="schaefer2018parcels100networks7"
     ... )
     """
     return _structural_connectome_registry.list(atlas=atlas, space=space)

@@ -20,6 +20,8 @@ Examples
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 # Mapping from analysis class names to short abbreviations for result keys
 SOURCE_ABBREVIATIONS: dict[str, str] = {
     "SubjectData": "InputMask",
@@ -63,14 +65,14 @@ def build_result_key(atlas: str, source: str, desc: str | None = None) -> str:
     >>> build_result_key("Schaefer100", "FunctionalNetworkMapping", "rmap")
     'atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap'
 
-    >>> build_result_key("TianSubcortex_3TS1", "SubjectData", "maskimg")
-    'atlas-TianSubcortex_3TS1_source-InputMask'
+    >>> build_result_key("tian2020parcels16", "SubjectData", "maskimg")
+    'atlas-tian2020parcels16_source-InputMask'
 
-    >>> build_result_key("TianSubcortex_3TS1", "SubjectData")
-    'atlas-TianSubcortex_3TS1_source-InputMask'
+    >>> build_result_key("tian2020parcels16", "SubjectData")
+    'atlas-tian2020parcels16_source-InputMask'
 
-    >>> build_result_key("Schaefer2018_200Parcels7Networks", "RegionalDamage", "damagescore")
-    'atlas-Schaefer2018_200Parcels7Networks_source-RegionalDamage_desc-damagescore'
+    >>> build_result_key("schaefer2018parcels200networks7", "RegionalDamage", "damagescore")
+    'atlas-schaefer2018parcels200networks7_source-RegionalDamage_desc-damagescore'
     """
     # Convert source class name to appropriate abbreviation
     source_abbrev = SOURCE_ABBREVIATIONS.get(source, source)
@@ -259,6 +261,7 @@ DESC_TO_SOURCE_MAPPING = {
     # SNM outputs - parcel data
     "roidisconnection": "snm",
     "roi_disconnection": "snm",
+    "roidisconnectionpct": "snm",
     # SNM outputs - metrics
     "matrixstatistics": "snm",
     "matrix_statistics": "snm",
@@ -273,6 +276,144 @@ BIDS_SUFFIX_MAPPING = {
     "metrics": "stats",  # Scalar metrics as tabular
 }
 
+# Method abbreviation mapping: analysis class name -> short BIDS method entity
+METHOD_ABBREVIATIONS: dict[str, str] = {
+    "FunctionalNetworkMapping": "fnm",
+    "StructuralNetworkMapping": "snm",
+    "RegionalDamage": "rd",
+    "ParcelAggregation": "pa",
+}
+
+# Desc overrides: internal desc -> canonical BIDS desc
+# Used to homogenize variant names for the same concept
+BIDS_DESC_OVERRIDE: dict[str, str] = {
+    "disconnectivity_percent": "disconnectionpct",
+    "disconnectivitypercent": "disconnectionpct",
+    "disconnectivitypct": "disconnectionpct",
+    "disconnection_pct": "disconnectionpct",
+    "roi_disconnection": "disconnectionpct",
+    "roidisconnection": "disconnectionpct",
+    "roidisconnectionpct": "disconnectionpct",
+    "damage_pct": "damagepct",
+    "damage_bin": "damagebin",
+}
+
+
+@dataclass
+class BidsFilename:
+    """Structured representation of a BIDS-compliant filename.
+
+    Entity ordering: method > space > atlas > desc > suffix.
+    None fields are omitted from the string representation.
+    """
+
+    method: str | None = None
+    space: str | None = None
+    atlas: str | None = None
+    desc: str | None = None
+    suffix: str | None = None
+
+    def __str__(self) -> str:
+        parts: list[str] = []
+        if self.method:
+            parts.append(f"method-{self.method}")
+        if self.space:
+            parts.append(f"space-{self.space}")
+        if self.atlas:
+            parts.append(f"atlas-{self.atlas}")
+        if self.desc:
+            parts.append(f"desc-{self.desc}")
+        # Suffix is appended as-is (not a key-value pair)
+        if self.suffix:
+            parts.append(self.suffix)
+        return "_".join(parts)
+
+    @classmethod
+    def from_result_key(
+        cls,
+        result_key: str,
+        suffix: str,
+        namespace: str | None = None,
+    ) -> BidsFilename:
+        """Build a BidsFilename from an internal result key.
+
+        Parameters
+        ----------
+        result_key : str
+            Internal result key — either a simple name (e.g. ``"rmap"``)
+            or a BIDS-style key (``atlas-X_source-Y_desc-Z``).
+        suffix : str
+            Internal suffix (``"map"``, ``"values"``, ``"connmatrix"``,
+            ``"metrics"``).  Converted via ``BIDS_SUFFIX_MAPPING``.
+        namespace : str, optional
+            Analysis class name that produced the result (e.g.
+            ``"FunctionalNetworkMapping"``).  Used to derive *method*
+            when the key has no ``source-`` entity.
+        """
+        bids_suffix = BIDS_SUFFIX_MAPPING.get(suffix, suffix)
+
+        has_bids_prefix = any(
+            prefix in result_key for prefix in ("atlas-", "parc-", "source-", "desc-")
+        )
+
+        if not has_bids_prefix:
+            # Simple key — derive method from DESC_TO_SOURCE_MAPPING or namespace
+            bids_desc = to_bids_label(result_key)
+            bids_desc = BIDS_DESC_OVERRIDE.get(result_key, BIDS_DESC_OVERRIDE.get(bids_desc, bids_desc))
+
+            method = None
+            source_prefix = DESC_TO_SOURCE_MAPPING.get(result_key, "")
+            if not source_prefix:
+                source_prefix = DESC_TO_SOURCE_MAPPING.get(bids_desc, "")
+            if source_prefix in ("fnm", "snm"):
+                method = source_prefix
+            elif namespace:
+                method = METHOD_ABBREVIATIONS.get(namespace)
+
+            return cls(
+                method=method,
+                desc=bids_desc if bids_desc else None,
+                suffix=bids_suffix,
+            )
+
+        # BIDS-style key
+        parsed = parse_result_key(result_key)
+
+        # Derive method from source
+        method = None
+        if "source" in parsed:
+            source = parsed["source"]
+            export_abbrev = EXPORT_SOURCE_ABBREVIATIONS.get(source, source.lower())
+            if export_abbrev in ("fnm", "snm"):
+                method = export_abbrev
+            elif export_abbrev == "regionaldamage":
+                method = "rd"
+            elif export_abbrev == "parcelaggregation":
+                method = "pa"
+            elif export_abbrev == "inputmask":
+                method = None
+        elif namespace:
+            method = METHOD_ABBREVIATIONS.get(namespace)
+
+        # Atlas names are already BIDS slugs (registry uses slug keys)
+        atlas_slug = None
+        if "atlas" in parsed:
+            atlas_slug = parsed["atlas"]
+
+        # Resolve desc with override
+        desc = None
+        if "desc" in parsed:
+            raw_desc = parsed["desc"]
+            bids_desc = to_bids_label(raw_desc)
+            desc = BIDS_DESC_OVERRIDE.get(raw_desc, BIDS_DESC_OVERRIDE.get(bids_desc, bids_desc))
+
+        return cls(
+            method=method,
+            atlas=atlas_slug,
+            desc=desc,
+            suffix=bids_suffix,
+        )
+
 
 def to_bids_label(value: str) -> str:
     """
@@ -280,10 +421,6 @@ def to_bids_label(value: str) -> str:
 
     BIDS labels cannot contain underscores (reserved for key-value separation).
     This function converts to lowercase and removes underscores for simple values.
-
-    For parcellation names that have underscores as semantic separators
-    (e.g., "Schaefer2018_100Parcels7Networks"), use ``split_atlas_name()`` instead
-    to preserve the atlas/description structure.
 
     Parameters
     ----------
@@ -310,193 +447,3 @@ def to_bids_label(value: str) -> str:
     return value.replace("_", "").lower()
 
 
-def split_atlas_name(name: str) -> tuple[str, str | None]:
-    """
-    Split an atlas/parcellation name into atlas and description components.
-
-    Many atlas names follow the pattern ``{AtlasName}_{Variant}`` where the
-    underscore separates the atlas family from the specific variant. This function
-    splits on the first underscore to create proper BIDS entities.
-
-    Parameters
-    ----------
-    name : str
-        Atlas or parcellation name (e.g., "Schaefer2018_100Parcels7Networks").
-
-    Returns
-    -------
-    tuple[str, str | None]
-        Tuple of (atlas_name, description) where description may be None if no
-        underscore is present. Both values are lowercase for BIDS compliance.
-
-    Examples
-    --------
-    >>> split_atlas_name("Schaefer2018_100Parcels7Networks")
-    ('schaefer2018', '100parcels7networks')
-
-    >>> split_atlas_name("TianSubcortex_3TS1")
-    ('tiansubcortex', '3ts1')
-
-    >>> split_atlas_name("TianSubcortex_3TS2")
-    ('tiansubcortex', '3ts2')
-
-    >>> split_atlas_name("Schaefer2018_1000Parcels7Networks")
-    ('schaefer2018', '1000parcels7networks')
-    """
-    if "_" in name:
-        # Split on first underscore only - rest belongs to description
-        parts = name.split("_", 1)
-        return (parts[0].lower(), parts[1].replace("_", "").lower())
-    else:
-        return (name.lower(), None)
-
-
-def format_bids_export_filename(
-    result_key: str,
-    suffix: str,
-) -> str:
-    """
-    Format a BIDS-compliant export filename from a result key.
-
-    Takes a result key like ``atlas-Schaefer2018_100Parcels7Networks_source-InputMask``
-    and converts it to a BIDS-compliant filename component.
-
-    The transformation:
-    1. Uses ``atlas-`` entity (BIDS standard)
-    2. Splits atlas names on underscore: ``Schaefer2018_100Parcels7Networks`` becomes
-       ``atlas-schaefer2018_desc-100parcels7networks``
-    3. Uses proper BIDS suffixes (``parcelstats`` for tabular data)
-    4. For FNM/SNM VoxelMaps (no parcellation), uses format like ``desc-fnm_rmap``
-    5. For parcelstats, always includes desc to identify the map type
-
-    Underscores in the output only separate BIDS key-value pairs.
-
-    Parameters
-    ----------
-    result_key : str
-        BIDS-style result key (e.g., ``atlas-Schaefer100_source-InputMask``)
-        or simple key (e.g., ``rmap``).
-    suffix : str
-        Internal suffix for the file type (e.g., ``values``, ``map``, ``connmatrix``).
-        Will be converted to BIDS-compliant suffix.
-
-    Returns
-    -------
-    str
-        BIDS-compliant filename component ready to be appended after subject/session.
-
-    Examples
-    --------
-    >>> format_bids_export_filename(
-    ...     "atlas-Schaefer2018_100Parcels7Networks_source-InputMask",
-    ...     "values"
-    ... )
-    'atlas-schaefer2018_desc-100parcels7networks_source-inputmask_parcelstats'
-
-    >>> format_bids_export_filename(
-    ...     "atlas-Schaefer100_source-FunctionalNetworkMapping_desc-rmap",
-    ...     "values"
-    ... )
-    'atlas-schaefer100_source-fnm_desc-rmap_parcelstats'
-
-    >>> format_bids_export_filename("rmap", "map")
-    'desc-fnm_rmap'
-
-    For FNM/SNM outputs without parcellation (VoxelMaps), the desc-{source}
-    is prepended to identify the analysis:
-
-    >>> format_bids_export_filename("rmap", "map")
-    'desc-fnm_rmap'
-
-    >>> format_bids_export_filename("disconnection_pct", "map")
-    'desc-snm_disconnectionpct'
-    """
-    # Convert internal suffix to BIDS suffix (may be empty for VoxelMaps)
-    bids_suffix = BIDS_SUFFIX_MAPPING.get(suffix, suffix)
-
-    # Check if this is a BIDS-style key (contains known prefixes)
-    # Support both new atlas- and legacy parc- prefix
-    has_bids_prefix = any(
-        prefix in result_key for prefix in ("atlas-", "parc-", "source-", "desc-")
-    )
-
-    if not has_bids_prefix:
-        # Simple key (e.g., "correlation_map") - determine source prefix
-        bids_desc = to_bids_label(result_key)
-        # Check if this desc is associated with a known source (FNM/SNM)
-        source_prefix = DESC_TO_SOURCE_MAPPING.get(result_key, "")
-        if not source_prefix:
-            # Try without underscores
-            source_prefix = DESC_TO_SOURCE_MAPPING.get(bids_desc, "")
-
-        if source_prefix and source_prefix in ("fnm", "snm"):
-            # FNM/SNM VoxelMap outputs: desc-fnm_rmap format
-            if bids_suffix:
-                return f"desc-{source_prefix}_{bids_desc}_{bids_suffix}"
-            else:
-                return f"desc-{source_prefix}_{bids_desc}"
-        else:
-            # For non-FNM/SNM keys, the key name becomes the suffix directly
-            # e.g., "analysis_mask" -> "analysismask" (suffix, not desc entity)
-            if bids_suffix:
-                return f"{bids_desc}_{bids_suffix}"
-            else:
-                return bids_desc
-
-    # Parse BIDS-style key
-    parsed = parse_result_key(result_key)
-
-    parts = []
-
-    # Add atlas- entity if present, splitting on underscore for desc
-    if "atlas" in parsed:
-        atlas_name, atlas_desc = split_atlas_name(parsed["atlas"])
-        parts.append(f"atlas-{atlas_name}")
-        if atlas_desc:
-            parts.append(f"desc-{atlas_desc}")
-
-    # Get source abbreviation
-    export_source = None
-    if "source" in parsed:
-        source = parsed["source"]
-        # Use export abbreviation if available, otherwise lowercase
-        export_source = EXPORT_SOURCE_ABBREVIATIONS.get(source, source.lower())
-
-    # Handle desc - for FNM/SNM without parcellation, prepend source to desc
-    if "desc" in parsed:
-        desc = parsed["desc"]
-        bids_desc = to_bids_label(desc)
-        desc_source = DESC_TO_SOURCE_MAPPING.get(desc)
-        if not desc_source:
-            # Try without underscores
-            desc_source = DESC_TO_SOURCE_MAPPING.get(bids_desc)
-
-        if "atlas" not in parsed and export_source in ("fnm", "snm"):
-            # No parcellation - this is a VoxelMap output from FNM/SNM
-            # Use format: desc-fnm_rmap or desc-snm_disconnectionpct
-            parts.append(f"desc-{export_source}")
-            parts.append(f"{bids_desc}")
-        else:
-            # For parcellation results (parcelstats):
-            # Always include source-fnm/source-snm to identify the analysis,
-            # then desc to identify the specific map being aggregated
-            if desc_source and desc_source in ("fnm", "snm"):
-                # Add source entity to identify analysis, then desc for map type
-                # e.g., source-fnm_desc-rmap or source-snm_desc-disconnectionmap
-                parts.append(f"source-{desc_source}")
-                parts.append(f"desc-{bids_desc}")
-            else:
-                # Unknown desc or inputmask - add source entity from parsed source
-                if export_source and not any("source-" in p for p in parts):
-                    parts.append(f"source-{export_source}")
-                if not any(p.startswith(f"desc-{bids_desc}") for p in parts):
-                    parts.append(f"desc-{bids_desc}")
-    elif export_source:
-        # No desc but have source - add source entity for parcellation results
-        parts.append(f"source-{export_source}")
-
-    # Add the BIDS suffix (only if non-empty)
-    if bids_suffix:
-        parts.append(bids_suffix)
-
-    return "_".join(parts)

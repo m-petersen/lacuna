@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..core.exceptions import LacunaError
-from ..core.keys import format_bids_export_filename
+from ..core.keys import BidsFilename
 from ..core.subject_data import SubjectData
 
 if TYPE_CHECKING:
@@ -449,7 +449,6 @@ def export_voxelmap(
     subject_id: str,
     session_id: str | None = None,
     desc: str = "map",
-    space: str | None = None,
     label: str | None = None,
     overwrite: bool = False,
 ) -> Path:
@@ -468,9 +467,8 @@ def export_voxelmap(
         Session identifier (e.g., 'ses-01')
     desc : str, default='map'
         BIDS-formatted key with entities and suffix (e.g.,
-        'parc-Schaefer100_source-fnm_rmap_map')
-    space : str, optional
-        Override space from voxelmap.space
+        'method-snm_space-MNI152NLin2009cAsym_desc-disconnectionpct_map').
+        Space is expected to be included in this string via BidsFilename.
     label : str, optional
         Label entity for disambiguation (e.g., 'WMH', 'acuteinfarct', 'lesion')
     overwrite : bool, default=False
@@ -487,12 +485,13 @@ def export_voxelmap(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build BIDS filename - desc already contains full formatted key with suffix
-    space = space or voxelmap.space
+    # including space entity from BidsFilename
+    space = voxelmap.space
     label_part = f"_label-{label}" if label else ""
     if session_id:
-        base_name = f"{subject_id}_{session_id}_space-{space}{label_part}_{desc}"
+        base_name = f"{subject_id}_{session_id}{label_part}_{desc}"
     else:
-        base_name = f"{subject_id}_space-{space}{label_part}_{desc}"
+        base_name = f"{subject_id}{label_part}_{desc}"
 
     nifti_path = output_dir / f"{base_name}.nii.gz"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -617,7 +616,7 @@ def export_connectivity_matrix(
         Session identifier (e.g., 'ses-01')
     desc : str, default='connectivity'
         BIDS-formatted key with entities and suffix (e.g.,
-        'parc-Schaefer100_source-snm_connectome_connmatrix')
+        'method-snm_atlas-schaefer100_desc-connectome_connmatrix')
     label : str, optional
         Label entity for disambiguation (e.g., 'WMH', 'acuteinfarct', 'lesion')
     overwrite : bool, default=False
@@ -888,7 +887,8 @@ def export_bids_derivatives(
     label = subject_data.metadata.get("label", "lesion")
     if export_lesion_mask:
         coord_space = subject_data.get_coordinate_space()
-        lesion_filename = f"{base_name}_space-{coord_space}_label-{label}_mask.nii.gz"
+        mask_bf = BidsFilename(space=coord_space, suffix="mask")
+        lesion_filename = f"{base_name}_label-{label}_{mask_bf}.nii.gz"
         lesion_path = anat_dir / lesion_filename
 
         if lesion_path.exists() and not overwrite:
@@ -907,7 +907,10 @@ def export_bids_derivatives(
             for key, value in results_data.items():
                 # VoxelMap -> NIfTI (goes to anat/ for spatial data)
                 if isinstance(value, VoxelMap) and export_voxelmaps:
-                    bids_key = format_bids_export_filename(key, "map")
+                    bf = BidsFilename.from_result_key(key, "map", namespace=_namespace)
+                    if value.space:
+                        bf.space = value.space
+                    bids_key = str(bf)
                     export_voxelmap(
                         value,
                         anat_dir,
@@ -920,7 +923,8 @@ def export_bids_derivatives(
 
                 # ParcelData -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ParcelDataType) and export_parcel_data:
-                    bids_key = format_bids_export_filename(key, "values")
+                    bf = BidsFilename.from_result_key(key, "values", namespace=_namespace)
+                    bids_key = str(bf)
                     _export_parcel_data(
                         value,
                         anat_dir,
@@ -933,7 +937,8 @@ def export_bids_derivatives(
 
                 # ConnectivityMatrix -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ConnectivityMatrix) and export_connectivity:
-                    bids_key = format_bids_export_filename(key, "connmatrix")
+                    bf = BidsFilename.from_result_key(key, "connmatrix", namespace=_namespace)
+                    bids_key = str(bf)
                     export_connectivity_matrix(
                         value,
                         anat_dir,
@@ -946,7 +951,8 @@ def export_bids_derivatives(
 
                 # Tractogram -> .tck file (goes to anat/ for BIDS compliance)
                 elif isinstance(value, Tractogram):
-                    bids_key = format_bids_export_filename(key, "tractogram")
+                    bf = BidsFilename.from_result_key(key, "tractogram", namespace=_namespace)
+                    bids_key = str(bf)
                     suffix = value.tractogram_path.suffix or ".tck"
                     label_part = f"_label-{label}" if label else ""
                     tck_filename = f"{base_name}{label_part}_{bids_key}{suffix}"
@@ -966,7 +972,8 @@ def export_bids_derivatives(
                         data_to_save = value
 
                     try:
-                        bids_key = format_bids_export_filename(key, "metrics")
+                        bf = BidsFilename.from_result_key(key, "metrics", namespace=_namespace)
+                        bids_key = str(bf)
                         label_part = f"_label-{label}" if label else ""
                         results_filename = f"{base_name}{label_part}_{bids_key}.json"
                         results_path = anat_dir / results_filename
@@ -1285,8 +1292,8 @@ def aggregate_parcelstats(
     >>> # After running participant-level analysis
     >>> group_files = aggregate_parcelstats("output/lacuna")
     >>> print(group_files)
-    {'atlas-schaefer2018_desc-100parcels7networks_source-fnm_desc-rmap_parcelstats':
-     PosixPath('output/lacuna/group_atlas-schaefer2018_..._parcelstats.tsv')}
+    {'method-fnm_atlas-schaefer2018parcels100networks7_desc-rmap_parcelstats':
+     PosixPath('output/lacuna/group_method-fnm_atlas-schaefer2018..._parcelstats.tsv')}
 
     Notes
     -----
@@ -1511,7 +1518,7 @@ def _extract_output_type(filename: str) -> str:
     Returns
     -------
     str
-        Output type string (e.g., atlas-schaefer2018_desc-100parcels7networks_parcelstats)
+        Output type string (e.g., atlas-schaefer2018parcels100networks7_parcelstats)
     """
     # Remove extension
     name = filename

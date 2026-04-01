@@ -68,7 +68,7 @@ lacuna tutorial ./my_tutorial
 lacuna fetch gsp1000 --api-key $DATAVERSE_API_KEY
 
 # Run regional damage analysis
-lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks
+lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7
 
 # Run functional network mapping
 lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches

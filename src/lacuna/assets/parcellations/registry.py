@@ -20,7 +20,7 @@ Examples
 >>> mni6_parcellations = list_parcellations(space="MNI152NLin6Asym")
 >>>
 >>> # Get specific parcellation metadata
->>> schaefer = PARCELLATION_REGISTRY["Schaefer2018_100Parcels7Networks"]
+>>> schaefer = PARCELLATION_REGISTRY["schaefer2018parcels100networks7"]
 >>> print(schaefer.space, schaefer.resolution)
 """
 
@@ -82,8 +82,8 @@ class ParcellationMetadata(SpatialAssetMetadata):
 # Maps parcellation name -> ParcellationMetadata
 PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
     # Schaefer 2018 Cortical Parcellation - 100 Parcels
-    "Schaefer2018_100Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018_100Parcels7Networks",
+    "schaefer2018parcels100networks7": ParcellationMetadata(
+        name="schaefer2018parcels100networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 100 parcels organized into 7 networks",
@@ -102,8 +102,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=100,
     ),
     # Schaefer 2018 - 200 Parcels
-    "Schaefer2018_200Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018_200Parcels7Networks",
+    "schaefer2018parcels200networks7": ParcellationMetadata(
+        name="schaefer2018parcels200networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 200 parcels organized into 7 networks",
@@ -122,8 +122,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=200,
     ),
     # Schaefer 2018 - 400 Parcels
-    "Schaefer2018_400Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018_400Parcels7Networks",
+    "schaefer2018parcels400networks7": ParcellationMetadata(
+        name="schaefer2018parcels400networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 400 parcels organized into 7 networks",
@@ -142,8 +142,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=400,
     ),
     # Schaefer 2018 - 1000 Parcels
-    "Schaefer2018_1000Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018_1000Parcels7Networks",
+    "schaefer2018parcels1000networks7": ParcellationMetadata(
+        name="schaefer2018parcels1000networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 1000 parcels organized into 7 networks",
@@ -162,8 +162,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=1000,
     ),
     # Tian Subcortical Parcellation - Scale 1
-    "TianSubcortex_3TS1": ParcellationMetadata(
-        name="TianSubcortex_3TS1",
+    "tian2020parcels16": ParcellationMetadata(
+        name="tian2020parcels16",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Tian 2020 subcortical parcellation — Scale 1 (16 regions, 3T MRI)",
@@ -173,8 +173,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=16,
     ),
     # Tian Subcortical Parcellation - Scale 2
-    "TianSubcortex_3TS2": ParcellationMetadata(
-        name="TianSubcortex_3TS2",
+    "tian2020parcels32": ParcellationMetadata(
+        name="tian2020parcels32",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Tian 2020 subcortical parcellation — Scale 2 (32 regions, 3T MRI)",
@@ -184,8 +184,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=32,
     ),
     # Tian Subcortical Parcellation - Scale 3
-    "TianSubcortex_3TS3": ParcellationMetadata(
-        name="TianSubcortex_3TS3",
+    "tian2020parcels50": ParcellationMetadata(
+        name="tian2020parcels50",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Tian 2020 subcortical parcellation — Scale 3 (50 regions, 3T MRI)",
@@ -195,8 +195,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=50,
     ),
     # Tian Subcortical Parcellation - Scale 4
-    "TianSubcortex_3TS4": ParcellationMetadata(
-        name="TianSubcortex_3TS4",
+    "tian2020parcels54": ParcellationMetadata(
+        name="tian2020parcels54",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Tian 2020 subcortical parcellation — Scale 4 (54 regions, 3T MRI)",
@@ -206,8 +206,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=54,
     ),
     # Schaefer 2018 - 17 Networks variants
-    "Schaefer2018_100Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018_100Parcels17Networks",
+    "schaefer2018parcels100networks17": ParcellationMetadata(
+        name="schaefer2018parcels100networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 100 parcels organized into 17 networks",
@@ -235,8 +235,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=100,
     ),
-    "Schaefer2018_200Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018_200Parcels17Networks",
+    "schaefer2018parcels200networks17": ParcellationMetadata(
+        name="schaefer2018parcels200networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 200 parcels organized into 17 networks",
@@ -264,8 +264,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=200,
     ),
-    "Schaefer2018_400Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018_400Parcels17Networks",
+    "schaefer2018parcels400networks17": ParcellationMetadata(
+        name="schaefer2018parcels400networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 400 parcels organized into 17 networks",
@@ -293,8 +293,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=400,
     ),
-    "Schaefer2018_1000Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018_1000Parcels17Networks",
+    "schaefer2018parcels1000networks17": ParcellationMetadata(
+        name="schaefer2018parcels1000networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Schaefer 2018 cortical parcellation with 1000 parcels organized into 17 networks",
@@ -323,8 +323,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=1000,
     ),
     # Combined Schaefer 400 + Tian Subcortical parcellations (17 Networks)
-    "Schaefer2018TianS1_400Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS1_400Parcels17Networks",
+    "schaefer2018tian2020parcels416networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels416networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (17 networks) + Tian Scale 1 subcortical (416 regions total)",
@@ -352,8 +352,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=416,
     ),
-    "Schaefer2018TianS2_400Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS2_400Parcels17Networks",
+    "schaefer2018tian2020parcels432networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels432networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (17 networks) + Tian Scale 2 subcortical (432 regions total)",
@@ -381,8 +381,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=432,
     ),
-    "Schaefer2018TianS3_400Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS3_400Parcels17Networks",
+    "schaefer2018tian2020parcels450networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels450networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (17 networks) + Tian Scale 3 subcortical (450 regions total)",
@@ -411,8 +411,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=450,
     ),
     # Combined Schaefer 400 + Tian Subcortical parcellations (7 Networks)
-    "Schaefer2018TianS1_400Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS1_400Parcels7Networks",
+    "schaefer2018tian2020parcels416networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels416networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (7 networks) + Tian Scale 1 subcortical (416 regions total)",
@@ -430,8 +430,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=416,
     ),
-    "Schaefer2018TianS2_400Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS2_400Parcels7Networks",
+    "schaefer2018tian2020parcels432networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels432networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (7 networks) + Tian Scale 2 subcortical (432 regions total)",
@@ -449,8 +449,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=432,
     ),
-    "Schaefer2018TianS3_400Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS3_400Parcels7Networks",
+    "schaefer2018tian2020parcels450networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels450networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (7 networks) + Tian Scale 3 subcortical (450 regions total)",
@@ -468,8 +468,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=450,
     ),
-    "Schaefer2018TianS4_400Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS4_400Parcels7Networks",
+    "schaefer2018tian2020parcels454networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels454networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (7 networks) + Tian Scale 4 subcortical (454 regions total)",
@@ -488,8 +488,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=454,
     ),
     # Combined Schaefer 400 + Tian S4 (17 Networks)
-    "Schaefer2018TianS4_400Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS4_400Parcels17Networks",
+    "schaefer2018tian2020parcels454networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels454networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 400 cortical (17 networks) + Tian Scale 4 subcortical (454 regions total)",
@@ -518,8 +518,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=454,
     ),
     # Combined Schaefer 1000 + Tian Subcortical parcellations (17 Networks)
-    "Schaefer2018TianS1_1000Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS1_1000Parcels17Networks",
+    "schaefer2018tian2020parcels1016networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1016networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (17 networks) + Tian Scale 1 subcortical (1016 regions total)",
@@ -547,8 +547,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=1016,
     ),
-    "Schaefer2018TianS2_1000Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS2_1000Parcels17Networks",
+    "schaefer2018tian2020parcels1032networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1032networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (17 networks) + Tian Scale 2 subcortical (1032 regions total)",
@@ -576,8 +576,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=1032,
     ),
-    "Schaefer2018TianS3_1000Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS3_1000Parcels17Networks",
+    "schaefer2018tian2020parcels1050networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1050networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (17 networks) + Tian Scale 3 subcortical (1050 regions total)",
@@ -605,8 +605,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=1050,
     ),
-    "Schaefer2018TianS4_1000Parcels17Networks": ParcellationMetadata(
-        name="Schaefer2018TianS4_1000Parcels17Networks",
+    "schaefer2018tian2020parcels1054networks17": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1054networks17",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (17 networks) + Tian Scale 4 subcortical (1054 regions total)",
@@ -635,8 +635,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         n_regions=1054,
     ),
     # Combined Schaefer 1000 + Tian Subcortical parcellations (7 Networks)
-    "Schaefer2018TianS1_1000Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS1_1000Parcels7Networks",
+    "schaefer2018tian2020parcels1016networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1016networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (7 networks) + Tian Scale 1 subcortical (1016 regions total)",
@@ -654,8 +654,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=1016,
     ),
-    "Schaefer2018TianS2_1000Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS2_1000Parcels7Networks",
+    "schaefer2018tian2020parcels1032networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1032networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (7 networks) + Tian Scale 2 subcortical (1032 regions total)",
@@ -673,8 +673,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=1032,
     ),
-    "Schaefer2018TianS3_1000Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS3_1000Parcels7Networks",
+    "schaefer2018tian2020parcels1050networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1050networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (7 networks) + Tian Scale 3 subcortical (1050 regions total)",
@@ -692,8 +692,8 @@ PARCELLATION_REGISTRY: dict[str, ParcellationMetadata] = {
         ],
         n_regions=1050,
     ),
-    "Schaefer2018TianS4_1000Parcels7Networks": ParcellationMetadata(
-        name="Schaefer2018TianS4_1000Parcels7Networks",
+    "schaefer2018tian2020parcels1054networks7": ParcellationMetadata(
+        name="schaefer2018tian2020parcels1054networks7",
         space="MNI152NLin6Asym",
         resolution=1,
         description="Combined Schaefer 1000 cortical (7 networks) + Tian Scale 4 subcortical (1054 regions total)",

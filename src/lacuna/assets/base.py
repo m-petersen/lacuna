@@ -112,7 +112,7 @@ class AssetRegistry(Generic[T]):
     >>> registry = AssetRegistry[AtlasMetadata]("atlas")
     >>> registry.register(atlas_metadata)
     >>> atlases = registry.list(space="MNI152NLin2009cAsym")
-    >>> atlas = registry.get("Schaefer2018_100Parcels7Networks")
+    >>> atlas = registry.get("schaefer2018parcels100networks7")
     """
 
     def __init__(self, asset_type_name: str = "asset"):

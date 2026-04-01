@@ -121,11 +121,11 @@ class ParcelAggregation(BaseAnalysis):
         - "median": Median value across ROI voxels
         - "std": Standard deviation across ROI voxels
     parcel_names : list of str or None, default=None
-        Names of atlases from the registry to process (e.g., "Schaefer2018_100Parcels7Networks").
+        Names of atlases from the registry to process (e.g., "schaefer2018parcels100networks7").
         If None, all registered atlases are processed.
         Use register_parcellation() or register_parcellationes_from_directory() to add custom atlases.
         If None, all parcellations found in atlas_dir will be processed.
-        Example: ["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
+        Example: ["schaefer2018parcels100networks7", "tian2020parcels16"]
 
     Raises
     ------
@@ -161,7 +161,7 @@ class ParcelAggregation(BaseAnalysis):
     >>> analysis = ParcelAggregation(
     ...     source="maskimg",
     ...     aggregation="percent",
-    ...     parcel_names=["Schaefer2018_100Parcels7Networks", "TianSubcortex_3TS1"]
+    ...     parcel_names=["schaefer2018parcels100networks7", "tian2020parcels16"]
     ... )
     >>>
     >>> # Register custom atlases first, then use them

@@ -335,7 +335,7 @@ def analyze(
     >>> result = analyze(
     ...     mask_data,
     ...     steps={
-    ...         "RegionalDamage": {"parcel_names": ["Schaefer2018_100Parcels7Networks"]},
+    ...         "RegionalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]},
     ...         "FunctionalNetworkMapping": {
     ...             "connectome_name": "GSP1000",
     ...             "method": "boes",

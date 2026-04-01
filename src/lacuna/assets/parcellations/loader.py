@@ -9,7 +9,7 @@ Examples
 >>> from lacuna.assets.parcellations import load_parcellation
 >>>
 >>> # Load a bundled parcellation
->>> parcellation = load_parcellation("Schaefer2018_100Parcels7Networks")
+>>> parcellation = load_parcellation("schaefer2018parcels100networks7")
 >>> print(parcellation.image.shape)
 >>> print(list(parcellation.labels.keys())[:5])
 >>>
@@ -74,7 +74,7 @@ def load_parcellation(
 
     Examples
     --------
-    >>> parcellation = load_parcellation("Schaefer2018_100Parcels7Networks")
+    >>> parcellation = load_parcellation("schaefer2018parcels100networks7")
     >>> print(f"Parcellation has {len(parcellation.labels)} regions")
     >>> print(f"Space: {parcellation.metadata.space}")
     """

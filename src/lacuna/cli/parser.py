@@ -64,7 +64,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "Examples:\n"
             "  lacuna tutorial ./my_tutorial\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
-            "  lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks\n"
+            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches\n"
             "  lacuna collect /output\n"
             "  lacuna info atlases\n"
@@ -250,7 +250,7 @@ def _build_run_parser(subparsers) -> None:
             "  fnm  (functionalnetworkmapping) - Functional connectivity disruption\n"
             "  snm  (structuralnetworkmapping) - White matter disconnection\n\n"
             "Examples:\n"
-            "  lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks\n"
+            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
             "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4"
         ),
@@ -374,8 +374,8 @@ def _build_rd_parser(subparsers) -> None:
             "Use 'lacuna info atlases' to see available atlases.\n\n"
             "Examples:\n"
             "  lacuna run rd /bids /output\n"
-            "  lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks\n"
-            "  lacuna run rd /bids /output --parcel-atlases Schaefer2018_400Parcels17Networks TianSubcortex_3TS2"
+            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -976,7 +976,7 @@ def _build_check_parser(subparsers) -> None:
             "Examples:\n"
             "  lacuna check input /bids\n"
             "  lacuna check rd /bids /output\n"
-            "  lacuna check rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
+            "  lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
             "  lacuna check rd /bids /output --output-file missing.txt\n"
             "  lacuna check fnm /bids /output --quiet\n"
             "  lacuna check snm /bids /output --participant-label 001 002"
@@ -1005,12 +1005,12 @@ def _build_check_rd_parser(subparsers) -> None:
         help="Check for RegionalDamage parcelstats outputs",
         description=(
             "Check which subjects have RegionalDamage parcelstats TSV outputs.\n\n"
-            "By default, any '*source-regionaldamage*parcelstats.tsv' file in a\n"
+            "By default, any '*method-rd*parcelstats.tsv' file in a\n"
             "subject's output directory counts as complete. If --parcel-atlases is\n"
             "given, each named atlas is checked individually.\n\n"
             "Examples:\n"
             "  lacuna check rd /bids /output\n"
-            "  lacuna check rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks\n"
+            "  lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
             "  lacuna check rd /bids /output --output-file missing.txt"
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -1038,7 +1038,7 @@ def _build_check_fnm_parser(subparsers) -> None:
         help="Check for FunctionalNetworkMapping rmap outputs",
         description=(
             "Check which subjects have FunctionalNetworkMapping rmap NIfTI outputs.\n\n"
-            "A subject is considered complete if a '*desc-fnm_rmap.nii.gz' file\n"
+            "A subject is considered complete if a '*method-fnm*desc-rmap*.nii.gz' file\n"
             "exists in their output directory.\n\n"
             "Examples:\n"
             "  lacuna check fnm /bids /output\n"
@@ -1057,7 +1057,7 @@ def _build_check_snm_parser(subparsers) -> None:
         help="Check for StructuralNetworkMapping disconnection outputs",
         description=(
             "Check which subjects have StructuralNetworkMapping disconnection outputs.\n\n"
-            "A subject is considered complete if a '*desc-snm_disconnectionpct.nii.gz'\n"
+            "A subject is considered complete if a '*method-snm*desc-disconnectionpct*.nii.gz'\n"
             "file exists in their output directory.\n\n"
             "Examples:\n"
             "  lacuna check snm /bids /output\n"

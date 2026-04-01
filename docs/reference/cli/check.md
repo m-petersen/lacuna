@@ -81,9 +81,9 @@ Enumerates input subjects and checks whether output files exist in the derivativ
 
 | Analysis | Alias | Sentinel file |
 |----------|-------|---------------|
-| `rd` | `regionaldamage` | `*source-regionaldamage*parcelstats.tsv` |
-| `fnm` | `functionalnetworkmapping` | `*desc-fnm_rmap.nii.gz` |
-| `snm` | `structuralnetworkmapping` | `*desc-snm_disconnectionpct.nii.gz` |
+| `rd` | `regionaldamage` | `*method-rd*parcelstats.tsv` |
+| `fnm` | `functionalnetworkmapping` | `*method-fnm*desc-rmap*.nii.gz` |
+| `snm` | `structuralnetworkmapping` | `*method-snm*desc-disconnectionpct*.nii.gz` |
 
 ### Arguments
 
@@ -123,7 +123,7 @@ Enumerates input subjects and checks whether output files exist in the derivativ
 lacuna check rd /bids /output
 
 # Check specific atlas
-lacuna check rd /bids /output --parcel-atlases Schaefer2018_400Parcels7Networks
+lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7
 
 # Write missing subjects and use for rerun
 lacuna check rd /bids /output --output-file missing.txt

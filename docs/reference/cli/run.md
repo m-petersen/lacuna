@@ -77,11 +77,11 @@ Computes lesion overlap with brain parcellations (atlases). For each parcel, cal
 
 ```bash
 # Basic regional damage with one atlas
-lacuna run rd /bids /output --parcel-atlases Schaefer2018_100Parcels7Networks
+lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7
 
 # Multiple atlases
 lacuna run rd /bids /output \
-    --parcel-atlases Schaefer2018_400Parcels17Networks TianSubcortex_3TS2
+    --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
 
 # With custom parcellation
 lacuna run rd /bids /output \
@@ -89,7 +89,7 @@ lacuna run rd /bids /output \
 
 # Mix bundled and custom atlases
 lacuna run rd /bids /output \
-    --parcel-atlases Schaefer2018_100Parcels7Networks \
+    --parcel-atlases schaefer2018parcels100networks7 \
     --custom-parcellation MyAtlas /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
 ```
 
@@ -130,7 +130,7 @@ lacuna run fnm /bids /output \
 lacuna run fnm /bids /output \
     --connectome-path /data/gsp1000_batches \
     --method pini \
-    --parcel-atlases Schaefer2018_100Parcels7Networks
+    --parcel-atlases schaefer2018parcels100networks7
 
 # Specific participants with t-threshold
 lacuna run fnm /bids /output \
@@ -172,7 +172,7 @@ lacuna run snm /bids /output \
 # With ROI disconnection and 4 threads
 lacuna run snm /bids /output \
     --connectome-path /data/dtor985.tck \
-    --parcel-atlas Schaefer2018_100Parcels7Networks \
+    --parcel-atlas schaefer2018parcels100networks7 \
     --compute-roi-disconnection \
     --nprocs 4
 ```

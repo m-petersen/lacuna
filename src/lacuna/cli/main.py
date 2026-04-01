@@ -192,26 +192,31 @@ class RunConfig:
                 names = opts["parcellation_name"]
                 if isinstance(names, str):
                     names = [names]
-                for name in names:
-                    self._validate_atlas_name(name)
+                opts["parcellation_name"] = [
+                    self._validate_atlas_name(n) for n in names
+                ]
 
         # Validate atlas names for RD and FNM (parcel_names list)
         if "parcel_names" in self.analysis_options:
-            for name in self.analysis_options["parcel_names"]:
-                self._validate_atlas_name(name)
+            self.analysis_options["parcel_names"] = [
+                self._validate_atlas_name(n)
+                for n in self.analysis_options["parcel_names"]
+            ]
 
     @staticmethod
-    def _validate_atlas_name(name: str) -> None:
-        """Validate atlas name against registry."""
-        from lacuna.assets.parcellations import list_parcellations
+    def _validate_atlas_name(name: str) -> str:
+        """Validate that an atlas name exists in the registry."""
+        from lacuna.assets.parcellations import PARCELLATION_REGISTRY
 
-        available = [a.name for a in list_parcellations()]
-        if name not in available:
-            raise ValueError(
-                f"Atlas '{name}' not found. "
-                f"Available atlases: {', '.join(available[:5])}...\n"
-                f"Use 'lacuna info atlases' to see all options."
-            )
+        if name in PARCELLATION_REGISTRY:
+            return name
+
+        available = sorted(PARCELLATION_REGISTRY.keys())
+        raise ValueError(
+            f"Atlas '{name}' not found. "
+            f"Available atlases: {', '.join(available[:5])}...\n"
+            f"Use 'lacuna info atlases' to see all options."
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -416,10 +421,10 @@ def _show_atlases_info() -> int:
         print("\n  Use 'lacuna fetch' to download connectomes which include atlases.")
         return EXIT_SUCCESS
 
-    # Group by type (combined must be excluded from schaefer/tian)
-    combined = [a for a in atlases if "Tian" in a.name and "Schaefer" in a.name]
-    schaefer = [a for a in atlases if a.name.startswith("Schaefer") and a not in combined]
-    tian = [a for a in atlases if a.name.startswith("Tian") and a not in combined]
+    # Group by type
+    combined = [a for a in atlases if "tian" in a.name and "schaefer" in a.name]
+    schaefer = [a for a in atlases if a.name.startswith("schaefer") and a not in combined]
+    tian = [a for a in atlases if a.name.startswith("tian") and a not in combined]
     other = [a for a in atlases if a not in schaefer + tian + combined]
 
     def print_atlas_group(title: str, atlas_list: list, citation_key: str | None = None):
@@ -927,17 +932,17 @@ def _check_subject_complete(
 
     if not anat_dir.exists():
         if norm in ("rd", "regionaldamage"):
-            sentinel = "*source-regionaldamage*parcelstats.tsv"
+            sentinel = "*method-rd*parcelstats.tsv"
         elif norm in ("fnm", "functionalnetworkmapping"):
-            sentinel = "*desc-fnm_rmap.nii.gz"
+            sentinel = "*method-fnm*desc-rmap*.nii.gz"
         elif norm in ("snm", "structuralnetworkmapping"):
-            sentinel = "*desc-snm_disconnectionpct.nii.gz"
+            sentinel = "*method-snm*desc-disconnectionpct*.nii.gz"
         else:
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
 
     if norm in ("rd", "regionaldamage"):
-        all_matches = list(anat_dir.glob("*source-regionaldamage*parcelstats.tsv"))
+        all_matches = list(anat_dir.glob("*method-rd*parcelstats.tsv"))
         if parcel_atlases:
             missing = []
             for atlas in parcel_atlases:
@@ -953,25 +958,25 @@ def _check_subject_complete(
             return "complete", []
         else:
             if not all_matches:
-                return "missing", ["*source-regionaldamage*parcelstats.tsv"]
+                return "missing", ["*method-rd*parcelstats.tsv"]
             # Files exist -- check content if requested
             if check_content and all(_is_output_empty(f, norm) for f in all_matches):
                 return "empty", []
             return "complete", []
 
     elif norm in ("fnm", "functionalnetworkmapping"):
-        hits = list(anat_dir.glob("*desc-fnm_rmap.nii.gz"))
+        hits = list(anat_dir.glob("*method-fnm*desc-rmap*.nii.gz"))
         if not hits:
-            return "missing", ["*desc-fnm_rmap.nii.gz"]
+            return "missing", ["*method-fnm*desc-rmap*.nii.gz"]
         # Files exist -- check content if requested
         if check_content and all(_is_output_empty(f, norm) for f in hits):
             return "empty", []
         return "complete", []
 
     elif norm in ("snm", "structuralnetworkmapping"):
-        hits = list(anat_dir.glob("*desc-snm_disconnectionpct.nii.gz"))
+        hits = list(anat_dir.glob("*method-snm*desc-disconnectionpct*.nii.gz"))
         if not hits:
-            return "missing", ["*desc-snm_disconnectionpct.nii.gz"]
+            return "missing", ["*method-snm*desc-disconnectionpct*.nii.gz"]
         # Files exist -- check content if requested
         if check_content and all(_is_output_empty(f, norm) for f in hits):
             return "empty", []
