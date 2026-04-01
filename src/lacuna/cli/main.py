@@ -1211,7 +1211,7 @@ def _handle_check_command(args: Namespace) -> int:
             print(f"  {line}")
 
         label_str = " ".join(missing_subject_ids)
-        print(f"\nRerun missing subjects:")
+        print("\nRerun missing subjects:")
         print(f"  lacuna run {analysis} {bids_dir} {output_dir} --participant-label {label_str}\n")
         if output_file:
             print(f"Missing subject IDs written to: {output_file}\n")
