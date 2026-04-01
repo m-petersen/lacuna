@@ -347,6 +347,8 @@ def _handle_collect_command(args: Namespace) -> int:
     logger.info(f"Pattern: {glob_pattern}")
 
     # Pre-scan to inform user what was found
+    from lacuna.io.bids import _extract_output_type
+
     matched_files = [
         f for f in Path(derivatives_dir).rglob(glob_pattern) if not f.name.startswith("group_")
     ]
@@ -357,7 +359,11 @@ def _handle_collect_command(args: Namespace) -> int:
             if f.parent.parent.parent.name.startswith("sub-")
         }
     )
-    logger.info(f"Found {len(matched_files)} file(s) across {n_subjects} subject(s)")
+    n_output_types = len({_extract_output_type(f.name) for f in matched_files})
+    logger.info(
+        f"Found {len(matched_files)} file(s) across {n_subjects} subject(s) "
+        f"and {n_output_types} output type(s)"
+    )
 
     try:
         created_files = aggregate_parcelstats(

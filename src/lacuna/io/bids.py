@@ -1250,6 +1250,7 @@ def aggregate_parcelstats(
     overwrite: bool = False,
     label_filter: str | None = None,
     analysis_filter: str | None = None,
+    progress: bool = True,
 ) -> dict[str, Path]:
     """
     Aggregate subject-level parcelstats TSV files into group-level DataFrames.
@@ -1306,6 +1307,7 @@ def aggregate_parcelstats(
     This enables direct loading into statistical analysis tools.
     """
     import pandas as pd
+    from tqdm import tqdm
 
     derivatives_dir = Path(derivatives_dir)
     if not derivatives_dir.exists():
@@ -1350,9 +1352,9 @@ def aggregate_parcelstats(
         if not parcelstats_files:
             raise BidsError(f"No parcelstats files found for analysis '{analysis_filter}'")
 
-    # Group files by their output type (everything after label- entity)
+    # Group files by output type (only sub- is stripped; ses-/label- are preserved)
     # Example: sub-CAS001_ses-01_label-acuteinfarct_atlas-schaefer2018_..._parcelstats.tsv
-    # Output type: atlas-schaefer2018_..._parcelstats
+    # Output type: ses-01_label-acuteinfarct_atlas-schaefer2018_..._parcelstats
     file_groups: dict[str, list[tuple[Path, dict[str, str]]]] = {}
 
     for tsv_file in parcelstats_files:
@@ -1373,7 +1375,12 @@ def aggregate_parcelstats(
     # Create group-level TSV for each output type
     created_files: dict[str, Path] = {}
 
-    for output_type, files_with_entities in file_groups.items():
+    for output_type, files_with_entities in tqdm(
+        file_groups.items(),
+        desc="Collecting output types",
+        unit="type",
+        disable=not progress,
+    ):
         # Build output filename
         group_filename = f"group_{output_type}.tsv"
         group_path = output_dir / group_filename
@@ -1384,7 +1391,13 @@ def aggregate_parcelstats(
         # Collect data from all subjects
         rows = []
         skipped_files = []
-        for tsv_file, entities in files_with_entities:
+        for tsv_file, entities in tqdm(
+            files_with_entities,
+            desc=f"  Reading {output_type}",
+            unit="file",
+            leave=False,
+            disable=not progress,
+        ):
             try:
                 df = pd.read_csv(tsv_file, sep="\t")
 
@@ -1507,8 +1520,10 @@ def _extract_output_type(filename: str) -> str:
     """
     Extract the output type from a parcelstats filename.
 
-    Removes subject-specific entities (sub-, ses-, label-) to get the
-    consistent output type that should match across subjects.
+    Removes subject-specific entities (sub-) to get the consistent
+    output type that should match across subjects. Session and label
+    entities are preserved so that each distinct output (e.g., different
+    sessions or lesion labels) is aggregated into its own group file.
 
     Parameters
     ----------
@@ -1518,7 +1533,7 @@ def _extract_output_type(filename: str) -> str:
     Returns
     -------
     str
-        Output type string (e.g., atlas-schaefer2018parcels100networks7_parcelstats)
+        Output type string (e.g., ses-01_label-lesion_atlas-schaefer_parcelstats)
     """
     # Remove extension
     name = filename
@@ -1532,8 +1547,8 @@ def _extract_output_type(filename: str) -> str:
     output_parts = []
 
     for part in parts:
-        # Skip subject-specific entities
-        if part.startswith("sub-") or part.startswith("ses-") or part.startswith("label-"):
+        # Skip only subject identifier
+        if part.startswith("sub-"):
             continue
         output_parts.append(part)
 

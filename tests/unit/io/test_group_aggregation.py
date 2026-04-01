@@ -53,20 +53,34 @@ class TestExtractOutputType:
         filename = "sub-001_ses-01_label-lesion_atlas-schaefer_parcelstats.tsv"
         result = _extract_output_type(filename)
         assert "sub-" not in result
-        assert "ses-" not in result
-        assert "label-" not in result
+        assert "ses-01" in result
+        assert "label-lesion" in result
         assert "atlas-schaefer" in result
         assert "parcelstats" in result
 
     def test_extract_output_type_consistent_across_subjects(self):
-        """Test that output type is consistent across different subjects."""
+        """Test that output type is consistent across different subjects with same ses/label."""
         file1 = "sub-001_ses-01_label-lesion_atlas-schaefer_parcelstats.tsv"
-        file2 = "sub-002_ses-02_label-wmh_atlas-schaefer_parcelstats.tsv"
+        file2 = "sub-002_ses-01_label-lesion_atlas-schaefer_parcelstats.tsv"
 
         result1 = _extract_output_type(file1)
         result2 = _extract_output_type(file2)
 
         assert result1 == result2
+
+    def test_extract_output_type_differs_for_different_sessions(self):
+        """Test that different sessions produce different output types."""
+        file1 = "sub-001_ses-01_label-lesion_atlas-schaefer_parcelstats.tsv"
+        file2 = "sub-001_ses-02_label-lesion_atlas-schaefer_parcelstats.tsv"
+
+        assert _extract_output_type(file1) != _extract_output_type(file2)
+
+    def test_extract_output_type_differs_for_different_labels(self):
+        """Test that different labels produce different output types."""
+        file1 = "sub-001_ses-01_label-lesion_atlas-schaefer_parcelstats.tsv"
+        file2 = "sub-001_ses-01_label-wmh_atlas-schaefer_parcelstats.tsv"
+
+        assert _extract_output_type(file1) != _extract_output_type(file2)
 
 
 class TestAggregateParcelstats:
@@ -100,7 +114,7 @@ class TestAggregateParcelstats:
 
     def test_aggregate_parcelstats_creates_group_file(self, sample_derivatives):
         """Test that aggregation creates a group-level TSV file."""
-        result = aggregate_parcelstats(sample_derivatives)
+        result = aggregate_parcelstats(sample_derivatives, progress=False)
 
         assert len(result) == 1
         group_file = list(result.values())[0]
@@ -110,7 +124,7 @@ class TestAggregateParcelstats:
 
     def test_aggregate_parcelstats_correct_structure(self, sample_derivatives):
         """Test that the aggregated file has correct structure."""
-        result = aggregate_parcelstats(sample_derivatives)
+        result = aggregate_parcelstats(sample_derivatives, progress=False)
         group_file = list(result.values())[0]
 
         df = pd.read_csv(group_file, sep="\t")
@@ -128,7 +142,7 @@ class TestAggregateParcelstats:
 
     def test_aggregate_parcelstats_correct_values(self, sample_derivatives):
         """Test that aggregated values are correct."""
-        result = aggregate_parcelstats(sample_derivatives)
+        result = aggregate_parcelstats(sample_derivatives, progress=False)
         group_file = list(result.values())[0]
 
         df = pd.read_csv(group_file, sep="\t")
@@ -142,7 +156,7 @@ class TestAggregateParcelstats:
 
     def test_aggregate_parcelstats_creates_sidecar(self, sample_derivatives):
         """Test that a JSON sidecar is created."""
-        result = aggregate_parcelstats(sample_derivatives)
+        result = aggregate_parcelstats(sample_derivatives, progress=False)
         group_file = list(result.values())[0]
         sidecar_path = group_file.with_suffix(".json")
 
@@ -171,16 +185,16 @@ class TestAggregateParcelstats:
     def test_aggregate_parcelstats_overwrite(self, sample_derivatives):
         """Test that overwrite works correctly."""
         # First aggregation
-        result1 = aggregate_parcelstats(sample_derivatives)
+        result1 = aggregate_parcelstats(sample_derivatives, progress=False)
         group_file = list(result1.values())[0]
         original_mtime = group_file.stat().st_mtime
 
         # Second aggregation without overwrite should skip
-        aggregate_parcelstats(sample_derivatives, overwrite=False)
+        aggregate_parcelstats(sample_derivatives, overwrite=False, progress=False)
         assert group_file.stat().st_mtime == original_mtime
 
         # Third aggregation with overwrite should update
-        aggregate_parcelstats(sample_derivatives, overwrite=True)
+        aggregate_parcelstats(sample_derivatives, overwrite=True, progress=False)
         assert group_file.stat().st_mtime >= original_mtime
 
     def test_aggregate_parcelstats_multiple_output_types(self, tmp_path):
@@ -198,7 +212,7 @@ class TestAggregateParcelstats:
             df = pd.DataFrame({"region": ["A", "B"], "value": [0.1, 0.2]})
             df.to_csv(tsv_path, sep="\t", index=False)
 
-        result = aggregate_parcelstats(derivatives_dir)
+        result = aggregate_parcelstats(derivatives_dir, progress=False)
 
         # Should create two group files
         assert len(result) == 2
@@ -258,25 +272,158 @@ class TestAggregateParcelstatsIntegration:
 
     def test_aggregate_realistic_structure(self, realistic_derivatives):
         """Test aggregation with realistic BIDS structure."""
-        result = aggregate_parcelstats(realistic_derivatives)
+        result = aggregate_parcelstats(realistic_derivatives, progress=False)
 
-        # Should create two group files (FNM and SNM)
-        assert len(result) == 2
+        # Should create 4 group files:
+        # ses-01_label-acuteinfarct x FNM + SNM = 2
+        # ses-02_label-chronicinfarct x FNM + SNM = 2
+        assert len(result) == 4
 
-        # Each file should have 3 subjects
-        for _output_type, group_file in result.items():
+        # The ses-01/acuteinfarct groups should have 2 subjects (CAS001, CAS002)
+        acute_groups = {
+            k: v for k, v in result.items()
+            if "ses-01" in k and "label-acuteinfarct" in k
+        }
+        assert len(acute_groups) == 2
+        for _output_type, group_file in acute_groups.items():
             df = pd.read_csv(group_file, sep="\t")
-            assert len(df) == 3
+            assert len(df) == 2
             assert "participant_id" in df.columns
             assert "session_id" in df.columns
             assert "label" in df.columns
+
+        # The ses-02/chronicinfarct groups should have 1 subject (CAS003)
+        chronic_groups = {
+            k: v for k, v in result.items()
+            if "ses-02" in k and "label-chronicinfarct" in k
+        }
+        assert len(chronic_groups) == 2
+        for _output_type, group_file in chronic_groups.items():
+            df = pd.read_csv(group_file, sep="\t")
+            assert len(df) == 1
 
     def test_aggregate_to_custom_output_dir(self, realistic_derivatives, tmp_path):
         """Test aggregation to a custom output directory."""
         output_dir = tmp_path / "group_results"
 
-        result = aggregate_parcelstats(realistic_derivatives, output_dir=output_dir)
+        result = aggregate_parcelstats(
+            realistic_derivatives, output_dir=output_dir, progress=False,
+        )
 
         # Files should be in custom output directory
         for group_file in result.values():
             assert group_file.parent == output_dir
+
+
+class TestAggregateGroupingBehavior:
+    """Tests for per-output-type grouping behavior."""
+
+    def test_same_output_across_subjects_produces_one_group(self, tmp_path):
+        """Test that identical ses/label/method/atlas across subjects yields one group."""
+        derivatives_dir = tmp_path / "lacuna"
+        derivatives_dir.mkdir()
+
+        for sub_id in ["001", "002", "003"]:
+            sub_dir = derivatives_dir / f"sub-{sub_id}" / "ses-01" / "anat"
+            sub_dir.mkdir(parents=True)
+
+            tsv_path = (
+                sub_dir
+                / f"sub-{sub_id}_ses-01_label-lesion_method-rd_atlas-jhu_desc-damagepct_parcelstats.tsv"
+            )
+            df = pd.DataFrame({"region": ["A", "B"], "value": [0.1, 0.2]})
+            df.to_csv(tsv_path, sep="\t", index=False)
+
+        result = aggregate_parcelstats(derivatives_dir, progress=False)
+
+        assert len(result) == 1
+        group_file = list(result.values())[0]
+        df = pd.read_csv(group_file, sep="\t")
+        assert len(df) == 3
+
+    def test_different_labels_produce_separate_groups(self, tmp_path):
+        """Test that different labels produce separate group files."""
+        derivatives_dir = tmp_path / "lacuna"
+        derivatives_dir.mkdir()
+
+        for sub_id, label in [("001", "lesion"), ("002", "lesion"), ("003", "wmh")]:
+            sub_dir = derivatives_dir / f"sub-{sub_id}" / "ses-01" / "anat"
+            sub_dir.mkdir(parents=True)
+
+            tsv_path = (
+                sub_dir
+                / f"sub-{sub_id}_ses-01_label-{label}_method-rd_atlas-jhu_parcelstats.tsv"
+            )
+            df = pd.DataFrame({"region": ["A"], "value": [0.5]})
+            df.to_csv(tsv_path, sep="\t", index=False)
+
+        result = aggregate_parcelstats(derivatives_dir, progress=False)
+
+        assert len(result) == 2
+        # lesion group has 2, wmh group has 1
+        counts = sorted(
+            pd.read_csv(f, sep="\t").shape[0] for f in result.values()
+        )
+        assert counts == [1, 2]
+
+    def test_different_sessions_produce_separate_groups(self, tmp_path):
+        """Test that different sessions produce separate group files."""
+        derivatives_dir = tmp_path / "lacuna"
+        derivatives_dir.mkdir()
+
+        for sub_id, ses_id in [("001", "01"), ("002", "01"), ("003", "02")]:
+            sub_dir = derivatives_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "anat"
+            sub_dir.mkdir(parents=True)
+
+            tsv_path = (
+                sub_dir
+                / f"sub-{sub_id}_ses-{ses_id}_label-lesion_method-rd_atlas-jhu_parcelstats.tsv"
+            )
+            df = pd.DataFrame({"region": ["A"], "value": [0.5]})
+            df.to_csv(tsv_path, sep="\t", index=False)
+
+        result = aggregate_parcelstats(derivatives_dir, progress=False)
+
+        assert len(result) == 2
+        counts = sorted(
+            pd.read_csv(f, sep="\t").shape[0] for f in result.values()
+        )
+        assert counts == [1, 2]
+
+    def test_group_filename_includes_ses_and_label(self, tmp_path):
+        """Test that group filenames include session and label entities."""
+        derivatives_dir = tmp_path / "lacuna"
+        derivatives_dir.mkdir()
+
+        sub_dir = derivatives_dir / "sub-001" / "ses-01" / "anat"
+        sub_dir.mkdir(parents=True)
+
+        tsv_path = (
+            sub_dir
+            / "sub-001_ses-01_label-acuteinfarct_method-rd_atlas-jhu_parcelstats.tsv"
+        )
+        df = pd.DataFrame({"region": ["A"], "value": [0.5]})
+        df.to_csv(tsv_path, sep="\t", index=False)
+
+        result = aggregate_parcelstats(derivatives_dir, progress=False)
+
+        group_file = list(result.values())[0]
+        assert "ses-01" in group_file.name
+        assert "label-acuteinfarct" in group_file.name
+        assert "sub-" not in group_file.name
+
+    def test_progress_false_suppresses_tqdm(self, tmp_path, capsys):
+        """Test that progress=False suppresses tqdm output."""
+        derivatives_dir = tmp_path / "lacuna"
+        derivatives_dir.mkdir()
+
+        sub_dir = derivatives_dir / "sub-001" / "ses-01" / "anat"
+        sub_dir.mkdir(parents=True)
+        tsv_path = sub_dir / "sub-001_ses-01_label-lesion_method-rd_parcelstats.tsv"
+        df = pd.DataFrame({"region": ["A"], "value": [0.1]})
+        df.to_csv(tsv_path, sep="\t", index=False)
+
+        aggregate_parcelstats(derivatives_dir, progress=False)
+        captured = capsys.readouterr()
+        assert "Collecting" not in captured.err
+        assert "Reading" not in captured.err
