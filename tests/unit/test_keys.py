@@ -268,7 +268,9 @@ class TestBidsFilenameStr:
             suffix="parcelstats",
         )
         result = str(bf)
-        assert result == "method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats"
+        assert (
+            result == "method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats"
+        )
 
     def test_input_mask_no_method(self):
         """Input mask has no method entity."""
@@ -290,8 +292,7 @@ class TestBidsFilenameStr:
         )
         result = str(bf)
         assert result == (
-            "method-snm_atlas-schaefer2018parcels100networks7"
-            "_desc-disconnectionpct_connmatrix"
+            "method-snm_atlas-schaefer2018parcels100networks7" "_desc-disconnectionpct_connmatrix"
         )
 
     def test_fnm_summarystatistics(self):
@@ -406,6 +407,3 @@ class TestBidsFilenameFromResultKey:
             "rmap", suffix="map", namespace="FunctionalNetworkMapping"
         )
         assert bf.suffix == ""
-
-
-

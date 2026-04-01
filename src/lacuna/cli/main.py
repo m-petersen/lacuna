@@ -192,15 +192,12 @@ class RunConfig:
                 names = opts["parcellation_name"]
                 if isinstance(names, str):
                     names = [names]
-                opts["parcellation_name"] = [
-                    self._validate_atlas_name(n) for n in names
-                ]
+                opts["parcellation_name"] = [self._validate_atlas_name(n) for n in names]
 
         # Validate atlas names for RD and FNM (parcel_names list)
         if "parcel_names" in self.analysis_options:
             self.analysis_options["parcel_names"] = [
-                self._validate_atlas_name(n)
-                for n in self.analysis_options["parcel_names"]
+                self._validate_atlas_name(n) for n in self.analysis_options["parcel_names"]
             ]
 
     @staticmethod

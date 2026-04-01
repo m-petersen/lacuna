@@ -281,8 +281,7 @@ class TestAggregateParcelstatsIntegration:
 
         # The ses-01/acuteinfarct groups should have 2 subjects (CAS001, CAS002)
         acute_groups = {
-            k: v for k, v in result.items()
-            if "ses-01" in k and "label-acuteinfarct" in k
+            k: v for k, v in result.items() if "ses-01" in k and "label-acuteinfarct" in k
         }
         assert len(acute_groups) == 2
         for _output_type, group_file in acute_groups.items():
@@ -294,8 +293,7 @@ class TestAggregateParcelstatsIntegration:
 
         # The ses-02/chronicinfarct groups should have 1 subject (CAS003)
         chronic_groups = {
-            k: v for k, v in result.items()
-            if "ses-02" in k and "label-chronicinfarct" in k
+            k: v for k, v in result.items() if "ses-02" in k and "label-chronicinfarct" in k
         }
         assert len(chronic_groups) == 2
         for _output_type, group_file in chronic_groups.items():
@@ -307,7 +305,9 @@ class TestAggregateParcelstatsIntegration:
         output_dir = tmp_path / "group_results"
 
         result = aggregate_parcelstats(
-            realistic_derivatives, output_dir=output_dir, progress=False,
+            realistic_derivatives,
+            output_dir=output_dir,
+            progress=False,
         )
 
         # Files should be in custom output directory
@@ -351,8 +351,7 @@ class TestAggregateGroupingBehavior:
             sub_dir.mkdir(parents=True)
 
             tsv_path = (
-                sub_dir
-                / f"sub-{sub_id}_ses-01_label-{label}_method-rd_atlas-jhu_parcelstats.tsv"
+                sub_dir / f"sub-{sub_id}_ses-01_label-{label}_method-rd_atlas-jhu_parcelstats.tsv"
             )
             df = pd.DataFrame({"region": ["A"], "value": [0.5]})
             df.to_csv(tsv_path, sep="\t", index=False)
@@ -361,9 +360,7 @@ class TestAggregateGroupingBehavior:
 
         assert len(result) == 2
         # lesion group has 2, wmh group has 1
-        counts = sorted(
-            pd.read_csv(f, sep="\t").shape[0] for f in result.values()
-        )
+        counts = sorted(pd.read_csv(f, sep="\t").shape[0] for f in result.values())
         assert counts == [1, 2]
 
     def test_different_sessions_produce_separate_groups(self, tmp_path):
@@ -385,9 +382,7 @@ class TestAggregateGroupingBehavior:
         result = aggregate_parcelstats(derivatives_dir, progress=False)
 
         assert len(result) == 2
-        counts = sorted(
-            pd.read_csv(f, sep="\t").shape[0] for f in result.values()
-        )
+        counts = sorted(pd.read_csv(f, sep="\t").shape[0] for f in result.values())
         assert counts == [1, 2]
 
     def test_group_filename_includes_ses_and_label(self, tmp_path):
@@ -398,10 +393,7 @@ class TestAggregateGroupingBehavior:
         sub_dir = derivatives_dir / "sub-001" / "ses-01" / "anat"
         sub_dir.mkdir(parents=True)
 
-        tsv_path = (
-            sub_dir
-            / "sub-001_ses-01_label-acuteinfarct_method-rd_atlas-jhu_parcelstats.tsv"
-        )
+        tsv_path = sub_dir / "sub-001_ses-01_label-acuteinfarct_method-rd_atlas-jhu_parcelstats.tsv"
         df = pd.DataFrame({"region": ["A"], "value": [0.5]})
         df.to_csv(tsv_path, sep="\t", index=False)
 

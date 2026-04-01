@@ -359,7 +359,9 @@ class BidsFilename:
         if not has_bids_prefix:
             # Simple key — derive method from DESC_TO_SOURCE_MAPPING or namespace
             bids_desc = to_bids_label(result_key)
-            bids_desc = BIDS_DESC_OVERRIDE.get(result_key, BIDS_DESC_OVERRIDE.get(bids_desc, bids_desc))
+            bids_desc = BIDS_DESC_OVERRIDE.get(
+                result_key, BIDS_DESC_OVERRIDE.get(bids_desc, bids_desc)
+            )
 
             method = None
             source_prefix = DESC_TO_SOURCE_MAPPING.get(result_key, "")
@@ -445,5 +447,3 @@ def to_bids_label(value: str) -> str:
     """
     # Remove underscores and convert to lowercase
     return value.replace("_", "").lower()
-
-
