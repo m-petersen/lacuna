@@ -1193,8 +1193,25 @@ def _handle_check_command(args: Namespace) -> int:
     print(f"{'=' * sep_width}\n")
 
     if missing_subject_ids:
+        # Detail what is missing per subject
+        print("Missing outputs:")
+        for r in rows:
+            if r["status"] != "missing":
+                continue
+            sub = r["subject_id"]
+            parts = [sub]
+            if r.get("session_id"):
+                parts.append(r["session_id"])
+            if r.get("label"):
+                parts.append(f"label-{r['label']}")
+            detail = ", ".join(r["missing"])
+            line = " / ".join(parts)
+            if detail:
+                line += f":  {detail}"
+            print(f"  {line}")
+
         label_str = " ".join(missing_subject_ids)
-        print("Rerun missing subjects:")
+        print(f"\nRerun missing subjects:")
         print(f"  lacuna run {analysis} {bids_dir} {output_dir} --participant-label {label_str}\n")
         if output_file:
             print(f"Missing subject IDs written to: {output_file}\n")
