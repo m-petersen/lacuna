@@ -12,7 +12,7 @@ Start with the getting started tutorial, then explore the analysis-specific guid
 
     ---
 
-    Introduction to Lacuna's CLI: tutorial data, bidsify, fetch, run, and collect.
+    Introduction to Lacuna's CLI: tutorial data, bidsify, fetch, run, check and collect.
 
 -   [**Regional damage**](regional-damage.ipynb)
 
