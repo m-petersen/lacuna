@@ -286,5 +286,100 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         unregister_functional_connectome("test_bug_aggregate")
 
 
+def test_bug_fix_all_masks_no_overlap_does_not_crash(tmp_path):
+    """
+    REGRESSION TEST: Verify batch processing handles all masks having no overlap.
+
+    Previously: When every mask had zero overlap with the connectome brain mask,
+    mask_batch was empty but the code still entered the connectome batch loop and
+    called np.stack([]) → "need at least one array to stack".
+
+    Fix: Early return with zero-valued results when mask_batch is empty.
+    """
+    # Create connectome with voxels in a specific region
+    n_voxels = 50
+    # Place connectome voxels far from where masks will be
+    mask_indices = np.array(
+        [
+            np.full(n_voxels, 10),  # x around 10
+            np.full(n_voxels, 10),  # y around 10
+            np.full(n_voxels, 10),  # z around 10
+        ]
+    )
+
+    connectome_path = tmp_path / "connectome.h5"
+    affine = np.array(
+        [
+            [-2.0, 0.0, 0.0, 90.0],
+            [0.0, 2.0, 0.0, -126.0],
+            [0.0, 0.0, 2.0, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    with h5py.File(connectome_path, "w") as f:
+        f.create_dataset("timeseries", data=np.random.randn(5, 100, n_voxels))
+        f.create_dataset("mask_indices", data=mask_indices)
+        f.create_dataset("mask_affine", data=affine)
+        f.attrs["mask_shape"] = (91, 109, 91)
+
+    # Create masks far away from connectome voxels — guaranteed no overlap
+    masks = []
+    for i in range(3):
+        mask_data_array = np.zeros((91, 109, 91), dtype=np.uint8)
+        mask_data_array[80 + i, 100, 80] = 1  # Far from connectome region
+        mask_img = nib.Nifti1Image(mask_data_array, affine)
+        lesion_path = tmp_path / f"lesion_{i}.nii.gz"
+        nib.save(mask_img, lesion_path)
+        masks.append(
+            SubjectData.from_nifti(
+                str(lesion_path),
+                metadata={
+                    "subject_id": f"sub-{i:03d}",
+                    "space": "MNI152NLin6Asym",
+                    "resolution": 2,
+                },
+            )
+        )
+
+    register_functional_connectome(
+        name="test_bug_no_overlap",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=connectome_path,
+        n_subjects=5,
+        description="Test",
+    )
+
+    try:
+        analysis = FunctionalNetworkMapping(
+            connectome_name="test_bug_no_overlap",
+            method="boes",
+            verbose=False,
+        )
+
+        # This previously crashed with "need at least one array to stack"
+        results = analysis.run_batch(masks)
+
+        # Should return one result per mask
+        assert len(results) == 3, f"Expected 3 results, got {len(results)}"
+
+        # Each result should have zero-valued FNM outputs
+        for result in results:
+            assert "FunctionalNetworkMapping" in result.results
+            fnm = result.results["FunctionalNetworkMapping"]
+            assert "rmap" in fnm
+            assert "zmap" in fnm
+            assert "summarystatistics" in fnm
+
+            # Maps should be all zeros
+            rmap_data = fnm["rmap"].data.get_fdata()
+            assert np.all(rmap_data == 0), "rmap should be all zeros for non-overlapping mask"
+
+            # Summary should indicate empty
+            assert fnm["summarystatistics"].data["empty_mask"] is True
+    finally:
+        unregister_functional_connectome("test_bug_no_overlap")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

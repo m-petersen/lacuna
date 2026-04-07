@@ -1197,6 +1197,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
             )
 
         # Process through all connectome batches (VECTORIZED)
+        if not mask_batch:
+            # All masks were empty or had no overlap — skip batch processing
+            self.logger.info("All masks empty or non-overlapping — skipping connectome processing")
+            results = [
+                mask_data_list[idx].add_result(self.__class__.__name__, empty_result)
+                for idx, empty_result in sorted(empty_mask_indices.items())
+            ]
+            return results
+
         self.logger.info("Processing connectome batches...")
 
         # Get number of voxels from first connectome batch
