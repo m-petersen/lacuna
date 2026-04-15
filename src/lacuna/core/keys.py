@@ -30,7 +30,7 @@ SOURCE_ABBREVIATIONS: dict[str, str] = {
     "StructuralNetworkMapping": "StructuralNetworkMapping",
     "RegionalDamage": "RegionalDamage",
     "ParcelAggregation": "ParcelAggregation",
-    "SimplifiedFunctionalNetworkMapping": "SimplifiedFunctionalNetworkMapping",
+    "AcceleratedFunctionalNetworkMapping": "AcceleratedFunctionalNetworkMapping",
 }
 
 
@@ -213,7 +213,7 @@ EXPORT_SOURCE_ABBREVIATIONS = {
     "StructuralNetworkMapping": "snm",
     "RegionalDamage": "regionaldamage",
     "ParcelAggregation": "parcelaggregation",
-    "SimplifiedFunctionalNetworkMapping": "sfnm",
+    "AcceleratedFunctionalNetworkMapping": "afnm",
 }
 
 # Mapping of desc values to their source analysis - for constructing combined desc
@@ -267,9 +267,9 @@ DESC_TO_SOURCE_MAPPING = {
     # SNM outputs - metrics
     "matrixstatistics": "snm",
     "matrix_statistics": "snm",
-    # SFNM outputs
-    "sfnmap": "sfnm",
-    "sfnmweights": "sfnm",
+    # AFNM outputs
+    "afnmap": "afnm",
+    "afnmweights": "afnm",
 }
 
 # BIDS suffix mapping - map internal suffixes to BIDS-compliant suffixes
@@ -287,7 +287,7 @@ METHOD_ABBREVIATIONS: dict[str, str] = {
     "StructuralNetworkMapping": "snm",
     "RegionalDamage": "rd",
     "ParcelAggregation": "pa",
-    "SimplifiedFunctionalNetworkMapping": "sfnm",
+    "AcceleratedFunctionalNetworkMapping": "afnm",
 }
 
 # Desc overrides: internal desc -> canonical BIDS desc
@@ -373,7 +373,7 @@ class BidsFilename:
             source_prefix = DESC_TO_SOURCE_MAPPING.get(result_key, "")
             if not source_prefix:
                 source_prefix = DESC_TO_SOURCE_MAPPING.get(bids_desc, "")
-            if source_prefix in ("fnm", "snm", "sfnm"):
+            if source_prefix in ("fnm", "snm", "afnm"):
                 method = source_prefix
             elif namespace:
                 method = METHOD_ABBREVIATIONS.get(namespace)
@@ -392,7 +392,7 @@ class BidsFilename:
         if "source" in parsed:
             source = parsed["source"]
             export_abbrev = EXPORT_SOURCE_ABBREVIATIONS.get(source, source.lower())
-            if export_abbrev in ("fnm", "snm", "sfnm"):
+            if export_abbrev in ("fnm", "snm", "afnm"):
                 method = export_abbrev
             elif export_abbrev == "regionaldamage":
                 method = "rd"

@@ -5,9 +5,9 @@ This module provides the argument parser for the Lacuna CLI with a clean
 subcommand-based structure:
 
 - lacuna fetch: Download and setup connectomes
-- lacuna run <analysis>: Run analyses (rd, fnm, snm, sfnm)
+- lacuna run <analysis>: Run analyses (rd, fnm, snm, afnm)
 - lacuna bidsify: Convert NIfTI files to BIDS format
-- lacuna parcellate: Reduce a whole-brain connectome to a parcellated matrix
+- lacuna parcellate: Reduce a connectome to a parcel-level connectivity matrix
 - lacuna collect: Aggregate results across subjects
 - lacuna info: Display available resources (atlases, connectomes)
 
@@ -57,7 +57,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         epilog=(
             "Commands:\n"
             "  bidsify    Convert a directory of NIfTI masks into BIDS layout\n"
-            "  parcellate Reduce a whole-brain connectome to a parcellated matrix\n"
+            "  parcellate Reduce a connectome to a parcel-level connectivity matrix\n"
             "  fetch     Download and setup connectomes for analysis\n"
             "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
@@ -254,12 +254,12 @@ def _build_run_parser(subparsers) -> None:
             "  rd   (regionaldamage)                      - Lesion overlap with parcellations\n"
             "  fnm  (functionalnetworkmapping)            - Functional lesion connectivity maps\n"
             "  snm  (structuralnetworkmapping)            - White matter disconnection\n"
-            "  sfnm (simplifiedfunctionalnetworkmapping)  - Parcel-level functional LNM (M @ C)\n\n"
+            "  afnm (acceleratedfunctionalnetworkmapping)      - Accelerated functional LNM (M @ C)\n\n"
             "Examples:\n"
             "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
             "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4\n"
-            "  lacuna run sfnm /bids /output --matrix-path /path/to/gsp1000_schaefer400.tsv \\\n"
+            "  lacuna run afnm /bids /output --matrix-path /path/to/gsp1000_schaefer400.tsv \\\n"
             "      --parcel-atlases schaefer2018parcels400networks17"
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -277,7 +277,7 @@ def _build_run_parser(subparsers) -> None:
     _build_rd_parser(analysis_subparsers)
     _build_fnm_parser(analysis_subparsers)
     _build_snm_parser(analysis_subparsers)
-    _build_sfnm_parser(analysis_subparsers)
+    _build_afnm_parser(analysis_subparsers)
 
 
 def _add_shared_run_arguments(parser: ArgumentParser) -> None:
@@ -670,30 +670,30 @@ def _build_snm_parser(subparsers) -> None:
     )
 
 
-def _build_sfnm_parser(subparsers) -> None:
-    """Add the SimplifiedFunctionalNetworkMapping (sfnm) analysis parser."""
-    sfnm_parser = subparsers.add_parser(
-        "sfnm",
-        aliases=["simplifiedfunctionalnetworkmapping"],
-        help="Compute parcel-level functional lesion connectivity maps (M @ C)",
+def _build_afnm_parser(subparsers) -> None:
+    """Add the AcceleratedFunctionalNetworkMapping (afnm) analysis parser."""
+    afnm_parser = subparsers.add_parser(
+        "afnm",
+        aliases=["acceleratedfunctionalnetworkmapping"],
+        help="Compute accelerated functional network maps (M @ C)",
         description=(
-            "Simplified Functional Network Mapping Analysis\n\n"
-            "Parcel-level lesion network mapping via matrix multiplication:\n"
-            "  LNM = M \u00d7 C\n"
+            "Accelerated Functional Network Mapping Analysis\n\n"
+            "Accelerated lesion network mapping via matrix multiplication:\n"
+            "  AFNMAP = M \u00d7 C\n"
             "where M is the lesion-by-parcel weight matrix and C is a precomputed\n"
-            "group-average parcellated functional connectivity matrix (produced by\n"
-            "'lacuna parcellate').\n\n"
+            "group-average parcel-level functional connectivity matrix (produced by\n"
+            "'lacuna parcellate'). Contrast with voxel-level FNM (`lacuna run fnm`).\n\n"
             "Examples:\n"
-            "  lacuna run sfnm /bids /output \\\n"
+            "  lacuna run afnm /bids /output \\\n"
             "      --matrix-path /data/parcellated/GSP1000_schaefer400.tsv \\\n"
             "      --parcel-atlases schaefer2018parcels400networks17"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
 
-    _add_shared_run_arguments(sfnm_parser)
+    _add_shared_run_arguments(afnm_parser)
 
-    g_perf = sfnm_parser.add_argument_group("Performance options")
+    g_perf = afnm_parser.add_argument_group("Performance options")
     g_perf.add_argument(
         "--nprocs",
         type=int,
@@ -709,18 +709,18 @@ def _build_sfnm_parser(subparsers) -> None:
         help="Number of lesion masks to vectorize together (-1 for all).",
     )
 
-    g_sfnm = sfnm_parser.add_argument_group("SimplifiedFunctionalNetworkMapping options")
-    g_sfnm.add_argument(
+    g_afnm = afnm_parser.add_argument_group("AcceleratedFunctionalNetworkMapping options")
+    g_afnm.add_argument(
         "--matrix-path",
         type=Path,
         required=True,
         metavar="PATH",
         help=(
-            "Path to the parcellated group FC matrix TSV (from "
-            "'lacuna prepare parcellate --modality functional')."
+            "Path to the parcel-level group FC matrix TSV (from "
+            "'lacuna parcellate --modality functional')."
         ),
     )
-    g_sfnm.add_argument(
+    g_afnm.add_argument(
         "--lesion-weighting",
         type=str,
         choices=["fractional", "binary", "voxel_count"],
@@ -732,7 +732,7 @@ def _build_sfnm_parser(subparsers) -> None:
         ),
     )
 
-    g_parc = sfnm_parser.add_argument_group("Parcellation selection")
+    g_parc = afnm_parser.add_argument_group("Parcellation selection")
     g_parc.add_argument(
         "--parcel-atlases",
         nargs="+",
@@ -913,9 +913,9 @@ def _build_parcellate_parser(subparsers) -> None:
     """Add the top-level `parcellate` subcommand parser."""
     parcellate_parser = subparsers.add_parser(
         "parcellate",
-        help="Reduce a whole-brain connectome to a parcellated matrix",
+        help="Reduce a connectome to a parcel-level connectivity matrix",
         description=(
-            "Reduce a whole-brain connectome to a parcellated N\u00d7N ConnectivityMatrix.\n\n"
+            "Reduce a connectome to a parcel-level N\u00d7N ConnectivityMatrix.\n\n"
             "Inputs:\n"
             "  - A voxelwise functional connectome (HDF5, same format as 'lacuna run fnm'), or\n"
             "  - A structural tractogram (.tck, same format as 'lacuna run snm').\n"
@@ -1136,13 +1136,13 @@ def _build_check_parser(subparsers) -> None:
             "Validate input masks before a run, or check output completeness after.\n\n"
             "Use 'lacuna check input' to catch common mask issues (non-binary,\n"
             "empty, missing space) before committing to a long batch run.\n"
-            "Use 'lacuna check rd|fnm|snm|sfnm' to identify subjects with missing outputs.\n\n"
+            "Use 'lacuna check rd|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
             "Available checks:\n"
             "  input - Validate input masks (binary, non-empty, space)\n"
             "  rd    - Check for parcelstats TSV files (RegionalDamage)\n"
             "  fnm   - Check for functional rmap NIfTI files\n"
             "  snm   - Check for disconnection NIfTI files\n"
-            "  sfnm  - Check for simplified functional LNM parcel outputs\n\n"
+            "  afnm  - Check for accelerated functional LNM parcel outputs\n\n"
             "Examples:\n"
             "  lacuna check input /bids\n"
             "  lacuna check rd /bids /output\n"
@@ -1165,7 +1165,7 @@ def _build_check_parser(subparsers) -> None:
     _build_check_rd_parser(check_subparsers)
     _build_check_fnm_parser(check_subparsers)
     _build_check_snm_parser(check_subparsers)
-    _build_check_sfnm_parser(check_subparsers)
+    _build_check_afnm_parser(check_subparsers)
 
 
 def _build_check_rd_parser(subparsers) -> None:
@@ -1239,23 +1239,23 @@ def _build_check_snm_parser(subparsers) -> None:
     _add_shared_check_arguments(snm_parser)
 
 
-def _build_check_sfnm_parser(subparsers) -> None:
-    """Add the check sfnm subcommand parser."""
-    sfnm_parser = subparsers.add_parser(
-        "sfnm",
-        aliases=["simplifiedfunctionalnetworkmapping"],
-        help="Check for SimplifiedFunctionalNetworkMapping parcel outputs",
+def _build_check_afnm_parser(subparsers) -> None:
+    """Add the check afnm subcommand parser."""
+    afnm_parser = subparsers.add_parser(
+        "afnm",
+        aliases=["acceleratedfunctionalnetworkmapping"],
+        help="Check for AcceleratedFunctionalNetworkMapping parcel outputs",
         description=(
-            "Check which subjects have SimplifiedFunctionalNetworkMapping parcel outputs.\n\n"
-            "A subject is considered complete if a '*method-sfnm*parcelstats.tsv' file\n"
+            "Check which subjects have AcceleratedFunctionalNetworkMapping parcel outputs.\n\n"
+            "A subject is considered complete if a '*method-afnm*parcelstats.tsv' file\n"
             "exists in their output directory.\n\n"
             "Examples:\n"
-            "  lacuna check sfnm /bids /output\n"
-            "  lacuna check sfnm /bids /output --quiet"
+            "  lacuna check afnm /bids /output\n"
+            "  lacuna check afnm /bids /output --quiet"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_check_arguments(sfnm_parser)
+    _add_shared_check_arguments(afnm_parser)
 
 
 def _build_check_input_parser(subparsers) -> None:

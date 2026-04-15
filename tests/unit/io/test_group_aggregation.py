@@ -426,7 +426,7 @@ class TestAggregateAnalysisFilter:
 
     @pytest.fixture
     def mixed_derivatives(self, tmp_path):
-        """Create derivatives with FNM, SNM, and SFNM parcelstats."""
+        """Create derivatives with FNM, SNM, and AFNM parcelstats."""
         derivatives_dir = tmp_path / "lacuna"
         derivatives_dir.mkdir()
 
@@ -438,36 +438,36 @@ class TestAggregateAnalysisFilter:
             for fname in [
                 f"sub-{sub_id}_ses-01_label-lesion_method-fnm_atlas-schaefer_desc-rmap_parcelstats.tsv",
                 f"sub-{sub_id}_ses-01_label-lesion_method-snm_atlas-schaefer_desc-disconnectionpct_parcelstats.tsv",
-                f"sub-{sub_id}_ses-01_label-lesion_method-sfnm_atlas-schaefer_desc-zmap_parcelstats.tsv",
-                f"sub-{sub_id}_ses-01_label-lesion_method-sfnm_atlas-schaefer_desc-sfnmstatistics_parcelstats.tsv",
+                f"sub-{sub_id}_ses-01_label-lesion_method-afnm_atlas-schaefer_desc-zmap_parcelstats.tsv",
+                f"sub-{sub_id}_ses-01_label-lesion_method-afnm_atlas-schaefer_desc-afnmstatistics_parcelstats.tsv",
             ]:
                 (sub_dir / fname).write_text(df.to_csv(sep="\t", index=False))
 
         return derivatives_dir
 
-    def test_filter_sfnm_returns_only_sfnm(self, mixed_derivatives):
-        """Filtering by 'sfnm' returns only SFNM parcelstats files."""
+    def test_filter_afnm_returns_only_afnm(self, mixed_derivatives):
+        """Filtering by 'afnm' returns only AFNM parcelstats files."""
         result = aggregate_parcelstats(
-            mixed_derivatives, analysis_filter="sfnm", progress=False
+            mixed_derivatives, analysis_filter="afnm", progress=False
         )
         for key in result:
-            assert "sfnm" in key.lower()
+            assert "afnm" in key.lower()
 
-    def test_filter_fnm_excludes_sfnm(self, mixed_derivatives):
-        """Filtering by 'fnm' does not return SFNM files."""
+    def test_filter_fnm_excludes_afnm(self, mixed_derivatives):
+        """Filtering by 'fnm' does not return AFNM files."""
         result = aggregate_parcelstats(
             mixed_derivatives, analysis_filter="fnm", progress=False
         )
         for key in result:
-            assert "sfnm" not in key.lower()
+            assert "afnm" not in key.lower()
 
-    def test_filter_sfnm_case_insensitive(self, mixed_derivatives):
+    def test_filter_afnm_case_insensitive(self, mixed_derivatives):
         """The filter is case-insensitive."""
         result_lower = aggregate_parcelstats(
-            mixed_derivatives, analysis_filter="sfnm", progress=False
+            mixed_derivatives, analysis_filter="afnm", progress=False
         )
         result_upper = aggregate_parcelstats(
-            mixed_derivatives, analysis_filter="SFNM", progress=False, overwrite=True
+            mixed_derivatives, analysis_filter="AFNM", progress=False, overwrite=True
         )
         assert set(result_lower.keys()) == set(result_upper.keys())
 

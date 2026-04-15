@@ -141,8 +141,8 @@ class RunConfig:
         if hasattr(args, "show_mrtrix_output") and args.show_mrtrix_output:
             analysis_options["show_mrtrix_output"] = True
 
-        # SFNM-specific options
-        if args.analysis in ("sfnm", "simplifiedfunctionalnetworkmapping"):
+        # AFNM-specific options
+        if args.analysis in ("afnm", "acceleratedfunctionalnetworkmapping"):
             if getattr(args, "matrix_path", None) is not None:
                 analysis_options["matrix_path"] = args.matrix_path
             if getattr(args, "lesion_weighting", None) is not None:
@@ -977,8 +977,8 @@ def _check_subject_complete(
             sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
         elif norm in ("snm", "structuralnetworkmapping"):
             sentinel = f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"
-        elif norm in ("sfnm", "simplifiedfunctionalnetworkmapping"):
-            sentinel = f"{label_glob}method-sfnm*parcelstats.tsv"
+        elif norm in ("afnm", "acceleratedfunctionalnetworkmapping"):
+            sentinel = f"{label_glob}method-afnm*parcelstats.tsv"
         else:
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
@@ -1024,10 +1024,10 @@ def _check_subject_complete(
             return "empty", []
         return "complete", []
 
-    elif norm in ("sfnm", "simplifiedfunctionalnetworkmapping"):
-        hits = list(anat_dir.glob(f"{label_glob}method-sfnm*parcelstats.tsv"))
+    elif norm in ("afnm", "acceleratedfunctionalnetworkmapping"):
+        hits = list(anat_dir.glob(f"{label_glob}method-afnm*parcelstats.tsv"))
         if not hits:
-            return "missing", [f"{label_glob}method-sfnm*parcelstats.tsv"]
+            return "missing", [f"{label_glob}method-afnm*parcelstats.tsv"]
         if check_content and all(_is_output_empty(f, norm) for f in hits):
             return "empty", []
         return "complete", []
@@ -1468,8 +1468,8 @@ def _run_analysis_workflow(config: RunConfig) -> int:
         "functionalnetworkmapping": "FunctionalNetworkMapping",
         "snm": "StructuralNetworkMapping",
         "structuralnetworkmapping": "StructuralNetworkMapping",
-        "sfnm": "SimplifiedFunctionalNetworkMapping",
-        "simplifiedfunctionalnetworkmapping": "SimplifiedFunctionalNetworkMapping",
+        "afnm": "AcceleratedFunctionalNetworkMapping",
+        "acceleratedfunctionalnetworkmapping": "AcceleratedFunctionalNetworkMapping",
     }
 
     analysis_class_name = analysis_name_map.get(config.analysis.lower())

@@ -1345,8 +1345,8 @@ def aggregate_parcelstats(
             "fnm": (["fnm", "functionalnetworkmapping"], ["rmap", "tmap", "zmap"]),
             "structuralnetworkmapping": (["snm", "structuralnetworkmapping"], ["disconnection"]),
             "snm": (["snm", "structuralnetworkmapping"], ["disconnection"]),
-            "simplifiedfunctionalnetworkmapping": (["sfnm", "simplifiedfunctionalnetworkmapping"], ["sfnmstatistics", "lesionweights"]),
-            "sfnm": (["sfnm", "simplifiedfunctionalnetworkmapping"], ["sfnmstatistics", "lesionweights"]),
+            "acceleratedfunctionalnetworkmapping": (["afnm", "acceleratedfunctionalnetworkmapping"], ["afnmstatistics", "lesionweights"]),
+            "afnm": (["afnm", "acceleratedfunctionalnetworkmapping"], ["afnmstatistics", "lesionweights"]),
         }
         filter_lower = analysis_filter.lower()
         method_kw, desc_kw = _analysis_patterns.get(

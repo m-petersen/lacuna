@@ -6,7 +6,7 @@ The `lacuna check` command validates input data and checks output completeness.
 
 ```
 lacuna check input <bids_dir> [options]
-lacuna check <rd|fnm|snm> <bids_dir> <output_dir> [options]
+lacuna check <rd|fnm|afnm|snm> <bids_dir> <output_dir> [options]
 ```
 
 ## Description
@@ -14,7 +14,7 @@ lacuna check <rd|fnm|snm> <bids_dir> <output_dir> [options]
 `lacuna check` has two modes:
 
 - **Input check** (`lacuna check input`) — Validate mask files *before* running analyses. Catches common issues (non-binary masks, empty masks, space mismatches) that would otherwise cause mid-batch failures.
-- **Output check** (`lacuna check rd|fnm|snm`) — Check which subjects have complete outputs *after* a run. Useful for identifying failed subjects and generating rerun commands.
+- **Output check** (`lacuna check rd|fnm|afnm|snm`) — Check which subjects have complete outputs *after* a run. Useful for identifying failed subjects and generating rerun commands.
 
 ---
 
@@ -73,7 +73,7 @@ lacuna check input /bids --output-file problems.txt
 
 ---
 
-## `lacuna check rd|fnm|snm` — Check output completeness
+## `lacuna check rd|fnm|afnm|snm` — Check output completeness
 
 Enumerates input subjects and checks whether output files exist in the derivatives directory.
 
@@ -83,6 +83,7 @@ Enumerates input subjects and checks whether output files exist in the derivativ
 |----------|-------|---------------|
 | `rd` | `regionaldamage` | `*method-rd*parcelstats.tsv` |
 | `fnm` | `functionalnetworkmapping` | `*method-fnm*desc-rmap*.nii.gz` |
+| `afnm` | `acceleratedfunctionalnetworkmapping` | `*method-afnm*parcelstats.tsv` |
 | `snm` | `structuralnetworkmapping` | `*method-snm*desc-disconnectionpct*.nii.gz` |
 
 ### Arguments

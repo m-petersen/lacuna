@@ -38,6 +38,12 @@ lacuna <command> [options]
 
     Download normative connectomes and other assets to the local cache.
 
+-   [**Parcellate**](parcellate.md)
+
+    ---
+
+    Reduce a whole-brain connectome to a parcel-level connectivity matrix (used as input for `run afnm`).
+
 -   [**Info**](info.md)
 
     ---
@@ -48,7 +54,7 @@ lacuna <command> [options]
 
     ---
 
-    Run lesion analyses (regional damage, functional and structural network mapping).
+    Run lesion analyses (regional damage, functional, accelerated functional, and structural network mapping).
 
 -   [**Tutorial**](tutorial.md)
 
