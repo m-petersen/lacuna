@@ -3,6 +3,7 @@
     * [Getting started](tutorials/getting-started.ipynb)
     * [Functional network mapping](tutorials/functional-network-mapping.ipynb)
     * [Structural network mapping](tutorials/structural-network-mapping.ipynb)
+    * [Simplified functional network mapping](tutorials/simplified-functional-network-mapping.ipynb)
     * [Regional damage](tutorials/regional-damage.ipynb)
 * [How-to guides](how-to/index.md)
     * [Spatial normalization](how-to/spatial-normalization.ipynb)

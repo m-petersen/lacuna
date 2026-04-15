@@ -419,3 +419,61 @@ class TestAggregateGroupingBehavior:
         captured = capsys.readouterr()
         assert "Collecting" not in captured.err
         assert "Reading" not in captured.err
+
+
+class TestAggregateAnalysisFilter:
+    """Tests for the analysis_filter parameter of aggregate_parcelstats."""
+
+    @pytest.fixture
+    def mixed_derivatives(self, tmp_path):
+        """Create derivatives with FNM, SNM, and SFNM parcelstats."""
+        derivatives_dir = tmp_path / "lacuna"
+        derivatives_dir.mkdir()
+
+        for sub_id in ["001", "002"]:
+            sub_dir = derivatives_dir / f"sub-{sub_id}" / "ses-01" / "anat"
+            sub_dir.mkdir(parents=True)
+            df = pd.DataFrame({"region": ["A", "B"], "value": [0.1, 0.2]})
+
+            for fname in [
+                f"sub-{sub_id}_ses-01_label-lesion_method-fnm_atlas-schaefer_desc-rmap_parcelstats.tsv",
+                f"sub-{sub_id}_ses-01_label-lesion_method-snm_atlas-schaefer_desc-disconnectionpct_parcelstats.tsv",
+                f"sub-{sub_id}_ses-01_label-lesion_method-sfnm_atlas-schaefer_desc-zmap_parcelstats.tsv",
+                f"sub-{sub_id}_ses-01_label-lesion_method-sfnm_atlas-schaefer_desc-sfnmstatistics_parcelstats.tsv",
+            ]:
+                (sub_dir / fname).write_text(df.to_csv(sep="\t", index=False))
+
+        return derivatives_dir
+
+    def test_filter_sfnm_returns_only_sfnm(self, mixed_derivatives):
+        """Filtering by 'sfnm' returns only SFNM parcelstats files."""
+        result = aggregate_parcelstats(
+            mixed_derivatives, analysis_filter="sfnm", progress=False
+        )
+        for key in result:
+            assert "sfnm" in key.lower()
+
+    def test_filter_fnm_excludes_sfnm(self, mixed_derivatives):
+        """Filtering by 'fnm' does not return SFNM files."""
+        result = aggregate_parcelstats(
+            mixed_derivatives, analysis_filter="fnm", progress=False
+        )
+        for key in result:
+            assert "sfnm" not in key.lower()
+
+    def test_filter_sfnm_case_insensitive(self, mixed_derivatives):
+        """The filter is case-insensitive."""
+        result_lower = aggregate_parcelstats(
+            mixed_derivatives, analysis_filter="sfnm", progress=False
+        )
+        result_upper = aggregate_parcelstats(
+            mixed_derivatives, analysis_filter="SFNM", progress=False, overwrite=True
+        )
+        assert set(result_lower.keys()) == set(result_upper.keys())
+
+    def test_filter_no_match_raises(self, mixed_derivatives):
+        """An analysis filter with no matches raises BidsError."""
+        with pytest.raises(BidsError, match="No parcelstats files found"):
+            aggregate_parcelstats(
+                mixed_derivatives, analysis_filter="nonexistent", progress=False
+            )

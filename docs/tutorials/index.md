@@ -32,4 +32,10 @@ Start with the getting started tutorial, then explore the analysis-specific guid
 
     Map structural disconnectivity using normative tractogram data.
 
+-   [**Simplified functional network mapping**](simplified-functional-network-mapping.ipynb)
+
+    ---
+
+    Parcel-level lesion network mapping via matrix multiplication (m x C).
+
 </div>
