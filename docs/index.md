@@ -97,12 +97,12 @@ For the full walkthrough, see the [Getting started](tutorials/getting-started.ip
 
 </div>
 
-<div style="display: flex; align-items: center; gap: 2rem;" markdown>
-<div markdown>
-
 ## Issues
 
-Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues)
+Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues).
+
+<div style="display: flex; align-items: center; gap: 2rem;" markdown>
+<div markdown>
 
 ## Meta VCI Map Consortium
 
