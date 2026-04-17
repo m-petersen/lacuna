@@ -45,3 +45,29 @@
 .celltoolbar {
     display: none !important;
 }
+
+/* Justify body paragraphs across .md pages and rendered notebooks.
+   Scoped to article paragraphs to avoid justifying sidebar / TOC / admonition text. */
+.md-content article p,
+.md-content article li {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+/* Tables, code, and admonitions look bad when justified — keep them left-aligned. */
+.md-content article .admonition p,
+.md-content article table p,
+.md-content article pre,
+.md-content article code {
+    text-align: left;
+    hyphens: manual;
+}
+
+/* On narrow viewports, justified text produces ugly gaps; fall back to left. */
+@media (max-width: 600px) {
+    .md-content article p,
+    .md-content article li {
+        text-align: left;
+    }
+}
