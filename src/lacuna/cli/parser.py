@@ -5,7 +5,9 @@ This module provides the argument parser for the Lacuna CLI with a clean
 subcommand-based structure:
 
 - lacuna fetch: Download and setup connectomes
-- lacuna run <analysis>: Run analyses (rd, fnm, snm)
+- lacuna run <analysis>: Run analyses (rd, fnm, snm, afnm)
+- lacuna bidsify: Convert NIfTI files to BIDS format
+- lacuna parcellate: Reduce a connectome to a parcel-level connectivity matrix
 - lacuna collect: Aggregate results across subjects
 - lacuna info: Display available resources (atlases, connectomes)
 
@@ -54,7 +56,8 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         formatter_class=RawDescriptionHelpFormatter,
         epilog=(
             "Commands:\n"
-            "  bidsify   Convert NIfTI files to BIDS format\n"
+            "  bidsify    Convert a directory of NIfTI masks into BIDS layout\n"
+            "  parcellate Reduce a connectome to a parcel-level connectivity matrix\n"
             "  fetch     Download and setup connectomes for analysis\n"
             "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
@@ -63,6 +66,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "  check     Validate inputs and check output completeness\n\n"
             "Examples:\n"
             "  lacuna tutorial ./my_tutorial\n"
+            "  lacuna bidsify /raw /bids --space MNI152NLin6Asym\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
             "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches\n"
@@ -91,6 +95,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     _build_collect_parser(subparsers)
     _build_info_parser(subparsers)
     _build_bidsify_parser(subparsers)
+    _build_parcellate_parser(subparsers)
     _build_tutorial_parser(subparsers)
     _build_check_parser(subparsers)
 
@@ -246,13 +251,16 @@ def _build_run_parser(subparsers) -> None:
         description=(
             "Run lesion network mapping analyses on BIDS datasets.\n\n"
             "Available analyses:\n"
-            "  rd   (regionaldamage)           - Lesion overlap with parcellations\n"
-            "  fnm  (functionalnetworkmapping) - Functional connectivity disruption\n"
-            "  snm  (structuralnetworkmapping) - White matter disconnection\n\n"
+            "  rd   (regionaldamage)                      - Lesion overlap with parcellations\n"
+            "  fnm  (functionalnetworkmapping)            - Functional lesion connectivity maps\n"
+            "  snm  (structuralnetworkmapping)            - White matter disconnection\n"
+            "  afnm (acceleratedfunctionalnetworkmapping)      - Accelerated functional LNM (M @ C)\n\n"
             "Examples:\n"
             "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
-            "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4"
+            "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4\n"
+            "  lacuna run afnm /bids /output --matrix-path /path/to/gsp1000_schaefer400.tsv \\\n"
+            "      --parcel-atlases schaefer2018parcels400networks17"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -269,6 +277,7 @@ def _build_run_parser(subparsers) -> None:
     _build_rd_parser(analysis_subparsers)
     _build_fnm_parser(analysis_subparsers)
     _build_snm_parser(analysis_subparsers)
+    _build_afnm_parser(analysis_subparsers)
 
 
 def _add_shared_run_arguments(parser: ArgumentParser) -> None:
@@ -430,7 +439,7 @@ def _build_fnm_parser(subparsers) -> None:
     fnm_parser = subparsers.add_parser(
         "fnm",
         aliases=["functionalnetworkmapping"],
-        help="Compute functional network disconnection maps",
+        help="Compute functional lesion connectivity maps",
         description=(
             "Functional Network Mapping Analysis\n\n"
             "Computes functional connectivity disruption using a normative\n"
@@ -661,6 +670,89 @@ def _build_snm_parser(subparsers) -> None:
     )
 
 
+def _build_afnm_parser(subparsers) -> None:
+    """Add the AcceleratedFunctionalNetworkMapping (afnm) analysis parser."""
+    afnm_parser = subparsers.add_parser(
+        "afnm",
+        aliases=["acceleratedfunctionalnetworkmapping"],
+        help="Compute accelerated functional network maps (M @ C)",
+        description=(
+            "Accelerated Functional Network Mapping Analysis\n\n"
+            "Accelerated lesion network mapping via matrix multiplication:\n"
+            "  AFNMAP = M \u00d7 C\n"
+            "where M is the lesion-by-parcel weight matrix and C is a precomputed\n"
+            "group-average parcel-level functional connectivity matrix (produced by\n"
+            "'lacuna parcellate'). Contrast with voxel-level FNM (`lacuna run fnm`).\n\n"
+            "Examples:\n"
+            "  lacuna run afnm /bids /output \\\n"
+            "      --matrix-path /data/parcellated/GSP1000_schaefer400.tsv \\\n"
+            "      --parcel-atlases schaefer2018parcels400networks17"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    _add_shared_run_arguments(afnm_parser)
+
+    g_perf = afnm_parser.add_argument_group("Performance options")
+    g_perf.add_argument(
+        "--nprocs",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Number of parallel processes (-1 for all CPUs)",
+    )
+    g_perf.add_argument(
+        "--batch-size",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Number of lesion masks to vectorize together (-1 for all).",
+    )
+
+    g_afnm = afnm_parser.add_argument_group("AcceleratedFunctionalNetworkMapping options")
+    g_afnm.add_argument(
+        "--matrix-path",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help=(
+            "Path to the parcel-level group FC matrix TSV (from "
+            "'lacuna parcellate --modality functional')."
+        ),
+    )
+    g_afnm.add_argument(
+        "--lesion-weighting",
+        type=str,
+        choices=["fractional", "binary", "voxel_count"],
+        default="fractional",
+        help=(
+            "How to weight the lesion\u2192parcel row vector m: "
+            "'fractional' (default, 1/n_regions_touched), 'binary' (0/1), or "
+            "'voxel_count' (fraction of parcel voxels covered by the lesion)."
+        ),
+    )
+
+    g_parc = afnm_parser.add_argument_group("Parcellation selection")
+    g_parc.add_argument(
+        "--parcel-atlases",
+        nargs="+",
+        type=str,
+        metavar="ATLAS",
+        help="Atlas name matching the parcellation used to build --matrix-path.",
+    )
+    g_parc.add_argument(
+        "--custom-parcellation",
+        nargs=4,
+        action="append",
+        metavar=("NAME", "NIFTI", "LABELS", "SPACE"),
+        help=(
+            "Custom parcellation: a short name for output labelling, NIfTI file "
+            "path, labels file path, and coordinate space. Must match the "
+            "parcellation used to build --matrix-path."
+        ),
+    )
+
+
 def _build_collect_parser(subparsers) -> None:
     """
     Add the collect subcommand parser.
@@ -756,14 +848,7 @@ def _build_info_parser(subparsers) -> None:
 
 
 def _build_bidsify_parser(subparsers) -> None:
-    """
-    Add the bidsify subcommand parser.
-
-    Parameters
-    ----------
-    subparsers : argparse._SubParsersAction
-        Subparsers object to add bidsify parser to.
-    """
+    """Add the top-level `bidsify` subcommand parser."""
     bidsify_parser = subparsers.add_parser(
         "bidsify",
         help="Convert NIfTI files to BIDS format",
@@ -779,7 +864,6 @@ def _build_bidsify_parser(subparsers) -> None:
         formatter_class=RawDescriptionHelpFormatter,
     )
 
-    # Required positional arguments
     bidsify_parser.add_argument(
         "input_dir",
         type=Path,
@@ -791,7 +875,6 @@ def _build_bidsify_parser(subparsers) -> None:
         help="Output directory for BIDS dataset",
     )
 
-    # Required space argument
     bidsify_parser.add_argument(
         "--space",
         "-s",
@@ -801,7 +884,6 @@ def _build_bidsify_parser(subparsers) -> None:
         help="Coordinate space of the masks (MNI152NLin6Asym or MNI152NLin2009cAsym)",
     )
 
-    # Optional arguments
     g_opts = bidsify_parser.add_argument_group("Optional BIDS entities")
     g_opts.add_argument(
         "--session",
@@ -818,13 +900,100 @@ def _build_bidsify_parser(subparsers) -> None:
         help="Label for the mask entity (e.g., 'lesion', 'tumor')",
     )
 
-    # Other options
     g_other = bidsify_parser.add_argument_group("Other options")
     g_other.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="Print progress messages",
+    )
+
+
+def _build_parcellate_parser(subparsers) -> None:
+    """Add the top-level `parcellate` subcommand parser."""
+    parcellate_parser = subparsers.add_parser(
+        "parcellate",
+        help="Reduce a connectome to a parcel-level connectivity matrix",
+        description=(
+            "Reduce a connectome to a parcel-level N\u00d7N ConnectivityMatrix.\n\n"
+            "Inputs:\n"
+            "  - A voxelwise functional connectome (HDF5, same format as 'lacuna run fnm'), or\n"
+            "  - A structural tractogram (.tck, same format as 'lacuna run snm').\n"
+            "The --modality flag is required; modality is never inferred from path or extension.\n\n"
+            "Output is a BIDS-style TSV + JSON sidecar ConnectivityMatrix (same format that\n"
+            "'lacuna run snm' uses for disconnectivity matrices) written under the output\n"
+            "directory. Each selected parcellation produces its own output file.\n\n"
+            "Examples:\n"
+            "  lacuna parcellate --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
+            "      --modality functional --parcel-atlases schaefer2018parcels400networks17 \\\n"
+            "      --output /data/parcellated/\n"
+            "  lacuna parcellate --connectome-path /data/dtor985.tck \\\n"
+            "      --modality structural --parcel-atlases schaefer2018parcels400networks17 \\\n"
+            "      --output /data/parcellated/"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    g_io = parcellate_parser.add_argument_group("Inputs / outputs")
+    g_io.add_argument(
+        "--connectome-path",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help=(
+            "Path to the whole-brain connectome: voxelwise HDF5 file or directory "
+            "(for --modality functional), or tractogram .tck (for --modality structural)."
+        ),
+    )
+    g_io.add_argument(
+        "--modality",
+        type=str,
+        required=True,
+        choices=["functional", "structural"],
+        help="Connectome modality. Required; no inference from path or extension.",
+    )
+    g_io.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        required=True,
+        metavar="DIR",
+        help="Output directory for the parcellated matrix (TSV + JSON sidecar).",
+    )
+
+    g_parc = parcellate_parser.add_argument_group("Parcellation selection")
+    g_parc.add_argument(
+        "--parcel-atlases",
+        nargs="+",
+        type=str,
+        metavar="ATLAS",
+        help="Atlas names to use. Use 'lacuna info atlases' to list available atlases.",
+    )
+    g_parc.add_argument(
+        "--custom-parcellation",
+        nargs=4,
+        action="append",
+        metavar=("NAME", "NIFTI", "LABELS", "SPACE"),
+        help=(
+            "Custom parcellation: a short name for output labelling, NIfTI file "
+            "path, labels file path, and coordinate space (e.g., MNI152NLin6Asym). "
+            "Can be specified multiple times."
+        ),
+    )
+
+    g_other = parcellate_parser.add_argument_group("Other options")
+    g_other.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing output files.",
+    )
+    g_other.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose_count",
+        action="count",
+        default=0,
+        help="Increase verbosity (-v=INFO, -vv=DEBUG).",
     )
 
 
@@ -967,12 +1136,13 @@ def _build_check_parser(subparsers) -> None:
             "Validate input masks before a run, or check output completeness after.\n\n"
             "Use 'lacuna check input' to catch common mask issues (non-binary,\n"
             "empty, missing space) before committing to a long batch run.\n"
-            "Use 'lacuna check rd|fnm|snm' to identify subjects with missing outputs.\n\n"
+            "Use 'lacuna check rd|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
             "Available checks:\n"
             "  input - Validate input masks (binary, non-empty, space)\n"
             "  rd    - Check for parcelstats TSV files (RegionalDamage)\n"
             "  fnm   - Check for functional rmap NIfTI files\n"
-            "  snm   - Check for disconnection NIfTI files\n\n"
+            "  snm   - Check for disconnection NIfTI files\n"
+            "  afnm  - Check for accelerated functional LNM parcel outputs\n\n"
             "Examples:\n"
             "  lacuna check input /bids\n"
             "  lacuna check rd /bids /output\n"
@@ -995,6 +1165,7 @@ def _build_check_parser(subparsers) -> None:
     _build_check_rd_parser(check_subparsers)
     _build_check_fnm_parser(check_subparsers)
     _build_check_snm_parser(check_subparsers)
+    _build_check_afnm_parser(check_subparsers)
 
 
 def _build_check_rd_parser(subparsers) -> None:
@@ -1066,6 +1237,25 @@ def _build_check_snm_parser(subparsers) -> None:
         formatter_class=RawDescriptionHelpFormatter,
     )
     _add_shared_check_arguments(snm_parser)
+
+
+def _build_check_afnm_parser(subparsers) -> None:
+    """Add the check afnm subcommand parser."""
+    afnm_parser = subparsers.add_parser(
+        "afnm",
+        aliases=["acceleratedfunctionalnetworkmapping"],
+        help="Check for AcceleratedFunctionalNetworkMapping parcel outputs",
+        description=(
+            "Check which subjects have AcceleratedFunctionalNetworkMapping parcel outputs.\n\n"
+            "A subject is considered complete if a '*method-afnm*parcelstats.tsv' file\n"
+            "exists in their output directory.\n\n"
+            "Examples:\n"
+            "  lacuna check afnm /bids /output\n"
+            "  lacuna check afnm /bids /output --quiet"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_check_arguments(afnm_parser)
 
 
 def _build_check_input_parser(subparsers) -> None:

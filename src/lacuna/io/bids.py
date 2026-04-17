@@ -1335,20 +1335,36 @@ def aggregate_parcelstats(
             raise BidsError(f"No parcelstats files found with label '{label_filter}'")
 
     if analysis_filter:
-        # Map common analysis names to pattern keywords
-        analysis_patterns = {
-            "regionaldamage": ["rd", "regionaldamage"],
-            "rd": ["rd", "regionaldamage"],
-            "functionalnetworkmapping": ["fnm", "functionalnetworkmapping", "rmap", "tmap", "zmap"],
-            "fnm": ["fnm", "functionalnetworkmapping", "rmap", "tmap", "zmap"],
-            "structuralnetworkmapping": ["snm", "structuralnetworkmapping", "disconnection"],
-            "snm": ["snm", "structuralnetworkmapping", "disconnection"],
+        # Two sets of keywords per analysis:
+        # - method_kw: exact match against method / source BIDS entities
+        # - desc_kw:   substring match against the desc entity
+        _analysis_patterns: dict[str, tuple[list[str], list[str]]] = {
+            "regionaldamage": (["rd", "regionaldamage"], []),
+            "rd": (["rd", "regionaldamage"], []),
+            "functionalnetworkmapping": (["fnm", "functionalnetworkmapping"], ["rmap", "tmap", "zmap"]),
+            "fnm": (["fnm", "functionalnetworkmapping"], ["rmap", "tmap", "zmap"]),
+            "structuralnetworkmapping": (["snm", "structuralnetworkmapping"], ["disconnection"]),
+            "snm": (["snm", "structuralnetworkmapping"], ["disconnection"]),
+            "acceleratedfunctionalnetworkmapping": (["afnm", "acceleratedfunctionalnetworkmapping"], ["afnmstatistics", "lesionweights"]),
+            "afnm": (["afnm", "acceleratedfunctionalnetworkmapping"], ["afnmstatistics", "lesionweights"]),
         }
         filter_lower = analysis_filter.lower()
-        keywords = analysis_patterns.get(filter_lower, [filter_lower])
-        parcelstats_files = [
-            f for f in parcelstats_files if any(kw in f.name.lower() for kw in keywords)
-        ]
+        method_kw, desc_kw = _analysis_patterns.get(
+            filter_lower, ([filter_lower], [])
+        )
+
+        def _matches_analysis(f: Path) -> bool:
+            entities = _parse_bids_filename(f.name)
+            method = entities.get("method", "").lower()
+            source = entities.get("source", "").lower()
+            desc = entities.get("desc", "").lower()
+            if any(kw == method or kw == source for kw in method_kw):
+                return True
+            if any(kw in desc for kw in desc_kw):
+                return True
+            return False
+
+        parcelstats_files = [f for f in parcelstats_files if _matches_analysis(f)]
         if not parcelstats_files:
             raise BidsError(f"No parcelstats files found for analysis '{analysis_filter}'")
 

@@ -20,13 +20,19 @@ Start with the getting started tutorial, then explore the analysis-specific guid
 
     Measure lesion overlap with brain parcellation atlases.
 
--   [**Functional network mapping**](functional-network-mapping.ipynb)
+-   [**Functional lesion network mapping**](functional-network-mapping.ipynb)
 
     ---
 
     Map functional brain circuitry linked to a lesion.
 
--   [**Structural network mapping**](structural-network-mapping.ipynb)
+-   [**Accelerated functional network mapping**](accelerated-functional-network-mapping.ipynb)
+
+    ---
+
+    Map functional brain circuitry via a fast matrix-based implementation.
+
+-   [**Structural lesion network mapping**](structural-network-mapping.ipynb)
 
     ---
 

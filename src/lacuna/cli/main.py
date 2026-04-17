@@ -141,6 +141,13 @@ class RunConfig:
         if hasattr(args, "show_mrtrix_output") and args.show_mrtrix_output:
             analysis_options["show_mrtrix_output"] = True
 
+        # AFNM-specific options
+        if args.analysis in ("afnm", "acceleratedfunctionalnetworkmapping"):
+            if getattr(args, "matrix_path", None) is not None:
+                analysis_options["matrix_path"] = args.matrix_path
+            if getattr(args, "lesion_weighting", None) is not None:
+                analysis_options["lesion_weighting"] = args.lesion_weighting
+
         return cls(
             bids_dir=args.bids_dir,
             output_dir=args.output_dir,
@@ -251,6 +258,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_info_command(args)
     elif args.command == "bidsify":
         return _handle_bidsify_command(args)
+    elif args.command == "parcellate":
+        return _handle_parcellate_command(args)
     elif args.command == "tutorial":
         return _handle_tutorial_command(args)
     elif args.command == "check":
@@ -510,8 +519,31 @@ def _show_connectomes_info() -> int:
     return EXIT_SUCCESS
 
 
+def _handle_parcellate_command(args: Namespace) -> int:
+    """Handle `lacuna parcellate` (modality dispatch)."""
+    modality = getattr(args, "modality", None)
+    if modality == "functional":
+        try:
+            from lacuna.prepare.parcellate import run_parcellate_functional_cli
+        except ImportError:
+            print(
+                "Error: 'lacuna parcellate --modality functional' is not yet implemented.",
+                file=sys.stderr,
+            )
+            return EXIT_GENERAL_ERROR
+        return run_parcellate_functional_cli(args)
+    if modality == "structural":
+        print(
+            "Error: 'lacuna parcellate --modality structural' is not yet implemented.",
+            file=sys.stderr,
+        )
+        return EXIT_GENERAL_ERROR
+    print(f"Error: unknown modality {modality!r}", file=sys.stderr)
+    return EXIT_GENERAL_ERROR
+
+
 def _handle_bidsify_command(args: Namespace) -> int:
-    """Handle the bidsify subcommand."""
+    """Handle the `bidsify` subcommand."""
     from lacuna.io.bidsify import bidsify
 
     try:
@@ -945,6 +977,8 @@ def _check_subject_complete(
             sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
         elif norm in ("snm", "structuralnetworkmapping"):
             sentinel = f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"
+        elif norm in ("afnm", "acceleratedfunctionalnetworkmapping"):
+            sentinel = f"{label_glob}method-afnm*parcelstats.tsv"
         else:
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
@@ -986,6 +1020,14 @@ def _check_subject_complete(
         if not hits:
             return "missing", [f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"]
         # Files exist -- check content if requested
+        if check_content and all(_is_output_empty(f, norm) for f in hits):
+            return "empty", []
+        return "complete", []
+
+    elif norm in ("afnm", "acceleratedfunctionalnetworkmapping"):
+        hits = list(anat_dir.glob(f"{label_glob}method-afnm*parcelstats.tsv"))
+        if not hits:
+            return "missing", [f"{label_glob}method-afnm*parcelstats.tsv"]
         if check_content and all(_is_output_empty(f, norm) for f in hits):
             return "empty", []
         return "complete", []
@@ -1426,6 +1468,8 @@ def _run_analysis_workflow(config: RunConfig) -> int:
         "functionalnetworkmapping": "FunctionalNetworkMapping",
         "snm": "StructuralNetworkMapping",
         "structuralnetworkmapping": "StructuralNetworkMapping",
+        "afnm": "AcceleratedFunctionalNetworkMapping",
+        "acceleratedfunctionalnetworkmapping": "AcceleratedFunctionalNetworkMapping",
     }
 
     analysis_class_name = analysis_name_map.get(config.analysis.lower())
@@ -1589,6 +1633,8 @@ def _process_single_subject(
             export_bids_derivatives(
                 subject_data=result,
                 output_dir=config.output_dir,
+                export_lesion_mask=False,
+                export_provenance=False,
                 overwrite=True,
             )
 
@@ -1690,6 +1736,8 @@ def _process_batch(
                     export_bids_derivatives(
                         subject_data=result,
                         output_dir=config.output_dir,
+                        export_lesion_mask=False,
+                        export_provenance=False,
                         overwrite=True,
                     )
                     processed_count += 1

@@ -30,6 +30,10 @@ from lacuna.assets.connectomes import (
     list_functional_connectomes,
     load_functional_connectome,
 )
+from lacuna.assets.connectomes.functional_io import (
+    list_connectome_batch_files,
+    read_mask_info,
+)
 from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.core.exceptions import ValidationError
 from lacuna.core.subject_data import SubjectData
@@ -293,16 +297,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
         if self._batch_files is not None:
             return self._batch_files
 
-        if self._is_batch_dir:
-            # Find all .h5 files in directory
-            h5_files = sorted(self.connectome_path.glob("*.h5"))
-            if not h5_files:
-                msg = f"No HDF5 files found in directory: {self.connectome_path}"
-                raise ValidationError(msg)
-            self._batch_files = h5_files
-        else:
-            # Single file
-            self._batch_files = [self.connectome_path]
+        try:
+            self._batch_files = list_connectome_batch_files(self.connectome_path)
+        except FileNotFoundError as e:
+            raise ValidationError(str(e)) from e
 
         return self._batch_files
 
@@ -855,32 +853,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
             If HDF5 file structure is invalid.
         """
         connectome_files = self._get_connectome_files()
-        first_file = connectome_files[0]
-
-        with h5py.File(first_file, "r") as hf:
-            # Load mask information
-            mask_indices_array = hf["mask_indices"][:]
-
-            # Handle both (3, n_voxels) and (n_voxels, 3) formats
-            # Store as tuple of 1D arrays for indexing
-            if mask_indices_array.shape[0] == 3:
-                # Shape is (3, n_voxels) - correct format
-                mask_indices = tuple(mask_indices_array[i, :].astype(int) for i in range(3))
-            else:
-                # Shape is (n_voxels, 3) - transpose it
-                mask_indices = tuple(mask_indices_array[:, i].astype(int) for i in range(3))
-
-            mask_affine = hf["mask_affine"][:]
-            # Convert to native Python int tuple for cleaner display
-            mask_shape = tuple(int(x) for x in hf.attrs["mask_shape"])
-
-            self._mask_info = {
-                "mask_indices": mask_indices,
-                "mask_affine": mask_affine,
-                "mask_shape": mask_shape,
-            }
-
-            return mask_indices, mask_affine, mask_shape
+        self._mask_info = read_mask_info(connectome_files[0])
+        return (
+            self._mask_info["mask_indices"],
+            self._mask_info["mask_affine"],
+            self._mask_info["mask_shape"],
+        )
 
     def _extract_lesion_timeseries_boes_batch(
         self, batch_timeseries: np.ndarray, lesion_voxel_indices: np.ndarray
