@@ -77,15 +77,11 @@ def test_parcellate_functional_two_regions_identity_correlation(tmp_path):
     s2_r1 = rng.standard_normal(n_tp).astype(np.float32)
     s2_r2 = -s2_r1
 
-    ts = np.stack(
-        [build_subject(s1_r1, s1_r2), build_subject(s2_r1, s2_r2)], axis=0
-    )
+    ts = np.stack([build_subject(s1_r1, s1_r2), build_subject(s2_r1, s2_r2)], axis=0)
 
     connectome_dir = tmp_path / "conn"
     connectome_dir.mkdir()
-    _write_connectome(
-        connectome_dir / "batch0.h5", ts, mask_indices, mask_affine, mask_shape
-    )
+    _write_connectome(connectome_dir / "batch0.h5", ts, mask_indices, mask_affine, mask_shape)
 
     parcellation = ResolvedParcellation(
         short_name="synthetic2",
@@ -122,8 +118,13 @@ def test_parcellate_functional_two_regions_identity_correlation(tmp_path):
     # Compute expected off-diagonal by hand: per-subject corr, Fisher-z mean
     r1 = np.corrcoef(s1_r1, s1_r2)[0, 1]
     r2 = np.corrcoef(s2_r1, s2_r2)[0, 1]
-    expected = np.tanh((np.arctanh(np.clip(r1, -0.999999, 0.999999))
-                        + np.arctanh(np.clip(r2, -0.999999, 0.999999))) / 2)
+    expected = np.tanh(
+        (
+            np.arctanh(np.clip(r1, -0.999999, 0.999999))
+            + np.arctanh(np.clip(r2, -0.999999, 0.999999))
+        )
+        / 2
+    )
     np.testing.assert_allclose(df.values[0, 1], expected, atol=1e-4)
 
     # z matrix: diagonal should be 0, off-diagonal = mean Fisher z
@@ -132,8 +133,9 @@ def test_parcellate_functional_two_regions_identity_correlation(tmp_path):
     # amplifies small differences at high |r| values.
     df_z = pd.read_csv(tsv_z, sep="\t", index_col=0)
     np.testing.assert_allclose(np.diag(df_z.values), [0.0, 0.0], atol=1e-5)
-    expected_z = (np.arctanh(np.clip(r1, -0.999999, 0.999999))
-                  + np.arctanh(np.clip(r2, -0.999999, 0.999999))) / 2
+    expected_z = (
+        np.arctanh(np.clip(r1, -0.999999, 0.999999)) + np.arctanh(np.clip(r2, -0.999999, 0.999999))
+    ) / 2
     np.testing.assert_allclose(df_z.values[0, 1], expected_z, atol=5e-3)
 
     # Sidecar present and has expected metadata
@@ -176,8 +178,11 @@ def test_parcellate_functional_multiple_batches_accumulate(tmp_path):
     _write_connectome(d_batched / "b.h5", ts[2:], mask_indices, mask_affine, mask_shape)
 
     parc = ResolvedParcellation(
-        short_name="tiny", image=atlas, labels={1: "A", 2: "B"},
-        space=None, source="custom",
+        short_name="tiny",
+        image=atlas,
+        labels={1: "A", 2: "B"},
+        space=None,
+        source="custom",
     )
 
     out_single = tmp_path / "out_single"
@@ -209,8 +214,11 @@ def test_parcellate_functional_refuses_overwrite(tmp_path):
     _write_connectome(d / "a.h5", ts, mask_indices, mask_affine, mask_shape)
 
     parc = ResolvedParcellation(
-        short_name="mini", image=atlas, labels={1: "A", 2: "B"},
-        space=None, source="custom",
+        short_name="mini",
+        image=atlas,
+        labels={1: "A", 2: "B"},
+        space=None,
+        source="custom",
     )
     out = tmp_path / "out"
     parcellate_functional(d, [parc], out)

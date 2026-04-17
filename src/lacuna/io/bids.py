@@ -1341,17 +1341,24 @@ def aggregate_parcelstats(
         _analysis_patterns: dict[str, tuple[list[str], list[str]]] = {
             "regionaldamage": (["rd", "regionaldamage"], []),
             "rd": (["rd", "regionaldamage"], []),
-            "functionalnetworkmapping": (["fnm", "functionalnetworkmapping"], ["rmap", "tmap", "zmap"]),
+            "functionalnetworkmapping": (
+                ["fnm", "functionalnetworkmapping"],
+                ["rmap", "tmap", "zmap"],
+            ),
             "fnm": (["fnm", "functionalnetworkmapping"], ["rmap", "tmap", "zmap"]),
             "structuralnetworkmapping": (["snm", "structuralnetworkmapping"], ["disconnection"]),
             "snm": (["snm", "structuralnetworkmapping"], ["disconnection"]),
-            "acceleratedfunctionalnetworkmapping": (["afnm", "acceleratedfunctionalnetworkmapping"], ["afnmstatistics", "lesionweights"]),
-            "afnm": (["afnm", "acceleratedfunctionalnetworkmapping"], ["afnmstatistics", "lesionweights"]),
+            "acceleratedfunctionalnetworkmapping": (
+                ["afnm", "acceleratedfunctionalnetworkmapping"],
+                ["afnmstatistics", "lesionweights"],
+            ),
+            "afnm": (
+                ["afnm", "acceleratedfunctionalnetworkmapping"],
+                ["afnmstatistics", "lesionweights"],
+            ),
         }
         filter_lower = analysis_filter.lower()
-        method_kw, desc_kw = _analysis_patterns.get(
-            filter_lower, ([filter_lower], [])
-        )
+        method_kw, desc_kw = _analysis_patterns.get(filter_lower, ([filter_lower], []))
 
         def _matches_analysis(f: Path) -> bool:
             entities = _parse_bids_filename(f.name)

@@ -17,7 +17,6 @@ from lacuna.assets.parcellations.registry import (
 )
 from lacuna.core.subject_data import SubjectData
 
-
 MASK_SHAPE = (4, 4, 4)
 MASK_AFFINE = np.eye(4)
 
@@ -239,12 +238,10 @@ def test_afnm_missing_matrix_file(tmp_path, registered_atlas):
 
 def test_afnm_non_square_matrix_rejected(tmp_path, registered_atlas):
     tsv = tmp_path / "nonsquare.tsv"
-    pd.DataFrame(
-        np.ones((2, 3)), index=["R1", "R2"], columns=["R1", "R2", "R3"]
-    ).to_csv(tsv, sep="\t")
-    analysis = AcceleratedFunctionalNetworkMapping(
-        matrix_path=tsv, parcel_names=[registered_atlas]
+    pd.DataFrame(np.ones((2, 3)), index=["R1", "R2"], columns=["R1", "R2", "R3"]).to_csv(
+        tsv, sep="\t"
     )
+    analysis = AcceleratedFunctionalNetworkMapping(matrix_path=tsv, parcel_names=[registered_atlas])
     mask = np.zeros(MASK_SHAPE, dtype=np.uint8)
     mask[0, 0, 0] = 1
     with pytest.raises(ValueError, match="square"):

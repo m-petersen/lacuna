@@ -77,9 +77,7 @@ def resolve_parcellations(
         )
 
     if not resolved:
-        raise ValueError(
-            "At least one of --parcel-atlases or --custom-parcellation must be given."
-        )
+        raise ValueError("At least one of --parcel-atlases or --custom-parcellation must be given.")
     return resolved
 
 
@@ -227,15 +225,13 @@ def parcellate_functional(
                 matrix_r,
                 f"groupFC_{parc.short_name}",
                 "pearson_r",
-                f"method-parcellate_atlas-{parc.short_name}"
-                f"_desc-fcgroupr_connmatrix",
+                f"method-parcellate_atlas-{parc.short_name}" f"_desc-fcgroupr_connmatrix",
             ),
             (
                 mean_z_f32,
                 f"groupFCz_{parc.short_name}",
                 "fisher_z",
-                f"method-parcellate_atlas-{parc.short_name}"
-                f"_desc-fcgroupz_connmatrix",
+                f"method-parcellate_atlas-{parc.short_name}" f"_desc-fcgroupz_connmatrix",
             ),
         ]
 
@@ -252,9 +248,7 @@ def parcellate_functional(
             json_path = output_dir / f"{base}.json"
 
             if tsv_path.exists() and not overwrite:
-                raise FileExistsError(
-                    f"Output exists: {tsv_path}. Pass --overwrite to replace."
-                )
+                raise FileExistsError(f"Output exists: {tsv_path}. Pass --overwrite to replace.")
 
             df = pd.DataFrame(
                 connmat.matrix,

@@ -238,16 +238,14 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
             )
         return atlas_values, region_ids, ordered_labels
 
-    def _run_analysis(self, mask_data: SubjectData) -> dict[str, "DataContainer"]:
+    def _run_analysis(self, mask_data: SubjectData) -> dict[str, DataContainer]:
         self._load_c_matrix()
         assert self._c_matrix is not None and self._c_labels is not None
 
         atlas_values, region_ids, ordered_labels = self._align_atlas_and_labels(mask_data)
         mask_array = mask_data.mask_img.get_fdata()
 
-        m, voxels_per_region = self._build_weight_vector(
-            mask_array, atlas_values, region_ids
-        )
+        m, voxels_per_region = self._build_weight_vector(mask_array, atlas_values, region_ids)
 
         afnmap = m @ self._c_matrix  # (N,)
         atlas_name = self.parcel_names[0]
@@ -270,9 +268,7 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
             region_labels=ordered_labels,
             parcel_names=[atlas_name],
             aggregation_method=f"afnm_{self.lesion_weighting}",
-            metadata=dict(
-                meta_base, description="Accelerated functional network map (m @ C)"
-            ),
+            metadata=dict(meta_base, description="Accelerated functional network map (m @ C)"),
         )
         results[
             build_result_key(

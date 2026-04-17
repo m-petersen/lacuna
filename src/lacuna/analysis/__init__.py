@@ -38,14 +38,14 @@ StructuralNetworkMapping: parallel
 >>> analysis = FNM(connectome_name="GSP1000")
 """
 
+from lacuna.analysis.accelerated_functional_network_mapping import (
+    AcceleratedFunctionalNetworkMapping,
+)
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 from lacuna.analysis.parcel_aggregation import ParcelAggregation
 from lacuna.analysis.regional_damage import RegionalDamage
 from lacuna.analysis.registry import get_analysis, list_analyses
-from lacuna.analysis.accelerated_functional_network_mapping import (
-    AcceleratedFunctionalNetworkMapping,
-)
 from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
 __all__ = [

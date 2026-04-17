@@ -447,17 +447,13 @@ class TestAggregateAnalysisFilter:
 
     def test_filter_afnm_returns_only_afnm(self, mixed_derivatives):
         """Filtering by 'afnm' returns only AFNM parcelstats files."""
-        result = aggregate_parcelstats(
-            mixed_derivatives, analysis_filter="afnm", progress=False
-        )
+        result = aggregate_parcelstats(mixed_derivatives, analysis_filter="afnm", progress=False)
         for key in result:
             assert "afnm" in key.lower()
 
     def test_filter_fnm_excludes_afnm(self, mixed_derivatives):
         """Filtering by 'fnm' does not return AFNM files."""
-        result = aggregate_parcelstats(
-            mixed_derivatives, analysis_filter="fnm", progress=False
-        )
+        result = aggregate_parcelstats(mixed_derivatives, analysis_filter="fnm", progress=False)
         for key in result:
             assert "afnm" not in key.lower()
 
@@ -474,6 +470,4 @@ class TestAggregateAnalysisFilter:
     def test_filter_no_match_raises(self, mixed_derivatives):
         """An analysis filter with no matches raises BidsError."""
         with pytest.raises(BidsError, match="No parcelstats files found"):
-            aggregate_parcelstats(
-                mixed_derivatives, analysis_filter="nonexistent", progress=False
-            )
+            aggregate_parcelstats(mixed_derivatives, analysis_filter="nonexistent", progress=False)
