@@ -43,6 +43,7 @@ from lacuna.analysis.accelerated_functional_network_mapping import (
 )
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
+from lacuna.analysis.local_neurotransmitter_mapping import LocalNeurotransmitterMapping
 from lacuna.analysis.parcel_aggregation import ParcelAggregation
 from lacuna.analysis.regional_damage import RegionalDamage
 from lacuna.analysis.registry import get_analysis, list_analyses
@@ -58,5 +59,6 @@ __all__ = [
     "FunctionalNetworkMapping",
     "RegionalDamage",
     "AcceleratedFunctionalNetworkMapping",
+    "LocalNeurotransmitterMapping",
     "StructuralNetworkMapping",
 ]
