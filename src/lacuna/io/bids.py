@@ -1360,6 +1360,14 @@ def aggregate_parcelstats(
         filter_lower = analysis_filter.lower()
         method_kw, desc_kw = _analysis_patterns.get(filter_lower, ([filter_lower], []))
 
+        # Collect method keywords from *other* analyses to avoid false positives
+        # when a desc keyword (e.g. "zmap") is shared across analyses.
+        other_method_kw: set[str] = set()
+        for key, (mkw, _) in _analysis_patterns.items():
+            if key != filter_lower:
+                other_method_kw.update(mkw)
+        other_method_kw -= set(method_kw)
+
         def _matches_analysis(f: Path) -> bool:
             entities = _parse_bids_filename(f.name)
             method = entities.get("method", "").lower()
@@ -1367,6 +1375,10 @@ def aggregate_parcelstats(
             desc = entities.get("desc", "").lower()
             if any(kw == method or kw == source for kw in method_kw):
                 return True
+            # Only fall through to desc matching if the file's method
+            # doesn't belong to a different known analysis.
+            if method in other_method_kw or source in other_method_kw:
+                return False
             if any(kw in desc for kw in desc_kw):
                 return True
             return False
