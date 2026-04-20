@@ -264,6 +264,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_tutorial_command(args)
     elif args.command == "check":
         return _handle_check_command(args)
+    elif args.command == "prepare":
+        return _handle_prepare_command(args)
     else:
         # No command specified - show help
         parser.print_help()
@@ -1470,6 +1472,12 @@ def _run_analysis_workflow(config: RunConfig) -> int:
         "structuralnetworkmapping": "StructuralNetworkMapping",
         "afnm": "AcceleratedFunctionalNetworkMapping",
         "acceleratedfunctionalnetworkmapping": "AcceleratedFunctionalNetworkMapping",
+        "lntm": "LocalNeurotransmitterMapping",
+        "localneurotransmittermapping": "LocalNeurotransmitterMapping",
+        "sntm": "StructuralNeurotransmitterMapping",
+        "structuralneurotransmittermapping": "StructuralNeurotransmitterMapping",
+        "fntm": "FunctionalNeurotransmitterMapping",
+        "functionalneurotransmittermapping": "FunctionalNeurotransmitterMapping",
     }
 
     analysis_class_name = analysis_name_map.get(config.analysis.lower())
@@ -1886,6 +1894,39 @@ def _log_discovery_summary(subjects_list: list, config: RunConfig) -> None:
         for i, subject_data in enumerate(subjects_list, 1):
             logger.info(f"  {i:3d}. {_format_subject_id(subject_data)}")
         logger.info("")
+
+
+def _handle_prepare_command(args: Namespace) -> int:
+    """Handle the prepare subcommand."""
+    target = getattr(args, "prepare_target", None)
+    if not target:
+        from lacuna.cli.parser import build_parser
+
+        build_parser().parse_args(["prepare", "--help"])
+        return EXIT_SUCCESS
+
+    _setup_logging(logging.INFO)
+
+    from lacuna.cli.prepare import run_prepare_ace, run_prepare_lntm, run_prepare_sntm
+
+    try:
+        if target == "lntm":
+            run_prepare_lntm(args)
+        elif target == "sntm":
+            run_prepare_sntm(args)
+        elif target == "ace":
+            run_prepare_ace(args)
+        else:
+            logger.error("Unknown prepare target: %s", target)
+            return EXIT_INVALID_ARGS
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        return EXIT_GENERAL_ERROR
+    except NotImplementedError as e:
+        logger.error(str(e))
+        return EXIT_GENERAL_ERROR
+
+    return EXIT_SUCCESS
 
 
 def _setup_logging(level: int) -> None:

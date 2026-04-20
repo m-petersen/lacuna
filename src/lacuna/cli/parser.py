@@ -59,6 +59,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "  bidsify    Convert a directory of NIfTI masks into BIDS layout\n"
             "  parcellate Reduce a connectome to a parcel-level connectivity matrix\n"
             "  fetch     Download and setup connectomes for analysis\n"
+            "  prepare   Precompute atlas data for NTM analyses\n"
             "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
             "  info      Display available resources (atlases, connectomes)\n"
@@ -92,6 +93,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     # Add subcommands
     _build_fetch_parser(subparsers)
     _build_run_parser(subparsers)
+    _build_prepare_parser(subparsers)
     _build_collect_parser(subparsers)
     _build_info_parser(subparsers)
     _build_bidsify_parser(subparsers)
@@ -254,7 +256,10 @@ def _build_run_parser(subparsers) -> None:
             "  rd   (regionaldamage)                      - Lesion overlap with parcellations\n"
             "  fnm  (functionalnetworkmapping)            - Functional lesion connectivity maps\n"
             "  snm  (structuralnetworkmapping)            - White matter disconnection\n"
-            "  afnm (acceleratedfunctionalnetworkmapping)      - Accelerated functional LNM (M @ C)\n\n"
+            "  afnm (acceleratedfunctionalnetworkmapping) - Accelerated functional LNM (M @ C)\n"
+            "  lntm (localneurotransmittermapping)        - Local NT density within lesion\n"
+            "  sntm (structuralneurotransmittermapping)   - NT at disconnected endpoints\n"
+            "  fntm (functionalneurotransmittermapping)   - NT weighted by connectivity\n\n"
             "Examples:\n"
             "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
@@ -278,6 +283,9 @@ def _build_run_parser(subparsers) -> None:
     _build_fnm_parser(analysis_subparsers)
     _build_snm_parser(analysis_subparsers)
     _build_afnm_parser(analysis_subparsers)
+    _build_lntm_parser(analysis_subparsers)
+    _build_sntm_parser(analysis_subparsers)
+    _build_fntm_parser(analysis_subparsers)
 
 
 def _add_shared_run_arguments(parser: ArgumentParser) -> None:
@@ -1333,4 +1341,186 @@ def _build_check_input_parser(subparsers) -> None:
         type=Path,
         metavar="PATH",
         help="Write paths with errors to a file (one per line).",
+    )
+
+
+def _build_prepare_parser(subparsers) -> None:
+    """Add the prepare subcommand parser."""
+    prepare_parser = subparsers.add_parser(
+        "prepare",
+        help="Precompute non-subject-specific data for analyses",
+        description=(
+            "Precompute non-subject-specific data needed by analyses.\n\n"
+            "Available targets:\n"
+            "  lntm - Prepare NT atlas (average per target, z-score)\n"
+            "  sntm - Precompute structural endpoint NT weights\n"
+            "  ace  - Run ACE (Atlas Connectivity Enrichment) on normative data\n\n"
+            "Examples:\n"
+            "  lacuna prepare lntm\n"
+            "  lacuna prepare lntm --source-dir /path/to/pet_maps\n"
+            "  lacuna prepare sntm --connectome-path /path/to/tractogram.tck\n"
+            "  lacuna prepare ace --connectome-name GSP1000"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    prepare_subparsers = prepare_parser.add_subparsers(
+        dest="prepare_target",
+        title="targets",
+        description="Use 'lacuna prepare <target> --help' for target-specific options.",
+        metavar="<target>",
+    )
+
+    # prepare lntm
+    prepare_lntm = prepare_subparsers.add_parser(
+        "lntm",
+        help="Prepare NT atlas (average per target, z-score)",
+    )
+    prepare_lntm.add_argument(
+        "--source-dir", type=str, default=None,
+        help="Directory with raw PET NIfTI maps",
+    )
+    prepare_lntm.add_argument(
+        "--cache-dir", type=str, default=None,
+        help="Output cache directory",
+    )
+    prepare_lntm.add_argument(
+        "--map-config", type=str, default=None,
+        help="YAML map selection config file",
+    )
+
+    # prepare sntm
+    prepare_sntm = prepare_subparsers.add_parser(
+        "sntm",
+        help="Precompute structural endpoint NT weights",
+    )
+    prepare_sntm.add_argument(
+        "--connectome-path", type=str, required=True,
+        help="Path to structural tractogram (.tck)",
+    )
+    prepare_sntm.add_argument(
+        "--cache-dir", type=str, default=None,
+        help="Output cache directory",
+    )
+
+    # prepare ace
+    prepare_ace = prepare_subparsers.add_parser(
+        "ace",
+        help="Run ACE (Atlas Connectivity Enrichment) on normative data",
+    )
+    prepare_ace.add_argument(
+        "--connectome-name", type=str, required=True,
+        help="Normative fMRI connectome name (e.g., GSP1000)",
+    )
+    prepare_ace.add_argument(
+        "--cache-dir", type=str, default=None,
+        help="Output cache directory",
+    )
+
+
+def _add_ntm_common_args(parser: ArgumentParser) -> None:
+    """Add arguments shared by all NTM analyses."""
+    g_ntm = parser.add_argument_group("Neurotransmitter mapping options")
+    g_ntm.add_argument(
+        "--targets", type=str, default="all",
+        help="Target preset or comma-separated list (default: all)",
+    )
+    g_ntm.add_argument(
+        "--enriched", action="store_true",
+        help="Use ACE-enriched atlas instead of static",
+    )
+    g_ntm.add_argument(
+        "--ace-cache-dir", type=str, default=None,
+        help="Directory with ACE outputs (required if --enriched)",
+    )
+    g_ntm.add_argument(
+        "--atlas-cache-dir", type=str, default=None,
+        help="Directory with prepared NT atlas (default: auto-detected)",
+    )
+
+
+def _build_lntm_parser(subparsers) -> None:
+    """Add the LocalNeurotransmitterMapping (lntm) analysis parser."""
+    lntm_parser = subparsers.add_parser(
+        "lntm",
+        aliases=["localneurotransmittermapping"],
+        help="Compute local NT density within the lesion",
+        description=(
+            "Local neurotransmitter mapping: score NT atlas values directly\n"
+            "within the lesion mask. Answers: 'what neurotransmitter landscape\n"
+            "did the lesion wipe out?'\n\n"
+            "Examples:\n"
+            "  lacuna run lntm /bids /output\n"
+            "  lacuna run lntm /bids /output --targets dopaminergic\n"
+            "  lacuna run lntm /bids /output --parcel-atlases schaefer2018parcels100networks7"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_run_arguments(lntm_parser)
+    _add_ntm_common_args(lntm_parser)
+
+    g_lntm = lntm_parser.add_argument_group("LNTM-specific options")
+    g_lntm.add_argument(
+        "--aggregation", choices=["mean", "sum"], default="mean",
+        help="Scoring aggregation method (default: mean)",
+    )
+
+
+def _build_sntm_parser(subparsers) -> None:
+    """Add the StructuralNeurotransmitterMapping (sntm) analysis parser."""
+    sntm_parser = subparsers.add_parser(
+        "sntm",
+        aliases=["structuralneurotransmittermapping"],
+        help="Compute NT at disconnected streamline endpoints",
+        description=(
+            "Structural neurotransmitter mapping: score NT atlas values at\n"
+            "endpoints of lesion-disconnected streamlines. Answers: 'what\n"
+            "NT-weighted structural connectivity does the lesion disrupt?'\n\n"
+            "Examples:\n"
+            "  lacuna run sntm /bids /output --connectome-path /path/to/tractogram.tck\n"
+            "  lacuna run sntm /bids /output --connectome-path /path/to/tractogram.tck --targets serotonergic"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_run_arguments(sntm_parser)
+    _add_ntm_common_args(sntm_parser)
+
+    g_sntm = sntm_parser.add_argument_group("SNTM-specific options")
+    g_sntm.add_argument(
+        "--connectome-path", type=str, required=True,
+        help="Path to structural tractogram (.tck)",
+    )
+    g_sntm.add_argument(
+        "--precomputed-weights-dir", type=str, default=None,
+        help="Directory with precomputed endpoint NT weights (from lacuna prepare sntm)",
+    )
+
+
+def _build_fntm_parser(subparsers) -> None:
+    """Add the FunctionalNeurotransmitterMapping (fntm) analysis parser."""
+    fntm_parser = subparsers.add_parser(
+        "fntm",
+        aliases=["functionalneurotransmittermapping"],
+        help="Compute NT weighted by functional connectivity",
+        description=(
+            "Functional neurotransmitter mapping: score NT atlas values\n"
+            "weighted by functional connectivity of the lesion. Answers:\n"
+            "'what NT systems are functionally connected to the lesion?'\n\n"
+            "Examples:\n"
+            "  lacuna run fntm /bids /output --connectome-name GSP1000\n"
+            "  lacuna run fntm /bids /output --connectome-name GSP1000 --enriched --ace-cache-dir /path/to/ace"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_shared_run_arguments(fntm_parser)
+    _add_ntm_common_args(fntm_parser)
+
+    g_fntm = fntm_parser.add_argument_group("FNTM-specific options")
+    g_fntm.add_argument(
+        "--connectome-name", type=str, required=True,
+        help="Functional connectome name (e.g., GSP1000)",
+    )
+    g_fntm.add_argument(
+        "--method", choices=["boes", "pini"], default="boes",
+        help="Lesion timeseries extraction method (default: boes)",
     )
