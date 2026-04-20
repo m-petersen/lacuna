@@ -61,6 +61,8 @@ def handle_fetch_command(args: argparse.Namespace) -> int:
         return _handle_dtor985(args)
     elif connectome == "hcp1065":
         return _handle_hcp1065(args)
+    elif connectome == "ntatlas":
+        return _handle_ntatlas(args)
     else:
         print(f"Error: Unknown connectome '{connectome}'")
         return 1
@@ -222,6 +224,42 @@ def _handle_hcp1065(args: argparse.Namespace) -> int:
         return 1
     except ProcessingError as e:
         print(f"\n✗ Processing error: {e}")
+        return 1
+
+
+def _handle_ntatlas(args: argparse.Namespace) -> int:
+    """Handle neurotransmitter atlas fetch."""
+    from lacuna.core.exceptions import DownloadError
+    from lacuna.io import fetch_ntatlas
+
+    output_dir = getattr(args, "output_dir", None)
+    force = getattr(args, "force", False)
+
+    print("Fetching neurotransmitter PET atlas maps from OSF...")
+    if output_dir:
+        print(f"  Output: {output_dir}")
+    else:
+        from lacuna.io.fetch import get_data_dir
+
+        print(f"  Output: {get_data_dir() / 'atlases' / 'neurotransmitter' / 'raw'}")
+    print()
+
+    try:
+        result = fetch_ntatlas(
+            output_dir=output_dir,
+            force=force,
+        )
+        print(f"\n✓ Neurotransmitter atlas fetch complete!")
+        print(f"  Files: {len(result.output_files)}")
+        print(f"  Duration: {result.duration_seconds:.1f}s")
+        print(f"  Output: {result.output_dir}")
+        if result.warnings:
+            for w in result.warnings:
+                print(f"  ⚠ {w}")
+        return 0
+
+    except DownloadError as e:
+        print(f"\n✗ Download error: {e}")
         return 1
 
 

@@ -1085,3 +1085,84 @@ def get_fetch_status(name: str) -> dict:
         "location": location,
         "size_bytes": size_bytes,
     }
+
+
+# ============================================================================
+# Neurotransmitter Atlas Fetching
+# ============================================================================
+
+# OSF project for the neurotransmitter PET atlas
+_NTATLAS_OSF_NODE = "yz9mb"
+_NTATLAS_OSF_FOLDER = "69e621dd0a3698b86baff9c3"
+
+
+def fetch_ntatlas(
+    output_dir: str | Path | None = None,
+    *,
+    force: bool = False,
+    progress_callback: Callable[[FetchProgress], None] | None = None,
+) -> FetchResult:
+    """
+    Download neurotransmitter PET atlas maps from OSF.
+
+    Downloads ~45 PET receptor/transporter density maps in MNI152NLin6Asym
+    space from https://osf.io/yz9mb/ into the lacuna cache.
+
+    Parameters
+    ----------
+    output_dir : str or Path, optional
+        Directory for downloaded NIfTI files. Defaults to
+        ``~/.cache/lacuna/atlases/neurotransmitter/raw``.
+    force : bool, default=False
+        Re-download files even if they already exist.
+    progress_callback : callable, optional
+        Called with ``FetchProgress`` updates.
+
+    Returns
+    -------
+    FetchResult
+        Result with paths to downloaded files.
+
+    Raises
+    ------
+    DownloadError
+        If the OSF API or file downloads fail.
+    """
+    from .downloaders.osf import OsfDownloader
+
+    if output_dir is None:
+        output_dir = get_data_dir() / "atlases" / "neurotransmitter" / "raw"
+    output_dir = Path(output_dir)
+
+    start_time = time.time()
+
+    # Check for existing files
+    if not force and output_dir.exists():
+        existing = list(output_dir.glob("*.nii.gz"))
+        if existing:
+            return FetchResult(
+                success=True,
+                connectome_name="ntatlas",
+                output_dir=output_dir,
+                output_files=existing,
+                duration_seconds=time.time() - start_time,
+                warnings=["Using existing files. Use --force to re-download."],
+            )
+
+    downloader = OsfDownloader(
+        node_id=_NTATLAS_OSF_NODE,
+        folder_id=_NTATLAS_OSF_FOLDER,
+    )
+    downloaded = downloader.download(
+        output_path=output_dir,
+        progress_callback=progress_callback,
+    )
+
+    return FetchResult(
+        success=True,
+        connectome_name="ntatlas",
+        output_dir=output_dir,
+        output_files=downloaded,
+        duration_seconds=time.time() - start_time,
+        download_time_seconds=time.time() - start_time,
+    )

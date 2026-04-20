@@ -21,6 +21,7 @@ from .base import (
 from .dataverse import DataverseDownloader
 from .figshare import FigshareDownloader
 from .github import GithubReleaseDownloader
+from .osf import OsfDownloader
 
 __all__ = [
     "CONNECTOME_SOURCES",
@@ -31,5 +32,6 @@ __all__ = [
     "DataverseDownloader",
     "FigshareDownloader",
     "GithubReleaseDownloader",
+    "OsfDownloader",
     "get_api_key",
 ]

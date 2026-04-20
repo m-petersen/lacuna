@@ -401,3 +401,227 @@ class TestConnectomeSources:
         assert hcp.n_subjects == 1065
         assert hcp.space == "MNI152NLin2009cAsym"
         assert hcp.estimated_size_gb > 0
+
+
+class TestOsfDownloader:
+    """Unit tests for OsfDownloader."""
+
+    def test_osf_downloader_init(self):
+        """OsfDownloader should store node and folder IDs."""
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+        assert dl.node_id == "yz9mb"
+        assert dl.folder_id == "abc123"
+
+    def test_osf_list_files_parses_response(self):
+        """list_files should parse OSF API response into file dicts."""
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+
+        mock_json = {
+            "data": [
+                {
+                    "attributes": {
+                        "kind": "file",
+                        "name": "target-5HT1a.nii.gz",
+                        "size": 473848,
+                    },
+                    "links": {"download": "https://osf.io/download/file1/"},
+                },
+                {
+                    "attributes": {
+                        "kind": "folder",
+                        "name": "subfolder",
+                        "size": 0,
+                    },
+                    "links": {},
+                },
+            ],
+            "links": {"next": None},
+        }
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = mock_json
+        mock_resp.status_code = 200
+
+        with patch("lacuna.io.downloaders.osf.requests.get", return_value=mock_resp):
+            files = dl.list_files()
+
+        assert len(files) == 1
+        assert files[0]["name"] == "target-5HT1a.nii.gz"
+        assert files[0]["download_url"] == "https://osf.io/download/file1/"
+        assert files[0]["size"] == 473848
+
+    def test_osf_list_files_paginates(self):
+        """list_files should follow pagination links."""
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+
+        page1_json = {
+            "data": [
+                {
+                    "attributes": {"kind": "file", "name": "file1.nii.gz", "size": 100},
+                    "links": {"download": "https://osf.io/download/f1/"},
+                },
+            ],
+            "links": {"next": "https://api.osf.io/v2/next_page"},
+        }
+        page2_json = {
+            "data": [
+                {
+                    "attributes": {"kind": "file", "name": "file2.nii.gz", "size": 200},
+                    "links": {"download": "https://osf.io/download/f2/"},
+                },
+            ],
+            "links": {"next": None},
+        }
+
+        resp1 = MagicMock()
+        resp1.json.return_value = page1_json
+        resp2 = MagicMock()
+        resp2.json.return_value = page2_json
+
+        with patch(
+            "lacuna.io.downloaders.osf.requests.get", side_effect=[resp1, resp2]
+        ):
+            files = dl.list_files()
+
+        assert len(files) == 2
+        assert files[0]["name"] == "file1.nii.gz"
+        assert files[1]["name"] == "file2.nii.gz"
+
+    def test_osf_download_skips_existing(self, tmp_path):
+        """download should skip files that already exist."""
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+
+        # Create existing file
+        existing = tmp_path / "existing.nii.gz"
+        existing.write_bytes(b"data")
+
+        with patch.object(
+            dl,
+            "list_files",
+            return_value=[
+                {"name": "existing.nii.gz", "download_url": "https://osf.io/download/x/", "size": 4},
+            ],
+        ):
+            result = dl.download(tmp_path)
+
+        assert result == [existing]
+
+    def test_osf_download_creates_dir(self, tmp_path):
+        """download should create output directory if missing."""
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+        out = tmp_path / "new" / "dir"
+
+        mock_resp = MagicMock()
+        mock_resp.headers = {"content-length": "5"}
+        mock_resp.iter_content.return_value = [b"hello"]
+
+        with (
+            patch.object(dl, "list_files", return_value=[
+                {"name": "f.nii.gz", "download_url": "https://osf.io/download/f/", "size": 5},
+            ]),
+            patch("lacuna.io.downloaders.osf.requests.get", return_value=mock_resp),
+        ):
+            result = dl.download(out)
+
+        assert out.exists()
+        assert len(result) == 1
+        assert result[0].name == "f.nii.gz"
+
+    def test_osf_download_empty_folder_raises(self, tmp_path):
+        """download should raise DownloadError for empty folder."""
+        from lacuna.core.exceptions import DownloadError
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+
+        with patch.object(dl, "list_files", return_value=[]):
+            with pytest.raises(DownloadError, match="No files found"):
+                dl.download(tmp_path)
+
+    def test_osf_list_files_api_error_raises(self):
+        """list_files should raise DownloadError on API failure."""
+        import requests
+
+        from lacuna.core.exceptions import DownloadError
+        from lacuna.io.downloaders.osf import OsfDownloader
+
+        dl = OsfDownloader(node_id="yz9mb", folder_id="abc123")
+
+        with patch(
+            "lacuna.io.downloaders.osf.requests.get",
+            side_effect=requests.ConnectionError("offline"),
+        ):
+            with pytest.raises(DownloadError, match="OSF API request failed"):
+                dl.list_files()
+
+
+class TestFetchNtatlas:
+    """Unit tests for fetch_ntatlas."""
+
+    def test_fetch_ntatlas_importable(self):
+        """fetch_ntatlas should be importable from lacuna.io."""
+        from lacuna.io import fetch_ntatlas
+
+        assert callable(fetch_ntatlas)
+
+    def test_fetch_ntatlas_returns_existing(self, tmp_path):
+        """fetch_ntatlas should return existing files without downloading."""
+        from lacuna.io.fetch import fetch_ntatlas
+
+        # Create fake existing files
+        nii = tmp_path / "target-5HT1a.nii.gz"
+        nii.write_bytes(b"data")
+
+        result = fetch_ntatlas(output_dir=tmp_path)
+        assert result.success
+        assert len(result.output_files) == 1
+        assert result.warnings  # should warn about using existing files
+
+    def test_fetch_ntatlas_force_redownloads(self, tmp_path):
+        """fetch_ntatlas with force=True should download even if files exist."""
+        from lacuna.io.fetch import fetch_ntatlas
+
+        # Create fake existing file
+        nii = tmp_path / "target-5HT1a.nii.gz"
+        nii.write_bytes(b"old")
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "data": [
+                {
+                    "attributes": {"kind": "file", "name": "target-5HT1a.nii.gz", "size": 3},
+                    "links": {"download": "https://osf.io/download/x/"},
+                }
+            ],
+            "links": {"next": None},
+        }
+        mock_dl_resp = MagicMock()
+        mock_dl_resp.headers = {"content-length": "3"}
+        mock_dl_resp.iter_content.return_value = [b"new"]
+
+        with patch(
+            "lacuna.io.downloaders.osf.requests.get",
+            side_effect=[mock_resp, mock_dl_resp],
+        ):
+            result = fetch_ntatlas(output_dir=tmp_path, force=True)
+
+        assert result.success
+
+    def test_ntatlas_in_parser_choices(self):
+        """ntatlas should be a valid choice in the fetch parser."""
+        from lacuna.cli.parser import build_parser
+
+        parser = build_parser()
+        # Should not raise
+        args = parser.parse_args(["fetch", "ntatlas"])
+        assert args.connectome == "ntatlas"
