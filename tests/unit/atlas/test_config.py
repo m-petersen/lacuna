@@ -301,3 +301,28 @@ class TestParseMapSelection:
         path = self._write_yaml("targets:\n  NET: aston2009\n")
         result = parse_map_selection(path)
         assert isinstance(result, dict)
+
+
+# ---------------------------------------------------------------------------
+# Target conflict detection
+# ---------------------------------------------------------------------------
+
+
+class TestTargetConflictDetection:
+    def test_run_target_excluded_at_prepare_time(self):
+        """Requesting a target at run time that was excluded during prepare."""
+        available = ["D1", "5HT1a"]  # DAT was excluded
+        with pytest.raises(ValueError, match="not available.*DAT"):
+            resolve_targets(["D1", "DAT"], available)
+
+    def test_helpful_error_message_lists_missing(self):
+        """Error message should list the missing targets."""
+        available = ["D1", "5HT1a"]
+        with pytest.raises(ValueError, match="GABA"):
+            resolve_targets(["GABA"], available)
+
+    def test_multiple_missing_targets(self):
+        """All missing targets should appear in error."""
+        available = ["D1"]
+        with pytest.raises(ValueError, match="not available"):
+            resolve_targets(["DAT", "NET"], available)
