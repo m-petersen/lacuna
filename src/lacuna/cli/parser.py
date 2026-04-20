@@ -121,7 +121,8 @@ def _build_fetch_parser(subparsers) -> None:
             "Available connectomes:\n"
             "  gsp1000  - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
             "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n"
-            "  hcp1065  - HCP1065 structural tractogram (~1.5GB, no API key required)\n\n"
+            "  hcp1065  - HCP1065 structural tractogram (~1.5GB, no API key required)\n"
+            "  ntatlas  - Neurotransmitter PET atlas maps (~30MB, no API key required)\n\n"
             "Examples:\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY --batches 50\n"
             "  lacuna fetch dtor985 --api-key \\$FIGSHARE_API_KEY --output-dir /data/connectomes\n"
@@ -134,8 +135,8 @@ def _build_fetch_parser(subparsers) -> None:
     fetch_parser.add_argument(
         "connectome",
         nargs="?",
-        choices=["gsp1000", "dtor985", "hcp1065"],
-        help="Connectome to fetch (gsp1000 or dtor985)",
+        choices=["gsp1000", "dtor985", "hcp1065", "ntatlas"],
+        help="Connectome to fetch (gsp1000, dtor985, hcp1065, or ntatlas)",
     )
 
     # List flag
@@ -253,7 +254,7 @@ def _build_run_parser(subparsers) -> None:
         description=(
             "Run lesion network mapping analyses on BIDS datasets.\n\n"
             "Available analyses:\n"
-            "  rd   (regionaldamage)                      - Lesion overlap with parcellations\n"
+            "  rd   (localdamage)                      - Lesion overlap with parcellations\n"
             "  fnm  (functionalnetworkmapping)            - Functional lesion connectivity maps\n"
             "  snm  (structuralnetworkmapping)            - White matter disconnection\n"
             "  afnm (acceleratedfunctionalnetworkmapping) - Accelerated functional LNM (M @ C)\n"
@@ -378,13 +379,13 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
 
 
 def _build_rd_parser(subparsers) -> None:
-    """Add the RegionalDamage (rd) analysis parser."""
+    """Add the LocalDamage (rd) analysis parser."""
     rd_parser = subparsers.add_parser(
         "rd",
-        aliases=["regionaldamage"],
+        aliases=["localdamage"],
         help="Compute lesion overlap with brain parcellations",
         description=(
-            "RegionalDamage Analysis\n\n"
+            "LocalDamage Analysis\n\n"
             "Computes lesion overlap with brain parcellations (atlases).\n"
             "For each parcel, calculates the percentage of voxels overlapping\n"
             "with the lesion mask.\n\n"
@@ -420,8 +421,8 @@ def _build_rd_parser(subparsers) -> None:
         ),
     )
 
-    # RegionalDamage-specific options
-    g_rd = rd_parser.add_argument_group("RegionalDamage options")
+    # LocalDamage-specific options
+    g_rd = rd_parser.add_argument_group("LocalDamage options")
     g_rd.add_argument(
         "--parcel-atlases",
         nargs="+",
@@ -1147,7 +1148,7 @@ def _build_check_parser(subparsers) -> None:
             "Use 'lacuna check rd|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
             "Available checks:\n"
             "  input - Validate input masks (binary, non-empty, space)\n"
-            "  rd    - Check for parcelstats TSV files (RegionalDamage)\n"
+            "  rd    - Check for parcelstats TSV files (LocalDamage)\n"
             "  fnm   - Check for functional rmap NIfTI files\n"
             "  snm   - Check for disconnection NIfTI files\n"
             "  afnm  - Check for accelerated functional LNM parcel outputs\n\n"
@@ -1180,10 +1181,10 @@ def _build_check_rd_parser(subparsers) -> None:
     """Add the check rd subcommand parser."""
     rd_parser = subparsers.add_parser(
         "rd",
-        aliases=["regionaldamage"],
-        help="Check for RegionalDamage parcelstats outputs",
+        aliases=["localdamage"],
+        help="Check for LocalDamage parcelstats outputs",
         description=(
-            "Check which subjects have RegionalDamage parcelstats TSV outputs.\n\n"
+            "Check which subjects have LocalDamage parcelstats TSV outputs.\n\n"
             "By default, any '*method-rd*parcelstats.tsv' file in a\n"
             "subject's output directory counts as complete. If --parcel-atlases is\n"
             "given, each named atlas is checked individually.\n\n"
@@ -1196,7 +1197,7 @@ def _build_check_rd_parser(subparsers) -> None:
     )
     _add_shared_check_arguments(rd_parser)
 
-    g_rd = rd_parser.add_argument_group("RegionalDamage options")
+    g_rd = rd_parser.add_argument_group("LocalDamage options")
     g_rd.add_argument(
         "--parcel-atlases",
         nargs="+",

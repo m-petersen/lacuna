@@ -3,7 +3,7 @@ Unit tests for empty mask handling across analyses.
 
 Verifies that:
 - Empty masks (all-zero voxels) are accepted by SubjectData.
-- RegionalDamage produces valid zero-valued outputs for empty masks.
+- LocalDamage produces valid zero-valued outputs for empty masks.
 - FunctionalNetworkMapping raises EmptyMaskError for empty masks
   (zero-injection is not meaningful for correlation-based analyses).
 - StructuralNetworkMapping produces zero-valued disconnection maps.
@@ -81,8 +81,8 @@ class TestEmptyMaskSubjectData:
         assert subject.get_volume_mm3() == 0.0
 
 
-class TestEmptyMaskRegionalDamage:
-    """Tests for RegionalDamage with empty masks.
+class TestEmptyMaskLocalDamage:
+    """Tests for LocalDamage with empty masks.
 
     RD wraps ParcelAggregation with source=maskimg, aggregation=percent.
     An all-zero mask should produce 0% damage for every region.
@@ -91,13 +91,13 @@ class TestEmptyMaskRegionalDamage:
     @pytest.mark.fast
     def test_rd_empty_mask_produces_zero_parcelstats(self):
         """RD on an empty mask should produce all-zero parcel stats."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import LocalDamage
 
         subject = _make_subject(empty=True)
-        analysis = RegionalDamage()
+        analysis = LocalDamage()
         result = analysis.run(subject)
 
-        rd_results = result.results.get("RegionalDamage", {})
+        rd_results = result.results.get("LocalDamage", {})
         # Should have results (one per atlas)
         assert len(rd_results) > 0, "Expected at least one RD result"
 
@@ -114,10 +114,10 @@ class TestEmptyMaskRegionalDamage:
     @pytest.mark.fast
     def test_rd_empty_mask_keeps_subject_in_pipeline(self):
         """RD result for an empty mask should still carry through SubjectData."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import LocalDamage
 
         subject = _make_subject(empty=True)
-        analysis = RegionalDamage()
+        analysis = LocalDamage()
         result = analysis.run(subject)
 
         assert isinstance(result, SubjectData)

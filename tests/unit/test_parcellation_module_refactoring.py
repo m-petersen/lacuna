@@ -231,28 +231,28 @@ class TestParcellationClassFunctionality:
 
 
 class TestRegionalDamageLogLevel:
-    """Test RegionalDamage accepts log_level parameter (T164)."""
+    """Test LocalDamage accepts log_level parameter (T164)."""
 
     def test_regional_damage_accepts_verbose(self):
-        """Test RegionalDamage __init__ accepts verbose parameter."""
-        from lacuna.analysis import RegionalDamage
+        """Test LocalDamage __init__ accepts verbose parameter."""
+        from lacuna.analysis import LocalDamage
 
         # Should not raise
-        analysis = RegionalDamage(verbose=False)
+        analysis = LocalDamage(verbose=False)
         assert analysis.verbose is False
 
     def test_regional_damage_verbose_defaults_to_false(self):
-        """Test RegionalDamage verbose defaults to False."""
-        from lacuna.analysis import RegionalDamage
+        """Test LocalDamage verbose defaults to False."""
+        from lacuna.analysis import LocalDamage
 
-        analysis = RegionalDamage()
+        analysis = LocalDamage()
         assert analysis.verbose is False
 
     def test_regional_damage_passes_verbose_to_parent(self):
-        """Test RegionalDamage passes verbose to ParcelAggregation."""
-        from lacuna.analysis import RegionalDamage
+        """Test LocalDamage passes verbose to ParcelAggregation."""
+        from lacuna.analysis import LocalDamage
 
-        analysis = RegionalDamage(verbose=False)
+        analysis = LocalDamage(verbose=False)
         # Verify it's accessible (ParcelAggregation inherits from BaseAnalysis)
         assert hasattr(analysis, "verbose")
         assert analysis.verbose is False

@@ -293,13 +293,13 @@ def test_mask_data_dictionary_result_access(synthetic_mask_img, lesion_metadata)
         data={"region1": 0.3, "region2": 0.9},
     )
 
-    mask_data._results["RegionalDamage"] = {
+    mask_data._results["LocalDamage"] = {
         "atlas_AtlasA": result1,
         "atlas_AtlasB": result2,
     }
 
     # T018: Test dictionary access pattern
-    regional_results = mask_data.results["RegionalDamage"]
+    regional_results = mask_data.results["LocalDamage"]
     assert isinstance(regional_results, dict)
     assert "atlas_AtlasA" in regional_results
     assert "atlas_AtlasB" in regional_results

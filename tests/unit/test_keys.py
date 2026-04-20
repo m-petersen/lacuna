@@ -41,8 +41,8 @@ class TestBuildResultKey:
 
     def test_desc_with_underscore(self):
         """Build key when description contains underscore."""
-        key = build_result_key("Schaefer100", "RegionalDamage", "damagescore")
-        assert key == "atlas-Schaefer100_source-RegionalDamage_desc-damagescore"
+        key = build_result_key("Schaefer100", "LocalDamage", "damagescore")
+        assert key == "atlas-Schaefer100_source-LocalDamage_desc-damagescore"
 
     def test_all_source_names(self):
         """Build keys with all standard source names."""
@@ -50,7 +50,7 @@ class TestBuildResultKey:
             ("SubjectData", "InputMask"),  # Maps to InputMask
             ("FunctionalNetworkMapping", "FunctionalNetworkMapping"),
             ("StructuralNetworkMapping", "StructuralNetworkMapping"),
-            ("RegionalDamage", "RegionalDamage"),
+            ("LocalDamage", "LocalDamage"),
             ("ParcelAggregation", "ParcelAggregation"),
         ]
         for source, expected_source in sources:
@@ -84,10 +84,10 @@ class TestParseResultKey:
 
     def test_parse_desc_with_underscore(self):
         """Parse key when description contains underscore."""
-        result = parse_result_key("atlas-TianSubcortex_source-RegionalDamage_desc-damagescore")
+        result = parse_result_key("atlas-TianSubcortex_source-LocalDamage_desc-damagescore")
         assert result == {
             "atlas": "TianSubcortex",
-            "source": "RegionalDamage",
+            "source": "LocalDamage",
             "desc": "damagescore",
         }
 
@@ -157,8 +157,8 @@ class TestSourceAbbreviations:
         assert SOURCE_ABBREVIATIONS["StructuralNetworkMapping"] == "StructuralNetworkMapping"
 
     def test_rd_maps_to_self(self):
-        """RegionalDamage maps to itself."""
-        assert SOURCE_ABBREVIATIONS["RegionalDamage"] == "RegionalDamage"
+        """LocalDamage maps to itself."""
+        assert SOURCE_ABBREVIATIONS["LocalDamage"] == "LocalDamage"
 
     def test_pa_maps_to_self(self):
         """ParcelAggregation maps to itself."""
@@ -348,8 +348,8 @@ class TestBidsFilenameFromResultKey:
         assert bf.suffix == "connmatrix"
 
     def test_bids_key_rd(self):
-        """BIDS key with RegionalDamage source."""
-        key = "atlas-schaefer2018parcels100networks7_source-RegionalDamage_desc-damagepct"
+        """BIDS key with LocalDamage source."""
+        key = "atlas-schaefer2018parcels100networks7_source-LocalDamage_desc-damagepct"
         bf = BidsFilename.from_result_key(key, suffix="values")
         assert bf.method == "rd"
         assert bf.atlas == "schaefer2018parcels100networks7"

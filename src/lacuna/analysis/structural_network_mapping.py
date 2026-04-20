@@ -169,7 +169,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     See Also
     --------
     FunctionalNetworkMapping : Functional connectivity-based lesion network mapping
-    RegionalDamage : Atlas-based regional overlap quantification
+    LocalDamage : Atlas-based regional overlap quantification
     """
 
     #: Preferred batch processing strategy - sequential because MRtrix3's tckedit

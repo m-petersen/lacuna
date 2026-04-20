@@ -25,7 +25,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from lacuna import SubjectData, batch_process
-from lacuna.analysis import RegionalDamage
+from lacuna.analysis import LocalDamage
 from lacuna.batch.strategies import ParallelStrategy
 from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
 
@@ -87,7 +87,7 @@ def test_atlas_dir(tmp_path):
 
 @pytest.fixture
 def regional_damage_analysis(test_atlas_dir):
-    """Create RegionalDamage analysis instance with minimal test atlas."""
+    """Create LocalDamage analysis instance with minimal test atlas."""
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     atlas_dir, atlas_name = test_atlas_dir
@@ -97,7 +97,7 @@ def regional_damage_analysis(test_atlas_dir):
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=1)
 
     # Create analysis with explicit parcel_names to avoid bundled atlases that require TemplateFlow
-    return RegionalDamage(parcel_names=[atlas_name])
+    return LocalDamage(parcel_names=[atlas_name])
 
 
 # ==== Loky-specific fixtures ====
@@ -138,12 +138,12 @@ def tutorial_lesions():
 
 @pytest.fixture
 def bundled_atlas_analysis():
-    """Create RegionalDamage analysis using bundled atlas.
+    """Create LocalDamage analysis using bundled atlas.
 
     Uses schaefer2018parcels100networks7 which is bundled with the package
     and can be loaded by loky worker processes.
     """
-    return RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
+    return LocalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
 
 class TestThreadingBackend:
@@ -224,7 +224,7 @@ class TestLokyBackend:
 
         for result in results:
             assert len(result.results) > 0
-            assert "RegionalDamage" in result.results
+            assert "LocalDamage" in result.results
 
     def test_loky_backend_is_default(self, tutorial_lesions, bundled_atlas_analysis):
         """Loky should be the default backend."""

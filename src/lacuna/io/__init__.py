@@ -40,6 +40,7 @@ from .fetch import (
     fetch_dtor985,
     fetch_gsp1000,
     fetch_hcp1065,
+    fetch_ntatlas,
     get_connectome_path,
     get_data_dir,
     get_fetch_status,

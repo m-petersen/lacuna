@@ -7,7 +7,7 @@ CLI Structure:
     lacuna                          # Main entry point
     ├── fetch                       # Download normative data
     ├── run                         # Run analyses
-    │   ├── rd (regionaldamage)     # Regional damage analysis
+    │   ├── rd (localdamage)     # Regional damage analysis
     │   ├── fnm (functionalnetworkmapping)  # Functional network mapping
     │   └── snm (structuralnetworkmapping)  # Structural network mapping
     ├── collect                     # Aggregate results
@@ -91,7 +91,7 @@ class TestRunSubcommandContract:
     @pytest.mark.parametrize(
         "short,full",
         [
-            ("rd", "regionaldamage"),
+            ("rd", "localdamage"),
             ("fnm", "functionalnetworkmapping"),
             ("snm", "structuralnetworkmapping"),
         ],

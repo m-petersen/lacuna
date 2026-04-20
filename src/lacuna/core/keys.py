@@ -28,7 +28,7 @@ SOURCE_ABBREVIATIONS: dict[str, str] = {
     "InputMask": "InputMask",
     "FunctionalNetworkMapping": "FunctionalNetworkMapping",
     "StructuralNetworkMapping": "StructuralNetworkMapping",
-    "RegionalDamage": "RegionalDamage",
+    "LocalDamage": "LocalDamage",
     "ParcelAggregation": "ParcelAggregation",
     "AcceleratedFunctionalNetworkMapping": "AcceleratedFunctionalNetworkMapping",
 }
@@ -72,8 +72,8 @@ def build_result_key(atlas: str, source: str, desc: str | None = None) -> str:
     >>> build_result_key("tian2020parcels16", "SubjectData")
     'atlas-tian2020parcels16_source-InputMask'
 
-    >>> build_result_key("schaefer2018parcels200networks7", "RegionalDamage", "damagescore")
-    'atlas-schaefer2018parcels200networks7_source-RegionalDamage_desc-damagescore'
+    >>> build_result_key("schaefer2018parcels200networks7", "LocalDamage", "damagescore")
+    'atlas-schaefer2018parcels200networks7_source-LocalDamage_desc-damagescore'
     """
     # Convert source class name to appropriate abbreviation
     source_abbrev = SOURCE_ABBREVIATIONS.get(source, source)
@@ -211,7 +211,7 @@ EXPORT_SOURCE_ABBREVIATIONS = {
     "InputMask": "inputmask",
     "FunctionalNetworkMapping": "fnm",
     "StructuralNetworkMapping": "snm",
-    "RegionalDamage": "regionaldamage",
+    "LocalDamage": "localdamage",
     "ParcelAggregation": "parcelaggregation",
     "AcceleratedFunctionalNetworkMapping": "afnm",
 }
@@ -221,11 +221,11 @@ DESC_TO_SOURCE_MAPPING = {
     "inputmask": "inputmask",
     "maskimg": "inputmask",  # Legacy
     "mask_img": "inputmask",  # Legacy
-    # RegionalDamage outputs
-    "damagebin": "regionaldamage",
-    "damage_bin": "regionaldamage",
-    "damagepct": "regionaldamage",
-    "damage_pct": "regionaldamage",
+    # LocalDamage outputs
+    "damagebin": "localdamage",
+    "damage_bin": "localdamage",
+    "damagepct": "localdamage",
+    "damage_pct": "localdamage",
     # FNM outputs - correlation and derived maps
     "rmap": "fnm",
     "correlationmap": "fnm",  # Legacy alias
@@ -285,7 +285,7 @@ BIDS_SUFFIX_MAPPING = {
 METHOD_ABBREVIATIONS: dict[str, str] = {
     "FunctionalNetworkMapping": "fnm",
     "StructuralNetworkMapping": "snm",
-    "RegionalDamage": "rd",
+    "LocalDamage": "rd",
     "ParcelAggregation": "pa",
     "AcceleratedFunctionalNetworkMapping": "afnm",
 }
@@ -394,7 +394,7 @@ class BidsFilename:
             export_abbrev = EXPORT_SOURCE_ABBREVIATIONS.get(source, source.lower())
             if export_abbrev in ("fnm", "snm", "afnm"):
                 method = export_abbrev
-            elif export_abbrev == "regionaldamage":
+            elif export_abbrev == "localdamage":
                 method = "rd"
             elif export_abbrev == "parcelaggregation":
                 method = "pa"

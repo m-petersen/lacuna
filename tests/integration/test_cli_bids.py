@@ -285,15 +285,15 @@ class TestRunCommandAliases:
         )
         assert args.analysis == "rd"
 
-    def test_run_regionaldamage_alias_works(self, minimal_bids_dataset, output_dir):
-        """Test that 'run regionaldamage' alias works."""
+    def test_run_localdamage_alias_works(self, minimal_bids_dataset, output_dir):
+        """Test that 'run localdamage' alias works."""
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
         args = parser.parse_args(
             [
                 "run",
-                "regionaldamage",
+                "localdamage",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -301,7 +301,7 @@ class TestRunCommandAliases:
             ]
         )
         # Alias keeps the name used (argparse behavior)
-        assert args.analysis == "regionaldamage"
+        assert args.analysis == "localdamage"
 
     def test_run_fnm_alias_works(self, minimal_bids_dataset, output_dir, tmp_path):
         """Test that 'run fnm' alias works (requires --connectome-path)."""

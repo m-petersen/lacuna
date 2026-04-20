@@ -180,7 +180,7 @@ class ParcelAggregation(BaseAnalysis):
 
     See Also
     --------
-    RegionalDamage : Convenience wrapper for lesion overlap analysis
+    LocalDamage : Convenience wrapper for lesion overlap analysis
     BaseAnalysis : Parent class defining analysis interface
     """
 

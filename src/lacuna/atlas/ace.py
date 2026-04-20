@@ -1,8 +1,8 @@
 """ACE (Atlas Connectivity Enrichment).
 
-An atlas-agnostic framework for enriching spatial atlas maps with functional
-connectivity information. Generalizes the REACT approach (Dipasquale et al.,
-2019, NeuroImage) to arbitrary voxel atlases.
+A framework for enriching spatial atlas maps with functional
+connectivity information. Represents an abstraction of the REACT approach 
+(Dipasquale et al., 2019, NeuroImage).
 
 Stage 1: Regress BOLD spatial patterns onto atlas maps -> atlas-weighted timeseries
 Stage 2: Regress BOLD timeseries onto atlas timeseries -> enriched spatial maps

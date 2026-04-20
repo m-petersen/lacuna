@@ -272,8 +272,8 @@ class TestRunSubcommandParsing:
 class TestRunAliases:
     """Tests for analysis type aliases."""
 
-    def test_regionaldamage_alias(self, tmp_path):
-        """Test that 'regionaldamage' alias works."""
+    def test_localdamage_alias(self, tmp_path):
+        """Test that 'localdamage' alias works."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
@@ -281,7 +281,7 @@ class TestRunAliases:
         args = parser.parse_args(
             [
                 "run",
-                "regionaldamage",
+                "localdamage",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -290,7 +290,7 @@ class TestRunAliases:
         )
 
         # Argparse uses the subcommand name as-is, alias maps to full name
-        assert args.analysis == "regionaldamage"
+        assert args.analysis == "localdamage"
 
     def test_functionalnetworkmapping_alias(self, tmp_path):
         """Test that 'functionalnetworkmapping' alias works."""

@@ -68,7 +68,7 @@ def create_provenance_record(
     Parameters
     ----------
     function : str
-        Fully qualified function name (e.g., 'lacuna.analysis.RegionalDamage').
+        Fully qualified function name (e.g., 'lacuna.analysis.LocalDamage').
     parameters : dict
         Function parameters (must be JSON-serializable).
     version : str
@@ -89,12 +89,12 @@ def create_provenance_record(
     Examples
     --------
     >>> record = create_provenance_record(
-    ...     function="lacuna.analysis.RegionalDamage",
+    ...     function="lacuna.analysis.LocalDamage",
     ...     parameters={"parcel_names": ["schaefer2018parcels100networks7"]},
     ...     version="0.1.0",
     ... )
     >>> record['function']
-    'lacuna.analysis.RegionalDamage'
+    'lacuna.analysis.LocalDamage'
     """
     # Validate parameters are serializable
     try:

@@ -19,7 +19,7 @@ FunctionalNetworkMapping
     Functional lesion network mapping analysis.
 ParcelAggregation
     Aggregate voxel-wise results to parcels.
-RegionalDamage
+LocalDamage
     Regional damage analysis.
 StructuralNetworkMapping
     Structural lesion network mapping analysis.
@@ -31,7 +31,7 @@ Examples
 ...     print(f"{name}: {cls.batch_strategy}")
 FunctionalNetworkMapping: vectorized
 ParcelAggregation: parallel
-RegionalDamage: parallel
+LocalDamage: parallel
 StructuralNetworkMapping: parallel
 
 >>> FNM = get_analysis("FunctionalNetworkMapping")
@@ -51,7 +51,7 @@ from lacuna.analysis.parcel_aggregation import ParcelAggregation
 from lacuna.analysis.structural_neurotransmitter_mapping import (
     StructuralNeurotransmitterMapping,
 )
-from lacuna.analysis.regional_damage import RegionalDamage
+from lacuna.analysis.local_damage import LocalDamage
 from lacuna.analysis.registry import get_analysis, list_analyses
 from lacuna.analysis.structural_network_mapping import StructuralNetworkMapping
 
@@ -63,7 +63,7 @@ __all__ = [
     "BaseAnalysis",
     "ParcelAggregation",
     "FunctionalNetworkMapping",
-    "RegionalDamage",
+    "LocalDamage",
     "AcceleratedFunctionalNetworkMapping",
     "LocalNeurotransmitterMapping",
     "StructuralNeurotransmitterMapping",

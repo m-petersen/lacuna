@@ -32,7 +32,7 @@ class TestAnalysisAutoDiscovery:
         expected = [
             "FunctionalNetworkMapping",
             "ParcelAggregation",
-            "RegionalDamage",
+            "LocalDamage",
             "StructuralNetworkMapping",
         ]
 
@@ -61,7 +61,7 @@ class TestAnalysisAutoDiscovery:
         from lacuna.analysis import get_analysis
 
         # Get each known analysis
-        for name in ["FunctionalNetworkMapping", "RegionalDamage", "ParcelAggregation"]:
+        for name in ["FunctionalNetworkMapping", "LocalDamage", "ParcelAggregation"]:
             cls = get_analysis(name)
             assert cls.__name__ == name
 
@@ -69,9 +69,9 @@ class TestAnalysisAutoDiscovery:
         """Test that discovered analyses can be instantiated."""
         from lacuna.analysis import get_analysis
 
-        # Get and instantiate RegionalDamage (simplest one)
-        RegionalDamage = get_analysis("RegionalDamage")
-        instance = RegionalDamage()
+        # Get and instantiate LocalDamage (simplest one)
+        LocalDamage = get_analysis("LocalDamage")
+        instance = LocalDamage()
 
         assert instance is not None
         assert hasattr(instance, "run")

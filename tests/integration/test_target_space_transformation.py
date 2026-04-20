@@ -195,7 +195,7 @@ def test_target_space_class_attributes_exist():
     from lacuna.analysis import (
         FunctionalNetworkMapping,
         ParcelAggregation,
-        RegionalDamage,
+        LocalDamage,
         StructuralNetworkMapping,
     )
 
@@ -214,9 +214,9 @@ def test_target_space_class_attributes_exist():
     assert ParcelAggregation.TARGET_SPACE is None
     assert ParcelAggregation.TARGET_RESOLUTION is None
 
-    # RegionalDamage inherits from ParcelAggregation
-    assert RegionalDamage.TARGET_SPACE is None
-    assert RegionalDamage.TARGET_RESOLUTION is None
+    # LocalDamage inherits from ParcelAggregation
+    assert LocalDamage.TARGET_SPACE is None
+    assert LocalDamage.TARGET_RESOLUTION is None
 
 
 def test_error_when_lesion_missing_space_metadata():

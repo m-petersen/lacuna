@@ -53,7 +53,7 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
         "n_voxels": 312,
         "regions_affected": ["Frontal_Sup_L", "Frontal_Mid_L"],
     }
-    lesion_with_results = mask_data.add_result("RegionalDamage", results)
+    lesion_with_results = mask_data.add_result("LocalDamage", results)
 
     # Add provenance
     prov = create_provenance_record(

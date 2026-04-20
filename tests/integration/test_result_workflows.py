@@ -45,7 +45,7 @@ def test_multiple_analyses_result_access(synthetic_mask_img):
     """Test accessing results from multiple sequential analyses."""
     from lacuna import SubjectData
     from lacuna.analysis.parcel_aggregation import ParcelAggregation
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
 
     mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
@@ -53,15 +53,15 @@ def test_multiple_analyses_result_access(synthetic_mask_img):
 
     # Run two different analyses using registered parcellation
     result = ParcelAggregation(parcel_names=["tian2020parcels16"]).run(mask_data)
-    result = RegionalDamage(parcel_names=["tian2020parcels16"]).run(result)
+    result = LocalDamage(parcel_names=["tian2020parcels16"]).run(result)
 
     # Both analyses should have results
     assert "ParcelAggregation" in result.results
-    assert "RegionalDamage" in result.results
+    assert "LocalDamage" in result.results
 
     # Attribute access for both
     atlas_agg_results = result.ParcelAggregation
-    regional_damage_results = result.RegionalDamage
+    regional_damage_results = result.LocalDamage
 
     assert isinstance(atlas_agg_results, dict)
     assert isinstance(regional_damage_results, dict)

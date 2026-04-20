@@ -163,14 +163,14 @@ class TestAnalysisProvenance:
     ):
         """BaseAnalysis._create_provenance() should include package version."""
         from lacuna import SubjectData, __version__
-        from lacuna.analysis.regional_damage import RegionalDamage
+        from lacuna.analysis.local_damage import LocalDamage
 
         mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2},
         )
 
-        analysis = RegionalDamage(parcel_names=[local_test_atlas])
+        analysis = LocalDamage(parcel_names=[local_test_atlas])
         result = analysis.run(mask_data)
 
         # Check provenance was created
@@ -183,24 +183,24 @@ class TestAnalysisProvenance:
         # Should include version from package
         assert latest_prov["version"] == __version__
         assert latest_prov["version"] != "0.1.0"  # Not hardcoded
-        assert "RegionalDamage" in latest_prov["function"]
+        assert "LocalDamage" in latest_prov["function"]
 
     def test_all_analyses_use_package_version(self, synthetic_mask_img, local_test_atlas):
         """All analysis classes should use package version in provenance."""
         from lacuna import SubjectData, __version__
         from lacuna.analysis.parcel_aggregation import ParcelAggregation
-        from lacuna.analysis.regional_damage import RegionalDamage
+        from lacuna.analysis.local_damage import LocalDamage
 
         mask_data = SubjectData(
             mask_img=synthetic_mask_img,
             metadata={"space": "MNI152NLin6Asym", "resolution": 2},
         )
 
-        # Test RegionalDamage
-        rd = RegionalDamage(parcel_names=[local_test_atlas])
+        # Test LocalDamage
+        rd = LocalDamage(parcel_names=[local_test_atlas])
         rd_result = rd.run(mask_data)
         assert rd_result.provenance[-1]["version"] == __version__
-        assert "RegionalDamage" in rd_result.provenance[-1]["function"]
+        assert "LocalDamage" in rd_result.provenance[-1]["function"]
 
         # Test ParcelAggregation
         pa = ParcelAggregation(parcel_names=[local_test_atlas])

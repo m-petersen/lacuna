@@ -326,9 +326,9 @@ class TestAtlasTransformation:
     @pytest.mark.slow
     @pytest.mark.requires_templateflow
     def test_regional_damage_with_space_mismatch(self):
-        """RegionalDamage should handle lesion/atlas in different spaces."""
+        """LocalDamage should handle lesion/atlas in different spaces."""
         from lacuna import SubjectData
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import LocalDamage
 
         # Create lesion in NLin6Asym space
         mask_data = np.random.rand(182, 218, 182) > 0.9
@@ -342,11 +342,11 @@ class TestAtlasTransformation:
 
         # Run analysis - should automatically transform atlas to match
         # Note: This is an integration test that requires actual atlases
-        analysis = RegionalDamage()
+        analysis = LocalDamage()
 
         # Should not raise error even with space mismatch
         result = analysis.run(lesion)
-        assert "RegionalDamage" in result.results
+        assert "LocalDamage" in result.results
 
 
 class TestAsyncioCompatibility:

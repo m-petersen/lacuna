@@ -890,7 +890,7 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
     filepath : Path
         Path to the output file to check.
     analysis_type : str
-        Analysis type: 'rd', 'regionaldamage', 'fnm', 'functionalnetworkmapping',
+        Analysis type: 'rd', 'localdamage', 'fnm', 'functionalnetworkmapping',
         'snm', or 'structuralnetworkmapping'.
 
     Returns
@@ -902,7 +902,7 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
 
     norm = analysis_type.lower()
 
-    if norm in ("rd", "regionaldamage"):
+    if norm in ("rd", "ld", "localdamage"):
         # Read TSV and check if all numeric columns are zero
         try:
             import pandas as pd
@@ -973,7 +973,7 @@ def _check_subject_complete(
     label_glob = f"*label-{label}_*" if label else "*"
 
     if not anat_dir.exists():
-        if norm in ("rd", "regionaldamage"):
+        if norm in ("rd", "ld", "localdamage"):
             sentinel = f"{label_glob}method-rd*parcelstats.tsv"
         elif norm in ("fnm", "functionalnetworkmapping"):
             sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
@@ -985,7 +985,7 @@ def _check_subject_complete(
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
 
-    if norm in ("rd", "regionaldamage"):
+    if norm in ("rd", "ld", "localdamage"):
         all_matches = list(anat_dir.glob(f"{label_glob}method-rd*parcelstats.tsv"))
         if parcel_atlases:
             missing = []
@@ -1298,7 +1298,7 @@ def _register_connectome_from_path(
     # Get the path from --connectome-path
     connectome_path_str = analysis_options.pop("_connectome_path", None)
     if not connectome_path_str:
-        # No connectome needed for this analysis (e.g., RegionalDamage)
+        # No connectome needed for this analysis (e.g., LocalDamage)
         return
 
     connectome_path = Path(connectome_path_str)
@@ -1446,7 +1446,7 @@ def _register_custom_parcellations(
             existing = [existing]
         analysis_options["parcellation_name"] = existing + registered_names
     else:
-        # RegionalDamage and FNM post-processing both use parcel_names
+        # LocalDamage and FNM post-processing both use parcel_names
         existing = analysis_options.get("parcel_names") or []
         analysis_options["parcel_names"] = existing + registered_names
 
@@ -1464,8 +1464,9 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
     # Map analysis names to class names
     analysis_name_map = {
-        "rd": "RegionalDamage",
-        "regionaldamage": "RegionalDamage",
+        "rd": "LocalDamage",
+        "localdamage": "LocalDamage",
+        "ld": "LocalDamage",
         "fnm": "FunctionalNetworkMapping",
         "functionalnetworkmapping": "FunctionalNetworkMapping",
         "snm": "StructuralNetworkMapping",

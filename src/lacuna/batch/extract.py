@@ -117,7 +117,7 @@ def extract(
         - dict[SubjectData, dict]: BatchResults format with {subject: results}
     analysis : str or None
         Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
-        "RegionalDamage"). This filters by the top-level namespace in results.
+        "LocalDamage"). This filters by the top-level namespace in results.
     pattern : str or None
         Glob pattern to match result keys (e.g., "*rmap*",
         "parc-Schaefer*_desc-*"). Supports fnmatch-style wildcards:

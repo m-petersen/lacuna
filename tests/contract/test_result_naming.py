@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, LocalDamage
 
 
 class TestBIDSStyleResultKeys:
@@ -61,7 +61,7 @@ class TestBIDSStyleResultKeys:
             assert not key.startswith("parc-"), f"Old format 'parc-' found in key: {key}"
 
     def test_regional_damage_uses_bids_style_keys(self):
-        """RegionalDamage should generate BIDS-style keys.
+        """LocalDamage should generate BIDS-style keys.
 
         Format: atlas-{atlas}_source-InputMask
         """
@@ -77,13 +77,13 @@ class TestBIDSStyleResultKeys:
         )
 
         # Run analysis
-        analysis = RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
+        analysis = LocalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
         result = analysis.run(mask_data)
 
         # Check BIDS-style naming
-        assert "RegionalDamage" in result.results
-        damage_results = result.results["RegionalDamage"]
+        assert "LocalDamage" in result.results
+        damage_results = result.results["LocalDamage"]
 
         # Check key format
         for key in damage_results.keys():

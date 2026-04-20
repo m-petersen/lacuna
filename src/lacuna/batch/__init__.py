@@ -16,7 +16,7 @@ Key Components
 Examples
 --------
 >>> from lacuna.batch import batch_process
->>> from lacuna.analysis import RegionalDamage
+>>> from lacuna.analysis import LocalDamage
 >>> from lacuna.io import load_bids_dataset
 >>>
 >>> # Load subjects
@@ -24,7 +24,7 @@ Examples
 >>> lesions = list(dataset.values())
 >>>
 >>> # Batch process with automatic optimization
->>> analysis = RegionalDamage()
+>>> analysis = LocalDamage()
 >>> results = batch_process(lesions, analysis)
 >>>
 >>> # Process with specific number of cores

@@ -106,7 +106,7 @@ class TestAnalyzeContractSteps:
         )
 
         # Should accept dict
-        result = analyze(subject, steps={"RegionalDamage": None}, verbose=False)
+        result = analyze(subject, steps={"LocalDamage": None}, verbose=False)
         assert result is not None
 
     @pytest.mark.slow
@@ -129,8 +129,8 @@ class TestAnalyzeContractSteps:
             resolution=2.0,
         )
 
-        result = analyze(subject, steps={"RegionalDamage": None}, verbose=False)
-        assert "RegionalDamage" in result.results
+        result = analyze(subject, steps={"LocalDamage": None}, verbose=False)
+        assert "LocalDamage" in result.results
 
 
 class TestAnalyzeBasicBehavior:
@@ -163,7 +163,7 @@ class TestAnalyzeBasicBehavior:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
+        result = analyze(simple_subject, steps={"LocalDamage": None}, verbose=False)
 
         assert isinstance(result, SubjectData)
 
@@ -172,9 +172,9 @@ class TestAnalyzeBasicBehavior:
         """Test that analyze adds results to SubjectData."""
         from lacuna import analyze
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
+        result = analyze(simple_subject, steps={"LocalDamage": None}, verbose=False)
 
-        # Should have at least RegionalDamage results
+        # Should have at least LocalDamage results
         assert result.results is not None
         assert len(result.results) > 0
 
@@ -184,7 +184,7 @@ class TestAnalyzeBasicBehavior:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        results = analyze([simple_subject], steps={"RegionalDamage": None}, verbose=False)
+        results = analyze([simple_subject], steps={"LocalDamage": None}, verbose=False)
 
         assert isinstance(results, list)
         assert len(results) == 1
@@ -220,7 +220,7 @@ class TestAnalyzeReturnType:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
+        result = analyze(simple_subject, steps={"LocalDamage": None}, verbose=False)
 
         assert isinstance(result, SubjectData)
         assert not isinstance(result, list)
@@ -232,7 +232,7 @@ class TestAnalyzeReturnType:
 
         results = analyze(
             [simple_subject, simple_subject],
-            steps={"RegionalDamage": None},
+            steps={"LocalDamage": None},
             verbose=False,
         )
 

@@ -9,7 +9,7 @@
 [![Documentation](https://img.shields.io/badge/docs-m--petersen.github.io%2Flacuna-blue)](https://m-petersen.github.io/lacuna)
 [![status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/m-petersen/lacuna)
 
-A scientific Python package for advanced brain lesion analysis. Lacuna bridges the gap between individual lesion masks and normative brain data, providing a reproducible workflow for lesion network mapping and regional damage quantification.
+A scientific Python package for advanced brain lesion analysis. Lacuna bridges the gap between individual lesion masks and normative brain data.
 
 > **Warning**
 > Lacuna is under active development and not yet stable. APIs may change without notice. Use in research at your own discretion.

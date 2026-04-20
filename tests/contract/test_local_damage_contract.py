@@ -1,5 +1,5 @@
 """
-Contract tests for RegionalDamage analysis class.
+Contract tests for LocalDamage analysis class.
 
 Tests the interface and behavior requirements for lesion-atlas overlap
 quantification following the BaseAnalysis contract.
@@ -11,45 +11,45 @@ from lacuna.core.keys import build_result_key
 
 
 def test_regional_damage_import():
-    """Test that RegionalDamage can be imported."""
-    from lacuna.analysis.regional_damage import RegionalDamage
+    """Test that LocalDamage can be imported."""
+    from lacuna.analysis.local_damage import LocalDamage
 
-    assert RegionalDamage is not None
+    assert LocalDamage is not None
 
 
 def test_regional_damage_inherits_base_analysis():
-    """Test that RegionalDamage inherits from BaseAnalysis."""
+    """Test that LocalDamage inherits from BaseAnalysis."""
     from lacuna.analysis.base import BaseAnalysis
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
 
-    assert issubclass(RegionalDamage, BaseAnalysis)
+    assert issubclass(LocalDamage, BaseAnalysis)
 
 
 def test_regional_damage_can_instantiate():
-    """Test that RegionalDamage can be instantiated."""
-    from lacuna.analysis.regional_damage import RegionalDamage
+    """Test that LocalDamage can be instantiated."""
+    from lacuna.analysis.local_damage import LocalDamage
 
-    analysis = RegionalDamage()
+    analysis = LocalDamage()
     assert analysis is not None
     # Uses atlas registry, no atlas_dir parameter
 
 
 def test_regional_damage_has_run_method():
-    """Test that RegionalDamage has the run() method from BaseAnalysis."""
-    from lacuna.analysis.regional_damage import RegionalDamage
+    """Test that LocalDamage has the run() method from BaseAnalysis."""
+    from lacuna.analysis.local_damage import LocalDamage
 
-    analysis = RegionalDamage()
+    analysis = LocalDamage()
     assert hasattr(analysis, "run")
     assert callable(analysis.run)
 
 
 def test_regional_damage_validates_atlas_available(synthetic_mask_img):
-    """Test that RegionalDamage validates requested atlas exists."""
+    """Test that LocalDamage validates requested atlas exists."""
     from lacuna import SubjectData
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
 
     # Request a nonexistent atlas
-    analysis = RegionalDamage(parcel_names=["NonExistentAtlas123"])
+    analysis = LocalDamage(parcel_names=["NonExistentAtlas123"])
     mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
@@ -60,11 +60,11 @@ def test_regional_damage_validates_atlas_available(synthetic_mask_img):
 
 
 def test_regional_damage_uses_atlas_registry(tmp_path):
-    """Test that RegionalDamage uses the atlas registry."""
+    """Test that LocalDamage uses the atlas registry."""
     import nibabel as nib
     import numpy as np
 
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
     from lacuna.assets.parcellations.registry import (
         list_parcellations,
         register_parcellations_from_directory,
@@ -84,12 +84,12 @@ def test_regional_damage_uses_atlas_registry(tmp_path):
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=2)
 
     # Should be able to instantiate and find atlases
-    RegionalDamage()
+    LocalDamage()
     assert len(list_parcellations()) > 0
 
 
 def test_regional_damage_requires_binary_mask(synthetic_mask_img, tmp_path):
-    """Test that RegionalDamage requires binary lesion mask."""
+    """Test that LocalDamage requires binary lesion mask."""
     import nibabel as nib
     import numpy as np
 
@@ -123,7 +123,7 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
     import numpy as np
 
     from lacuna import SubjectData
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
@@ -146,14 +146,14 @@ def test_regional_damage_returns_mask_data(synthetic_mask_img, tmp_path):
     )
 
     # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
-    analysis = RegionalDamage(parcel_names=["test_atlas"])
+    analysis = LocalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
     # Should return SubjectData
     assert isinstance(result, SubjectData)
 
     # Should have namespaced results
-    assert "RegionalDamage" in result.results
+    assert "LocalDamage" in result.results
 
 
 def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
@@ -162,7 +162,7 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     import numpy as np
 
     from lacuna import SubjectData
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
@@ -181,14 +181,14 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
     )
 
     # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
-    analysis = RegionalDamage(parcel_names=["test_atlas"])
+    analysis = LocalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
-    # Format: atlas-{atlas}_source-RegionalDamage_desc-damagepct / damagebin
-    atlas_results = result.results["RegionalDamage"]
-    pct_key = build_result_key("test_atlas", "RegionalDamage", "damagepct")
-    bin_key = build_result_key("test_atlas", "RegionalDamage", "damagebin")
+    # Format: atlas-{atlas}_source-LocalDamage_desc-damagepct / damagebin
+    atlas_results = result.results["LocalDamage"]
+    pct_key = build_result_key("test_atlas", "LocalDamage", "damagepct")
+    bin_key = build_result_key("test_atlas", "LocalDamage", "damagebin")
     assert pct_key in atlas_results
     assert bin_key in atlas_results
 
@@ -212,12 +212,12 @@ def test_regional_damage_result_structure(synthetic_mask_img, tmp_path):
 
 
 def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path):
-    """Test that RegionalDamage can handle both 3D and 4D atlases."""
+    """Test that LocalDamage can handle both 3D and 4D atlases."""
     import nibabel as nib
     import numpy as np
 
     from lacuna import SubjectData
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     atlas_dir = tmp_path / "atlases"
@@ -243,23 +243,23 @@ def test_regional_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path)
     )
 
     # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
-    analysis = RegionalDamage(parcel_names=["atlas_3d", "atlas_4d"])
+    analysis = LocalDamage(parcel_names=["atlas_3d", "atlas_4d"])
     result = analysis.run(mask_data)
 
     # Results are returned as dict with BIDS-style keys
-    # Format: atlas-{atlas}_source-RegionalDamage_desc-damagepct / damagebin
-    atlas_results = result.results["RegionalDamage"]
-    assert build_result_key("atlas_3d", "RegionalDamage", "damagepct") in atlas_results
-    assert build_result_key("atlas_4d", "RegionalDamage", "damagepct") in atlas_results
-    assert build_result_key("atlas_3d", "RegionalDamage", "damagebin") in atlas_results
-    assert build_result_key("atlas_4d", "RegionalDamage", "damagebin") in atlas_results
+    # Format: atlas-{atlas}_source-LocalDamage_desc-damagepct / damagebin
+    atlas_results = result.results["LocalDamage"]
+    assert build_result_key("atlas_3d", "LocalDamage", "damagepct") in atlas_results
+    assert build_result_key("atlas_4d", "LocalDamage", "damagepct") in atlas_results
+    assert build_result_key("atlas_3d", "LocalDamage", "damagebin") in atlas_results
+    assert build_result_key("atlas_4d", "LocalDamage", "damagebin") in atlas_results
 
     # Each atlas should have its own ParcelData for both pct and binary
     results_3d = atlas_results[
-        build_result_key("atlas_3d", "RegionalDamage", "damagepct")
+        build_result_key("atlas_3d", "LocalDamage", "damagepct")
     ].get_data()
     results_4d = atlas_results[
-        build_result_key("atlas_4d", "RegionalDamage", "damagepct")
+        build_result_key("atlas_4d", "LocalDamage", "damagepct")
     ].get_data()
     assert len(results_3d) > 0
     assert len(results_4d) > 0
@@ -271,7 +271,7 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
     import numpy as np
 
     from lacuna import SubjectData
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
@@ -289,12 +289,12 @@ def test_regional_damage_preserves_input_immutability(synthetic_mask_img, tmp_pa
     original_results = mask_data.results.copy()
 
     # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
-    analysis = RegionalDamage(parcel_names=["test_immut"])
+    analysis = LocalDamage(parcel_names=["test_immut"])
     result = analysis.run(mask_data)
 
     # Input should not be modified
     assert mask_data.results == original_results
-    assert "RegionalDamage" not in mask_data.results
+    assert "LocalDamage" not in mask_data.results
 
     # Result should be different object
     assert result is not mask_data
@@ -306,7 +306,7 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     import numpy as np
 
     from lacuna import SubjectData
-    from lacuna.analysis.regional_damage import RegionalDamage
+    from lacuna.analysis.local_damage import LocalDamage
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     # Create mock atlas and register it
@@ -324,7 +324,7 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
     original_prov_len = len(mask_data.provenance)
 
     # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
-    analysis = RegionalDamage(parcel_names=["test_prov"])
+    analysis = LocalDamage(parcel_names=["test_prov"])
     result = analysis.run(mask_data)
 
     # Should have added provenance
@@ -332,4 +332,4 @@ def test_regional_damage_adds_provenance(synthetic_mask_img, tmp_path):
 
     # Latest provenance should reference the analysis
     latest_prov = result.provenance[-1]
-    assert "RegionalDamage" in latest_prov["function"]
+    assert "LocalDamage" in latest_prov["function"]

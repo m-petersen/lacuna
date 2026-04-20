@@ -73,10 +73,10 @@ class TestPipelineAddMethod:
     def test_add_returns_self(self):
         """Test that add returns self for chaining."""
         from lacuna import Pipeline
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import LocalDamage
 
         pipeline = Pipeline()
-        result = pipeline.add(RegionalDamage())
+        result = pipeline.add(LocalDamage())
 
         assert result is pipeline
 
@@ -191,12 +191,12 @@ class TestPipelineProtocol:
     def test_pipeline_has_len(self):
         """Test that Pipeline supports len()."""
         from lacuna import Pipeline
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import LocalDamage
 
         pipeline = Pipeline()
         assert len(pipeline) == 0
 
-        pipeline.add(RegionalDamage())
+        pipeline.add(LocalDamage())
         assert len(pipeline) == 1
 
     def test_pipeline_has_repr(self):

@@ -1275,7 +1275,7 @@ def aggregate_parcelstats(
     label_filter : str, optional
         Filter by mask label (e.g., 'lesion', 'WMH').
     analysis_filter : str, optional
-        Filter by analysis type (e.g., 'RegionalDamage', 'FunctionalNetworkMapping').
+        Filter by analysis type (e.g., 'LocalDamage', 'FunctionalNetworkMapping').
 
     Returns
     -------
@@ -1339,8 +1339,8 @@ def aggregate_parcelstats(
         # - method_kw: exact match against method / source BIDS entities
         # - desc_kw:   substring match against the desc entity
         _analysis_patterns: dict[str, tuple[list[str], list[str]]] = {
-            "regionaldamage": (["rd", "regionaldamage"], []),
-            "rd": (["rd", "regionaldamage"], []),
+            "localdamage": (["rd", "localdamage"], []),
+            "rd": (["rd", "localdamage"], []),
             "functionalnetworkmapping": (
                 ["fnm", "functionalnetworkmapping"],
                 ["rmap", "tmap", "zmap"],

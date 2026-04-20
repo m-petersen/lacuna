@@ -4,7 +4,7 @@ Tests cover:
 1. ParcellationMetadata with is_4d field
 2. Automatic detection of 4D atlases during registration
 3. 4D atlas transformation (volume-by-volume)
-4. 4D atlas aggregation in RegionalDamage
+4. 4D atlas aggregation in LocalDamage
 5. Mixed 3D and 4D atlas usage
 """
 
@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from lacuna import SubjectData
-from lacuna.analysis import RegionalDamage
+from lacuna.analysis import LocalDamage
 from lacuna.assets.parcellations.registry import (
     ParcellationMetadata,
     register_parcellation,
@@ -355,7 +355,7 @@ class Test4DParcelAggregation:
     """Test atlas aggregation with 4D atlases."""
 
     def test_regional_damage_with_4d_atlas(self, tmp_path):
-        """RegionalDamage should work with 4D atlases."""
+        """LocalDamage should work with 4D atlases."""
         # Create lesion
         mask_data = np.zeros((20, 20, 20))
         mask_data[8:12, 8:12, 8:12] = 1
@@ -395,14 +395,14 @@ class Test4DParcelAggregation:
             )
             register_parcellation(metadata)
 
-            # Run RegionalDamage with 4D atlas
-            analysis = RegionalDamage(parcel_names=["Test4DAtlas_Aggregation"])
+            # Run LocalDamage with 4D atlas
+            analysis = LocalDamage(parcel_names=["Test4DAtlas_Aggregation"])
 
             result = analysis.run(lesion)
 
             # Check results - using BIDS-style keys
-            damage_results = result.results["RegionalDamage"]
-            expected_key = "atlas-Test4DAtlas_Aggregation_source-RegionalDamage_desc-damagepct"
+            damage_results = result.results["LocalDamage"]
+            expected_key = "atlas-Test4DAtlas_Aggregation_source-LocalDamage_desc-damagepct"
             assert expected_key in damage_results
 
             # Get region data
@@ -459,13 +459,13 @@ class Test4DParcelAggregation:
             )
             register_parcellation(metadata)
 
-            analysis = RegionalDamage(parcel_names=["Test4D_VaryingOverlap"])
+            analysis = LocalDamage(parcel_names=["Test4D_VaryingOverlap"])
 
             result = analysis.run(lesion)
-            damage_results = result.results["RegionalDamage"]
+            damage_results = result.results["LocalDamage"]
 
             # Verify we got results for the atlas (BIDS-style naming)
-            expected_key = build_result_key("Test4D_VaryingOverlap", "RegionalDamage", "damagepct")
+            expected_key = build_result_key("Test4D_VaryingOverlap", "LocalDamage", "damagepct")
             assert expected_key in damage_results
             region_data = damage_results[expected_key].get_data()
             assert len(region_data) > 0
@@ -484,7 +484,7 @@ class TestMixed3DAnd4DAtlases:
     """Test using both 3D and 4D atlases together."""
 
     def test_regional_damage_with_mixed_atlases(self, tmp_path):
-        """RegionalDamage should handle mix of 3D and 4D atlases."""
+        """LocalDamage should handle mix of 3D and 4D atlases."""
         # Create lesion
         mask_data = np.zeros((20, 20, 20))
         mask_data[8:12, 8:12, 8:12] = 1
@@ -545,14 +545,14 @@ class TestMixed3DAnd4DAtlases:
             register_parcellation(metadata_4d)
 
             # Run with both atlases
-            analysis = RegionalDamage(parcel_names=["Mixed3D", "Mixed4D"])
+            analysis = LocalDamage(parcel_names=["Mixed3D", "Mixed4D"])
 
             result = analysis.run(lesion)
-            damage_results = result.results["RegionalDamage"]
+            damage_results = result.results["LocalDamage"]
 
             # Should have results from both atlases (BIDS-style keys)
-            key_3d = build_result_key("Mixed3D", "RegionalDamage", "damagepct")
-            key_4d = build_result_key("Mixed4D", "RegionalDamage", "damagepct")
+            key_3d = build_result_key("Mixed3D", "LocalDamage", "damagepct")
+            key_4d = build_result_key("Mixed4D", "LocalDamage", "damagepct")
             assert key_3d in damage_results
             assert key_4d in damage_results
 
@@ -571,10 +571,10 @@ class TestMixed3DAnd4DAtlases:
 
 
 class TestRegionalDamageOutputAPI:
-    """Test correct usage of RegionalDamage output API."""
+    """Test correct usage of LocalDamage output API."""
 
     def test_regional_damage_returns_roi_result_list(self, tmp_path):
-        """RegionalDamage should return list of ParcelData objects, not dict."""
+        """LocalDamage should return list of ParcelData objects, not dict."""
         # Create lesion
         mask_data = np.zeros((20, 20, 20))
         mask_data[8:12, 8:12, 8:12] = 1
@@ -610,18 +610,18 @@ class TestRegionalDamageOutputAPI:
             )
             register_parcellation(metadata)
 
-            analysis = RegionalDamage(parcel_names=["TestOutputAPI"])
+            analysis = LocalDamage(parcel_names=["TestOutputAPI"])
 
             result = analysis.run(lesion)
-            damage_results = result.results["RegionalDamage"]
+            damage_results = result.results["LocalDamage"]
 
             # NEW API: damage_results is a dict with BIDS-style keys
             assert isinstance(
                 damage_results, dict
-            ), "RegionalDamage results should be a dict, not list"
+            ), "LocalDamage results should be a dict, not list"
 
             # Should have the atlas with BIDS-style key
-            expected_key = build_result_key("TestOutputAPI", "RegionalDamage", "damagepct")
+            expected_key = build_result_key("TestOutputAPI", "LocalDamage", "damagepct")
             assert expected_key in damage_results
 
             # Get the ROI result

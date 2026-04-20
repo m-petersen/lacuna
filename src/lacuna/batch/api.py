@@ -152,7 +152,7 @@ def batch_process(
     Basic usage with automatic optimization:
 
     >>> from lacuna import batch_process
-    >>> from lacuna.analysis import RegionalDamage
+    >>> from lacuna.analysis import LocalDamage
     >>> from lacuna.io import load_bids_dataset
     >>>
     >>> # Load subjects
@@ -160,7 +160,7 @@ def batch_process(
     >>> lesions = list(dataset.values())
     >>>
     >>> # Process with automatic strategy selection
-    >>> analysis = RegionalDamage()
+    >>> analysis = LocalDamage()
     >>> results = batch_process(lesions, analysis)
     >>> print(f"Processed {len(results)} subjects")
 
@@ -186,10 +186,10 @@ def batch_process(
 
     Chain multiple analyses:
 
-    >>> from lacuna.analysis import RegionalDamage, ParcelAggregation
+    >>> from lacuna.analysis import LocalDamage, ParcelAggregation
     >>>
     >>> # First analysis
-    >>> regional = RegionalDamage()
+    >>> regional = LocalDamage()
     >>> after_regional = batch_process(lesions, regional)
     >>>
     >>> # Second analysis on results

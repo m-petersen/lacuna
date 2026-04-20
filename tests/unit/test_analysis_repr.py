@@ -6,7 +6,7 @@ from pathlib import Path
 from lacuna.analysis import (
     FunctionalNetworkMapping,
     ParcelAggregation,
-    RegionalDamage,
+    LocalDamage,
     StructuralNetworkMapping,
 )
 from lacuna.assets.connectomes import (
@@ -336,20 +336,20 @@ class TestStructuralNetworkMappingRepr:
 
 
 class TestRegionalDamageRepr:
-    """Tests for RegionalDamage __repr__ and __str__."""
+    """Tests for LocalDamage __repr__ and __str__."""
 
     def test_repr_basic(self):
         """Test __repr__ with basic parameters."""
-        analysis = RegionalDamage()
+        analysis = LocalDamage()
 
         repr_str = repr(analysis)
 
-        assert "RegionalDamage(" in repr_str
-        assert "analysis_type='RegionalDamage'" in repr_str
+        assert "LocalDamage(" in repr_str
+        assert "analysis_type='LocalDamage'" in repr_str
 
     def test_repr_with_atlas_names(self):
         """Test __repr__ includes atlas names."""
-        analysis = RegionalDamage(
+        analysis = LocalDamage(
             parcel_names=["tian2020parcels16", "schaefer2018parcels100networks7"]
         )
 
@@ -359,13 +359,13 @@ class TestRegionalDamageRepr:
 
     def test_str_formatting(self):
         """Test __str__ provides human-readable output."""
-        analysis = RegionalDamage()
+        analysis = LocalDamage()
 
         str_output = str(analysis)
 
-        assert "RegionalDamage Analysis" in str_output
+        assert "LocalDamage Analysis" in str_output
         assert "Configuration:" in str_output
-        assert "analysis_type: RegionalDamage" in str_output
+        assert "analysis_type: LocalDamage" in str_output
 
 
 class TestParcelAggregationRepr:
@@ -454,7 +454,7 @@ class TestReprConsistency:
             analyses = [
                 FunctionalNetworkMapping("test_all_repr_func", "boes"),
                 StructuralNetworkMapping("test_all_repr_struct", check_dependencies=False),
-                RegionalDamage(),
+                LocalDamage(),
                 ParcelAggregation(source="maskimg", aggregation="mean"),
             ]
 
@@ -517,7 +517,7 @@ class TestReprConsistency:
             analyses = [
                 FunctionalNetworkMapping("test_all_str_func", "boes"),
                 StructuralNetworkMapping("test_all_str_struct", check_dependencies=False),
-                RegionalDamage(),
+                LocalDamage(),
                 ParcelAggregation(source="maskimg", aggregation="mean"),
             ]
 

@@ -11,7 +11,7 @@ import nibabel as nib
 import pytest
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, LocalDamage
 from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import list_parcellations
 from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
@@ -39,18 +39,18 @@ class TestMultiAtlasAnalysisWorkflow:
     """Test multi-atlas analysis workflow."""
 
     def test_regional_damage_with_single_atlas(self, tutorial_mask_data):
-        """RegionalDamage can use a single named atlas."""
+        """LocalDamage can use a single named atlas."""
         # Use specific parcellation by name
-        analysis = RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
+        analysis = LocalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
         # Validate it was configured correctly
         assert analysis.parcel_names == ["schaefer2018parcels100networks7"]
         assert analysis.aggregation == "percent"
 
     def test_regional_damage_with_multiple_atlases(self, tutorial_mask_data):
-        """RegionalDamage can use multiple named atlases."""
+        """LocalDamage can use multiple named atlases."""
         # Use multiple parcellations by name
-        analysis = RegionalDamage(
+        analysis = LocalDamage(
             parcel_names=[
                 "schaefer2018parcels100networks7",
                 "schaefer2018parcels200networks7",
@@ -76,8 +76,8 @@ class TestMultiAtlasAnalysisWorkflow:
         assert analysis.aggregation == "mean"
 
     def test_regional_damage_default_parcellations(self, tutorial_mask_data):
-        """RegionalDamage with None uses all available parcellations."""
-        analysis = RegionalDamage(parcel_names=None)
+        """LocalDamage with None uses all available parcellations."""
+        analysis = LocalDamage(parcel_names=None)
         assert analysis.parcel_names is None
 
 

@@ -197,7 +197,7 @@ def list_analyses() -> list[tuple[str, type[BaseAnalysis]]]:
     ...     print(f"{name}: {cls.batch_strategy}")
     FunctionalNetworkMapping: vectorized
     ParcelAggregation: parallel
-    RegionalDamage: parallel
+    LocalDamage: parallel
     StructuralNetworkMapping: parallel
     """
     return AnalysisRegistry.list_analyses()

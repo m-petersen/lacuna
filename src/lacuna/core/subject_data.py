@@ -767,7 +767,7 @@ class SubjectData:
         --------
         >>> from lacuna.core.provenance import create_provenance_record
         >>> prov = create_provenance_record(
-        ...     function="lacuna.analysis.RegionalDamage",
+        ...     function="lacuna.analysis.LocalDamage",
         ...     version="0.1.0"
         ... )
         >>> result = mask_data.add_provenance(prov)
@@ -909,7 +909,7 @@ class SubjectData:
         Parameters
         ----------
         name : str
-            Analysis namespace (e.g., "ParcelAggregation", "RegionalDamage")
+            Analysis namespace (e.g., "ParcelAggregation", "LocalDamage")
 
         Returns
         -------

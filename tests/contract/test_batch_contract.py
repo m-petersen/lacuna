@@ -190,15 +190,15 @@ class TestBaseAnalysisBatchIntegration:
         assert BaseAnalysis.batch_strategy == "parallel"
 
     def test_regional_damage_has_batch_strategy(self):
-        """RegionalDamage should declare sequential batch_strategy.
+        """LocalDamage should declare sequential batch_strategy.
 
         Sequential processing avoids race conditions with threading backends
         when accessing shared atlas resources.
         """
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import LocalDamage
 
-        assert hasattr(RegionalDamage, "batch_strategy")
-        assert RegionalDamage.batch_strategy == "sequential"
+        assert hasattr(LocalDamage, "batch_strategy")
+        assert LocalDamage.batch_strategy == "sequential"
 
     def test_atlas_aggregation_has_batch_strategy(self):
         """ParcelAggregation should declare sequential batch_strategy.
