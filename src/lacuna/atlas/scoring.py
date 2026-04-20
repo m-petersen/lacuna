@@ -185,18 +185,18 @@ def score_functional_overlap(
     return scores
 
 
-def score_react_temporal(
+def score_ace_temporal(
     nt_timeseries: dict[str, np.ndarray],
     lesion_timeseries: np.ndarray,
 ) -> dict[str, float]:
     """Correlate lesion BOLD timeseries with NT-weighted timeseries.
 
-    Used for REACT-enriched global functional scoring.
+    Used for ACE-enriched global functional scoring.
 
     Parameters
     ----------
     nt_timeseries : dict[str, np.ndarray]
-        Per-target NT timeseries from REACT stage 1. Each is 1D (n_timepoints,).
+        Per-target atlas timeseries from ACE stage 1. Each is 1D (n_timepoints,).
     lesion_timeseries : np.ndarray
         Mean BOLD timeseries within the lesion mask. 1D (n_timepoints,).
 

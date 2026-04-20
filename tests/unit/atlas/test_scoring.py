@@ -7,7 +7,7 @@ import pytest
 from lacuna.atlas.scoring import (
     score_focal,
     score_functional_overlap,
-    score_react_temporal,
+    score_ace_temporal,
     score_structural_endpoints,
 )
 from lacuna.atlas.types import VoxelAtlas
@@ -133,7 +133,7 @@ class TestScoreFunctionalOverlap:
         assert np.isnan(scores["D1"])
 
 
-class TestScoreReactTemporal:
+class TestScoreAceTemporal:
     def test_perfect_correlation(self):
         n_timepoints = 100
         nt_timeseries = {
@@ -141,7 +141,7 @@ class TestScoreReactTemporal:
             "5HT1a": np.cos(np.linspace(0, 4 * np.pi, n_timepoints)),
         }
         lesion_ts = nt_timeseries["D1"].copy()  # identical to D1
-        scores = score_react_temporal(nt_timeseries, lesion_ts)
+        scores = score_ace_temporal(nt_timeseries, lesion_ts)
         assert scores["D1"] == pytest.approx(1.0, abs=0.01)
         assert abs(scores["5HT1a"]) < 0.3  # sin/cos are ~uncorrelated
 
@@ -152,5 +152,5 @@ class TestScoreReactTemporal:
             "5HT1a": np.random.default_rng(43).standard_normal(n_timepoints),
         }
         lesion_ts = np.random.default_rng(44).standard_normal(n_timepoints)
-        scores = score_react_temporal(nt_timeseries, lesion_ts)
+        scores = score_ace_temporal(nt_timeseries, lesion_ts)
         assert set(scores.keys()) == {"D1", "5HT1a"}

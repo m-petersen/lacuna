@@ -2,8 +2,8 @@
 
 Scores NT atlas values weighted by lesion functional connectivity.
 Static mode: NT atlas x fLNM z-map.
-REACT-enriched mode: global = temporal correlation with NT timeseries,
-                     regional = REACT atlas x fLNM z-map.
+ACE-enriched mode: global = temporal correlation with atlas timeseries,
+                   regional = ACE atlas x fLNM z-map.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import numpy as np
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.atlas.config import resolve_targets
-from lacuna.atlas.scoring import score_functional_overlap, score_react_temporal
+from lacuna.atlas.scoring import score_ace_temporal, score_functional_overlap
 from lacuna.atlas.store import load_atlas
 from lacuna.core.data_types import ScalarMetric, VoxelMap
 from lacuna.core.subject_data import SubjectData
@@ -39,9 +39,9 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
     targets : str or list[str]
         Target selection. Default "all".
     enriched : bool
-        If True, use REACT-enriched scoring.
-    react_cache_dir : Path or None
-        Directory with REACT outputs (required if enriched=True).
+        If True, use ACE-enriched scoring.
+    ace_cache_dir : Path or None
+        Directory with ACE outputs (required if enriched=True).
     parcel_atlases : list[str] or None
         Atlas names for regional scoring.
     method : str
@@ -64,7 +64,7 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
         connectome_name: str,
         targets: str | list[str] = "all",
         enriched: bool = False,
-        react_cache_dir: str | Path | None = None,
+        ace_cache_dir: str | Path | None = None,
         parcel_atlases: list[str] | None = None,
         method: str = "boes",
         n_jobs: int = 1,
@@ -76,21 +76,21 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
         self.connectome_name = connectome_name
         self._target_spec = targets
         self.enriched = enriched
-        self.react_cache_dir = Path(react_cache_dir) if react_cache_dir else None
+        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.parcel_atlases = parcel_atlases
         self.method = method
         self.n_jobs = n_jobs
 
     def _validate_inputs(self, mask_data: SubjectData) -> None:
-        """Validate atlas, connectome, and REACT data if enriched."""
+        """Validate atlas, connectome, and ACE data if enriched."""
         atlas = load_atlas(self.atlas_cache_dir)
         self._atlas = atlas
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
-        if self.enriched and self.react_cache_dir is None:
+        if self.enriched and self.ace_cache_dir is None:
             raise ValueError(
-                "REACT cache directory required for enriched mode. "
-                "Run 'lacuna prepare react' first."
+                "ACE cache directory required for enriched mode. "
+                "Run 'lacuna prepare ace' first."
             )
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
@@ -125,24 +125,24 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
         return results
 
     def _run_enriched(self, mask_data, atlas, z_map):
-        """REACT-enriched mode: temporal correlation for global scoring."""
+        """ACE-enriched mode: temporal correlation for global scoring."""
         results = {}
 
-        react_data = self._load_react_data()
+        ace_data = self._load_ace_data()
         lesion_ts = self._extract_lesion_timeseries(mask_data)
 
-        # Average REACT stage 1 NT timeseries across subjects
-        all_stage1 = react_data["stage1_timeseries"]
+        # Average ACE stage 1 atlas timeseries across subjects
+        all_stage1 = ace_data["stage1_timeseries"]
         avg_stage1 = np.mean(all_stage1, axis=0)  # (n_timepoints, n_targets)
 
         # Build target-keyed timeseries dict
         nt_timeseries = {}
-        react_targets = react_data["stage2_atlas"].targets
-        for i, target in enumerate(react_targets):
+        ace_targets = ace_data["stage2_atlas"].targets
+        for i, target in enumerate(ace_targets):
             if target in self._resolved_targets:
                 nt_timeseries[target] = avg_stage1[:, i]
 
-        temporal_scores = score_react_temporal(nt_timeseries, lesion_ts)
+        temporal_scores = score_ace_temporal(nt_timeseries, lesion_ts)
 
         for target, score in temporal_scores.items():
             results[target] = ScalarMetric(
@@ -177,16 +177,16 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
         Reuses the extraction logic from FunctionalNetworkMapping.
         """
         raise NotImplementedError(
-            "Lesion timeseries extraction for REACT enriched mode "
+            "Lesion timeseries extraction for ACE enriched mode "
             "requires refactoring FNM internals into shared utility."
         )
 
-    def _load_react_data(self):
-        """Load REACT stage 1 timeseries and stage 2 atlas from cache."""
-        stage2_atlas = load_atlas(self.react_cache_dir / "stage2_atlas")
+    def _load_ace_data(self):
+        """Load ACE stage 1 timeseries and stage 2 atlas from cache."""
+        stage2_atlas = load_atlas(self.ace_cache_dir / "stage2_atlas")
 
         # Load stage 1 timeseries
-        stage1_dir = self.react_cache_dir / "stage1_timeseries"
+        stage1_dir = self.ace_cache_dir / "stage1_timeseries"
         stage1_list = []
         for ts_file in sorted(stage1_dir.glob("*.npy")):
             stage1_list.append(np.load(ts_file))

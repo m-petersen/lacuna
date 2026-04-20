@@ -1,11 +1,11 @@
-"""REACT (Receptor-Enriched Analysis of functional Connectivity by Targets).
+"""ACE (Atlas Connectivity Enrichment).
 
-Implements REACT stage 1 and stage 2 following the reference implementation
-(Dipasquale et al., 2019, NeuroImage). Uses sklearn.LinearRegression for
-consistency with the published method.
+An atlas-agnostic framework for enriching spatial atlas maps with functional
+connectivity information. Generalizes the REACT approach (Dipasquale et al.,
+2019, NeuroImage) to arbitrary voxel atlases.
 
-Stage 1: Regress BOLD spatial patterns onto NT atlas maps -> NT timeseries
-Stage 2: Regress BOLD timeseries onto NT timeseries -> enriched spatial maps
+Stage 1: Regress BOLD spatial patterns onto atlas maps -> atlas-weighted timeseries
+Stage 2: Regress BOLD timeseries onto atlas timeseries -> enriched spatial maps
 """
 
 from __future__ import annotations
@@ -46,12 +46,12 @@ def compute_stage1_mask(atlas: VoxelAtlas) -> np.ndarray:
     return mask
 
 
-def react_stage1(
+def ace_stage1(
     bold_data: np.ndarray,
     atlas_matrix: np.ndarray,
     stage1_mask: np.ndarray,
 ) -> np.ndarray:
-    """REACT Stage 1: extract NT-weighted timeseries from fMRI.
+    """ACE Stage 1: extract atlas-weighted timeseries from fMRI.
 
     Parameters
     ----------
@@ -86,13 +86,13 @@ def react_stage1(
     return beta1
 
 
-def react_stage2(
+def ace_stage2(
     bold_data: np.ndarray,
     beta1: np.ndarray,
     stage2_mask: np.ndarray,
     normalize_data: bool = False,
 ) -> np.ndarray:
-    """REACT Stage 2: project NT timeseries back to voxel space.
+    """ACE Stage 2: project atlas timeseries back to voxel space.
 
     Parameters
     ----------
@@ -134,13 +134,13 @@ def react_stage2(
     return beta2
 
 
-def compute_react_atlas(
+def compute_ace_atlas(
     atlas: VoxelAtlas,
     subjects_data: list[np.ndarray],
     brain_mask: np.ndarray,
     mask_shape: tuple[int, int, int],
 ) -> dict[str, Any]:
-    """Run full REACT pipeline across normative subjects.
+    """Run full ACE pipeline across normative subjects.
 
     Parameters
     ----------
@@ -193,14 +193,14 @@ def compute_react_atlas(
     stage2_accumulator = np.zeros((int(flat_mask.sum()), n_targets), dtype=np.float64)
 
     for i, bold in enumerate(subjects_data):
-        logger.info("REACT: processing subject %d/%d", i + 1, n_subjects)
+        logger.info("ACE: processing subject %d/%d", i + 1, n_subjects)
 
         # Stage 1
-        beta1 = react_stage1(bold, atlas_matrix, stage1_nonzero)
+        beta1 = ace_stage1(bold, atlas_matrix, stage1_nonzero)
         stage1_timeseries.append(beta1)
 
         # Stage 2
-        beta2 = react_stage2(bold, beta1, stage2_mask)
+        beta2 = ace_stage2(bold, beta1, stage2_mask)
 
         # Fisher-z transform and accumulate
         beta2_clipped = np.clip(beta2, -0.9999, 0.9999)
@@ -227,7 +227,7 @@ def compute_react_atlas(
         metadata={
             **atlas.metadata,
             "enriched": True,
-            "method": "REACT",
+            "method": "ACE",
             "n_subjects": n_subjects,
         },
     )

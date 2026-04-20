@@ -38,7 +38,7 @@ class StructuralNeurotransmitterMapping(BaseAnalysis):
     targets : str or list[str]
         Target selection. Default "all".
     enriched : bool
-        If True, use REACT-enriched atlas.
+        If True, use ACE-enriched atlas.
     parcel_atlases : list[str] or None
         Atlas names for regional scoring.
     precomputed_weights_dir : Path or None

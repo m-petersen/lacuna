@@ -1,21 +1,21 @@
-"""Tests for REACT stage 1 and stage 2 implementation."""
+"""Tests for ACE (Atlas Connectivity Enrichment) stage 1 and stage 2."""
 
 import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.atlas.react import (
-    compute_react_atlas,
+from lacuna.atlas.ace import (
+    ace_stage1,
+    ace_stage2,
+    compute_ace_atlas,
     compute_stage1_mask,
-    react_stage1,
-    react_stage2,
 )
 from lacuna.atlas.types import VoxelAtlas
 
 
 @pytest.fixture
 def small_atlas():
-    """Small atlas for fast REACT tests."""
+    """Small atlas for fast ACE tests."""
     shape = (10, 10, 10)
     affine = np.eye(4) * 2
     affine[3, 3] = 1
@@ -49,7 +49,7 @@ class TestComputeStage1Mask:
         assert mask.sum() > 0
 
 
-class TestReactStage1:
+class TestAceStage1:
     def test_output_shape(self, small_atlas, fake_bold_subjects):
         n_timepoints = 50
         n_voxels = 1000
@@ -58,7 +58,7 @@ class TestReactStage1:
             np.random.default_rng(42).standard_normal((2, n_voxels)).astype(np.float32)
         )
 
-        beta1 = react_stage1(fake_bold_subjects[0], atlas_matrix, stage1_mask)
+        beta1 = ace_stage1(fake_bold_subjects[0], atlas_matrix, stage1_mask)
         assert beta1.shape == (n_timepoints, 2)
 
     def test_output_not_all_zero(self, small_atlas, fake_bold_subjects):
@@ -67,11 +67,11 @@ class TestReactStage1:
         atlas_matrix = (
             np.random.default_rng(42).standard_normal((2, n_voxels)).astype(np.float32)
         )
-        beta1 = react_stage1(fake_bold_subjects[0], atlas_matrix, stage1_mask)
+        beta1 = ace_stage1(fake_bold_subjects[0], atlas_matrix, stage1_mask)
         assert not np.allclose(beta1, 0)
 
 
-class TestReactStage2:
+class TestAceStage2:
     def test_output_shape(self):
         n_timepoints = 50
         n_voxels = 1000
@@ -81,7 +81,7 @@ class TestReactStage2:
         beta1 = rng.standard_normal((n_timepoints, n_targets)).astype(np.float32)
         stage2_mask = np.ones(n_voxels, dtype=bool)
 
-        beta2 = react_stage2(bold, beta1, stage2_mask)
+        beta2 = ace_stage2(bold, beta1, stage2_mask)
         assert beta2.shape == (n_voxels, n_targets)
 
     def test_output_not_all_zero(self):
@@ -92,13 +92,13 @@ class TestReactStage2:
         bold = rng.standard_normal((n_timepoints, n_voxels)).astype(np.float32)
         beta1 = rng.standard_normal((n_timepoints, n_targets)).astype(np.float32)
         stage2_mask = np.ones(n_voxels, dtype=bool)
-        beta2 = react_stage2(bold, beta1, stage2_mask)
+        beta2 = ace_stage2(bold, beta1, stage2_mask)
         assert not np.allclose(beta2, 0)
 
 
-class TestComputeReactAtlas:
+class TestComputeAceAtlas:
     def test_produces_voxel_atlas(self, small_atlas):
-        """Test full REACT pipeline with synthetic data."""
+        """Test full ACE pipeline with synthetic data."""
         shape = (10, 10, 10)
         n_voxels = np.prod(shape)
         n_timepoints = 50
@@ -111,7 +111,7 @@ class TestComputeReactAtlas:
 
         brain_mask = np.ones(shape, dtype=bool)
 
-        result = compute_react_atlas(
+        result = compute_ace_atlas(
             atlas=small_atlas,
             subjects_data=subjects_data,
             brain_mask=brain_mask,

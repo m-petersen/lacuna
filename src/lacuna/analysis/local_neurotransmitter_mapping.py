@@ -34,7 +34,7 @@ class LocalNeurotransmitterMapping(BaseAnalysis):
         Target selection. Preset name ("all", "dopaminergic", etc.) or
         explicit list of target names. Default "all".
     enriched : bool
-        If True, use REACT-enriched atlas instead of static.
+        If True, use ACE-enriched atlas instead of static.
     parcel_atlases : list[str] or None
         Atlas names for regional scoring.
     aggregation : str
