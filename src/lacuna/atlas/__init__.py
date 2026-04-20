@@ -15,6 +15,7 @@ from .config import (
     parse_target_from_filename,
     resolve_targets,
 )
+from .store import build_nt_atlas, load_atlas, save_atlas
 from .types import ParcelAtlas, SurfaceAtlas, VoxelAtlas
 
 __all__ = [
@@ -31,4 +32,8 @@ __all__ = [
     "parse_publication_from_filename",
     "resolve_targets",
     "parse_map_selection",
+    # store
+    "build_nt_atlas",
+    "save_atlas",
+    "load_atlas",
 ]

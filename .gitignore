@@ -108,3 +108,6 @@ notes/
 *_cache
 # MkDocs
 site/
+
+# Claude
+.claude/
