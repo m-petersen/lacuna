@@ -188,6 +188,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         cache_tdi: bool = True,
         n_jobs: int = 1,
         keep_intermediate: bool = False,
+        keep_filtered_tractogram: bool = False,
         check_dependencies: bool = True,
         verbose: bool = False,
         show_mrtrix_output: bool = False,
@@ -310,6 +311,7 @@ class StructuralNetworkMapping(BaseAnalysis):
         if n_jobs != -1 and n_jobs < 1:
             raise ValueError(f"n_jobs must be -1 (all CPUs) or >= 1, got {n_jobs}")
         self.keep_intermediate = keep_intermediate
+        self.keep_filtered_tractogram = keep_filtered_tractogram
 
         self.show_mrtrix_output = show_mrtrix_output
         self.return_in_input_space = return_in_input_space
@@ -855,6 +857,19 @@ class StructuralNetworkMapping(BaseAnalysis):
                             },
                         )
                         results[f"warped_atlas_{atlas_info['name']}"] = warped_atlas_result
+
+            # Store filtered tractogram as a named result for downstream analyses
+            if self.keep_filtered_tractogram and mask_tck_path.exists():
+                import shutil
+
+                persist_dir = get_temp_dir(prefix=f"slnm_filtered_{subject_id}_")
+                persist_tck = persist_dir / mask_tck_path.name
+                shutil.copy2(mask_tck_path, persist_tck)
+                results["filtered_tractogram"] = Tractogram(
+                    name="filtered_tractogram",
+                    tractogram_path=persist_tck,
+                    metadata={"description": "Lesion-intersecting streamlines"},
+                )
 
             # Optional: Compute parcellated connectivity matrices per atlas
             if self._atlases and (
