@@ -15,6 +15,12 @@ from .config import (
     parse_target_from_filename,
     resolve_targets,
 )
+from .scoring import (
+    score_focal,
+    score_functional_overlap,
+    score_react_temporal,
+    score_structural_endpoints,
+)
 from .store import build_nt_atlas, load_atlas, save_atlas
 from .types import ParcelAtlas, SurfaceAtlas, VoxelAtlas
 
@@ -36,4 +42,9 @@ __all__ = [
     "build_nt_atlas",
     "save_atlas",
     "load_atlas",
+    # scoring
+    "score_focal",
+    "score_structural_endpoints",
+    "score_functional_overlap",
+    "score_react_temporal",
 ]
