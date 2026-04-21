@@ -46,7 +46,7 @@ class TestComputeStage1Mask:
         mask = compute_stage1_mask(small_atlas)
         assert mask.shape == (10, 10, 10)
         assert mask.dtype == bool
-        assert mask.sum() > 0
+        assert np.sum(mask) > 0
 
 
 class TestAceStage1:

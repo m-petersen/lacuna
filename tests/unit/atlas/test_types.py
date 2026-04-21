@@ -198,7 +198,7 @@ class TestVoxelAtlasToMatrix:
         atlas, mask = atlas_and_mask
         mat = atlas.to_matrix(mask)
         n_targets = len(atlas.targets)
-        n_voxels = int(mask.sum())
+        n_voxels = int(np.sum(mask))
         assert mat.shape == (n_targets, n_voxels)
 
     def test_to_matrix_values(self, atlas_and_mask):

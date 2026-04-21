@@ -170,8 +170,8 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
 
         for rid in region_ids:
             region_mask = flat_atlas == rid
-            voxels_per_region[rid] = int(region_mask.sum())
-            hit_per_region[rid] = int(np.logical_and(region_mask, flat_mask).sum())
+            voxels_per_region[rid] = int(np.sum(region_mask))
+            hit_per_region[rid] = int(np.sum(np.logical_and(region_mask, flat_mask)))
 
         touched = [rid for rid, hits in hit_per_region.items() if hits > 0]
         n_touched = len(touched)
@@ -252,7 +252,7 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
 
         results: dict[str, DataContainer] = {}
 
-        n_touched = int((m > 0).sum())
+        n_touched = int(np.sum(m > 0))
         meta_base = {
             "atlas": atlas_name,
             "matrix_path": str(self.matrix_path),

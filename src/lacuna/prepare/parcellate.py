@@ -114,7 +114,7 @@ def _build_parcel_weight_matrix(
     W = np.zeros((n_vox, n_reg), dtype=np.float32)
     for col, rid in enumerate(region_ids):
         hits = atlas_values == rid
-        count = int(hits.sum())
+        count = int(np.sum(hits))
         if count == 0:
             continue
         W[hits, col] = 1.0 / count

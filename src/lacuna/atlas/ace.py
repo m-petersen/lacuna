@@ -167,7 +167,7 @@ def compute_ace_atlas(
 
     # Build atlas matrix within brain mask
     flat_mask = brain_mask.ravel() if brain_mask.ndim == 3 else brain_mask
-    atlas_matrix = np.empty((n_targets, int(flat_mask.sum())), dtype=np.float64)
+    atlas_matrix = np.empty((n_targets, int(np.sum(flat_mask))), dtype=np.float64)
     for i, target in enumerate(atlas.targets):
         data = atlas.get_map(target).get_fdata().ravel()
         atlas_matrix[i] = data[flat_mask]
@@ -176,7 +176,7 @@ def compute_ace_atlas(
     stage1_nonzero = np.all(atlas_matrix != 0, axis=0)
 
     # Stage 2 mask: all brain voxels
-    stage2_mask = np.ones(int(flat_mask.sum()), dtype=bool)
+    stage2_mask = np.ones(int(np.sum(flat_mask)), dtype=bool)
 
     # Check collinearity
     x_check = atlas_matrix[:, stage1_nonzero].T
@@ -190,7 +190,7 @@ def compute_ace_atlas(
 
     # Process each subject
     stage1_timeseries = []
-    stage2_accumulator = np.zeros((int(flat_mask.sum()), n_targets), dtype=np.float64)
+    stage2_accumulator = np.zeros((int(np.sum(flat_mask)), n_targets), dtype=np.float64)
 
     for i, bold in enumerate(subjects_data):
         logger.info("ACE: processing subject %d/%d", i + 1, n_subjects)
