@@ -60,8 +60,8 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
 
     def __init__(
         self,
+        atlas_cache_dir: str | Path,
         connectome_name: str,
-        atlas_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
         enriched: bool = False,
         ace_cache_dir: str | Path | None = None,
@@ -72,10 +72,6 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        if atlas_cache_dir is None:
-            from lacuna.io.fetch import get_data_dir
-
-            atlas_cache_dir = get_data_dir() / "atlases" / "neurotransmitter" / "prepared"
         self.atlas_cache_dir = Path(atlas_cache_dir)
         self.connectome_name = connectome_name
         self._target_spec = targets

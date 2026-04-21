@@ -1435,8 +1435,8 @@ def _add_ntm_common_args(parser: ArgumentParser) -> None:
         help="Directory with ACE outputs (required if --enriched)",
     )
     g_ntm.add_argument(
-        "--atlas-cache-dir", type=str, default=None,
-        help="Directory with prepared NT atlas (default: auto-detected)",
+        "--atlas-cache-dir", type=str, required=True,
+        help="Directory with prepared NT atlas (from lacuna prepare lntm)",
     )
 
 
