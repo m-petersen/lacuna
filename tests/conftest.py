@@ -68,6 +68,21 @@ def pytest_configure(config):
     _MRTRIX_AVAILABLE = _check_mrtrix_available()
     _TEMPLATEFLOW_AVAILABLE = _check_templateflow_available()
 
+    # Workaround: numpy 2.2 _CopyMode.__bool__ raises ValueError for IF_NEEDED,
+    # which breaks sklearn under coverage.py instrumentation.
+    try:
+        copy_mode = np._CopyMode
+        _original_bool = copy_mode.__bool__
+
+        def _patched_bool(self):
+            if self == copy_mode.IF_NEEDED:
+                return False
+            return _original_bool(self)
+
+        copy_mode.__bool__ = _patched_bool
+    except AttributeError:
+        pass  # numpy < 2.2 doesn't have _CopyMode
+
 
 def pytest_collection_modifyitems(config, items):
     """Skip tests that require unavailable dependencies."""
