@@ -148,6 +148,39 @@ class RunConfig:
             if getattr(args, "lesion_weighting", None) is not None:
                 analysis_options["lesion_weighting"] = args.lesion_weighting
 
+        # NTM-shared options (lntm, sntm, fntm)
+        ntm_analyses = (
+            "lntm", "localneurotransmittermapping",
+            "sntm", "structuralneurotransmittermapping",
+            "fntm", "functionalneurotransmittermapping",
+        )
+        if args.analysis in ntm_analyses:
+            if getattr(args, "atlas_cache_dir", None) is not None:
+                analysis_options["atlas_cache_dir"] = args.atlas_cache_dir
+            if getattr(args, "targets", None) is not None:
+                analysis_options["targets"] = args.targets
+            if getattr(args, "enriched", False):
+                analysis_options["enriched"] = True
+            if getattr(args, "ace_cache_dir", None) is not None:
+                analysis_options["ace_cache_dir"] = args.ace_cache_dir
+
+        # LNTM-specific
+        if args.analysis in ("lntm", "localneurotransmittermapping"):
+            if getattr(args, "aggregation", None) is not None:
+                analysis_options["aggregation"] = args.aggregation
+
+        # SNTM-specific
+        if args.analysis in ("sntm", "structuralneurotransmittermapping"):
+            if getattr(args, "precomputed_weights_dir", None) is not None:
+                analysis_options["precomputed_weights_dir"] = args.precomputed_weights_dir
+
+        # FNTM-specific
+        if args.analysis in ("fntm", "functionalneurotransmittermapping"):
+            if getattr(args, "connectome_name", None) is not None:
+                analysis_options["connectome_name"] = args.connectome_name
+            if getattr(args, "method", None) is not None:
+                analysis_options["method"] = args.method
+
         return cls(
             bids_dir=args.bids_dir,
             output_dir=args.output_dir,
