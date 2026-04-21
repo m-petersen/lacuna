@@ -206,9 +206,9 @@ def _average_excluding_zeros(arrays: list[np.ndarray]) -> np.ndarray:
 
     stacked = np.stack(arrays, axis=0)
     nonzero_mask = stacked != 0
-    count = nonzero_mask.sum(axis=0)
+    count = nonzero_mask.astype(np.intp).sum(axis=0)
     safe_count = np.maximum(count, 1)
-    total = np.where(nonzero_mask, stacked, 0).sum(axis=0)
+    total = np.where(nonzero_mask, stacked, 0.0).sum(axis=0)
     averaged = total / safe_count
     averaged[count == 0] = 0.0
     return averaged
