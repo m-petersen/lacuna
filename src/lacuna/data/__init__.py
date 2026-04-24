@@ -20,7 +20,7 @@ Examples
 >>> # List all bundled atlases
 >>> atlases = list_bundled_atlases()
 >>> print(atlases[:2])
-['tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg', ...]
+['tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels1000networks7_dseg', ...]
 >>>
 >>> # Get the bundled atlas directory
 >>> atlas_dir = get_bundled_atlas_dir()
@@ -30,7 +30,7 @@ Examples
 >>> analysis = LocalDamage()  # Automatically uses bundled atlases!
 >>>
 >>> # Get specific atlas files
->>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'
+>>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg'
 >>> img_path, labels_path = get_bundled_atlas(schaefer)
 """
 
@@ -90,7 +90,7 @@ def list_bundled_atlases() -> list[str]:
     >>> from lacuna.data import list_bundled_atlases
     >>> atlases = list_bundled_atlases()
     >>> print(atlases[0])  # First Schaefer atlas
-    'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg'
+    'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels1000networks7_dseg'
     >>> print(len(atlases))  # Schaefer (4) + Tian (3)
     7
     """
@@ -130,10 +130,10 @@ def get_bundled_atlas(name: str) -> tuple[Path, Path]:
     Examples
     --------
     >>> from lacuna.data import get_bundled_atlas
-    >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'
+    >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg'
     >>> img, labels = get_bundled_atlas(schaefer)
     >>> print(img.name)
-    'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg.nii.gz'
+    'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg.nii.gz'
     >>>
     >>> # Check files exist
     >>> print(img.exists(), labels.exists())
@@ -187,20 +187,20 @@ def get_atlas_citation(name: str) -> str:
     Examples
     --------
     >>> from lacuna.data import get_atlas_citation
-    >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'
+    >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg'
     >>> citation = get_atlas_citation(schaefer)
     >>> print(citation[:20])
     'Schaefer 2018 Atlas'
     """
     # Citation database - keys match actual bundled atlas names
     citations = {
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-200Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-400Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
-        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
-        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
-        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS2_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
-        "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS3_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels200networks7_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels400networks7_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels1000networks7_dseg": "Schaefer et al, 2018. https://doi.org/10.1093/cercor/bhx179",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels16_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels32_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
+        "tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels50_dseg": "Tian et al, 2020. https://doi.org/10.1038/s41593-020-00711-6",
     }
 
     if name not in citations:

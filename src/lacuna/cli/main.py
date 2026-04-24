@@ -490,8 +490,8 @@ def _show_atlases_info() -> int:
                     print(f"    {line}")
 
     # Use well-known citation keys (these match entries in get_atlas_citation)
-    schaefer_key = "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg"
-    tian_key = "tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg"
+    schaefer_key = "tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg"
+    tian_key = "tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels16_dseg"
 
     print_atlas_group(
         "Schaefer Cortical Parcellations", schaefer, schaefer_key if schaefer else None

@@ -84,9 +84,9 @@ class TestParseResultKey:
 
     def test_parse_desc_with_underscore(self):
         """Parse key when description contains underscore."""
-        result = parse_result_key("atlas-TianSubcortex_source-LocalDamage_desc-damagescore")
+        result = parse_result_key("atlas-Tian2020_source-LocalDamage_desc-damagescore")
         assert result == {
-            "atlas": "TianSubcortex",
+            "atlas": "Tian2020",
             "source": "LocalDamage",
             "desc": "damagescore",
         }

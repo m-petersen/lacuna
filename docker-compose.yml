@@ -83,5 +83,5 @@ services:
       - TEMPLATEFLOW_HOME=/templateflow
     command: >
       run rd /bids /output
-      --parcel-atlases Schaefer2018_100Parcels7Networks
+      --parcel-atlases schaefer2018parcels100networks7
       -v

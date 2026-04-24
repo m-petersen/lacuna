@@ -20,7 +20,7 @@ Each atlas uses BIDS-style naming:
 ## Included Atlases
 
 ### Schaefer 2018 Atlas - 100 Parcels (7 Networks)
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels100networks7_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex
@@ -29,7 +29,7 @@ Each atlas uses BIDS-style naming:
 - **License**: MIT
 
 ### Schaefer 2018 Atlas - 200 Parcels (7 Networks)
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-200Parcels7Networks_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels200networks7_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex (medium parcellation)
@@ -38,7 +38,7 @@ Each atlas uses BIDS-style naming:
 - **License**: MIT
 
 ### Schaefer 2018 Atlas - 400 Parcels (7 Networks)
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-400Parcels7Networks_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels400networks7_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex (fine parcellation)
@@ -47,7 +47,7 @@ Each atlas uses BIDS-style naming:
 - **License**: MIT
 
 ### Schaefer 2018 Atlas - 1000 Parcels (7 Networks)
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-1000Parcels7Networks_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-parcels1000networks7_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Cerebral cortex (very fine parcellation)
@@ -56,7 +56,7 @@ Each atlas uses BIDS-style naming:
 - **License**: MIT
 
 ### Tian Subcortical Atlas - Scale 1
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS1_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels16_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Subcortical structures (coarse parcellation)
@@ -65,7 +65,7 @@ Each atlas uses BIDS-style naming:
 - **License**: Permissive with attribution
 
 ### Tian Subcortical Atlas - Scale 2
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS2_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels32_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Subcortical structures (medium parcellation)
@@ -74,11 +74,11 @@ Each atlas uses BIDS-style naming:
 - **License**: Permissive with attribution
 
 ### Tian Subcortical Atlas - Scale 3
-- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-TianSubcortex_desc-3TS3_dseg.nii.gz`
+- **File**: `tpl-MNI152NLin6Asym_res-01_atlas-Tian2020_desc-parcels50_dseg.nii.gz`
 - **Space**: MNI152NLin6Asym (1mm)
 - **Type**: Discrete labels (3D)
 - **Coverage**: Subcortical structures (fine parcellation)
-- **Regions**: 54 regions
+- **Regions**: 50 regions
 - **Citation**: Tian et al. (2020), Nature Neuroscience, 23, 1516-1528
 - **License**: Permissive with attribution
 
