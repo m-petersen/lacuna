@@ -1349,7 +1349,10 @@ def _register_connectome_from_path(
         )
 
     # Register based on analysis type
-    if analysis_class_name == "StructuralNetworkMapping":
+    if analysis_class_name in (
+        "StructuralNetworkMapping",
+        "StructuralNeurotransmitterFingerprinting",
+    ):
         from lacuna.assets.connectomes import (
             list_structural_connectomes,
             register_structural_connectome,
@@ -1386,7 +1389,10 @@ def _register_connectome_from_path(
 
         analysis_options["connectome_name"] = auto_name
 
-    elif analysis_class_name == "FunctionalNetworkMapping":
+    elif analysis_class_name in (
+        "FunctionalNetworkMapping",
+        "FunctionalNeurotransmitterFingerprinting",
+    ):
         from lacuna.assets.connectomes import (
             list_functional_connectomes,
             register_functional_connectome,
