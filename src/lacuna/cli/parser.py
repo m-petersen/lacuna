@@ -5,7 +5,7 @@ This module provides the argument parser for the Lacuna CLI with a clean
 subcommand-based structure:
 
 - lacuna fetch: Download and setup connectomes
-- lacuna run <analysis>: Run analyses (rd, fnm, snm, afnm)
+- lacuna run <analysis>: Run analyses (ld, fnm, snm, afnm)
 - lacuna bidsify: Convert NIfTI files to BIDS format
 - lacuna parcellate: Reduce a connectome to a parcel-level connectivity matrix
 - lacuna collect: Aggregate results across subjects
@@ -69,7 +69,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "  lacuna tutorial ./my_tutorial\n"
             "  lacuna bidsify /raw /bids --space MNI152NLin6Asym\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run ld /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches\n"
             "  lacuna collect /output\n"
             "  lacuna info atlases\n"
@@ -254,7 +254,7 @@ def _build_run_parser(subparsers) -> None:
         description=(
             "Run lesion network mapping analyses on BIDS datasets.\n\n"
             "Available analyses:\n"
-            "  rd   (localdamage)                      - Lesion overlap with parcellations\n"
+            "  ld   (localdamage)                      - Lesion overlap with parcellations\n"
             "  fnm  (functionalnetworkmapping)            - Functional lesion connectivity maps\n"
             "  snm  (structuralnetworkmapping)            - White matter disconnection\n"
             "  afnm (acceleratedfunctionalnetworkmapping) - Accelerated functional LNM (M @ C)\n"
@@ -262,7 +262,7 @@ def _build_run_parser(subparsers) -> None:
             "  sntf (structuralneurotransmitterfingerprinting)   - NT at disconnected endpoints\n"
             "  fntf (functionalneurotransmitterfingerprinting)   - NT weighted by connectivity\n\n"
             "Examples:\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run ld /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
             "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4\n"
             "  lacuna run afnm /bids /output --matrix-path /path/to/gsp1000_schaefer400.tsv \\\n"
@@ -379,9 +379,9 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
 
 
 def _build_rd_parser(subparsers) -> None:
-    """Add the LocalDamage (rd) analysis parser."""
+    """Add the LocalDamage (ld) analysis parser."""
     rd_parser = subparsers.add_parser(
-        "rd",
+        "ld",
         aliases=["localdamage"],
         help="Compute lesion overlap with brain parcellations",
         description=(
@@ -391,9 +391,9 @@ def _build_rd_parser(subparsers) -> None:
             "with the lesion mask.\n\n"
             "Use 'lacuna info atlases' to see available atlases.\n\n"
             "Examples:\n"
-            "  lacuna run rd /bids /output\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32"
+            "  lacuna run ld /bids /output\n"
+            "  lacuna run ld /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run ld /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -1145,18 +1145,18 @@ def _build_check_parser(subparsers) -> None:
             "Validate input masks before a run, or check output completeness after.\n\n"
             "Use 'lacuna check input' to catch common mask issues (non-binary,\n"
             "empty, missing space) before committing to a long batch run.\n"
-            "Use 'lacuna check rd|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
+            "Use 'lacuna check ld|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
             "Available checks:\n"
             "  input - Validate input masks (binary, non-empty, space)\n"
-            "  rd    - Check for parcelstats TSV files (LocalDamage)\n"
+            "  ld    - Check for parcelstats TSV files (LocalDamage)\n"
             "  fnm   - Check for functional rmap NIfTI files\n"
             "  snm   - Check for disconnection NIfTI files\n"
             "  afnm  - Check for accelerated functional LNM parcel outputs\n\n"
             "Examples:\n"
             "  lacuna check input /bids\n"
-            "  lacuna check rd /bids /output\n"
-            "  lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
-            "  lacuna check rd /bids /output --output-file missing.txt\n"
+            "  lacuna check ld /bids /output\n"
+            "  lacuna check ld /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
+            "  lacuna check ld /bids /output --output-file missing.txt\n"
             "  lacuna check fnm /bids /output --quiet\n"
             "  lacuna check snm /bids /output --participant-label 001 002"
         ),
@@ -1178,20 +1178,20 @@ def _build_check_parser(subparsers) -> None:
 
 
 def _build_check_rd_parser(subparsers) -> None:
-    """Add the check rd subcommand parser."""
+    """Add the check ld subcommand parser."""
     rd_parser = subparsers.add_parser(
-        "rd",
+        "ld",
         aliases=["localdamage"],
         help="Check for LocalDamage parcelstats outputs",
         description=(
             "Check which subjects have LocalDamage parcelstats TSV outputs.\n\n"
-            "By default, any '*method-rd*parcelstats.tsv' file in a\n"
+            "By default, any '*method-ld*parcelstats.tsv' file in a\n"
             "subject's output directory counts as complete. If --parcel-atlases is\n"
             "given, each named atlas is checked individually.\n\n"
             "Examples:\n"
-            "  lacuna check rd /bids /output\n"
-            "  lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
-            "  lacuna check rd /bids /output --output-file missing.txt"
+            "  lacuna check ld /bids /output\n"
+            "  lacuna check ld /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
+            "  lacuna check ld /bids /output --output-file missing.txt"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )

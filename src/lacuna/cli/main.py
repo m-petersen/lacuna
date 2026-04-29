@@ -6,7 +6,7 @@ the workflow from argument parsing through analysis execution to output writing.
 
 Commands:
     lacuna fetch     - Download and setup connectomes
-    lacuna run       - Run analyses (rd, fnm, snm)
+    lacuna run       - Run analyses (ld, fnm, snm)
     lacuna collect   - Aggregate results across subjects
     lacuna info      - Display available resources
 
@@ -916,14 +916,14 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
     For NIfTI files (fnm, snm): reads the companion JSON sidecar and checks
     Metadata.empty_mask. Falls back to loading the NIfTI if no sidecar exists.
 
-    For TSV files (rd): reads the file and checks if all numeric values are 0.
+    For TSV files (ld): reads the file and checks if all numeric values are 0.
 
     Parameters
     ----------
     filepath : Path
         Path to the output file to check.
     analysis_type : str
-        Analysis type: 'rd', 'localdamage', 'fnm', 'functionalnetworkmapping',
+        Analysis type: 'ld', 'localdamage', 'fnm', 'functionalnetworkmapping',
         'snm', or 'structuralnetworkmapping'.
 
     Returns
@@ -935,7 +935,7 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
 
     norm = analysis_type.lower()
 
-    if norm in ("rd", "ld", "localdamage"):
+    if norm in ("ld", "ld", "localdamage"):
         # Read TSV and check if all numeric columns are zero
         try:
             import pandas as pd
@@ -987,7 +987,7 @@ def _check_subject_complete(
     anat_dir : Path
         Anatomy directory for the subject/session.
     analysis : str
-        Analysis type: 'rd', 'fnm', 'snm', etc.
+        Analysis type: 'ld', 'fnm', 'snm', etc.
     parcel_atlases : list[str] | None
         For RD: list of expected atlas names. If None, any parcelstats file counts as complete.
     check_content : bool
@@ -1006,8 +1006,8 @@ def _check_subject_complete(
     label_glob = f"*label-{label}_*" if label else "*"
 
     if not anat_dir.exists():
-        if norm in ("rd", "ld", "localdamage"):
-            sentinel = f"{label_glob}method-rd*parcelstats.tsv"
+        if norm in ("ld", "ld", "localdamage"):
+            sentinel = f"{label_glob}method-ld*parcelstats.tsv"
         elif norm in ("fnm", "functionalnetworkmapping"):
             sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
         elif norm in ("snm", "structuralnetworkmapping"):
@@ -1018,8 +1018,8 @@ def _check_subject_complete(
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
 
-    if norm in ("rd", "ld", "localdamage"):
-        all_matches = list(anat_dir.glob(f"{label_glob}method-rd*parcelstats.tsv"))
+    if norm in ("ld", "ld", "localdamage"):
+        all_matches = list(anat_dir.glob(f"{label_glob}method-ld*parcelstats.tsv"))
         if parcel_atlases:
             missing = []
             for atlas in parcel_atlases:
@@ -1035,7 +1035,7 @@ def _check_subject_complete(
             return "complete", []
         else:
             if not all_matches:
-                return "missing", [f"{label_glob}method-rd*parcelstats.tsv"]
+                return "missing", [f"{label_glob}method-ld*parcelstats.tsv"]
             # Files exist -- check content if requested
             if check_content and all(_is_output_empty(f, norm) for f in all_matches):
                 return "empty", []
@@ -1497,7 +1497,7 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
     # Map analysis names to class names
     analysis_name_map = {
-        "rd": "LocalDamage",
+        "ld": "LocalDamage",
         "localdamage": "LocalDamage",
         "ld": "LocalDamage",
         "fnm": "FunctionalNetworkMapping",

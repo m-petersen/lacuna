@@ -262,14 +262,14 @@ class TestBidsFilenameStr:
     def test_rd_parcelstats(self):
         """RD parcelstats output."""
         bf = BidsFilename(
-            method="rd",
+            method="ld",
             atlas="schaefer2018parcels100networks7",
             desc="damagepct",
             suffix="parcelstats",
         )
         result = str(bf)
         assert (
-            result == "method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats"
+            result == "method-ld_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats"
         )
 
     def test_input_mask_no_method(self):
@@ -351,7 +351,7 @@ class TestBidsFilenameFromResultKey:
         """BIDS key with LocalDamage source."""
         key = "atlas-schaefer2018parcels100networks7_source-LocalDamage_desc-damagepct"
         bf = BidsFilename.from_result_key(key, suffix="values")
-        assert bf.method == "rd"
+        assert bf.method == "ld"
         assert bf.atlas == "schaefer2018parcels100networks7"
         assert bf.desc == "damagepct"
         assert bf.suffix == "parcelstats"

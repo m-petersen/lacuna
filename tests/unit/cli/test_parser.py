@@ -81,11 +81,11 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            ["run", "ld", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
         )
 
         assert args.command == "run"
-        assert args.analysis == "rd"
+        assert args.analysis == "ld"
         assert args.bids_dir == bids_dir
         assert args.output_dir == output_dir
         assert args.parcel_atlases == ["Schaefer100"]
@@ -153,7 +153,7 @@ class TestRunSubcommandParsing:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "ld",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -175,7 +175,7 @@ class TestRunSubcommandParsing:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "ld",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -195,7 +195,7 @@ class TestRunSubcommandParsing:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "ld",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -237,7 +237,7 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-v"]
+            ["run", "ld", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-v"]
         )
 
         assert args.verbose_count == 1
@@ -249,7 +249,7 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-vv"]
+            ["run", "ld", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-vv"]
         )
 
         assert args.verbose_count == 2
@@ -261,7 +261,7 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            ["run", "ld", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
         )
 
         assert args.participant_label is None

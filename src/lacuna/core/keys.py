@@ -285,7 +285,7 @@ BIDS_SUFFIX_MAPPING = {
 METHOD_ABBREVIATIONS: dict[str, str] = {
     "FunctionalNetworkMapping": "fnm",
     "StructuralNetworkMapping": "snm",
-    "LocalDamage": "rd",
+    "LocalDamage": "ld",
     "ParcelAggregation": "pa",
     "AcceleratedFunctionalNetworkMapping": "afnm",
 }
@@ -395,7 +395,7 @@ class BidsFilename:
             if export_abbrev in ("fnm", "snm", "afnm"):
                 method = export_abbrev
             elif export_abbrev == "localdamage":
-                method = "rd"
+                method = "ld"
             elif export_abbrev == "parcelaggregation":
                 method = "pa"
             elif export_abbrev == "inputmask":

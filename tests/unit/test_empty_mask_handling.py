@@ -260,7 +260,7 @@ class TestSkipEmptyMasksFlag:
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
-        args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out", "--on-empty", "skip"])
+        args = parser.parse_args(["run", "ld", "/tmp/in", "/tmp/out", "--on-empty", "skip"])
         assert args.on_empty == "skip"
 
     @pytest.mark.fast
@@ -269,7 +269,7 @@ class TestSkipEmptyMasksFlag:
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
-        args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out"])
+        args = parser.parse_args(["run", "ld", "/tmp/in", "/tmp/out"])
         assert args.on_empty == "warn"
 
     @pytest.mark.fast
@@ -282,7 +282,7 @@ class TestSkipEmptyMasksFlag:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "ld",
                 "/tmp/in",
                 "/tmp/out",
                 "--on-empty",
@@ -326,7 +326,7 @@ class TestSkipEmptyMasksFlag:
         config = RunConfig(
             bids_dir=dataset_root,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="ld",
             on_empty="skip",
             space="MNI152NLin6Asym",
             verbose_count=1,
@@ -365,7 +365,7 @@ class TestSkipEmptyMasksFlag:
         config = RunConfig(
             bids_dir=dataset_root,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="ld",
             on_empty="warn",
             space="MNI152NLin6Asym",
             verbose_count=1,

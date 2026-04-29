@@ -1339,8 +1339,8 @@ def aggregate_parcelstats(
         # - method_kw: exact match against method / source BIDS entities
         # - desc_kw:   substring match against the desc entity
         _analysis_patterns: dict[str, tuple[list[str], list[str]]] = {
-            "localdamage": (["rd", "localdamage"], []),
-            "rd": (["rd", "localdamage"], []),
+            "localdamage": (["ld", "localdamage"], []),
+            "ld": (["ld", "localdamage"], []),
             "functionalnetworkmapping": (
                 ["fnm", "functionalnetworkmapping"],
                 ["rmap", "tmap", "zmap"],

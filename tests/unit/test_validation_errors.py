@@ -313,7 +313,7 @@ class TestCLIAtlasNameValidation:
         config = RunConfig(
             bids_dir=bids_dir,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="ld",
             analysis_options={"parcel_names": ["NonexistentAtlas"]},
         )
         with pytest.raises(ValueError, match="not found"):
@@ -351,7 +351,7 @@ class TestCLIAtlasNameValidation:
         config = RunConfig(
             bids_dir=bids_dir,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="ld",
             analysis_options={"parcel_names": [slug]},
         )
         # Should not raise — slug is a valid registry name

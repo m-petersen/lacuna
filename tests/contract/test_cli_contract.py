@@ -7,7 +7,7 @@ CLI Structure:
     lacuna                          # Main entry point
     ├── fetch                       # Download normative data
     ├── run                         # Run analyses
-    │   ├── rd (localdamage)     # Regional damage analysis
+    │   ├── ld (localdamage)     # Regional damage analysis
     │   ├── fnm (functionalnetworkmapping)  # Functional network mapping
     │   └── snm (structuralnetworkmapping)  # Structural network mapping
     ├── collect                     # Aggregate results
@@ -86,12 +86,12 @@ class TestRunSubcommandContract:
         # Subcommand-based CLI shows help when subcommand is missing
         assert result.returncode == 0
         # Should show available analyses
-        assert "rd" in result.stdout or "fnm" in result.stdout or "snm" in result.stdout
+        assert "ld" in result.stdout or "fnm" in result.stdout or "snm" in result.stdout
 
     @pytest.mark.parametrize(
         "short,full",
         [
-            ("rd", "localdamage"),
+            ("ld", "localdamage"),
             ("fnm", "functionalnetworkmapping"),
             ("snm", "structuralnetworkmapping"),
         ],
@@ -115,9 +115,9 @@ class TestRunSubcommandContract:
         assert result_full.returncode == 0
 
     def test_run_rd_help_shows_atlas_options(self):
-        """Test that 'lacuna run rd --help' shows atlas options."""
+        """Test that 'lacuna run ld --help' shows atlas options."""
         result = subprocess.run(
-            [sys.executable, "-m", "lacuna", "run", "rd", "--help"],
+            [sys.executable, "-m", "lacuna", "run", "ld", "--help"],
             capture_output=True,
             text=True,
         )
@@ -150,7 +150,7 @@ class TestRunSubcommandContract:
     def test_run_requires_bids_dir(self, tmp_path):
         """Test that run requires a valid BIDS directory argument."""
         result = subprocess.run(
-            [sys.executable, "-m", "lacuna", "run", "rd"],
+            [sys.executable, "-m", "lacuna", "run", "ld"],
             capture_output=True,
             text=True,
         )
@@ -163,7 +163,7 @@ class TestRunSubcommandContract:
         output = tmp_path / "output"
 
         result = subprocess.run(
-            [sys.executable, "-m", "lacuna", "run", "rd", str(nonexistent), str(output)],
+            [sys.executable, "-m", "lacuna", "run", "ld", str(nonexistent), str(output)],
             capture_output=True,
             text=True,
         )

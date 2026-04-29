@@ -106,7 +106,7 @@ class TestCLIWorkflow:
         result = main(
             [
                 "run",
-                "rd",
+                "ld",
                 str(tmp_path / "nonexistent"),
                 str(output_dir),
                 "--parcel-atlases",
@@ -125,7 +125,7 @@ class TestCLIWorkflow:
         bids_dir.mkdir()
 
         result = main(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            ["run", "ld", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
         )
 
         # Should return BIDS error
@@ -171,7 +171,7 @@ class TestCLIWithMockedAnalysis:
         main(
             [
                 "run",
-                "rd",
+                "ld",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -190,7 +190,7 @@ class TestCLIWithMockedAnalysis:
         main(
             [
                 "run",
-                "rd",
+                "ld",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -210,7 +210,7 @@ class TestCLIWithMockedAnalysis:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "ld",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -276,14 +276,14 @@ class TestRunCommandAliases:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "ld",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
                 "Schaefer100",
             ]
         )
-        assert args.analysis == "rd"
+        assert args.analysis == "ld"
 
     def test_run_localdamage_alias_works(self, minimal_bids_dataset, output_dir):
         """Test that 'run localdamage' alias works."""
