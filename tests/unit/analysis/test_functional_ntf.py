@@ -51,13 +51,40 @@ class TestFunctionalNTMConstruction:
         assert fntf._target_spec == "all"
         assert fntf.enriched is False
 
-    def test_enriched_parameter(self, atlas_cache):
+    def test_enriched_via_ace_cache_dir(self, tmp_path, atlas_cache):
+        # An ACE cache mirrors the prepare-ace layout: stage2_atlas/ + stage1_timeseries/
+        ace_dir = tmp_path / "ace"
+        (ace_dir / "stage2_atlas").mkdir(parents=True)
+        (ace_dir / "stage1_timeseries").mkdir()
+        # Reuse the static atlas's manifest+maps as a stand-in for stage2_atlas
+        for child in atlas_cache.iterdir():
+            target = ace_dir / "stage2_atlas" / child.name
+            if child.is_dir():
+                target.mkdir(exist_ok=True)
+                for f in child.iterdir():
+                    target.joinpath(f.name).write_bytes(f.read_bytes())
+            else:
+                target.write_bytes(child.read_bytes())
+
         fntf = FunctionalNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ace_cache_dir=ace_dir,
             connectome_name="GSP1000",
-            enriched=True,
         )
         assert fntf.enriched is True
+
+    def test_xor_atlas_and_ace(self, atlas_cache):
+        # Both passed → ValueError
+        with pytest.raises(ValueError, match="exactly one"):
+            FunctionalNeurotransmitterFingerprinting(
+                atlas_cache_dir=atlas_cache,
+                ace_cache_dir=atlas_cache,
+                connectome_name="GSP1000",
+            )
+        # Neither passed → ValueError
+        with pytest.raises(ValueError, match="exactly one"):
+            FunctionalNeurotransmitterFingerprinting(
+                connectome_name="GSP1000",
+            )
 
     def test_targets_parameter(self, atlas_cache):
         fntf = FunctionalNeurotransmitterFingerprinting(

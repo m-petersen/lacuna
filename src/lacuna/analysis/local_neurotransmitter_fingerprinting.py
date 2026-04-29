@@ -1,7 +1,6 @@
 """Local Neurotransmitter Fingerprinting (lntf).
 
 Scores NT atlas values directly within the lesion mask.
-Answers: "what neurotransmitter landscape did the lesion wipe out?"
 """
 
 from __future__ import annotations
@@ -14,7 +13,8 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.atlas.config import resolve_targets
 from lacuna.atlas.scoring import score_focal
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import ScalarMetric
+from lacuna.core.data_types import ParcelData
+from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
 logger = logging.getLogger(__name__)
@@ -26,15 +26,20 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
     Computes, for each NT target, the mean z-scored NT density within the
     lesion mask (excluding zero-valued voxels).
 
+    Provide exactly one of ``atlas_cache_dir`` (static NT atlas from
+    ``lacuna fetch ntatlas``) or ``ace_cache_dir`` (ACE-enriched atlas
+    from ``lacuna prepare ace``). The scoring is identical in both
+    cases — only the underlying atlas values differ.
+
     Parameters
     ----------
-    atlas_cache_dir : Path
-        Directory containing the prepared NT atlas (from `lacuna prepare lntf`).
+    atlas_cache_dir : Path or None
+        Directory with the prepared NT atlas (output of ``lacuna fetch ntatlas``).
+    ace_cache_dir : Path or None
+        Directory with the ACE cache (output of ``lacuna prepare ace``).
     targets : str or list[str]
         Target selection. Preset name ("all", "dopaminergic", etc.) or
         explicit list of target names. Default "all".
-    enriched : bool
-        If True, use ACE-enriched atlas instead of static.
     parcel_atlases : list[str] or None
         Atlas names for regional scoring.
     aggregation : str
@@ -51,64 +56,80 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
 
     def __init__(
         self,
-        atlas_cache_dir: str | Path,
+        atlas_cache_dir: str | Path | None = None,
+        ace_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
-        enriched: bool = False,
         parcel_atlases: list[str] | None = None,
         aggregation: str = "mean",
         verbose: bool = False,
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        self.atlas_cache_dir = Path(atlas_cache_dir)
+        if (atlas_cache_dir is None) == (ace_cache_dir is None):
+            raise ValueError(
+                "Provide exactly one of atlas_cache_dir or ace_cache_dir."
+            )
+        self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
+        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self._target_spec = targets
-        self.enriched = enriched
         self.parcel_atlases = parcel_atlases
         self.aggregation = aggregation
 
+    @property
+    def enriched(self) -> bool:
+        """Whether the analysis is sourcing from an ACE cache."""
+        return self.ace_cache_dir is not None
+
+    def _resolve_atlas_dir(self) -> Path:
+        """Return the directory the VoxelAtlas should be loaded from."""
+        if self.ace_cache_dir is not None:
+            return self.ace_cache_dir / "stage2_atlas"
+        return self.atlas_cache_dir
+
     def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate that the atlas cache exists and targets are available."""
-        atlas = load_atlas(self.atlas_cache_dir)
+        atlas = load_atlas(self._resolve_atlas_dir())
         self._atlas = atlas
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
-        """Compute local NT scores."""
+        """Compute local NT scores. Returns a single ParcelData with one row per target."""
         atlas = self._atlas
 
-        # Resample atlas to mask space if needed
+        # Resample atlas to mask grid if needed
         mask_img = mask_data.mask_img
-        mask_affine = mask_img.affine
-        mask_shape = mask_img.shape[:3]
-
         atlas_shape = atlas.get_map(atlas.targets[0]).shape[:3]
-        if atlas_shape != mask_shape:
-            atlas = atlas.resample_to(mask_affine, mask_shape)
+        if atlas_shape != mask_img.shape[:3]:
+            atlas = atlas.resample_to(mask_img.affine, mask_img.shape[:3])
 
-        # Subset to requested targets
         atlas = atlas.subset(self._resolved_targets)
-
         lesion_mask = mask_img.get_fdata().astype(bool)
+        scores = score_focal(atlas, lesion_mask, aggregation=self.aggregation)
 
-        # Global scores
-        global_scores = score_focal(atlas, lesion_mask, aggregation=self.aggregation)
-
-        results = {}
-        for target, score in global_scores.items():
-            results[target] = ScalarMetric(
-                name=target,
-                data=score,
-                data_type="scalar",
-                metadata={"analysis": "lntf", "aggregation": self.aggregation},
-            )
-
-        return results
+        parcel_data = ParcelData(
+            name="neurotransmitter",
+            data={target: float(score) for target, score in scores.items()},
+            region_labels=list(scores.keys()),
+            parcel_names=["neurotransmitter"],
+            aggregation_method=self.aggregation,
+            metadata={
+                "analysis": "lntf",
+                "enriched": self.enriched,
+                "systems": atlas.metadata.get("systems"),
+            },
+        )
+        key = build_result_key(
+            atlas="neurotransmitter",
+            source="LocalNeurotransmitterFingerprinting",
+            desc="lntfscores",
+        )
+        return {key: parcel_data}
 
     def _get_parameters(self) -> dict:
         return {
-            "atlas_cache_dir": str(self.atlas_cache_dir),
+            "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
+            "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "targets": self._target_spec,
-            "enriched": self.enriched,
             "aggregation": self.aggregation,
             "parcel_atlases": self.parcel_atlases,
         }

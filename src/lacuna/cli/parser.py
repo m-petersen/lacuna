@@ -1414,17 +1414,14 @@ def _add_ntm_common_args(parser: ArgumentParser) -> None:
         "--targets", type=str, default="all",
         help="Target preset or comma-separated list (default: all)",
     )
-    g_ntm.add_argument(
-        "--enriched", action="store_true",
-        help="Use ACE-enriched atlas instead of static",
+    atlas_source = g_ntm.add_mutually_exclusive_group(required=True)
+    atlas_source.add_argument(
+        "--atlas-cache-dir", type=str, default=None,
+        help="Directory with NT atlas from 'lacuna fetch ntatlas' (static mode)",
     )
-    g_ntm.add_argument(
+    atlas_source.add_argument(
         "--ace-cache-dir", type=str, default=None,
-        help="Directory with ACE outputs (required if --enriched)",
-    )
-    g_ntm.add_argument(
-        "--atlas-cache-dir", type=str, required=True,
-        help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
+        help="Directory with ACE cache from 'lacuna prepare ace' (enriched mode)",
     )
 
 
@@ -1436,8 +1433,7 @@ def _build_lntf_parser(subparsers) -> None:
         help="Compute local NT density within the lesion",
         description=(
             "Local neurotransmitter fingerprinting: score NT atlas values directly\n"
-            "within the lesion mask. Answers: 'what neurotransmitter landscape\n"
-            "did the lesion wipe out?'\n\n"
+            "within the lesion mask.\n\n"
             "Examples:\n"
             "  lacuna run lntf /bids /output\n"
             "  lacuna run lntf /bids /output --targets dopaminergic\n"
@@ -1496,8 +1492,8 @@ def _build_fntf_parser(subparsers) -> None:
             "weighted by functional connectivity of the lesion. Answers:\n"
             "'what NT systems are functionally connected to the lesion?'\n\n"
             "Examples:\n"
-            "  lacuna run fntf /bids /output --connectome-name GSP1000\n"
-            "  lacuna run fntf /bids /output --connectome-name GSP1000 --enriched --ace-cache-dir /path/to/ace"
+            "  lacuna run fntf /bids /output --connectome-name GSP1000 --atlas-cache-dir /path/to/ntatlas\n"
+            "  lacuna run fntf /bids /output --connectome-name GSP1000 --ace-cache-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )

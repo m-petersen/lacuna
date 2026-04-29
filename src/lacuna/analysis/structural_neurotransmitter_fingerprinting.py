@@ -1,7 +1,6 @@
 """Structural Neurotransmitter Fingerprinting (sntf).
 
 Scores NT atlas values at endpoints of lesion-disconnected streamlines.
-Answers: "what NT-weighted structural connectivity does the lesion disrupt?"
 """
 
 from __future__ import annotations
@@ -17,7 +16,8 @@ from lacuna.assets.connectomes import load_structural_connectome
 from lacuna.atlas.config import resolve_targets
 from lacuna.atlas.scoring import score_structural_endpoints
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import ScalarMetric, Tractogram
+from lacuna.core.data_types import ParcelData, Tractogram
+from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
 logger = logging.getLogger(__name__)
@@ -29,16 +29,20 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     For each lesion-intersecting streamline, computes the mean NT value at its
     two endpoints, then sums across all intersecting streamlines.
 
+    Provide exactly one of ``atlas_cache_dir`` (static NT atlas from
+    ``lacuna fetch ntatlas``) or ``ace_cache_dir`` (ACE-enriched atlas
+    from ``lacuna prepare ace``).
+
     Parameters
     ----------
-    atlas_cache_dir : Path
-        Directory containing the prepared NT atlas.
     connectome_name : str
         Name of the structural connectome (e.g., "dTOR-985").
+    atlas_cache_dir : Path or None
+        Directory with the prepared NT atlas.
+    ace_cache_dir : Path or None
+        Directory with the ACE cache.
     targets : str or list[str]
         Target selection. Default "all".
-    enriched : bool
-        If True, use ACE-enriched atlas.
     parcel_atlases : list[str] or None
         Atlas names for regional scoring.
     precomputed_weights_dir : Path or None
@@ -59,10 +63,10 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
     def __init__(
         self,
-        atlas_cache_dir: str | Path,
         connectome_name: str,
+        atlas_cache_dir: str | Path | None = None,
+        ace_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
-        enriched: bool = False,
         parcel_atlases: list[str] | None = None,
         precomputed_weights_dir: str | Path | None = None,
         check_dependencies: bool = True,
@@ -71,10 +75,14 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        self.atlas_cache_dir = Path(atlas_cache_dir)
+        if (atlas_cache_dir is None) == (ace_cache_dir is None):
+            raise ValueError(
+                "Provide exactly one of atlas_cache_dir or ace_cache_dir."
+            )
+        self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
+        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
-        self.enriched = enriched
         self.parcel_atlases = parcel_atlases
         self.precomputed_weights_dir = (
             Path(precomputed_weights_dir) if precomputed_weights_dir else None
@@ -91,60 +99,58 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
             check_mrtrix_available()
 
+    @property
+    def enriched(self) -> bool:
+        """Whether the analysis is sourcing from an ACE cache."""
+        return self.ace_cache_dir is not None
+
+    def _resolve_atlas_dir(self) -> Path:
+        if self.ace_cache_dir is not None:
+            return self.ace_cache_dir / "stage2_atlas"
+        return self.atlas_cache_dir
+
     def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate atlas, connectome, and resolve targets."""
-        atlas = load_atlas(self.atlas_cache_dir)
+        atlas = load_atlas(self._resolve_atlas_dir())
         self._atlas = atlas
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
-        """Compute structural NT scores."""
+        """Compute structural NT scores. Returns a single ParcelData with one row per target."""
         atlas = self._atlas.subset(self._resolved_targets)
 
-        # Find or compute filtered tractogram
         filtered_tck_path = self._find_or_compute_filtered_tractogram(mask_data)
 
         if filtered_tck_path is None:
-            results = {}
-            for target in self._resolved_targets:
-                results[target] = ScalarMetric(
-                    name=target,
-                    data=0.0,
-                    data_type="scalar",
-                    metadata={"analysis": "sntf"},
-                )
-            results["streamline_count"] = ScalarMetric(
-                name="streamline_count",
-                data=0,
-                data_type="scalar",
+            scores = {target: 0.0 for target in self._resolved_targets}
+            count = 0
+        else:
+            endpoints_start, endpoints_end, intersecting_ids = self._get_endpoint_data(
+                mask_data, filtered_tck_path, atlas
             )
-            return results
-
-        # Get endpoint coordinates and intersecting IDs
-        endpoints_start, endpoints_end, intersecting_ids = self._get_endpoint_data(
-            mask_data, filtered_tck_path, atlas
-        )
-
-        # Score
-        scores, count = score_structural_endpoints(
-            atlas, endpoints_start, endpoints_end, intersecting_ids
-        )
-
-        results = {}
-        for target, score in scores.items():
-            results[target] = ScalarMetric(
-                name=target,
-                data=score,
-                data_type="scalar",
-                metadata={"analysis": "sntf", "streamline_count": count},
+            scores, count = score_structural_endpoints(
+                atlas, endpoints_start, endpoints_end, intersecting_ids
             )
-        results["streamline_count"] = ScalarMetric(
-            name="streamline_count",
-            data=count,
-            data_type="scalar",
-        )
 
-        return results
+        parcel_data = ParcelData(
+            name="neurotransmitter",
+            data={target: float(score) for target, score in scores.items()},
+            region_labels=list(scores.keys()),
+            parcel_names=["neurotransmitter"],
+            aggregation_method="endpoint_sum",
+            metadata={
+                "analysis": "sntf",
+                "enriched": self.enriched,
+                "streamline_count": int(count),
+                "systems": atlas.metadata.get("systems"),
+            },
+        )
+        key = build_result_key(
+            atlas="neurotransmitter",
+            source="StructuralNeurotransmitterFingerprinting",
+            desc="sntfscores",
+        )
+        return {key: parcel_data}
 
     def _find_or_compute_filtered_tractogram(
         self, mask_data: SubjectData
@@ -244,8 +250,8 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
     def _get_parameters(self) -> dict:
         return {
-            "atlas_cache_dir": str(self.atlas_cache_dir),
+            "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
+            "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "connectome_name": self.connectome_name,
             "targets": self._target_spec,
-            "enriched": self.enriched,
         }

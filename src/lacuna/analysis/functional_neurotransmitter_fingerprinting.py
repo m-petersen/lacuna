@@ -18,7 +18,8 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.atlas.config import resolve_targets
 from lacuna.atlas.scoring import score_ace_temporal, score_functional_overlap
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import ScalarMetric, VoxelMap
+from lacuna.core.data_types import ParcelData
+from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
 logger = logging.getLogger(__name__)
@@ -30,18 +31,22 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
     Computes functional connectivity of the lesion (using FunctionalNetworkMapping
     internally), then scores the resulting z-map against the NT atlas.
 
+    Provide exactly one of ``atlas_cache_dir`` (static mode: NT atlas
+    × fLNM z-map) or ``ace_cache_dir`` (enriched mode: temporal
+    correlation of lesion BOLD with stage-1 NT timeseries).
+
     Parameters
     ----------
-    atlas_cache_dir : Path
-        Directory containing the prepared NT atlas.
     connectome_name : str
         Name of the functional connectome (e.g., "GSP1000").
+    atlas_cache_dir : Path or None
+        Directory with the prepared NT atlas (output of ``lacuna fetch ntatlas``).
+        Triggers static-mode scoring.
+    ace_cache_dir : Path or None
+        Directory with the ACE cache (output of ``lacuna prepare ace``).
+        Triggers enriched-mode scoring.
     targets : str or list[str]
         Target selection. Default "all".
-    enriched : bool
-        If True, use ACE-enriched scoring.
-    ace_cache_dir : Path or None
-        Directory with ACE outputs (required if enriched=True).
     parcel_atlases : list[str] or None
         Atlas names for regional scoring.
     method : str
@@ -60,11 +65,10 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
     def __init__(
         self,
-        atlas_cache_dir: str | Path,
         connectome_name: str,
-        targets: str | list[str] = "all",
-        enriched: bool = False,
+        atlas_cache_dir: str | Path | None = None,
         ace_cache_dir: str | Path | None = None,
+        targets: str | list[str] = "all",
         parcel_atlases: list[str] | None = None,
         method: str = "boes",
         n_jobs: int = 1,
@@ -72,62 +76,76 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        self.atlas_cache_dir = Path(atlas_cache_dir)
+        if (atlas_cache_dir is None) == (ace_cache_dir is None):
+            raise ValueError(
+                "Provide exactly one of atlas_cache_dir or ace_cache_dir."
+            )
+        self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
+        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
-        self.enriched = enriched
-        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.parcel_atlases = parcel_atlases
         self.method = method
         self.n_jobs = n_jobs
 
+    @property
+    def enriched(self) -> bool:
+        """Whether the analysis is sourcing from an ACE cache."""
+        return self.ace_cache_dir is not None
+
+    def _resolve_atlas_dir(self) -> Path:
+        if self.ace_cache_dir is not None:
+            return self.ace_cache_dir / "stage2_atlas"
+        return self.atlas_cache_dir
+
     def _validate_inputs(self, mask_data: SubjectData) -> None:
-        """Validate atlas, connectome, and ACE data if enriched."""
-        atlas = load_atlas(self.atlas_cache_dir)
+        """Validate atlas and connectome inputs."""
+        atlas = load_atlas(self._resolve_atlas_dir())
         self._atlas = atlas
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
-        if self.enriched and self.ace_cache_dir is None:
-            raise ValueError(
-                "ACE cache directory required for enriched mode. "
-                "Run 'lacuna prepare ace' first."
-            )
-
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
-        """Compute functional NT scores."""
+        """Compute functional NT scores. Returns a single ParcelData with one row per target."""
         atlas = self._atlas.subset(self._resolved_targets)
 
-        # Compute functional connectivity z-map internally
-        z_map = self._compute_functional_connectivity(mask_data)
-
         if self.enriched:
-            return self._run_enriched(mask_data, atlas, z_map)
+            scores = self._run_enriched(mask_data, atlas)
+            mode = "enriched"
         else:
-            return self._run_static(atlas, z_map)
+            z_map = self._compute_functional_connectivity(mask_data)
+            scores = self._run_static(atlas, z_map)
+            mode = "static"
 
-    def _run_static(self, atlas, z_map):
-        """Static mode: NT atlas x fLNM z-map."""
+        parcel_data = ParcelData(
+            name="neurotransmitter",
+            data={target: float(score) for target, score in scores.items()},
+            region_labels=list(scores.keys()),
+            parcel_names=["neurotransmitter"],
+            aggregation_method=mode,
+            metadata={
+                "analysis": "fntf",
+                "mode": mode,
+                "enriched": self.enriched,
+                "systems": atlas.metadata.get("systems"),
+            },
+        )
+        key = build_result_key(
+            atlas="neurotransmitter",
+            source="FunctionalNeurotransmitterFingerprinting",
+            desc="fntfscores",
+        )
+        return {key: parcel_data}
+
+    def _run_static(self, atlas, z_map) -> dict[str, float]:
+        """Static mode: NT atlas x fLNM z-map. Returns target → score."""
         z_shape = z_map.shape[:3]
         atlas_shape = atlas.get_map(atlas.targets[0]).shape[:3]
         if atlas_shape != z_shape:
             atlas = atlas.resample_to(z_map.affine, z_shape)
+        return score_functional_overlap(atlas, z_map)
 
-        scores = score_functional_overlap(atlas, z_map)
-
-        results = {}
-        for target, score in scores.items():
-            results[target] = ScalarMetric(
-                name=target,
-                data=score,
-                data_type="scalar",
-                metadata={"analysis": "fntf", "mode": "static"},
-            )
-        return results
-
-    def _run_enriched(self, mask_data, atlas, z_map):
-        """ACE-enriched mode: temporal correlation for global scoring."""
-        results = {}
-
+    def _run_enriched(self, mask_data, atlas) -> dict[str, float]:
+        """ACE-enriched mode: temporal correlation for global scoring. Returns target → score."""
         ace_data = self._load_ace_data()
         lesion_ts = self._extract_lesion_timeseries(mask_data)
 
@@ -142,17 +160,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             if target in self._resolved_targets:
                 nt_timeseries[target] = avg_stage1[:, i]
 
-        temporal_scores = score_ace_temporal(nt_timeseries, lesion_ts)
-
-        for target, score in temporal_scores.items():
-            results[target] = ScalarMetric(
-                name=target,
-                data=score,
-                data_type="scalar",
-                metadata={"analysis": "fntf", "mode": "enriched"},
-            )
-
-        return results
+        return score_ace_temporal(nt_timeseries, lesion_ts)
 
     def _compute_functional_connectivity(self, mask_data):
         """Compute fLNM z-map using FunctionalNetworkMapping logic."""
@@ -198,9 +206,9 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
     def _get_parameters(self) -> dict:
         return {
-            "atlas_cache_dir": str(self.atlas_cache_dir),
+            "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
+            "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "connectome_name": self.connectome_name,
             "targets": self._target_spec,
-            "enriched": self.enriched,
             "method": self.method,
         }

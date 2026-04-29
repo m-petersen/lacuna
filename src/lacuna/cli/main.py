@@ -157,12 +157,10 @@ class RunConfig:
         if args.analysis in ntm_analyses:
             if getattr(args, "atlas_cache_dir", None) is not None:
                 analysis_options["atlas_cache_dir"] = args.atlas_cache_dir
-            if getattr(args, "targets", None) is not None:
-                analysis_options["targets"] = args.targets
-            if getattr(args, "enriched", False):
-                analysis_options["enriched"] = True
             if getattr(args, "ace_cache_dir", None) is not None:
                 analysis_options["ace_cache_dir"] = args.ace_cache_dir
+            if getattr(args, "targets", None) is not None:
+                analysis_options["targets"] = args.targets
 
         # LNTF-specific
         if args.analysis in ("lntf", "localneurotransmitterfingerprinting"):
@@ -646,16 +644,9 @@ def _handle_tutorial_command(args: Namespace) -> int:
     try:
         if raw:
             result_dir = setup_tutorial_raw_masks(output_dir, overwrite=force)
-            print(f"✓ Tutorial data copied to: {result_dir}")
-            print("\nThe tutorial dataset includes:")
-            print("  - 01.nii.gz, 02.nii.gz, 03.nii.gz")
         else:
             result_dir = setup_tutorial_data(output_dir, overwrite=force)
-            print(f"✓ Tutorial data copied to: {result_dir}")
-            print("\nThe tutorial dataset includes:")
-            print("  - 3 synthetic subjects (sub-01, sub-02, sub-03)")
-            print("  - Binary lesion masks in MNI152NLin6Asym space")
-            print("  - BIDS-style structure")
+        print(f"✓ Tutorial data copied to: {result_dir}")
         return EXIT_SUCCESS
 
     except FileExistsError:
