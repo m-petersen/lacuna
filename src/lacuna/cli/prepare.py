@@ -12,28 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 def run_prepare_lntf(args) -> None:
-    """Build the NT atlas from fetched representative PET maps and cache it.
-
-    Reads .nii.gz files from ``args.source_dir`` (typically the output of
-    ``lacuna fetch ntatlas``), z-scores each map, and writes the
-    serialized atlas to ``args.cache_dir``.
-    """
+    """Build the NT atlas from fetched representative PET maps and cache it."""
     from lacuna.atlas.store import build_nt_atlas, save_atlas
 
-    source_dir = Path(args.source_dir)
-    cache_dir = Path(args.cache_dir)
-
-    if not source_dir.exists():
-        raise FileNotFoundError(
-            f"PET atlas source directory not found: {source_dir}\n"
-            f"Run 'lacuna fetch ntatlas --output-dir {source_dir}' first."
-        )
-
-    logger.info("Building NT atlas from %s", source_dir)
-    atlas = build_nt_atlas(source_dir)
-    save_atlas(atlas, cache_dir)
-    logger.info("NT atlas saved to %s (%d targets)", cache_dir, len(atlas.targets))
-    print(f"NT atlas prepared: {len(atlas.targets)} targets saved to {cache_dir}")
+    atlas = build_nt_atlas(Path(args.source_dir))
+    save_atlas(atlas, Path(args.cache_dir))
+    print(f"NT atlas prepared: {len(atlas.targets)} targets saved to {args.cache_dir}")
 
 
 def run_prepare_sntf(args) -> None:

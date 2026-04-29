@@ -5,20 +5,8 @@
     "url_template": "https://raw.githubusercontent.com/LeonDLotter/NiSpace-data/{commit}/{path}",
     "hashes_path": "file_hashes.json",
     "map_path_template": "reference/pet/map/{map_id}/{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz",
-    "metadata_path": "reference/pet/metadata.csv",
     "collection_name": "UniqueTracers",
     "systems": {
-        "General": [
-            "target-CMRglu_tracer-fdg_n-20_dx-hc_pub-castrillon2023",
-            "target-rCPS_tracer-leucine_n-42_dx-hc_pub-smith2023",
-            "target-SV2A_tracer-ucbj_n-76_dx-hc_pub-finnema2016",
-            "target-HDAC_tracer-martinostat_n-8_dx-hc_pub-wey2016",
-            "target-VMAT2_tracer-dtbz_n-76_dx-hc_pub-larsen2020"
-        ],
-        "Immunity": [
-            "target-TSPO_tracer-pbr28_n-6_dx-hc_pub-lois2018",
-            "target-COX1_tracer-ps13_n-11_dx-hc_pub-kim2020"
-        ],
         "Glutamate": [
             "target-mGluR5_tracer-abp688_n-73_dx-hc_pub-smart2019",
             "target-NMDA_tracer-ge179_n-29_dx-hc_pub-galovic2021"

@@ -1,7 +1,7 @@
 """Bundled NT atlas collection metadata pinned to a NiSpace-data commit.
 
-Loads `collection.json` which lists representative PET maps per
-neurotransmitter system at a specific NiSpace-data commit.
+Loads `collection.json` which lists the curated representative PET map
+per neurotransmitter system at a specific NiSpace-data commit.
 """
 
 from __future__ import annotations
@@ -19,33 +19,27 @@ def load_collection() -> dict[str, Any]:
         return json.load(f)
 
 
-def map_url(map_id: str) -> str:
-    """Build the raw GitHub URL for a given map ID."""
+def map_rel_path(map_id: str) -> str:
+    """Repo-relative path for a map's MNI152NLin6Asym .nii.gz."""
     coll = load_collection()
-    path = coll["map_path_template"].format(map_id=map_id)
-    return coll["url_template"].format(commit=coll["nispace_commit"], path=path)
+    return coll["map_path_template"].format(map_id=map_id)
+
+
+def map_url(map_id: str) -> str:
+    """Raw GitHub URL for a map's MNI152NLin6Asym .nii.gz."""
+    coll = load_collection()
+    return coll["url_template"].format(commit=coll["nispace_commit"], path=map_rel_path(map_id))
 
 
 def hashes_url() -> str:
-    """Build the raw GitHub URL for `file_hashes.json` at the pinned commit."""
+    """Raw GitHub URL for `file_hashes.json` at the pinned commit."""
     coll = load_collection()
-    return coll["url_template"].format(
-        commit=coll["nispace_commit"], path=coll["hashes_path"]
-    )
-
-
-def metadata_url() -> str:
-    """Build the raw GitHub URL for `reference/pet/metadata.csv`."""
-    coll = load_collection()
-    return coll["url_template"].format(
-        commit=coll["nispace_commit"], path=coll["metadata_path"]
-    )
+    return coll["url_template"].format(commit=coll["nispace_commit"], path=coll["hashes_path"])
 
 
 def all_map_ids() -> list[str]:
     """Flat list of all representative map IDs across systems."""
-    coll = load_collection()
-    return [mid for ids in coll["systems"].values() for mid in ids]
+    return [mid for ids in load_collection()["systems"].values() for mid in ids]
 
 
 def systems() -> dict[str, list[str]]:

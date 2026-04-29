@@ -141,14 +141,13 @@ class TestBuildNtAtlas:
         atlas = build_nt_atlas(tmp_path)
         # Should have all 4 dopamine targets, no others
         assert set(atlas.targets) == {"FDOPA", "D1", "D23", "DAT"}
-        # Skipped list should be non-empty (we missed Serotonin etc.)
-        assert atlas.metadata["skipped"]
+        # Systems metadata only contains loaded systems
         assert atlas.metadata["systems"] == {
             "Dopamine": ["FDOPA", "D1", "D23", "DAT"]
         }
 
     def test_empty_dir_raises(self, tmp_path):
-        with pytest.raises(ValueError, match="No PET maps found"):
+        with pytest.raises(FileNotFoundError, match="No PET maps found"):
             build_nt_atlas(tmp_path)
 
 

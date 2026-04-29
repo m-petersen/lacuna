@@ -600,7 +600,6 @@ class TestFetchNtatlas:
         # Pre-populate output dir with content matching the hash
         for mid in map_ids:
             (tmp_path / f"{mid}_space-MNI152NLin6Asym_desc-proc.nii.gz").write_bytes(content)
-        (tmp_path / "metadata.csv").write_bytes(b"fake")
 
         download_count = {"n": 0}
 
@@ -673,8 +672,8 @@ class TestFetchNtatlas:
             result = fetch_ntatlas(output_dir=tmp_path, force=True)
 
         assert result.success
-        # Force redownload: every map + metadata.csv re-downloaded
-        assert download_count["n"] == len(map_ids) + 1
+        # Force redownload: every map re-downloaded
+        assert download_count["n"] == len(map_ids)
 
     def test_fetch_ntatlas_hash_mismatch_raises(self, tmp_path):
         """Downloaded file with wrong hash should raise DownloadError."""
@@ -709,7 +708,7 @@ class TestFetchNtatlas:
 
         with patch("urllib.request.urlopen", return_value=FakeResp(hashes_payload)), \
              patch("urllib.request.urlretrieve", side_effect=fake_urlretrieve), \
-             pytest.raises(DownloadError, match="Hash mismatch"):
+             pytest.raises(DownloadError, match="SHA-256 mismatch"):
             fetch_ntatlas(output_dir=tmp_path)
 
     def test_ntatlas_in_parser_choices(self):
