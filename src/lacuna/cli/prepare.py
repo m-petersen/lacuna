@@ -43,7 +43,7 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
     # Get endpoints via tckresample
     endpoints_path = cache_dir / "endpoints.tck"
     run_mrtrix_command(
-        f"tckresample {tractogram_path} {endpoints_path} -endpoints",
+        ["tckresample", str(tractogram_path), str(endpoints_path), "-endpoints"],
         verbose=True,
     )
 

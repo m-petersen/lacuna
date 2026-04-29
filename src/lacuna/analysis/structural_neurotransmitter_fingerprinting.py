@@ -214,7 +214,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         # Get endpoints from filtered tractogram
         endpoints_tck = tmp_dir / "endpoints.tck"
         run_mrtrix_command(
-            f"tckresample {filtered_tck_path} {endpoints_tck} -endpoints",
+            ["tckresample", str(filtered_tck_path), str(endpoints_tck), "-endpoints"],
             verbose=self.verbose,
         )
 
