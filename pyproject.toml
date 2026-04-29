@@ -73,7 +73,7 @@ lacuna = "lacuna.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/m-petersen/lacuna"
-Documentation = "https://lacuna.readthedocs.io"
+Documentation = "https://lacuna-py.readthedocs.io"
 Repository = "https://github.com/m-petersen/lacuna"
 "Bug Tracker" = "https://github.com/m-petersen/lacuna/issues"
 
