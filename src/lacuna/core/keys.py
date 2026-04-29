@@ -276,6 +276,8 @@ DESC_TO_SOURCE_MAPPING = {
     # AFNM outputs
     "afnmap": "afnm",
     "afnmweights": "afnm",
+    # SNTF intermediates
+    "endpointdensity": "sntf",
 }
 
 # BIDS suffix mapping - map internal suffixes to BIDS-compliant suffixes

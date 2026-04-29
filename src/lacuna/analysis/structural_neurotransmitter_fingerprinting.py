@@ -16,7 +16,7 @@ from lacuna.assets.connectomes import load_structural_connectome
 from lacuna.atlas.config import resolve_targets
 from lacuna.atlas.scoring import score_structural_endpoints
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import LabeledScalars, Tractogram
+from lacuna.core.data_types import LabeledScalars, Tractogram, VoxelMap
 from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
@@ -121,6 +121,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
         filtered_tck_path = self._find_or_compute_filtered_tractogram(mask_data)
 
+        endpoint_density: VoxelMap | None = None
         if filtered_tck_path is None:
             scores = {target: 0.0 for target in self._resolved_targets}
             count = 0
@@ -131,6 +132,10 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             scores, count = score_structural_endpoints(
                 atlas, endpoints_start, endpoints_end, intersecting_ids
             )
+            if self.keep_intermediate:
+                endpoint_density = self._build_endpoint_density(
+                    endpoints_start, endpoints_end, atlas
+                )
 
         fingerprint = LabeledScalars(
             name="neurotransmitter",
@@ -150,7 +155,32 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             source="StructuralNeurotransmitterFingerprinting",
             desc=desc,
         )
-        return {key: fingerprint}
+        results: dict[str, Any] = {key: fingerprint}
+        if endpoint_density is not None:
+            results["endpointdensity"] = endpoint_density
+        return results
+
+    def _build_endpoint_density(
+        self,
+        endpoints_start: np.ndarray,
+        endpoints_end: np.ndarray,
+        atlas,
+    ) -> VoxelMap:
+        """Voxelwise count of lesion-disconnected streamline endpoints on the atlas grid."""
+        ref_img = atlas.get_map(atlas.targets[0])
+        shape = ref_img.shape[:3]
+        density = np.zeros(shape, dtype=np.int32)
+        for vox in np.concatenate([endpoints_start, endpoints_end], axis=0):
+            density[vox[0], vox[1], vox[2]] += 1
+        import nibabel as nib
+
+        return VoxelMap(
+            name="endpointdensity",
+            data=nib.Nifti1Image(density.astype(np.float32), ref_img.affine),
+            space=atlas.space,
+            resolution=atlas.resolution,
+            metadata={"description": "Endpoint counts of lesion-disconnected streamlines"},
+        )
 
     def _find_or_compute_filtered_tractogram(
         self, mask_data: SubjectData
