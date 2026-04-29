@@ -1353,14 +1353,12 @@ def _build_prepare_parser(subparsers) -> None:
         description=(
             "Precompute non-subject-specific data needed by analyses.\n\n"
             "Available targets:\n"
-            "  lntf - Prepare NT atlas (average per target, z-score)\n"
             "  sntf - Precompute structural endpoint NT weights\n"
             "  ace  - Run ACE (Atlas Connectivity Enrichment) on normative data\n\n"
             "Examples:\n"
-            "  lacuna prepare lntf\n"
-            "  lacuna prepare lntf --source-dir /path/to/pet_maps\n"
             "  lacuna prepare sntf --connectome-path /path/to/tractogram.tck\n"
-            "  lacuna prepare ace --connectome-name GSP1000"
+            "  lacuna prepare ace --connectome-name GSP1000\n\n"
+            "(The local NT atlas is built directly by 'lacuna fetch ntatlas'.)"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -1372,20 +1370,6 @@ def _build_prepare_parser(subparsers) -> None:
         metavar="<target>",
     )
 
-    # prepare lntf
-    prepare_lntf = prepare_subparsers.add_parser(
-        "lntf",
-        help="Build NT atlas from fetched representative PET maps",
-    )
-    prepare_lntf.add_argument(
-        "--source-dir", type=str, required=True,
-        help="Directory with PET NIfTI maps (output of 'lacuna fetch ntatlas')",
-    )
-    prepare_lntf.add_argument(
-        "--cache-dir", type=str, required=True,
-        help="Output cache directory for the prepared atlas",
-    )
-
     # prepare sntf
     prepare_sntf = prepare_subparsers.add_parser(
         "sntf",
@@ -1393,7 +1377,7 @@ def _build_prepare_parser(subparsers) -> None:
     )
     prepare_sntf.add_argument(
         "--atlas-cache-dir", type=str, required=True,
-        help="Directory with prepared NT atlas (from 'lacuna prepare lntf')",
+        help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
     )
     prepare_sntf.add_argument(
         "--connectome-path", type=str, required=True,
@@ -1411,7 +1395,7 @@ def _build_prepare_parser(subparsers) -> None:
     )
     prepare_ace.add_argument(
         "--atlas-cache-dir", type=str, required=True,
-        help="Directory with prepared NT atlas (from 'lacuna prepare lntf')",
+        help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
     )
     prepare_ace.add_argument(
         "--connectome-name", type=str, required=True,
@@ -1440,7 +1424,7 @@ def _add_ntm_common_args(parser: ArgumentParser) -> None:
     )
     g_ntm.add_argument(
         "--atlas-cache-dir", type=str, required=True,
-        help="Directory with prepared NT atlas (from lacuna prepare lntf)",
+        help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
     )
 
 

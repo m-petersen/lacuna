@@ -1099,19 +1099,21 @@ def fetch_ntatlas(
     force: bool = False,
     progress_callback: Callable[[FetchProgress], None] | None = None,
 ) -> FetchResult:
-    """Download representative NT PET atlas maps from NiSpace-data.
+    """Download and prepare the NT PET atlas from NiSpace-data.
 
-    Downloads the curated representative maps (one recommended map
-    per target) in MNI152NLin6Asym space at the pinned NiSpace-data
-    commit. Each download is verified against the SHA-256 hash in
-    ``file_hashes.json`` at the same commit.
+    Downloads the curated representative maps (one recommended map per
+    target) in MNI152NLin6Asym space at the pinned NiSpace-data commit,
+    verifies each against ``file_hashes.json``, then z-scores and saves
+    the resulting :class:`~lacuna.atlas.types.VoxelAtlas` directly to
+    ``output_dir``. The output is a ready-to-use atlas cache:
+    ``output_dir/manifest.json`` + ``output_dir/maps/<target>.nii.gz``.
 
     Parameters
     ----------
     output_dir : str or Path
-        Directory for downloaded NIfTI files.
+        Directory where the prepared atlas is written.
     force : bool, default=False
-        Re-download files even if they exist with a matching hash.
+        Re-download and rebuild even if a manifest already exists.
     progress_callback : callable, optional
         Called with ``FetchProgress`` updates per file.
 
@@ -1120,62 +1122,70 @@ def fetch_ntatlas(
     DownloadError
         On download failure or SHA-256 mismatch.
     """
-    import hashlib
+    import tempfile
     import urllib.error
     import urllib.request
 
+    from lacuna.atlas.store import build_nt_atlas, save_atlas
     from lacuna.core.exceptions import DownloadError
-    from lacuna.data.ntatlas import all_map_ids, hashes_url, map_url, map_rel_path
+    from lacuna.data.ntatlas import all_map_ids, hashes_url, map_rel_path, map_url
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    map_ids = all_map_ids()
     start_time = time.time()
 
-    # Fetch hash manifest
+    if not force and (output_dir / "manifest.json").exists():
+        return FetchResult(
+            success=True,
+            connectome_name="ntatlas",
+            output_dir=output_dir,
+            output_files=sorted((output_dir / "maps").glob("*.nii.gz")),
+            duration_seconds=time.time() - start_time,
+            warnings=["Existing atlas reused. Use force=True to re-download."],
+        )
+
     try:
         with urllib.request.urlopen(hashes_url(), timeout=60) as resp:
             file_hashes = json.loads(resp.read().decode("utf-8"))
     except urllib.error.URLError as e:
         raise DownloadError(hashes_url(), f"Failed to fetch file_hashes.json: {e}") from e
 
-    output_files: list[Path] = []
-    for idx, map_id in enumerate(map_ids):
-        url = map_url(map_id)
-        filename = f"{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz"
-        out_path = output_dir / filename
-        expected_hash = file_hashes[map_rel_path(map_id)]
+    map_ids = all_map_ids()
+    with tempfile.TemporaryDirectory(prefix="lacuna_ntatlas_") as raw_dir_str:
+        raw_dir = Path(raw_dir_str)
+        for idx, map_id in enumerate(map_ids):
+            url = map_url(map_id)
+            filename = f"{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz"
+            out_path = raw_dir / filename
+            expected_hash = file_hashes[map_rel_path(map_id)]
 
-        if progress_callback is not None:
-            progress_callback(
-                FetchProgress(
-                    phase="download",
-                    current_file=filename,
-                    files_completed=idx,
-                    files_total=len(map_ids),
+            if progress_callback is not None:
+                progress_callback(
+                    FetchProgress(
+                        phase="download",
+                        current_file=filename,
+                        files_completed=idx,
+                        files_total=len(map_ids),
+                    )
                 )
-            )
 
-        if not force and out_path.exists() and _sha256(out_path) == expected_hash:
-            output_files.append(out_path)
-            continue
+            try:
+                urllib.request.urlretrieve(url, out_path)
+            except urllib.error.URLError as e:
+                raise DownloadError(url, f"Failed to download: {e}") from e
+            if _sha256(out_path) != expected_hash:
+                raise DownloadError(url, f"SHA-256 mismatch for {filename}")
 
-        try:
-            urllib.request.urlretrieve(url, out_path)
-        except urllib.error.URLError as e:
-            raise DownloadError(url, f"Failed to download: {e}") from e
+        atlas = build_nt_atlas(raw_dir)
 
-        if _sha256(out_path) != expected_hash:
-            out_path.unlink(missing_ok=True)
-            raise DownloadError(url, f"SHA-256 mismatch for {filename}")
-        output_files.append(out_path)
+    save_atlas(atlas, output_dir)
 
     duration = time.time() - start_time
     return FetchResult(
         success=True,
         connectome_name="ntatlas",
         output_dir=output_dir,
-        output_files=output_files,
+        output_files=sorted((output_dir / "maps").glob("*.nii.gz")),
         duration_seconds=duration,
         download_time_seconds=duration,
     )

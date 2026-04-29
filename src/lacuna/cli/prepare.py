@@ -11,15 +11,6 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def run_prepare_lntf(args) -> None:
-    """Build the NT atlas from fetched representative PET maps and cache it."""
-    from lacuna.atlas.store import build_nt_atlas, save_atlas
-
-    atlas = build_nt_atlas(Path(args.source_dir))
-    save_atlas(atlas, Path(args.cache_dir))
-    print(f"NT atlas prepared: {len(atlas.targets)} targets saved to {args.cache_dir}")
-
-
 def run_prepare_sntf(args) -> None:
     """Precompute endpoint NT weights for all streamlines."""
     from lacuna.atlas.store import load_atlas
@@ -28,7 +19,7 @@ def run_prepare_sntf(args) -> None:
     if not (atlas_dir / "manifest.json").exists():
         raise FileNotFoundError(
             f"NT atlas not found at {atlas_dir}.\n"
-            f"Run 'lacuna prepare lntf --source-dir <pet_dir> --cache-dir {atlas_dir}' first."
+            f"Run 'lacuna fetch ntatlas --output-dir {atlas_dir}' first."
         )
 
     atlas = load_atlas(atlas_dir)

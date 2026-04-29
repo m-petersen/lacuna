@@ -570,41 +570,61 @@ class TestOsfDownloader:
 class TestFetchNtatlas:
     """Unit tests for fetch_ntatlas."""
 
+    @staticmethod
+    def _synthetic_nifti_bytes() -> bytes:
+        """Return bytes of a tiny valid NIfTI file (.nii.gz)."""
+        import io
+
+        import nibabel as nib
+        import numpy as np
+
+        affine = np.eye(4) * 2
+        affine[3, 3] = 1
+        rng = np.random.default_rng(42)
+        data = rng.random((6, 6, 6)).astype(np.float32) + 0.1
+        img = nib.Nifti1Image(data, affine)
+        bio = io.BytesIO()
+        file_holder = nib.FileHolder(fileobj=bio)
+        img.to_file_map({"image": file_holder, "header": file_holder})
+        # Above writes uncompressed .nii — wrap in gzip for .nii.gz consumers
+        import gzip
+
+        bio.seek(0)
+        compressed = io.BytesIO()
+        with gzip.GzipFile(fileobj=compressed, mode="wb") as gz:
+            gz.write(bio.read())
+        return compressed.getvalue()
+
+    @classmethod
+    def _build_hash_payload(cls, content: bytes) -> tuple[bytes, str]:
+        """Return (file_hashes.json bytes, content sha256) sized for the bundled collection."""
+        import hashlib
+
+        from lacuna.data.ntatlas import all_map_ids, load_collection
+
+        coll = load_collection()
+        digest = hashlib.sha256(content).hexdigest()
+        hashes = {
+            coll["map_path_template"].format(map_id=mid): digest
+            for mid in all_map_ids()
+        }
+        return json.dumps(hashes).encode("utf-8"), digest
+
     def test_fetch_ntatlas_importable(self):
         """fetch_ntatlas should be importable from lacuna.io."""
         from lacuna.io import fetch_ntatlas
 
         assert callable(fetch_ntatlas)
 
-    def test_fetch_ntatlas_skips_existing_with_matching_hash(self, tmp_path):
-        """Existing files with correct SHA-256 should not be re-downloaded."""
-        import hashlib
-        import io
-
-        from lacuna.data.ntatlas import all_map_ids, load_collection
+    def test_fetch_ntatlas_creates_prepared_atlas(self, tmp_path):
+        """fetch_ntatlas should produce manifest.json + maps/<target>.nii.gz."""
+        from lacuna.data.ntatlas import all_map_ids
         from lacuna.io.fetch import fetch_ntatlas
 
-        coll = load_collection()
-        map_ids = all_map_ids()
-
-        # Build a fake hash manifest where every map's hash matches the
-        # placeholder content we will write to disk.
-        content = b"fake nifti payload"
-        good_hash = hashlib.sha256(content).hexdigest()
-        hashes = {
-            coll["map_path_template"].format(map_id=mid): good_hash
-            for mid in map_ids
-        }
-        hashes_payload = json.dumps(hashes).encode("utf-8")
-
-        # Pre-populate output dir with content matching the hash
-        for mid in map_ids:
-            (tmp_path / f"{mid}_space-MNI152NLin6Asym_desc-proc.nii.gz").write_bytes(content)
-
-        download_count = {"n": 0}
+        content = self._synthetic_nifti_bytes()
+        hashes_payload, _ = self._build_hash_payload(content)
 
         def fake_urlretrieve(url, out_path):
-            download_count["n"] += 1
             Path(out_path).write_bytes(content)
 
         class FakeResp:
@@ -625,28 +645,36 @@ class TestFetchNtatlas:
             result = fetch_ntatlas(output_dir=tmp_path)
 
         assert result.success
-        assert len(result.output_files) == len(map_ids)
-        # Nothing should have been downloaded — all hashes matched.
-        assert download_count["n"] == 0
+        assert (tmp_path / "manifest.json").exists()
+        # One prepared NIfTI per representative map
+        prepared = list((tmp_path / "maps").glob("*.nii.gz"))
+        assert len(prepared) == len(all_map_ids())
 
-    def test_fetch_ntatlas_force_redownloads(self, tmp_path):
-        """fetch_ntatlas with force=True should download even if files exist."""
-        import hashlib
-        from lacuna.data.ntatlas import all_map_ids, load_collection
+    def test_fetch_ntatlas_skips_existing_manifest(self, tmp_path):
+        """Existing manifest.json means fetch is a no-op without force."""
         from lacuna.io.fetch import fetch_ntatlas
 
-        coll = load_collection()
-        map_ids = all_map_ids()
-        content = b"new payload"
-        good_hash = hashlib.sha256(content).hexdigest()
-        hashes = {
-            coll["map_path_template"].format(map_id=mid): good_hash
-            for mid in map_ids
-        }
-        hashes_payload = json.dumps(hashes).encode("utf-8")
+        (tmp_path / "manifest.json").write_text("{}")
+        (tmp_path / "maps").mkdir()
 
-        for mid in map_ids:
-            (tmp_path / f"{mid}_space-MNI152NLin6Asym_desc-proc.nii.gz").write_bytes(b"old")
+        def fail_if_called(*_, **__):
+            raise AssertionError("urlopen/urlretrieve should not be called")
+
+        with patch("urllib.request.urlopen", side_effect=fail_if_called), \
+             patch("urllib.request.urlretrieve", side_effect=fail_if_called):
+            result = fetch_ntatlas(output_dir=tmp_path)
+
+        assert result.success
+        assert result.warnings  # signals reuse
+
+    def test_fetch_ntatlas_force_rebuilds(self, tmp_path):
+        """force=True re-downloads even if manifest exists."""
+        from lacuna.data.ntatlas import all_map_ids
+        from lacuna.io.fetch import fetch_ntatlas
+
+        (tmp_path / "manifest.json").write_text("{}")  # stale manifest
+        content = self._synthetic_nifti_bytes()
+        hashes_payload, _ = self._build_hash_payload(content)
 
         download_count = {"n": 0}
 
@@ -672,8 +700,7 @@ class TestFetchNtatlas:
             result = fetch_ntatlas(output_dir=tmp_path, force=True)
 
         assert result.success
-        # Force redownload: every map re-downloaded
-        assert download_count["n"] == len(map_ids)
+        assert download_count["n"] == len(all_map_ids())
 
     def test_fetch_ntatlas_hash_mismatch_raises(self, tmp_path):
         """Downloaded file with wrong hash should raise DownloadError."""
