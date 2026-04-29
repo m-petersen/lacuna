@@ -57,8 +57,8 @@ class VoxelAtlas:
 
     @property
     def targets(self) -> list[str]:
-        """Sorted list of target names."""
-        return sorted(self.maps.keys())
+        """Target names in atlas insertion order (preserves grouping)."""
+        return list(self.maps.keys())
 
     # ------------------------------------------------------------------
     # Public methods

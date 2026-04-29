@@ -80,14 +80,14 @@ class TestVoxelAtlasConstruction:
 class TestVoxelAtlasTargets:
     """Tests for the targets property."""
 
-    def test_targets_returns_sorted_list(self):
-        """targets property returns keys sorted alphabetically."""
+    def test_targets_preserves_insertion_order(self):
+        """targets property returns keys in atlas insertion order."""
         from lacuna.atlas.types import VoxelAtlas
 
         maps = _make_maps("serotonin", "acetylcholine", "dopamine")
         atlas = VoxelAtlas(maps=maps, space="MNI", resolution=2.0, domain="neurotransmitter")
 
-        assert atlas.targets == ["acetylcholine", "dopamine", "serotonin"]
+        assert atlas.targets == ["serotonin", "acetylcholine", "dopamine"]
 
     def test_targets_single_map(self):
         """targets works with a single-map atlas."""
@@ -143,10 +143,10 @@ class TestVoxelAtlasSubset:
         )
 
     def test_subset_valid_targets(self, atlas):
-        """subset returns a new VoxelAtlas with only the requested targets."""
+        """subset returns a new VoxelAtlas with only the requested targets, in request order."""
         sub = atlas.subset(["serotonin", "dopamine"])
         assert isinstance(sub, type(atlas))
-        assert sub.targets == ["dopamine", "serotonin"]
+        assert sub.targets == ["serotonin", "dopamine"]
 
     def test_subset_preserves_metadata(self, atlas):
         """subset carries over space, resolution, domain, and metadata."""
@@ -206,16 +206,15 @@ class TestVoxelAtlasToMatrix:
         atlas, mask = atlas_and_mask
         mat = atlas.to_matrix(mask)
 
-        # targets sorted: dopamine=0, serotonin=1
-        assert np.all(mat[0] == 3.0)  # dopamine
-        assert np.all(mat[1] == 2.0)  # serotonin
+        # targets follow insertion order: serotonin=0, dopamine=1
+        assert np.all(mat[0] == 2.0)  # serotonin
+        assert np.all(mat[1] == 3.0)  # dopamine
 
-    def test_to_matrix_row_order_matches_sorted_targets(self, atlas_and_mask):
-        """Row order in to_matrix matches sorted target names."""
+    def test_to_matrix_row_order_matches_targets(self, atlas_and_mask):
+        """Row order in to_matrix matches the atlas.targets order."""
         atlas, mask = atlas_and_mask
         mat = atlas.to_matrix(mask)
-        assert atlas.targets == sorted(atlas.targets)
-        # Verify row count equals target count
+        # Row count equals target count
         assert mat.shape[0] == len(atlas.targets)
 
 
