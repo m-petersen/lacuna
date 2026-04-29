@@ -162,6 +162,8 @@ class VoxelAtlas:
                 target_affine=target_affine,
                 target_shape=target_shape,
                 interpolation="continuous",
+                force_resample=True,
+                copy_header=True,
             )
             for target, img in self.maps.items()
         }
