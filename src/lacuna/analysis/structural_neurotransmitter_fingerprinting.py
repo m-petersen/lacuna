@@ -172,7 +172,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
         # Compute via MRtrix
         logger.info("Computing filtered tractogram via MRtrix")
-        tmp_dir = tempfile.mkdtemp(prefix="sntm_")
+        tmp_dir = tempfile.mkdtemp(prefix="sntf_")
         mask_path = Path(tmp_dir) / "lesion_mask.nii.gz"
         nib.save(mask_data.mask_img, str(mask_path))
 

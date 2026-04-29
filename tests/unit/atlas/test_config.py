@@ -2,17 +2,12 @@
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-
 import pytest
-import yaml
 
 from lacuna.atlas.config import (
     ALL_TARGETS,
     NT_PRESETS,
     NT_TARGET_GROUPS,
-    parse_map_selection,
     parse_publication_from_filename,
     parse_target_from_filename,
     resolve_targets,
@@ -228,79 +223,6 @@ class TestResolveTargets:
     def test_empty_explicit_list(self):
         result = resolve_targets([], self.AVAILABLE)
         assert result == []
-
-
-# ---------------------------------------------------------------------------
-# parse_map_selection
-# ---------------------------------------------------------------------------
-
-
-class TestParseMapSelection:
-    def _write_yaml(self, content: str) -> Path:
-        tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yaml", delete=False
-        )
-        tmp.write(content)
-        tmp.flush()
-        return Path(tmp.name)
-
-    def test_returns_none_for_none_path(self):
-        assert parse_map_selection(None) is None
-
-    def test_single_string_wrapped_in_list(self):
-        path = self._write_yaml(
-            "targets:\n  5HT1a: beliveau2017\n"
-        )
-        result = parse_map_selection(path)
-        assert result["5HT1a"] == ["beliveau2017"]
-
-    def test_list_stays_list(self):
-        path = self._write_yaml(
-            "targets:\n  5HT1b:\n    - savli2012\n    - gallezot2010\n"
-        )
-        result = parse_map_selection(path)
-        assert result["5HT1b"] == ["savli2012", "gallezot2010"]
-
-    def test_all_literal(self):
-        path = self._write_yaml(
-            "targets:\n  D1: all\n"
-        )
-        result = parse_map_selection(path)
-        assert result["D1"] == "all"
-
-    def test_exclude_literal(self):
-        path = self._write_yaml(
-            "targets:\n  DAT: exclude\n"
-        )
-        result = parse_map_selection(path)
-        assert result["DAT"] == "exclude"
-
-    def test_mixed_entries(self):
-        yaml_str = (
-            "targets:\n"
-            "  5HT1a: beliveau2017\n"
-            "  5HT1b:\n"
-            "    - savli2012\n"
-            "    - gallezot2010\n"
-            "  D1: all\n"
-            "  DAT: exclude\n"
-        )
-        path = self._write_yaml(yaml_str)
-        result = parse_map_selection(path)
-        assert result["5HT1a"] == ["beliveau2017"]
-        assert result["5HT1b"] == ["savli2012", "gallezot2010"]
-        assert result["D1"] == "all"
-        assert result["DAT"] == "exclude"
-
-    def test_raises_if_no_targets_key(self):
-        path = self._write_yaml("maps:\n  5HT1a: beliveau2017\n")
-        with pytest.raises(ValueError, match="targets"):
-            parse_map_selection(path)
-
-    def test_returns_dict(self):
-        path = self._write_yaml("targets:\n  NET: aston2009\n")
-        result = parse_map_selection(path)
-        assert isinstance(result, dict)
 
 
 # ---------------------------------------------------------------------------

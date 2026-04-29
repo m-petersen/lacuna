@@ -284,9 +284,9 @@ def _build_run_parser(subparsers) -> None:
     _build_fnm_parser(analysis_subparsers)
     _build_snm_parser(analysis_subparsers)
     _build_afnm_parser(analysis_subparsers)
-    _build_lntm_parser(analysis_subparsers)
-    _build_sntm_parser(analysis_subparsers)
-    _build_fntm_parser(analysis_subparsers)
+    _build_lntf_parser(analysis_subparsers)
+    _build_sntf_parser(analysis_subparsers)
+    _build_fntf_parser(analysis_subparsers)
 
 
 def _add_shared_run_arguments(parser: ArgumentParser) -> None:
@@ -1373,34 +1373,34 @@ def _build_prepare_parser(subparsers) -> None:
     )
 
     # prepare lntf
-    prepare_lntm = prepare_subparsers.add_parser(
+    prepare_lntf = prepare_subparsers.add_parser(
         "lntf",
-        help="Prepare NT atlas (average per target, z-score)",
+        help="Build NT atlas from fetched representative PET maps",
     )
-    prepare_lntm.add_argument(
-        "--source-dir", type=str, default=None,
-        help="Directory with raw PET NIfTI maps",
+    prepare_lntf.add_argument(
+        "--source-dir", type=str, required=True,
+        help="Directory with PET NIfTI maps (output of 'lacuna fetch ntatlas')",
     )
-    prepare_lntm.add_argument(
-        "--cache-dir", type=str, default=None,
-        help="Output cache directory",
-    )
-    prepare_lntm.add_argument(
-        "--map-config", type=str, default=None,
-        help="YAML map selection config file",
+    prepare_lntf.add_argument(
+        "--cache-dir", type=str, required=True,
+        help="Output cache directory for the prepared atlas",
     )
 
     # prepare sntf
-    prepare_sntm = prepare_subparsers.add_parser(
+    prepare_sntf = prepare_subparsers.add_parser(
         "sntf",
         help="Precompute structural endpoint NT weights",
     )
-    prepare_sntm.add_argument(
+    prepare_sntf.add_argument(
+        "--atlas-cache-dir", type=str, required=True,
+        help="Directory with prepared NT atlas (from 'lacuna prepare lntf')",
+    )
+    prepare_sntf.add_argument(
         "--connectome-path", type=str, required=True,
         help="Path to structural tractogram (.tck)",
     )
-    prepare_sntm.add_argument(
-        "--cache-dir", type=str, default=None,
+    prepare_sntf.add_argument(
+        "--cache-dir", type=str, required=True,
         help="Output cache directory",
     )
 
@@ -1410,11 +1410,15 @@ def _build_prepare_parser(subparsers) -> None:
         help="Run ACE (Atlas Connectivity Enrichment) on normative data",
     )
     prepare_ace.add_argument(
+        "--atlas-cache-dir", type=str, required=True,
+        help="Directory with prepared NT atlas (from 'lacuna prepare lntf')",
+    )
+    prepare_ace.add_argument(
         "--connectome-name", type=str, required=True,
         help="Normative fMRI connectome name (e.g., GSP1000)",
     )
     prepare_ace.add_argument(
-        "--cache-dir", type=str, default=None,
+        "--cache-dir", type=str, required=True,
         help="Output cache directory",
     )
 
@@ -1440,9 +1444,9 @@ def _add_ntm_common_args(parser: ArgumentParser) -> None:
     )
 
 
-def _build_lntm_parser(subparsers) -> None:
+def _build_lntf_parser(subparsers) -> None:
     """Add the LocalNeurotransmitterFingerprinting (lntf) analysis parser."""
-    lntm_parser = subparsers.add_parser(
+    lntf_parser = subparsers.add_parser(
         "lntf",
         aliases=["localneurotransmitterfingerprinting"],
         help="Compute local NT density within the lesion",
@@ -1457,19 +1461,19 @@ def _build_lntm_parser(subparsers) -> None:
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_run_arguments(lntm_parser)
-    _add_ntm_common_args(lntm_parser)
+    _add_shared_run_arguments(lntf_parser)
+    _add_ntm_common_args(lntf_parser)
 
-    g_lntm = lntm_parser.add_argument_group("LNTF-specific options")
-    g_lntm.add_argument(
+    g_lntf = lntf_parser.add_argument_group("LNTF-specific options")
+    g_lntf.add_argument(
         "--aggregation", choices=["mean", "sum"], default="mean",
         help="Scoring aggregation method (default: mean)",
     )
 
 
-def _build_sntm_parser(subparsers) -> None:
+def _build_sntf_parser(subparsers) -> None:
     """Add the StructuralNeurotransmitterFingerprinting (sntf) analysis parser."""
-    sntm_parser = subparsers.add_parser(
+    sntf_parser = subparsers.add_parser(
         "sntf",
         aliases=["structuralneurotransmitterfingerprinting"],
         help="Compute NT at disconnected streamline endpoints",
@@ -1483,23 +1487,23 @@ def _build_sntm_parser(subparsers) -> None:
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_run_arguments(sntm_parser)
-    _add_ntm_common_args(sntm_parser)
+    _add_shared_run_arguments(sntf_parser)
+    _add_ntm_common_args(sntf_parser)
 
-    g_sntm = sntm_parser.add_argument_group("SNTF-specific options")
-    g_sntm.add_argument(
+    g_sntf = sntf_parser.add_argument_group("SNTF-specific options")
+    g_sntf.add_argument(
         "--connectome-path", type=str, required=True,
         help="Path to structural tractogram (.tck)",
     )
-    g_sntm.add_argument(
+    g_sntf.add_argument(
         "--precomputed-weights-dir", type=str, default=None,
         help="Directory with precomputed endpoint NT weights (from lacuna prepare sntf)",
     )
 
 
-def _build_fntm_parser(subparsers) -> None:
+def _build_fntf_parser(subparsers) -> None:
     """Add the FunctionalNeurotransmitterFingerprinting (fntf) analysis parser."""
-    fntm_parser = subparsers.add_parser(
+    fntf_parser = subparsers.add_parser(
         "fntf",
         aliases=["functionalneurotransmitterfingerprinting"],
         help="Compute NT weighted by functional connectivity",
@@ -1513,15 +1517,15 @@ def _build_fntm_parser(subparsers) -> None:
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
-    _add_shared_run_arguments(fntm_parser)
-    _add_ntm_common_args(fntm_parser)
+    _add_shared_run_arguments(fntf_parser)
+    _add_ntm_common_args(fntf_parser)
 
-    g_fntm = fntm_parser.add_argument_group("FNTF-specific options")
-    g_fntm.add_argument(
+    g_fntf = fntf_parser.add_argument_group("FNTF-specific options")
+    g_fntf.add_argument(
         "--connectome-name", type=str, required=True,
         help="Functional connectome name (e.g., GSP1000)",
     )
-    g_fntm.add_argument(
+    g_fntf.add_argument(
         "--method", choices=["boes", "pini"], default="boes",
         help="Lesion timeseries extraction method (default: boes)",
     )

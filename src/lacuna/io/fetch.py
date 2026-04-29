@@ -9,6 +9,7 @@ Atlases are bundled in the package and accessed via `lacuna.assets.parcellations
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections.abc import Callable
@@ -1091,78 +1092,154 @@ def get_fetch_status(name: str) -> dict:
 # Neurotransmitter Atlas Fetching
 # ============================================================================
 
-# OSF project for the neurotransmitter PET atlas
-_NTATLAS_OSF_NODE = "yz9mb"
-_NTATLAS_OSF_FOLDER = "69e621dd0a3698b86baff9c3"
-
 
 def fetch_ntatlas(
-    output_dir: str | Path | None = None,
+    output_dir: str | Path,
     *,
     force: bool = False,
     progress_callback: Callable[[FetchProgress], None] | None = None,
 ) -> FetchResult:
     """
-    Download neurotransmitter PET atlas maps from OSF.
+    Download representative neurotransmitter PET atlas maps from NiSpace-data.
 
-    Downloads ~45 PET receptor/transporter density maps in MNI152NLin6Asym
-    space from https://osf.io/yz9mb/ into the lacuna cache.
+    Downloads the curated set of representative PET receptor/transporter
+    maps in MNI152NLin6Asym space at a pinned NiSpace-data commit. Map
+    selection follows the ``UniqueTracers`` collection — one recommended
+    map per target — so no averaging is performed downstream.
+
+    Each download is verified against the SHA-256 hash recorded in
+    ``file_hashes.json`` at the same commit.
 
     Parameters
     ----------
-    output_dir : str or Path, optional
-        Directory for downloaded NIfTI files. Defaults to
-        ``~/.cache/lacuna/atlases/neurotransmitter/raw``.
+    output_dir : str or Path
+        Directory for downloaded NIfTI files.
     force : bool, default=False
-        Re-download files even if they already exist.
+        Re-download files even if they already exist with matching hash.
     progress_callback : callable, optional
-        Called with ``FetchProgress`` updates.
+        Called with ``FetchProgress`` updates per file.
 
     Returns
     -------
     FetchResult
-        Result with paths to downloaded files.
+        Result with paths to downloaded files. ``metadata`` contains the
+        pinned NiSpace commit SHA and the system grouping.
 
     Raises
     ------
     DownloadError
-        If the OSF API or file downloads fail.
+        If a file fails to download or its SHA-256 does not match.
     """
-    from .downloaders.osf import OsfDownloader
+    import urllib.request
+    import urllib.error
 
-    if output_dir is None:
-        output_dir = get_data_dir() / "atlases" / "neurotransmitter" / "raw"
+    from lacuna.core.exceptions import DownloadError
+    from lacuna.data.ntatlas import (
+        all_map_ids,
+        hashes_url,
+        load_collection,
+        map_url,
+        metadata_url,
+    )
+
     output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    coll = load_collection()
+    commit = coll["nispace_commit"]
+    map_ids = all_map_ids()
 
     start_time = time.time()
+    warnings: list[str] = []
 
-    # Check for existing files
-    if not force and output_dir.exists():
-        existing = list(output_dir.glob("*.nii.gz"))
-        if existing:
-            return FetchResult(
-                success=True,
-                connectome_name="ntatlas",
-                output_dir=output_dir,
-                output_files=existing,
-                duration_seconds=time.time() - start_time,
-                warnings=["Using existing files. Use --force to re-download."],
+    # Fetch hash manifest
+    try:
+        with urllib.request.urlopen(hashes_url(), timeout=60) as resp:
+            file_hashes = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.URLError as e:
+        raise DownloadError(hashes_url(), f"Failed to fetch file_hashes.json: {e}") from e
+
+    output_files: list[Path] = []
+    n_total = len(map_ids) + 1  # +1 for metadata.csv
+
+    for idx, map_id in enumerate(map_ids):
+        url = map_url(map_id)
+        rel_path = coll["map_path_template"].format(map_id=map_id)
+        filename = f"{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz"
+        out_path = output_dir / filename
+        expected_hash = file_hashes.get(rel_path)
+        if expected_hash is None:
+            raise DownloadError(
+                url, f"No hash for {rel_path} in file_hashes.json at commit {commit}"
             )
 
-    downloader = OsfDownloader(
-        node_id=_NTATLAS_OSF_NODE,
-        folder_id=_NTATLAS_OSF_FOLDER,
-    )
-    downloaded = downloader.download(
-        output_path=output_dir,
-        progress_callback=progress_callback,
-    )
+        if progress_callback is not None:
+            progress_callback(
+                FetchProgress(
+                    phase="download",
+                    current_file=filename,
+                    files_completed=idx,
+                    files_total=n_total,
+                )
+            )
 
+        # Skip if already present and hash matches
+        if not force and out_path.exists():
+            if _sha256(out_path) == expected_hash:
+                output_files.append(out_path)
+                continue
+            warnings.append(f"Re-downloading {filename}: hash mismatch")
+
+        try:
+            urllib.request.urlretrieve(url, out_path)
+        except urllib.error.URLError as e:
+            raise DownloadError(url, f"Failed to download: {e}") from e
+
+        actual_hash = _sha256(out_path)
+        if actual_hash != expected_hash:
+            out_path.unlink(missing_ok=True)
+            raise DownloadError(
+                url,
+                f"Hash mismatch for {filename}: "
+                f"expected {expected_hash}, got {actual_hash}",
+            )
+        output_files.append(out_path)
+
+    # Fetch metadata.csv (best-effort, not hash-verified — informational)
+    metadata_out = output_dir / "metadata.csv"
+    if force or not metadata_out.exists():
+        if progress_callback is not None:
+            progress_callback(
+                FetchProgress(
+                    phase="download",
+                    current_file="metadata.csv",
+                    files_completed=len(map_ids),
+                    files_total=n_total,
+                )
+            )
+        try:
+            urllib.request.urlretrieve(metadata_url(), metadata_out)
+        except urllib.error.URLError as e:
+            warnings.append(f"Could not download metadata.csv: {e}")
+
+    duration = time.time() - start_time
     return FetchResult(
         success=True,
         connectome_name="ntatlas",
         output_dir=output_dir,
-        output_files=downloaded,
-        duration_seconds=time.time() - start_time,
-        download_time_seconds=time.time() - start_time,
+        output_files=output_files,
+        duration_seconds=duration,
+        download_time_seconds=duration,
+        warnings=warnings,
     )
+
+
+def _sha256(path: Path) -> str:
+    """Return SHA-256 hex digest of a file."""
+    import hashlib
+
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()

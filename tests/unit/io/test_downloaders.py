@@ -7,6 +7,8 @@ without making actual network requests.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -574,48 +576,141 @@ class TestFetchNtatlas:
 
         assert callable(fetch_ntatlas)
 
-    def test_fetch_ntatlas_returns_existing(self, tmp_path):
-        """fetch_ntatlas should return existing files without downloading."""
+    def test_fetch_ntatlas_skips_existing_with_matching_hash(self, tmp_path):
+        """Existing files with correct SHA-256 should not be re-downloaded."""
+        import hashlib
+        import io
+
+        from lacuna.data.ntatlas import all_map_ids, load_collection
         from lacuna.io.fetch import fetch_ntatlas
 
-        # Create fake existing files
-        nii = tmp_path / "target-5HT1a.nii.gz"
-        nii.write_bytes(b"data")
+        coll = load_collection()
+        map_ids = all_map_ids()
 
-        result = fetch_ntatlas(output_dir=tmp_path)
+        # Build a fake hash manifest where every map's hash matches the
+        # placeholder content we will write to disk.
+        content = b"fake nifti payload"
+        good_hash = hashlib.sha256(content).hexdigest()
+        hashes = {
+            coll["map_path_template"].format(map_id=mid): good_hash
+            for mid in map_ids
+        }
+        hashes_payload = json.dumps(hashes).encode("utf-8")
+
+        # Pre-populate output dir with content matching the hash
+        for mid in map_ids:
+            (tmp_path / f"{mid}_space-MNI152NLin6Asym_desc-proc.nii.gz").write_bytes(content)
+        (tmp_path / "metadata.csv").write_bytes(b"fake")
+
+        download_count = {"n": 0}
+
+        def fake_urlretrieve(url, out_path):
+            download_count["n"] += 1
+            Path(out_path).write_bytes(content)
+
+        class FakeResp:
+            def __init__(self, data):
+                self._data = data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return self._data
+
+        with patch("urllib.request.urlopen", return_value=FakeResp(hashes_payload)), \
+             patch("urllib.request.urlretrieve", side_effect=fake_urlretrieve):
+            result = fetch_ntatlas(output_dir=tmp_path)
+
         assert result.success
-        assert len(result.output_files) == 1
-        assert result.warnings  # should warn about using existing files
+        assert len(result.output_files) == len(map_ids)
+        # Nothing should have been downloaded — all hashes matched.
+        assert download_count["n"] == 0
 
     def test_fetch_ntatlas_force_redownloads(self, tmp_path):
         """fetch_ntatlas with force=True should download even if files exist."""
+        import hashlib
+        from lacuna.data.ntatlas import all_map_ids, load_collection
         from lacuna.io.fetch import fetch_ntatlas
 
-        # Create fake existing file
-        nii = tmp_path / "target-5HT1a.nii.gz"
-        nii.write_bytes(b"old")
-
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            "data": [
-                {
-                    "attributes": {"kind": "file", "name": "target-5HT1a.nii.gz", "size": 3},
-                    "links": {"download": "https://osf.io/download/x/"},
-                }
-            ],
-            "links": {"next": None},
+        coll = load_collection()
+        map_ids = all_map_ids()
+        content = b"new payload"
+        good_hash = hashlib.sha256(content).hexdigest()
+        hashes = {
+            coll["map_path_template"].format(map_id=mid): good_hash
+            for mid in map_ids
         }
-        mock_dl_resp = MagicMock()
-        mock_dl_resp.headers = {"content-length": "3"}
-        mock_dl_resp.iter_content.return_value = [b"new"]
+        hashes_payload = json.dumps(hashes).encode("utf-8")
 
-        with patch(
-            "lacuna.io.downloaders.osf.requests.get",
-            side_effect=[mock_resp, mock_dl_resp],
-        ):
+        for mid in map_ids:
+            (tmp_path / f"{mid}_space-MNI152NLin6Asym_desc-proc.nii.gz").write_bytes(b"old")
+
+        download_count = {"n": 0}
+
+        def fake_urlretrieve(url, out_path):
+            download_count["n"] += 1
+            Path(out_path).write_bytes(content)
+
+        class FakeResp:
+            def __init__(self, data):
+                self._data = data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return self._data
+
+        with patch("urllib.request.urlopen", return_value=FakeResp(hashes_payload)), \
+             patch("urllib.request.urlretrieve", side_effect=fake_urlretrieve):
             result = fetch_ntatlas(output_dir=tmp_path, force=True)
 
         assert result.success
+        # Force redownload: every map + metadata.csv re-downloaded
+        assert download_count["n"] == len(map_ids) + 1
+
+    def test_fetch_ntatlas_hash_mismatch_raises(self, tmp_path):
+        """Downloaded file with wrong hash should raise DownloadError."""
+        from lacuna.core.exceptions import DownloadError
+        from lacuna.data.ntatlas import all_map_ids, load_collection
+        from lacuna.io.fetch import fetch_ntatlas
+
+        coll = load_collection()
+        map_ids = all_map_ids()
+        # All hashes set to something that won't match downloaded content
+        hashes = {
+            coll["map_path_template"].format(map_id=mid): "0" * 64
+            for mid in map_ids
+        }
+        hashes_payload = json.dumps(hashes).encode("utf-8")
+
+        def fake_urlretrieve(url, out_path):
+            Path(out_path).write_bytes(b"wrong content")
+
+        class FakeResp:
+            def __init__(self, data):
+                self._data = data
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return self._data
+
+        with patch("urllib.request.urlopen", return_value=FakeResp(hashes_payload)), \
+             patch("urllib.request.urlretrieve", side_effect=fake_urlretrieve), \
+             pytest.raises(DownloadError, match="Hash mismatch"):
+            fetch_ntatlas(output_dir=tmp_path)
 
     def test_ntatlas_in_parser_choices(self):
         """ntatlas should be a valid choice in the fetch parser."""

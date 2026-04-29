@@ -1,4 +1,4 @@
-"""NT target grouping, presets, filename parsers, and map selection config.
+"""NT target grouping, presets, and filename parsers.
 
 Provides constants and utilities for working with neurotransmitter receptor/
 transporter targets in the lacuna atlas engine.
@@ -7,10 +7,7 @@ transporter targets in the lacuna atlas engine.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import Union
-
-import yaml
 
 # ---------------------------------------------------------------------------
 # Target groups
@@ -164,60 +161,3 @@ def resolve_targets(
     return requested
 
 
-# ---------------------------------------------------------------------------
-# Map selection config parsing
-# ---------------------------------------------------------------------------
-
-
-def parse_map_selection(
-    config_path: Union[Path, str, None],
-) -> dict | None:
-    """Parse a YAML map-selection config file.
-
-    The YAML format is::
-
-        targets:
-          5HT1a: beliveau2017          # single string → wrapped in list
-          5HT1b: [savli2012, gallezot2010]  # list stays list
-          D1: all                      # literal "all" kept as-is
-          DAT: exclude                 # literal "exclude" kept as-is
-
-    Parameters
-    ----------
-    config_path : Path | str | None
-        Path to the YAML config file, or ``None``.
-
-    Returns
-    -------
-    dict | None
-        Parsed map-selection dict, or ``None`` if *config_path* is ``None``.
-        Keys are target names; values are lists of pub keys, ``"all"``, or
-        ``"exclude"``.
-
-    Raises
-    ------
-    ValueError
-        If the YAML file does not contain a ``"targets"`` top-level key.
-    """
-    if config_path is None:
-        return None
-
-    with open(config_path) as fh:
-        raw = yaml.safe_load(fh)
-
-    if "targets" not in raw:
-        raise ValueError(
-            f"Config file {config_path!r} must have a top-level 'targets' key."
-        )
-
-    result: dict = {}
-    for target, value in raw["targets"].items():
-        if value in ("all", "exclude"):
-            result[target] = value
-        elif isinstance(value, list):
-            result[target] = value
-        else:
-            # Single string — wrap in list
-            result[target] = [str(value)]
-
-    return result

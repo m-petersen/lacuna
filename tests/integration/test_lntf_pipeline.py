@@ -8,19 +8,25 @@ from lacuna.analysis import LocalNeurotransmitterFingerprinting
 from lacuna.atlas.store import build_nt_atlas, save_atlas
 from lacuna.core.data_types import ScalarMetric
 from lacuna.core.subject_data import SubjectData
+from lacuna.data.ntatlas import load_collection
 
 
-def _create_pet_map(tmp_path, target, tracer, pub, shape=(91, 109, 91)):
+def _write_synthetic_collection(src, targets, shape=(91, 109, 91)):
+    """Write synthetic NIfTIs for the given targets using collection map IDs."""
+    coll = load_collection()
+    target_to_map_id = {
+        map_id.split("_", 1)[0][len("target-"):]: map_id
+        for ids in coll["systems"].values()
+        for map_id in ids
+    }
     affine = np.eye(4) * 2
     affine[3, 3] = 1
-    rng = np.random.default_rng(hash((target, tracer, pub)) % 2**32)
-    data = rng.random(shape).astype(np.float32) + 0.1
-    fname = (
-        f"target-{target}_tracer-{tracer}_n-10_dx-hc"
-        f"_pub-{pub}_space-MNI152NLin6Asym_desc-proc.nii.gz"
-    )
-    path = tmp_path / fname
-    nib.save(nib.Nifti1Image(data, affine), str(path))
+    for target in targets:
+        map_id = target_to_map_id[target]
+        rng = np.random.default_rng(hash(map_id) % 2**32)
+        data = rng.random(shape).astype(np.float32) + 0.1
+        fname = f"{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz"
+        nib.save(nib.Nifti1Image(data, affine), str(src / fname))
 
 
 def _make_subject(affine, shape=(91, 109, 91)):
@@ -36,12 +42,10 @@ def _make_subject(affine, shape=(91, 109, 91)):
 
 @pytest.fixture()
 def pet_atlas(tmp_path):
-    """Build a cached NT atlas from fake PET maps."""
+    """Build a cached NT atlas from synthetic PET maps."""
     pet_dir = tmp_path / "pet_raw"
     pet_dir.mkdir()
-    _create_pet_map(pet_dir, "D1", "sch23390", "kaller2017")
-    _create_pet_map(pet_dir, "5HT1a", "cumi101", "beliveau2017")
-    _create_pet_map(pet_dir, "5HT1a", "way100635", "savli2012")
+    _write_synthetic_collection(pet_dir, ["D1", "5HT1a"])
 
     atlas = build_nt_atlas(pet_dir)
     cache_dir = tmp_path / "cache"
@@ -60,11 +64,11 @@ class TestLNTFIntegration:
         lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas)
         result = lntf.run(subject)
 
-        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
-        assert "D1" in lntm_results
-        assert "5HT1a" in lntm_results
-        assert isinstance(lntm_results["D1"], ScalarMetric)
-        assert np.isfinite(lntm_results["D1"].data)
+        lntf_results = result.results["LocalNeurotransmitterFingerprinting"]
+        assert "D1" in lntf_results
+        assert "5HT1a" in lntf_results
+        assert isinstance(lntf_results["D1"], ScalarMetric)
+        assert np.isfinite(lntf_results["D1"].data)
 
     def test_target_subsetting(self, pet_atlas):
         """Test that targets= filters output correctly."""
@@ -77,9 +81,9 @@ class TestLNTFIntegration:
             targets=["D1"],
         )
         result = lntf.run(subject)
-        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
-        assert "D1" in lntm_results
-        assert "5HT1a" not in lntm_results
+        lntf_results = result.results["LocalNeurotransmitterFingerprinting"]
+        assert "D1" in lntf_results
+        assert "5HT1a" not in lntf_results
 
     def test_pipeline_chaining(self, pet_atlas):
         """Test lntf works in a Pipeline with other analyses."""
@@ -89,7 +93,7 @@ class TestLNTFIntegration:
         affine[3, 3] = 1
         subject = _make_subject(affine)
 
-        pipe = Pipeline(name="test_ntm")
+        pipe = Pipeline(name="test_ntf")
         pipe.add(LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas))
         result = pipe.run(subject)
 

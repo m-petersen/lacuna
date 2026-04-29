@@ -98,6 +98,9 @@ local_scheme = "no-local-version"
     "*.tsv",
     "sub-*/ses-*/anat/*.nii.gz",
 ]
+"lacuna.data.ntatlas" = [
+    "*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

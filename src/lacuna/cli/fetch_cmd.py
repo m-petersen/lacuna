@@ -230,18 +230,21 @@ def _handle_hcp1065(args: argparse.Namespace) -> int:
 def _handle_ntatlas(args: argparse.Namespace) -> int:
     """Handle neurotransmitter atlas fetch."""
     from lacuna.core.exceptions import DownloadError
+    from lacuna.data.ntatlas import load_collection
     from lacuna.io import fetch_ntatlas
 
     output_dir = getattr(args, "output_dir", None)
     force = getattr(args, "force", False)
 
-    print("Fetching neurotransmitter PET atlas maps from OSF...")
-    if output_dir:
-        print(f"  Output: {output_dir}")
-    else:
-        from lacuna.io.fetch import get_data_dir
+    if output_dir is None:
+        print("✗ --output-dir is required for ntatlas")
+        return 2
 
-        print(f"  Output: {get_data_dir() / 'atlases' / 'neurotransmitter' / 'raw'}")
+    coll = load_collection()
+    print("Fetching representative neurotransmitter PET maps from NiSpace-data...")
+    print(f"  Source: {coll['source']}")
+    print(f"  Commit: {coll['nispace_commit']}")
+    print(f"  Output: {output_dir}")
     print()
 
     try:

@@ -11,58 +11,46 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def run_prepare_lntm(args) -> None:
-    """Prepare the NT atlas: average per target, z-score, cache."""
-    from lacuna.atlas.config import parse_map_selection
-    from lacuna.atlas.store import build_nt_atlas, save_atlas
-    from lacuna.io.fetch import get_data_dir
+def run_prepare_lntf(args) -> None:
+    """Build the NT atlas from fetched representative PET maps and cache it.
 
-    source_dir = (
-        Path(args.source_dir)
-        if args.source_dir
-        else get_data_dir() / "atlases" / "neurotransmitter" / "raw"
-    )
-    cache_dir = (
-        Path(args.cache_dir)
-        if args.cache_dir
-        else get_data_dir() / "atlases" / "neurotransmitter" / "prepared"
-    )
-    map_config = parse_map_selection(Path(args.map_config) if args.map_config else None)
+    Reads .nii.gz files from ``args.source_dir`` (typically the output of
+    ``lacuna fetch ntatlas``), z-scores each map, and writes the
+    serialized atlas to ``args.cache_dir``.
+    """
+    from lacuna.atlas.store import build_nt_atlas, save_atlas
+
+    source_dir = Path(args.source_dir)
+    cache_dir = Path(args.cache_dir)
 
     if not source_dir.exists():
         raise FileNotFoundError(
             f"PET atlas source directory not found: {source_dir}\n"
-            f"Run 'lacuna fetch ntatlas' first to download the raw PET maps."
+            f"Run 'lacuna fetch ntatlas --output-dir {source_dir}' first."
         )
 
     logger.info("Building NT atlas from %s", source_dir)
-    atlas = build_nt_atlas(source_dir, map_config=map_config)
+    atlas = build_nt_atlas(source_dir)
     save_atlas(atlas, cache_dir)
     logger.info("NT atlas saved to %s (%d targets)", cache_dir, len(atlas.targets))
     print(f"NT atlas prepared: {len(atlas.targets)} targets saved to {cache_dir}")
 
 
-def run_prepare_sntm(args) -> None:
+def run_prepare_sntf(args) -> None:
     """Precompute endpoint NT weights for all streamlines."""
-    import types
-
     from lacuna.atlas.store import load_atlas
-    from lacuna.io.fetch import get_data_dir
 
-    atlas_dir = get_data_dir() / "atlases" / "neurotransmitter" / "prepared"
+    atlas_dir = Path(args.atlas_cache_dir)
     if not (atlas_dir / "manifest.json").exists():
-        logger.info("NT atlas not found, running prepare lntf first...")
-        lntm_args = types.SimpleNamespace(source_dir=None, cache_dir=None, map_config=None)
-        run_prepare_lntm(lntm_args)
+        raise FileNotFoundError(
+            f"NT atlas not found at {atlas_dir}.\n"
+            f"Run 'lacuna prepare lntf --source-dir <pet_dir> --cache-dir {atlas_dir}' first."
+        )
 
     atlas = load_atlas(atlas_dir)
     logger.info("Loaded NT atlas with %d targets", len(atlas.targets))
 
-    cache_dir = (
-        Path(args.cache_dir)
-        if args.cache_dir
-        else get_data_dir() / "sntf" / args.connectome_path.replace("/", "_")
-    )
+    cache_dir = Path(args.cache_dir)
 
     logger.info("Computing endpoint NT weights for tractogram...")
     _precompute_endpoint_weights(atlas, Path(args.connectome_path), cache_dir)
@@ -123,14 +111,12 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
 
 def run_prepare_ace(args) -> None:
     """Run ACE (Atlas Connectivity Enrichment) on normative fMRI data."""
-    from lacuna.atlas.ace import compute_ace_atlas
-    from lacuna.atlas.store import load_atlas, save_atlas
-    from lacuna.io.fetch import get_data_dir
+    from lacuna.atlas.store import load_atlas
 
-    atlas_dir = get_data_dir() / "atlases" / "neurotransmitter" / "prepared"
+    atlas_dir = Path(args.atlas_cache_dir)
     atlas = load_atlas(atlas_dir)
 
-    cache_dir = Path(args.cache_dir) if args.cache_dir else get_data_dir() / "ace"
+    cache_dir = Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("Loading normative fMRI connectome: %s", args.connectome_name)

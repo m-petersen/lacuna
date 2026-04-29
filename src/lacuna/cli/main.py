@@ -1941,13 +1941,13 @@ def _handle_prepare_command(args: Namespace) -> int:
 
     _setup_logging(logging.INFO)
 
-    from lacuna.cli.prepare import run_prepare_ace, run_prepare_lntm, run_prepare_sntm
+    from lacuna.cli.prepare import run_prepare_ace, run_prepare_lntf, run_prepare_sntf
 
     try:
         if target == "lntf":
-            run_prepare_lntm(args)
+            run_prepare_lntf(args)
         elif target == "sntf":
-            run_prepare_sntm(args)
+            run_prepare_sntf(args)
         elif target == "ace":
             run_prepare_ace(args)
         else:

@@ -1,108 +1,84 @@
 """Atlas lifecycle: build, save, load, and cache voxel atlases.
 
-Handles grouping PET maps by target, averaging (excluding zeros),
-z-scoring, and serialization to disk.
+Builds a neurotransmitter VoxelAtlas from the curated representative
+PET maps fetched via `lacuna fetch ntatlas`. One map per target
+(no averaging across publications); maps are z-scored and grouped
+by neurotransmitter system in metadata.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import nibabel as nib
 import numpy as np
 
-from lacuna.atlas.config import (
-    parse_publication_from_filename,
-    parse_target_from_filename,
-)
 from lacuna.atlas.types import VoxelAtlas
+from lacuna.data.ntatlas import load_collection, parse_target
 
 logger = logging.getLogger(__name__)
 
 
-def build_nt_atlas(
-    source_dir: Path,
-    map_config: dict[str, Any] | None = None,
-) -> VoxelAtlas:
-    """Build a neurotransmitter VoxelAtlas from raw PET map NIfTIs.
+def build_nt_atlas(source_dir: Path) -> VoxelAtlas:
+    """Build a neurotransmitter VoxelAtlas from representative PET maps.
 
-    Groups maps by target, averages per target (excluding zeros),
-    and z-scores the result.
+    Loads the bundled NiSpace-data collection (one recommended map per
+    target) and z-scores each map. Maps that are missing from
+    ``source_dir`` are skipped with a warning. The system grouping
+    (Dopamine: [D1, D23, ...]) is preserved in the atlas metadata.
 
     Parameters
     ----------
     source_dir : Path
-        Directory containing PET NIfTI files with standard naming:
-        target-{TARGET}_tracer-{TRACER}_..._pub-{PUB}_...nii.gz
-    map_config : dict or None
-        Map selection configuration. Supports two formats:
-
-        1. Flat filter dict (simple):
-           - {"exclude": ["DAT", "D1"]} — exclude listed targets
-           - {"publications": ["beliveau2017"]} — keep only listed pubs
-
-        2. Per-target dict (advanced, from YAML config):
-           - {"DAT": "exclude", "5HT1a": ["beliveau2017"]}
-           - Values: "exclude", "all", or list of publication keys.
-           - Targets not in config default to "all".
+        Directory containing the NIfTI files downloaded by
+        ``lacuna fetch ntatlas``. Expected filename pattern is
+        ``{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz``.
 
     Returns
     -------
     VoxelAtlas
-        Z-scored, averaged atlas with one map per target.
+        Z-scored atlas keyed by target (e.g. "D1", "5HT1a"), with
+        ``metadata["systems"]`` mapping system names to target lists.
     """
     source_dir = Path(source_dir)
+    coll = load_collection()
 
-    # Discover and group NIfTI files by target
-    file_groups: dict[str, list[Path]] = defaultdict(list)
-    nifti_files = sorted(source_dir.glob("*.nii.gz"))
-
-    if not nifti_files:
-        raise ValueError(f"No .nii.gz files found in {source_dir}")
-
-    for nifti_path in nifti_files:
-        try:
-            target = parse_target_from_filename(nifti_path.name)
-        except ValueError:
-            logger.warning("Skipping file with no target: %s", nifti_path.name)
-            continue
-        file_groups[target].append(nifti_path)
-
-    if not file_groups:
-        raise ValueError(f"No PET NIfTI files with valid target found in {source_dir}")
-
-    # Apply map selection config
-    if map_config:
-        file_groups = _apply_map_config(file_groups, map_config)
-
-    if not file_groups:
-        raise ValueError("No targets remaining after applying map_config filters.")
-
-    # Build averaged, z-scored maps
     maps: dict[str, nib.Nifti1Image] = {}
-    reference_affine = None
+    target_to_map_id: dict[str, str] = {}
+    systems_used: dict[str, list[str]] = {}
+    reference_affine: np.ndarray | None = None
+    skipped: list[str] = []
 
-    for target in sorted(file_groups):
-        paths = file_groups[target]
-        logger.info("Building %s from %d maps", target, len(paths))
+    for system, map_ids in coll["systems"].items():
+        for map_id in map_ids:
+            target = parse_target(map_id)
+            filename = f"{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz"
+            path = source_dir / filename
+            if not path.exists():
+                skipped.append(filename)
+                logger.warning("Missing PET map, skipping: %s", filename)
+                continue
 
-        loaded = [nib.load(str(p)) for p in paths]
+            img = nib.load(str(path))
+            if reference_affine is None:
+                reference_affine = img.affine
 
-        if reference_affine is None:
-            reference_affine = loaded[0].affine
+            z_scored = _zscore_excluding_zeros(img.get_fdata())
+            maps[target] = nib.Nifti1Image(
+                z_scored.astype(np.float32), reference_affine
+            )
+            target_to_map_id[target] = map_id
+            systems_used.setdefault(system, []).append(target)
 
-        # Average excluding zeros
-        averaged = _average_excluding_zeros([img.get_fdata() for img in loaded])
-
-        # Z-score (excluding zeros)
-        z_scored = _zscore_excluding_zeros(averaged)
-
-        maps[target] = nib.Nifti1Image(z_scored.astype(np.float32), reference_affine)
+    if not maps:
+        raise ValueError(
+            f"No PET maps found in {source_dir}. "
+            f"Expected files like '{{map_id}}_space-MNI152NLin6Asym_desc-proc.nii.gz'. "
+            f"Run 'lacuna fetch ntatlas --output-dir {source_dir}' first."
+        )
 
     # Detect resolution from affine
     voxel_sizes = np.sqrt(np.sum(reference_affine[:3, :3] ** 2, axis=0))
@@ -115,103 +91,15 @@ def build_nt_atlas(
         domain="neurotransmitter",
         metadata={
             "source_dir": str(source_dir),
-            "map_config": map_config,
             "n_targets": len(maps),
+            "nispace_commit": coll["nispace_commit"],
+            "collection": coll["collection_name"],
+            "systems": systems_used,
+            "target_to_map_id": target_to_map_id,
+            "skipped": skipped,
             "created_at": datetime.now(timezone.utc).isoformat(),
         },
     )
-
-
-def _apply_map_config(
-    file_groups: dict[str, list[Path]],
-    map_config: dict[str, Any],
-) -> dict[str, list[Path]]:
-    """Apply map_config filtering to file groups.
-
-    Supports both flat-filter format and per-target format.
-    """
-    # Detect format: flat filter uses "exclude" or "publications" as top-level keys
-    if "exclude" in map_config or "publications" in map_config:
-        return _apply_flat_config(file_groups, map_config)
-    return _apply_per_target_config(file_groups, map_config)
-
-
-def _apply_flat_config(
-    file_groups: dict[str, list[Path]],
-    map_config: dict[str, Any],
-) -> dict[str, list[Path]]:
-    """Apply flat-format config: {exclude: [...], publications: [...]}."""
-    result = dict(file_groups)
-
-    # Exclude targets
-    exclude_targets = set(map_config.get("exclude", []))
-    if exclude_targets:
-        result = {t: p for t, p in result.items() if t not in exclude_targets}
-
-    # Filter by publications
-    publications = map_config.get("publications")
-    if publications:
-        pubs_wanted = set(publications)
-        filtered = {}
-        for target, paths in result.items():
-            selected = [
-                p for p in paths
-                if parse_publication_from_filename(p.name) in pubs_wanted
-            ]
-            if selected:
-                filtered[target] = selected
-        result = filtered
-
-    return result
-
-
-def _apply_per_target_config(
-    file_groups: dict[str, list[Path]],
-    map_config: dict[str, Any],
-) -> dict[str, list[Path]]:
-    """Apply per-target config: {target: "exclude"|"all"|[pub_list]}."""
-    result: dict[str, list[Path]] = {}
-    for target, paths in file_groups.items():
-        selection = map_config.get(target, "all")
-        if selection == "exclude":
-            logger.info("Excluding target: %s", target)
-            continue
-        if selection == "all":
-            result[target] = paths
-        else:
-            # Filter by publication key
-            pubs_wanted = set(selection)
-            selected = [
-                p for p in paths
-                if parse_publication_from_filename(p.name) in pubs_wanted
-            ]
-            if not selected:
-                logger.warning(
-                    "No maps found for target '%s' with publications %s",
-                    target, selection,
-                )
-                continue
-            result[target] = selected
-    return result
-
-
-def _average_excluding_zeros(arrays: list[np.ndarray]) -> np.ndarray:
-    """Average multiple arrays, excluding zeros from the mean.
-
-    Zeros indicate outside-coverage voxels (e.g., cortical-only tracers).
-    Voxels where ALL arrays are zero remain zero.
-    """
-    if len(arrays) == 1:
-        return arrays[0].copy()
-
-    stacked = np.stack(arrays, axis=0)
-    nonzero_mask = stacked != 0
-    count = np.sum(nonzero_mask, axis=0)
-    safe_count = np.maximum(count, 1)
-    total = np.sum(np.where(nonzero_mask, stacked, 0.0), axis=0)
-    averaged = total / safe_count
-    averaged[count == 0] = 0.0
-    return averaged
 
 
 def _zscore_excluding_zeros(data: np.ndarray) -> np.ndarray:
