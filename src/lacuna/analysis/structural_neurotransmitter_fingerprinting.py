@@ -73,6 +73,8 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         targets: str | list[str] = "all",
         parcel_atlases: list[str] | None = None,
         precomputed_weights_dir: str | Path | None = None,
+        endpoint_combine: str = "mean",
+        aggregation: str = "sum",
         check_dependencies: bool = True,
         n_jobs: int = 1,
         verbose: bool = False,
@@ -83,6 +85,14 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             raise ValueError(
                 "Provide exactly one of atlas_cache_dir or ace_cache_dir."
             )
+        if endpoint_combine not in ("mean", "sum", "product"):
+            raise ValueError(
+                f"endpoint_combine must be 'mean', 'sum', or 'product'; got '{endpoint_combine}'"
+            )
+        if aggregation not in ("sum", "mean"):
+            raise ValueError(
+                f"aggregation must be 'sum' or 'mean'; got '{aggregation}'"
+            )
         self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
         self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.connectome_name = connectome_name
@@ -91,6 +101,8 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         self.precomputed_weights_dir = (
             Path(precomputed_weights_dir) if precomputed_weights_dir else None
         )
+        self.endpoint_combine = endpoint_combine
+        self.aggregation = aggregation
         self.n_jobs = n_jobs
 
         # Load connectome metadata
@@ -134,7 +146,12 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
                 mask_data, filtered_tck_path, atlas
             )
             scores, count = score_structural_endpoints(
-                atlas, endpoints_start, endpoints_end, intersecting_ids
+                atlas,
+                endpoints_start,
+                endpoints_end,
+                intersecting_ids,
+                endpoint_combine=self.endpoint_combine,
+                aggregation=self.aggregation,
             )
             if self.keep_intermediate:
                 endpoint_density = self._build_endpoint_density(
@@ -145,10 +162,13 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             name="neurotransmitter",
             data={target: float(score) for target, score in scores.items()},
             label_kind="target",
-            aggregation_method="endpoint_sum",
+            aggregation_method=f"{self.endpoint_combine}_endpoints/{self.aggregation}",
+            extras={"streamline_count": int(count)},
             metadata={
                 "analysis": "sntf",
                 "mode": "enriched" if self.enriched else "static",
+                "endpoint_combine": self.endpoint_combine,
+                "aggregation": self.aggregation,
                 "streamline_count": int(count),
                 "systems": atlas.metadata.get("systems"),
             },

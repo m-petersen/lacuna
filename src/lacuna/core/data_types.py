@@ -284,6 +284,11 @@ class LabeledScalars(DataContainer):
     aggregation_method : str, optional
         Method used to compute each scalar (e.g. "mean", "sum",
         "static", "enriched").
+    extras : dict[str, float], optional
+        Additional scalar fields written as constant columns in the
+        exported TSV (e.g. ``{"streamline_count": 12_345}``). Each row
+        of the TSV repeats these values; useful for embedding
+        per-analysis context next to the per-label values.
     metadata : dict
         Additional metadata (e.g. systems grouping, mode, source atlas).
     """
@@ -292,6 +297,7 @@ class LabeledScalars(DataContainer):
     data: dict[str, float]
     label_kind: str = "label"
     aggregation_method: str | None = None
+    extras: dict[str, Any] | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):

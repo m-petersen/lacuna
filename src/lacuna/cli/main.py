@@ -169,6 +169,10 @@ class RunConfig:
         if args.analysis in ("sntf", "structuralneurotransmitterfingerprinting"):
             if getattr(args, "precomputed_weights_dir", None) is not None:
                 analysis_options["precomputed_weights_dir"] = args.precomputed_weights_dir
+            if getattr(args, "endpoint_combine", None) is not None:
+                analysis_options["endpoint_combine"] = args.endpoint_combine
+            if getattr(args, "aggregation", None) is not None:
+                analysis_options["aggregation"] = args.aggregation
 
         # FNTF-specific
         if args.analysis in ("fntf", "functionalneurotransmitterfingerprinting"):

@@ -625,8 +625,9 @@ def export_labeled_scalars(
         raise FileExistsError(f"File exists: {tsv_path}. Use overwrite=True.")
 
     col = labeled.label_kind or "label"
+    extras = labeled.extras or {}
     df = pd.DataFrame(
-        [{col: k, "value": v} for k, v in labeled.data.items()]
+        [{col: k, "value": v, **extras} for k, v in labeled.data.items()]
     )
     df.to_csv(tsv_path, sep="\t", index=False)
 

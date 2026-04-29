@@ -67,12 +67,14 @@ def score_structural_endpoints(
     endpoints_end: np.ndarray,
     intersecting_ids: np.ndarray,
     parcel_mask: np.ndarray | None = None,
+    endpoint_combine: str = "mean",
+    aggregation: str = "sum",
 ) -> tuple[dict[str, float], int]:
     """Score NT values at streamline endpoints for lesion-intersecting streamlines.
 
-    For each intersecting streamline, computes the mean of NT values at its
-    two endpoints. Sums these per-streamline means across all intersecting
-    streamlines.
+    For each intersecting streamline, combines the NT values at its two
+    endpoints (``endpoint_combine``), then aggregates these per-streamline
+    scores across all intersecting streamlines (``aggregation``).
 
     Parameters
     ----------
@@ -87,6 +89,10 @@ def score_structural_endpoints(
     parcel_mask : np.ndarray or None
         If provided, only include streamlines with at least one endpoint
         in this parcel.
+    endpoint_combine : {"mean", "sum", "product"}, default "mean"
+        How to combine the two endpoints of one streamline.
+    aggregation : {"sum", "mean"}, default "sum"
+        How to aggregate per-streamline scores across all streamlines.
 
     Returns
     -------
@@ -119,9 +125,26 @@ def score_structural_endpoints(
         data = atlas.get_map(target).get_fdata()
         val_start = data[starts[:, 0], starts[:, 1], starts[:, 2]]
         val_end = data[ends[:, 0], ends[:, 1], ends[:, 2]]
-        # Mean of two endpoints per streamline, then sum across streamlines
-        per_streamline = (val_start + val_end) / 2.0
-        scores[target] = float(np.sum(per_streamline))
+
+        if endpoint_combine == "mean":
+            per_streamline = (val_start + val_end) / 2.0
+        elif endpoint_combine == "sum":
+            per_streamline = val_start + val_end
+        elif endpoint_combine == "product":
+            per_streamline = val_start * val_end
+        else:
+            raise ValueError(
+                f"endpoint_combine must be 'mean', 'sum', or 'product'; got '{endpoint_combine}'"
+            )
+
+        if aggregation == "sum":
+            scores[target] = float(np.sum(per_streamline))
+        elif aggregation == "mean":
+            scores[target] = float(np.mean(per_streamline)) if count else 0.0
+        else:
+            raise ValueError(
+                f"aggregation must be 'sum' or 'mean'; got '{aggregation}'"
+            )
 
     return scores, count
 
