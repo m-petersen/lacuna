@@ -1122,13 +1122,14 @@ def fetch_ntatlas(
     DownloadError
         On download failure or SHA-256 mismatch.
     """
-    import tempfile
+    import shutil
     import urllib.error
     import urllib.request
 
     from lacuna.atlas.store import build_nt_atlas, save_atlas
     from lacuna.core.exceptions import DownloadError
     from lacuna.data.ntatlas import all_map_ids, hashes_url, map_rel_path, map_url
+    from lacuna.utils.cache import get_temp_dir
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1151,8 +1152,8 @@ def fetch_ntatlas(
         raise DownloadError(hashes_url(), f"Failed to fetch file_hashes.json: {e}") from e
 
     map_ids = all_map_ids()
-    with tempfile.TemporaryDirectory(prefix="lacuna_ntatlas_") as raw_dir_str:
-        raw_dir = Path(raw_dir_str)
+    raw_dir = get_temp_dir(prefix="lacuna_ntatlas_")
+    try:
         for idx, map_id in enumerate(map_ids):
             url = map_url(map_id)
             filename = f"{map_id}_space-MNI152NLin6Asym_desc-proc.nii.gz"
@@ -1177,6 +1178,8 @@ def fetch_ntatlas(
                 raise DownloadError(url, f"SHA-256 mismatch for {filename}")
 
         atlas = build_nt_atlas(raw_dir)
+    finally:
+        shutil.rmtree(raw_dir, ignore_errors=True)
 
     save_atlas(atlas, output_dir)
 

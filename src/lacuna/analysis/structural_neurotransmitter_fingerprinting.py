@@ -14,9 +14,8 @@ import numpy as np
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets.connectomes import load_structural_connectome
 from lacuna.atlas.config import resolve_targets
-from lacuna.atlas.scoring import score_structural_endpoints
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import LabeledScalars, Tractogram, VoxelMap
+from lacuna.core.data_types import LabeledScalars, VoxelMap
 from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
@@ -33,20 +32,24 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     ``lacuna fetch ntatlas``) or ``ace_cache_dir`` (ACE-enriched atlas
     from ``lacuna prepare ace``).
 
+    Requires a prepared (atlas, tractogram) cache produced by
+    ``lacuna prepare sntf``. The cache is the canonical input — there
+    is no on-the-fly fallback. This avoids subtle numerical drift
+    between repeated `tckedit`/`tckresample` runs.
+
     Parameters
     ----------
     connectome_name : str
         Name of the structural connectome (e.g., "dTOR-985").
+    precomputed_weights_dir : Path
+        Directory with the prepared endpoint NT weights cache
+        (output of ``lacuna prepare sntf``). Required.
     atlas_cache_dir : Path or None
         Directory with the prepared NT atlas.
     ace_cache_dir : Path or None
         Directory with the ACE cache.
     targets : str or list[str]
         Target selection. Default "all".
-    parcel_atlases : list[str] or None
-        Atlas names for regional scoring.
-    precomputed_weights_dir : Path or None
-        Directory with precomputed endpoint NT weights.
     check_dependencies : bool
         Check for MRtrix3 availability.
     n_jobs : int
@@ -68,11 +71,10 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     def __init__(
         self,
         connectome_name: str,
+        precomputed_weights_dir: str | Path,
         atlas_cache_dir: str | Path | None = None,
         ace_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
-        parcel_atlases: list[str] | None = None,
-        precomputed_weights_dir: str | Path | None = None,
         endpoint_combine: str = "mean",
         aggregation: str = "sum",
         check_dependencies: bool = True,
@@ -97,10 +99,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
-        self.parcel_atlases = parcel_atlases
-        self.precomputed_weights_dir = (
-            Path(precomputed_weights_dir) if precomputed_weights_dir else None
-        )
+        self.precomputed_weights_dir = Path(precomputed_weights_dir)
         self.endpoint_combine = endpoint_combine
         self.aggregation = aggregation
         self.n_jobs = n_jobs
@@ -132,31 +131,9 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
-        """Compute structural NT scores. Returns a single ParcelData with one row per target."""
+        """Compute structural NT scores. Returns a single LabeledScalars with one row per target."""
         atlas = self._atlas.subset(self._resolved_targets)
-
-        filtered_tck_path = self._find_or_compute_filtered_tractogram(mask_data)
-
-        endpoint_density: VoxelMap | None = None
-        if filtered_tck_path is None:
-            scores = {target: 0.0 for target in self._resolved_targets}
-            count = 0
-        else:
-            endpoints_start, endpoints_end, intersecting_ids = self._get_endpoint_data(
-                mask_data, filtered_tck_path, atlas
-            )
-            scores, count = score_structural_endpoints(
-                atlas,
-                endpoints_start,
-                endpoints_end,
-                intersecting_ids,
-                endpoint_combine=self.endpoint_combine,
-                aggregation=self.aggregation,
-            )
-            if self.keep_intermediate:
-                endpoint_density = self._build_endpoint_density(
-                    endpoints_start, endpoints_end, atlas
-                )
+        scores, count, endpoint_density = self._score_from_cache(mask_data, atlas)
 
         fingerprint = LabeledScalars(
             name="neurotransmitter",
@@ -184,19 +161,129 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             results["endpointdensity"] = endpoint_density
         return results
 
-    def _build_endpoint_density(
-        self,
-        endpoints_start: np.ndarray,
-        endpoints_end: np.ndarray,
-        atlas,
-    ) -> VoxelMap:
-        """Voxelwise count of lesion-disconnected streamline endpoints on the atlas grid."""
-        ref_img = atlas.get_map(atlas.targets[0])
-        shape = ref_img.shape[:3]
-        density = np.zeros(shape, dtype=np.int32)
-        for vox in np.concatenate([endpoints_start, endpoints_end], axis=0):
-            density[vox[0], vox[1], vox[2]] += 1
+    def _score_from_cache(
+        self, mask_data: SubjectData, atlas
+    ) -> tuple[dict[str, float], int, VoxelMap | None]:
+        """Score using a precomputed (atlas, tractogram) cache.
+
+        Filters the full tractogram by the lesion using ``tckedit -include`` while
+        passing through float-encoded streamline indices (``-tck_weights_in``)
+        so that ``-tck_weights_out`` returns the surviving original streamline IDs.
+        Then indexes the precomputed (n_targets, n_streamlines) start/end weight
+        matrices and applies the requested endpoint_combine + aggregation.
+        """
+        import shutil
+
         import nibabel as nib
+
+        from lacuna.utils.cache import get_temp_dir
+        from lacuna.utils.mrtrix import run_mrtrix_command
+
+        cache = self.precomputed_weights_dir
+        for required in ("start_weights.npy", "end_weights.npy", "targets.txt", "streamline_indices.txt"):
+            if not (cache / required).exists():
+                raise FileNotFoundError(
+                    f"Precomputed weights cache missing '{required}' in {cache}.\n"
+                    f"Run 'lacuna prepare sntf --connectome-path ... --cache-dir {cache}' first."
+                )
+
+        # Load cache contents and validate target alignment.
+        cached_targets = (cache / "targets.txt").read_text().splitlines()
+        target_index = {t: i for i, t in enumerate(cached_targets)}
+        missing = [t for t in self._resolved_targets if t not in target_index]
+        if missing:
+            raise ValueError(
+                f"Cached weights are missing targets requested in this run: {missing}. "
+                f"Re-run 'lacuna prepare sntf' against the current NT atlas."
+            )
+        start_weights = np.load(cache / "start_weights.npy", mmap_mode="r")
+        end_weights = np.load(cache / "end_weights.npy", mmap_mode="r")
+
+        # Filter the full tractogram by the lesion mask while propagating the
+        # float-encoded streamline indices through to the output CSV.
+        # Workspace lives under LACUNA_TEMP_DIR (or ~/.cache/lacuna/tmp/) for
+        # consistency with the rest of the package.
+        subject_id = mask_data.metadata.get("subject_id", "subject")
+        tmp = get_temp_dir(prefix=f"sntf_{subject_id}_")
+        try:
+            mask_path = tmp / "lesion_mask.nii.gz"
+            nib.save(mask_data.mask_img, str(mask_path))
+            run_mrtrix_command(
+                [
+                    "tckedit",
+                    str(self.tractogram_path),
+                    str(tmp / "filtered.tck"),
+                    "-include", str(mask_path),
+                    "-tck_weights_in", str(cache / "streamline_indices.txt"),
+                    "-tck_weights_out", str(tmp / "surviving.csv"),
+                    "-force",
+                ],
+                verbose=self.verbose,
+            )
+            surviving_text = (tmp / "surviving.csv").read_text().split()
+        finally:
+            if not self.keep_intermediate:
+                shutil.rmtree(tmp, ignore_errors=True)
+
+        if not surviving_text:
+            density = self._build_endpoint_density_from_cache(np.array([], dtype=np.int64), atlas)
+            return {target: 0.0 for target in self._resolved_targets}, 0, (
+                density if self.keep_intermediate else None
+            )
+        surviving_ids = np.asarray(surviving_text, dtype=np.float64).round().astype(np.int64)
+        count = int(surviving_ids.size)
+
+        # Pull the relevant rows of the cache for the requested targets.
+        target_rows = np.array(
+            [target_index[t] for t in self._resolved_targets], dtype=np.int64
+        )
+        start_vals = np.asarray(start_weights[target_rows][:, surviving_ids])
+        end_vals = np.asarray(end_weights[target_rows][:, surviving_ids])
+
+        if self.endpoint_combine == "mean":
+            per_streamline = (start_vals + end_vals) / 2.0
+        elif self.endpoint_combine == "sum":
+            per_streamline = start_vals + end_vals
+        else:  # product
+            per_streamline = start_vals * end_vals
+
+        if self.aggregation == "sum":
+            agg = per_streamline.sum(axis=1)
+        else:  # mean
+            agg = per_streamline.mean(axis=1) if count else np.zeros(len(target_rows))
+
+        scores = {t: float(agg[i]) for i, t in enumerate(self._resolved_targets)}
+
+        endpoint_density = (
+            self._build_endpoint_density_from_cache(surviving_ids, atlas)
+            if self.keep_intermediate
+            else None
+        )
+        return scores, count, endpoint_density
+
+    def _build_endpoint_density_from_cache(
+        self, surviving_ids: np.ndarray, atlas
+    ) -> VoxelMap:
+        """Endpoint density on the atlas grid for cache-based runs."""
+        import nibabel as nib
+
+        ref_img = atlas.get_map(atlas.targets[0])
+        shape = np.array(ref_img.shape[:3])
+        density = np.zeros(shape, dtype=np.int32)
+
+        cache = self.precomputed_weights_dir
+        # Endpoint coords are derivable from the cached endpoints.tck. Re-derive
+        # cheaply by reading the streamlines (one-time cost).
+        streamlines = nib.streamlines.load(str(cache / "endpoints.tck")).streamlines
+        inv_aff = np.linalg.inv(ref_img.affine)
+        for sid in surviving_ids:
+            sl = streamlines[int(sid)]
+            for pt in (sl[0], sl[-1]):
+                v = np.clip(
+                    (inv_aff[:3, :3] @ pt + inv_aff[:3, 3]).astype(np.int32),
+                    0, shape - 1,
+                )
+                density[v[0], v[1], v[2]] += 1
 
         return VoxelMap(
             name="endpointdensity",
@@ -206,106 +293,13 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             metadata={"description": "Endpoint counts of lesion-disconnected streamlines"},
         )
 
-    def _find_or_compute_filtered_tractogram(
-        self, mask_data: SubjectData
-    ) -> Path | None:
-        """Find existing filtered tractogram or compute one via MRtrix.
-
-        Checks:
-        1. SubjectData.results for SNM filtered_tractogram
-        2. Computes filtering via MRtrix tckedit
-        """
-        import tempfile
-
-        import nibabel as nib
-
-        from lacuna.utils.mrtrix import filter_tractogram_by_mask
-
-        # Check SubjectData results from prior SNM run
-        if "StructuralNetworkMapping" in mask_data.results:
-            snm_results = mask_data.results["StructuralNetworkMapping"]
-            if "filtered_tractogram" in snm_results:
-                tck = snm_results["filtered_tractogram"]
-                if isinstance(tck, Tractogram) and tck.tractogram_path.exists():
-                    logger.info("Reusing filtered tractogram from SNM results")
-                    return tck.tractogram_path
-
-        # Compute via MRtrix
-        logger.info("Computing filtered tractogram via MRtrix")
-        tmp_dir = tempfile.mkdtemp(prefix="sntf_")
-        mask_path = Path(tmp_dir) / "lesion_mask.nii.gz"
-        nib.save(mask_data.mask_img, str(mask_path))
-
-        filtered_path = Path(tmp_dir) / "filtered.tck"
-        filter_tractogram_by_mask(
-            tractogram_path=self.tractogram_path,
-            mask=str(mask_path),
-            output_path=str(filtered_path),
-            n_jobs=self.n_jobs,
-            force=True,
-            verbose=self.verbose,
-        )
-
-        if not filtered_path.exists():
-            return None
-        return filtered_path
-
-    def _get_endpoint_data(
-        self, mask_data: SubjectData, filtered_tck_path: Path, atlas
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Extract endpoint coordinates from filtered tractogram.
-
-        Returns
-        -------
-        tuple of (endpoints_start, endpoints_end, intersecting_ids)
-        """
-        import nibabel as nib
-
-        from lacuna.utils.mrtrix import run_mrtrix_command
-
-        tmp_dir = filtered_tck_path.parent
-
-        # Get endpoints from filtered tractogram
-        endpoints_tck = tmp_dir / "endpoints.tck"
-        run_mrtrix_command(
-            ["tckresample", str(filtered_tck_path), str(endpoints_tck), "-endpoints"],
-            verbose=self.verbose,
-        )
-
-        # Load endpoints and convert to voxel coordinates
-        endpoints_tractogram = nib.streamlines.load(str(endpoints_tck))
-        streamlines = endpoints_tractogram.streamlines
-
-        ref_img = atlas.get_map(atlas.targets[0])
-        inv_affine = np.linalg.inv(ref_img.affine)
-
-        n_streamlines = len(streamlines)
-        endpoints_start = np.zeros((n_streamlines, 3), dtype=np.int32)
-        endpoints_end = np.zeros((n_streamlines, 3), dtype=np.int32)
-
-        for i, sl in enumerate(streamlines):
-            start_world = sl[0]
-            end_world = sl[-1]
-            start_vox = (inv_affine[:3, :3] @ start_world + inv_affine[:3, 3]).astype(
-                np.int32
-            )
-            end_vox = (inv_affine[:3, :3] @ end_world + inv_affine[:3, 3]).astype(
-                np.int32
-            )
-            endpoints_start[i] = np.clip(
-                start_vox, 0, np.array(ref_img.shape[:3]) - 1
-            )
-            endpoints_end[i] = np.clip(end_vox, 0, np.array(ref_img.shape[:3]) - 1)
-
-        # All streamlines in the filtered tractogram are intersecting
-        intersecting_ids = np.arange(n_streamlines)
-
-        return endpoints_start, endpoints_end, intersecting_ids
-
     def _get_parameters(self) -> dict:
         return {
             "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
             "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "connectome_name": self.connectome_name,
+            "precomputed_weights_dir": str(self.precomputed_weights_dir),
+            "endpoint_combine": self.endpoint_combine,
+            "aggregation": self.aggregation,
             "targets": self._target_spec,
         }

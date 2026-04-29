@@ -1471,8 +1471,8 @@ def _build_sntf_parser(subparsers) -> None:
         help="Path to structural tractogram (.tck)",
     )
     g_sntf.add_argument(
-        "--precomputed-weights-dir", type=str, default=None,
-        help="Directory with precomputed endpoint NT weights (from lacuna prepare sntf)",
+        "--precomputed-weights-dir", type=str, required=True,
+        help="Directory with precomputed endpoint NT weights (from 'lacuna prepare sntf')",
     )
     g_sntf.add_argument(
         "--endpoint-combine", choices=["mean", "sum", "product"], default="mean",

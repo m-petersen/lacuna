@@ -33,55 +33,71 @@ def run_prepare_sntf(args) -> None:
 
 
 def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
-    """Sample NT atlas values at all streamline endpoints, cache as float16 matrix."""
+    """Build the SNTF cache for a (atlas, tractogram) pair.
+
+    Produces, in ``cache_dir``:
+
+    * ``endpoints.tck``       — full-tractogram endpoints (output of `tckresample`).
+    * ``start_weights.npy``   — (n_targets, n_streamlines) float32: NT values at the
+                                start endpoint of each streamline, per target.
+    * ``end_weights.npy``     — same, for the end endpoint.
+    * ``targets.txt``         — newline-separated target names matching the
+                                row order of the weights arrays.
+    * ``streamline_indices.txt`` — float per line, ``i`` for streamline ``i``.
+                                  Pass to ``tckedit -tck_weights_in`` so
+                                  ``-tck_weights_out`` returns the surviving
+                                  original streamline IDs after lesion filtering.
+    """
     import nibabel as nib
     import numpy as np
     from lacuna.utils.mrtrix import run_mrtrix_command
 
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Get endpoints via tckresample
     endpoints_path = cache_dir / "endpoints.tck"
     run_mrtrix_command(
-        ["tckresample", str(tractogram_path), str(endpoints_path), "-endpoints"],
+        ["tckresample", str(tractogram_path), str(endpoints_path), "-endpoints", "-force"],
         verbose=True,
     )
 
-    # Load endpoints
-    endpoints_tractogram = nib.streamlines.load(str(endpoints_path))
-    streamlines = endpoints_tractogram.streamlines
+    streamlines = nib.streamlines.load(str(endpoints_path)).streamlines
     n_streamlines = len(streamlines)
 
-    # Convert to voxel coordinates
     ref_img = atlas.get_map(atlas.targets[0])
     inv_affine = np.linalg.inv(ref_img.affine)
-    shape = ref_img.shape[:3]
+    shape = np.array(ref_img.shape[:3])
 
-    starts = np.zeros((n_streamlines, 3), dtype=np.int32)
-    ends = np.zeros((n_streamlines, 3), dtype=np.int32)
+    starts = np.empty((n_streamlines, 3), dtype=np.int32)
+    ends = np.empty((n_streamlines, 3), dtype=np.int32)
     for i, sl in enumerate(streamlines):
-        s = (inv_affine[:3, :3] @ sl[0] + inv_affine[:3, 3]).astype(np.int32)
-        e = (inv_affine[:3, :3] @ sl[-1] + inv_affine[:3, 3]).astype(np.int32)
-        starts[i] = np.clip(s, 0, np.array(shape) - 1)
-        ends[i] = np.clip(e, 0, np.array(shape) - 1)
+        starts[i] = np.clip(
+            (inv_affine[:3, :3] @ sl[0] + inv_affine[:3, 3]).astype(np.int32),
+            0, shape - 1,
+        )
+        ends[i] = np.clip(
+            (inv_affine[:3, :3] @ sl[-1] + inv_affine[:3, 3]).astype(np.int32),
+            0, shape - 1,
+        )
 
-    # Sample NT values at endpoints
     n_targets = len(atlas.targets)
-    weights = np.zeros((n_targets, n_streamlines), dtype=np.float16)
+    start_weights = np.empty((n_targets, n_streamlines), dtype=np.float32)
+    end_weights = np.empty((n_targets, n_streamlines), dtype=np.float32)
     for j, target in enumerate(atlas.targets):
         data = atlas.get_map(target).get_fdata()
-        val_start = data[starts[:, 0], starts[:, 1], starts[:, 2]]
-        val_end = data[ends[:, 0], ends[:, 1], ends[:, 2]]
-        weights[j] = ((val_start + val_end) / 2.0).astype(np.float16)
+        start_weights[j] = data[starts[:, 0], starts[:, 1], starts[:, 2]]
+        end_weights[j] = data[ends[:, 0], ends[:, 1], ends[:, 2]]
 
-    # Save
-    np.save(cache_dir / "endpoint_weights.npy", weights)
-    np.save(cache_dir / "endpoints_start.npy", starts)
-    np.save(cache_dir / "endpoints_end.npy", ends)
-    with open(cache_dir / "targets.txt", "w") as f:
-        f.write("\n".join(atlas.targets))
+    np.save(cache_dir / "start_weights.npy", start_weights)
+    np.save(cache_dir / "end_weights.npy", end_weights)
+    (cache_dir / "targets.txt").write_text("\n".join(atlas.targets) + "\n")
+    # Pure float index file for use with tckedit -tck_weights_in.
+    indices_path = cache_dir / "streamline_indices.txt"
+    np.savetxt(indices_path, np.arange(n_streamlines, dtype=np.float32), fmt="%.0f")
 
-    logger.info("Saved endpoint weights: shape %s", weights.shape)
+    logger.info(
+        "Cached endpoint weights for %d streamlines × %d targets",
+        n_streamlines, n_targets,
+    )
 
 
 def run_prepare_ace(args) -> None:
