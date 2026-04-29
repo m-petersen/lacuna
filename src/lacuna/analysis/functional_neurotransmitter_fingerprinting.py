@@ -1,4 +1,4 @@
-"""Functional Neurotransmitter Mapping (fntm).
+"""Functional Neurotransmitter Fingerprinting (fntf).
 
 Scores NT atlas values weighted by lesion functional connectivity.
 Static mode: NT atlas x fLNM z-map.
@@ -24,8 +24,8 @@ from lacuna.core.subject_data import SubjectData
 logger = logging.getLogger(__name__)
 
 
-class FunctionalNeurotransmitterMapping(BaseAnalysis):
-    """Functional neurotransmitter mapping: NT scores via functional connectivity.
+class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
+    """Functional neurotransmitter fingerprinting: NT scores via functional connectivity.
 
     Computes functional connectivity of the lesion (using FunctionalNetworkMapping
     internally), then scores the resulting z-map against the NT atlas.
@@ -120,7 +120,7 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
                 name=target,
                 data=score,
                 data_type="scalar",
-                metadata={"analysis": "fntm", "mode": "static"},
+                metadata={"analysis": "fntf", "mode": "static"},
             )
         return results
 
@@ -149,7 +149,7 @@ class FunctionalNeurotransmitterMapping(BaseAnalysis):
                 name=target,
                 data=score,
                 data_type="scalar",
-                metadata={"analysis": "fntm", "mode": "enriched"},
+                metadata={"analysis": "fntf", "mode": "enriched"},
             )
 
         return results

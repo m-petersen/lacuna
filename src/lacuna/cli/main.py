@@ -148,11 +148,11 @@ class RunConfig:
             if getattr(args, "lesion_weighting", None) is not None:
                 analysis_options["lesion_weighting"] = args.lesion_weighting
 
-        # NTM-shared options (lntm, sntm, fntm)
+        # NTM-shared options (lntf, sntf, fntf)
         ntm_analyses = (
-            "lntm", "localneurotransmittermapping",
-            "sntm", "structuralneurotransmittermapping",
-            "fntm", "functionalneurotransmittermapping",
+            "lntf", "localneurotransmitterfingerprinting",
+            "sntf", "structuralneurotransmitterfingerprinting",
+            "fntf", "functionalneurotransmitterfingerprinting",
         )
         if args.analysis in ntm_analyses:
             if getattr(args, "atlas_cache_dir", None) is not None:
@@ -164,18 +164,18 @@ class RunConfig:
             if getattr(args, "ace_cache_dir", None) is not None:
                 analysis_options["ace_cache_dir"] = args.ace_cache_dir
 
-        # LNTM-specific
-        if args.analysis in ("lntm", "localneurotransmittermapping"):
+        # LNTF-specific
+        if args.analysis in ("lntf", "localneurotransmitterfingerprinting"):
             if getattr(args, "aggregation", None) is not None:
                 analysis_options["aggregation"] = args.aggregation
 
-        # SNTM-specific
-        if args.analysis in ("sntm", "structuralneurotransmittermapping"):
+        # SNTF-specific
+        if args.analysis in ("sntf", "structuralneurotransmitterfingerprinting"):
             if getattr(args, "precomputed_weights_dir", None) is not None:
                 analysis_options["precomputed_weights_dir"] = args.precomputed_weights_dir
 
-        # FNTM-specific
-        if args.analysis in ("fntm", "functionalneurotransmittermapping"):
+        # FNTF-specific
+        if args.analysis in ("fntf", "functionalneurotransmitterfingerprinting"):
             if getattr(args, "connectome_name", None) is not None:
                 analysis_options["connectome_name"] = args.connectome_name
             if getattr(args, "method", None) is not None:
@@ -1506,12 +1506,12 @@ def _run_analysis_workflow(config: RunConfig) -> int:
         "structuralnetworkmapping": "StructuralNetworkMapping",
         "afnm": "AcceleratedFunctionalNetworkMapping",
         "acceleratedfunctionalnetworkmapping": "AcceleratedFunctionalNetworkMapping",
-        "lntm": "LocalNeurotransmitterMapping",
-        "localneurotransmittermapping": "LocalNeurotransmitterMapping",
-        "sntm": "StructuralNeurotransmitterMapping",
-        "structuralneurotransmittermapping": "StructuralNeurotransmitterMapping",
-        "fntm": "FunctionalNeurotransmitterMapping",
-        "functionalneurotransmittermapping": "FunctionalNeurotransmitterMapping",
+        "lntf": "LocalNeurotransmitterFingerprinting",
+        "localneurotransmitterfingerprinting": "LocalNeurotransmitterFingerprinting",
+        "sntf": "StructuralNeurotransmitterFingerprinting",
+        "structuralneurotransmitterfingerprinting": "StructuralNeurotransmitterFingerprinting",
+        "fntf": "FunctionalNeurotransmitterFingerprinting",
+        "functionalneurotransmitterfingerprinting": "FunctionalNeurotransmitterFingerprinting",
     }
 
     analysis_class_name = analysis_name_map.get(config.analysis.lower())
@@ -1944,9 +1944,9 @@ def _handle_prepare_command(args: Namespace) -> int:
     from lacuna.cli.prepare import run_prepare_ace, run_prepare_lntm, run_prepare_sntm
 
     try:
-        if target == "lntm":
+        if target == "lntf":
             run_prepare_lntm(args)
-        elif target == "sntm":
+        elif target == "sntf":
             run_prepare_sntm(args)
         elif target == "ace":
             run_prepare_ace(args)

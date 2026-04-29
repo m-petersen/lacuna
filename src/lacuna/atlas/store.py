@@ -267,7 +267,7 @@ def load_atlas(cache_dir: Path) -> VoxelAtlas:
     if not manifest_path.exists():
         raise FileNotFoundError(
             f"No atlas found at {cache_dir}. "
-            f"Run 'lacuna prepare lntm' to create one."
+            f"Run 'lacuna prepare lntf' to create one."
         )
 
     with open(manifest_path) as f:

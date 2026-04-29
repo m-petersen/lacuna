@@ -1,4 +1,4 @@
-"""Structural Neurotransmitter Mapping (sntm).
+"""Structural Neurotransmitter Fingerprinting (sntf).
 
 Scores NT atlas values at endpoints of lesion-disconnected streamlines.
 Answers: "what NT-weighted structural connectivity does the lesion disrupt?"
@@ -23,8 +23,8 @@ from lacuna.core.subject_data import SubjectData
 logger = logging.getLogger(__name__)
 
 
-class StructuralNeurotransmitterMapping(BaseAnalysis):
-    """Structural neurotransmitter mapping: NT scores via structural disconnection.
+class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
+    """Structural neurotransmitter fingerprinting: NT scores via structural disconnection.
 
     For each lesion-intersecting streamline, computes the mean NT value at its
     two endpoints, then sums across all intersecting streamlines.
@@ -111,7 +111,7 @@ class StructuralNeurotransmitterMapping(BaseAnalysis):
                     name=target,
                     data=0.0,
                     data_type="scalar",
-                    metadata={"analysis": "sntm"},
+                    metadata={"analysis": "sntf"},
                 )
             results["streamline_count"] = ScalarMetric(
                 name="streamline_count",
@@ -136,7 +136,7 @@ class StructuralNeurotransmitterMapping(BaseAnalysis):
                 name=target,
                 data=score,
                 data_type="scalar",
-                metadata={"analysis": "sntm", "streamline_count": count},
+                metadata={"analysis": "sntf", "streamline_count": count},
             )
         results["streamline_count"] = ScalarMetric(
             name="streamline_count",

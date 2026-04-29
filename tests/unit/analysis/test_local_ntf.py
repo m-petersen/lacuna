@@ -1,10 +1,10 @@
-"""Tests for LocalNeurotransmitterMapping analysis."""
+"""Tests for LocalNeurotransmitterFingerprinting analysis."""
 
 import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.analysis.local_neurotransmitter_mapping import LocalNeurotransmitterMapping
+from lacuna.analysis.local_neurotransmitter_fingerprinting import LocalNeurotransmitterFingerprinting
 from lacuna.atlas.store import build_nt_atlas, save_atlas
 from lacuna.atlas.types import VoxelAtlas
 from lacuna.core.data_types import ScalarMetric
@@ -53,40 +53,40 @@ def lesion_subject():
 
 class TestLocalNTMConstruction:
     def test_basic_construction(self, atlas_cache):
-        lntm = LocalNeurotransmitterMapping(atlas_cache_dir=atlas_cache)
-        assert lntm.TARGET_SPACE is None
+        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
+        assert lntf.TARGET_SPACE is None
 
     def test_targets_parameter(self, atlas_cache):
-        lntm = LocalNeurotransmitterMapping(
+        lntf = LocalNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             targets=["D1"],
         )
-        assert lntm._target_spec == ["D1"]
+        assert lntf._target_spec == ["D1"]
 
 
 class TestLocalNTMRun:
     def test_produces_scalar_metrics(self, atlas_cache, lesion_subject):
-        lntm = LocalNeurotransmitterMapping(atlas_cache_dir=atlas_cache)
-        result = lntm.run(lesion_subject)
-        lntm_results = result.results["LocalNeurotransmitterMapping"]
+        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
+        result = lntf.run(lesion_subject)
+        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
         assert "D1" in lntm_results
         assert "5HT1a" in lntm_results
         assert isinstance(lntm_results["D1"], ScalarMetric)
 
     def test_scores_are_finite(self, atlas_cache, lesion_subject):
-        lntm = LocalNeurotransmitterMapping(atlas_cache_dir=atlas_cache)
-        result = lntm.run(lesion_subject)
-        lntm_results = result.results["LocalNeurotransmitterMapping"]
+        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
+        result = lntf.run(lesion_subject)
+        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
         for target in ["D1", "5HT1a"]:
             score = lntm_results[target].get_data()
             assert np.isfinite(score)
 
     def test_target_subsetting(self, atlas_cache, lesion_subject):
-        lntm = LocalNeurotransmitterMapping(
+        lntf = LocalNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             targets=["D1"],
         )
-        result = lntm.run(lesion_subject)
-        lntm_results = result.results["LocalNeurotransmitterMapping"]
+        result = lntf.run(lesion_subject)
+        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
         assert "D1" in lntm_results
         assert "5HT1a" not in lntm_results

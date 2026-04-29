@@ -38,19 +38,19 @@ Start with the getting started tutorial, then explore the analysis-specific guid
 
     Map structural disconnectivity using normative tractogram data.
 
--   [**Local neurotransmitter mapping**](local-neurotransmitter-mapping.ipynb)
+-   [**Local neurotransmitter fingerprinting**](local-neurotransmitter-fingerprinting.ipynb)
 
     ---
 
     Score neurotransmitter density within a lesion using PET atlas data.
 
--   [**Structural neurotransmitter mapping**](structural-neurotransmitter-mapping.ipynb)
+-   [**Structural neurotransmitter fingerprinting**](structural-neurotransmitter-fingerprinting.ipynb)
 
     ---
 
     Compute NT-weighted structural disconnectivity scores.
 
--   [**Functional neurotransmitter mapping**](functional-neurotransmitter-mapping.ipynb)
+-   [**Functional neurotransmitter fingerprinting**](functional-neurotransmitter-fingerprinting.ipynb)
 
     ---
 

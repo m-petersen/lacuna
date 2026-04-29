@@ -51,7 +51,7 @@ def run_prepare_sntm(args) -> None:
 
     atlas_dir = get_data_dir() / "atlases" / "neurotransmitter" / "prepared"
     if not (atlas_dir / "manifest.json").exists():
-        logger.info("NT atlas not found, running prepare lntm first...")
+        logger.info("NT atlas not found, running prepare lntf first...")
         lntm_args = types.SimpleNamespace(source_dir=None, cache_dir=None, map_config=None)
         run_prepare_lntm(lntm_args)
 
@@ -61,7 +61,7 @@ def run_prepare_sntm(args) -> None:
     cache_dir = (
         Path(args.cache_dir)
         if args.cache_dir
-        else get_data_dir() / "sntm" / args.connectome_path.replace("/", "_")
+        else get_data_dir() / "sntf" / args.connectome_path.replace("/", "_")
     )
 
     logger.info("Computing endpoint NT weights for tractogram...")

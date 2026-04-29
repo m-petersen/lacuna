@@ -1,11 +1,11 @@
-"""Tests for StructuralNeurotransmitterMapping analysis."""
+"""Tests for StructuralNeurotransmitterFingerprinting analysis."""
 
 import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.analysis.structural_neurotransmitter_mapping import (
-    StructuralNeurotransmitterMapping,
+from lacuna.analysis.structural_neurotransmitter_fingerprinting import (
+    StructuralNeurotransmitterFingerprinting,
 )
 from lacuna.assets.connectomes import (
     register_structural_connectome,
@@ -47,7 +47,7 @@ def fake_connectome(tmp_path):
         name=name,
         space="MNI152NLin2009cAsym",
         tractogram_path=tck_path,
-        description="Fake connectome for sntm testing",
+        description="Fake connectome for sntf testing",
     )
     yield name
     unregister_structural_connectome(name)
@@ -55,18 +55,18 @@ def fake_connectome(tmp_path):
 
 class TestStructuralNTMConstruction:
     def test_basic_construction(self, atlas_cache, fake_connectome):
-        sntm = StructuralNeurotransmitterMapping(
+        sntf = StructuralNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             connectome_name=fake_connectome,
             check_dependencies=False,
         )
-        assert sntm._target_spec == "all"
+        assert sntf._target_spec == "all"
 
     def test_targets_parameter(self, atlas_cache, fake_connectome):
-        sntm = StructuralNeurotransmitterMapping(
+        sntf = StructuralNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             connectome_name=fake_connectome,
             targets=["D1"],
             check_dependencies=False,
         )
-        assert sntm._target_spec == ["D1"]
+        assert sntf._target_spec == ["D1"]

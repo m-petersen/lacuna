@@ -1,11 +1,11 @@
-"""Tests for FunctionalNeurotransmitterMapping analysis."""
+"""Tests for FunctionalNeurotransmitterFingerprinting analysis."""
 
 import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.analysis.functional_neurotransmitter_mapping import (
-    FunctionalNeurotransmitterMapping,
+from lacuna.analysis.functional_neurotransmitter_fingerprinting import (
+    FunctionalNeurotransmitterFingerprinting,
 )
 from lacuna.atlas.store import build_nt_atlas, save_atlas
 from lacuna.core.data_types import ScalarMetric
@@ -35,25 +35,25 @@ def atlas_cache(tmp_path):
 
 class TestFunctionalNTMConstruction:
     def test_basic_construction(self, atlas_cache):
-        fntm = FunctionalNeurotransmitterMapping(
+        fntf = FunctionalNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             connectome_name="GSP1000",
         )
-        assert fntm._target_spec == "all"
-        assert fntm.enriched is False
+        assert fntf._target_spec == "all"
+        assert fntf.enriched is False
 
     def test_enriched_parameter(self, atlas_cache):
-        fntm = FunctionalNeurotransmitterMapping(
+        fntf = FunctionalNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             connectome_name="GSP1000",
             enriched=True,
         )
-        assert fntm.enriched is True
+        assert fntf.enriched is True
 
     def test_targets_parameter(self, atlas_cache):
-        fntm = FunctionalNeurotransmitterMapping(
+        fntf = FunctionalNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             connectome_name="GSP1000",
             targets=["D1"],
         )
-        assert fntm._target_spec == ["D1"]
+        assert fntf._target_spec == ["D1"]

@@ -43,13 +43,13 @@ from lacuna.analysis.accelerated_functional_network_mapping import (
 )
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
-from lacuna.analysis.functional_neurotransmitter_mapping import (
-    FunctionalNeurotransmitterMapping,
+from lacuna.analysis.functional_neurotransmitter_fingerprinting import (
+    FunctionalNeurotransmitterFingerprinting,
 )
-from lacuna.analysis.local_neurotransmitter_mapping import LocalNeurotransmitterMapping
+from lacuna.analysis.local_neurotransmitter_fingerprinting import LocalNeurotransmitterFingerprinting
 from lacuna.analysis.parcel_aggregation import ParcelAggregation
-from lacuna.analysis.structural_neurotransmitter_mapping import (
-    StructuralNeurotransmitterMapping,
+from lacuna.analysis.structural_neurotransmitter_fingerprinting import (
+    StructuralNeurotransmitterFingerprinting,
 )
 from lacuna.analysis.local_damage import LocalDamage
 from lacuna.analysis.registry import get_analysis, list_analyses
@@ -65,8 +65,8 @@ __all__ = [
     "FunctionalNetworkMapping",
     "LocalDamage",
     "AcceleratedFunctionalNetworkMapping",
-    "LocalNeurotransmitterMapping",
-    "StructuralNeurotransmitterMapping",
-    "FunctionalNeurotransmitterMapping",
+    "LocalNeurotransmitterFingerprinting",
+    "StructuralNeurotransmitterFingerprinting",
+    "FunctionalNeurotransmitterFingerprinting",
     "StructuralNetworkMapping",
 ]

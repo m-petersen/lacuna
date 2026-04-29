@@ -1,4 +1,4 @@
-"""Local Neurotransmitter Mapping (lntm).
+"""Local Neurotransmitter Fingerprinting (lntf).
 
 Scores NT atlas values directly within the lesion mask.
 Answers: "what neurotransmitter landscape did the lesion wipe out?"
@@ -20,8 +20,8 @@ from lacuna.core.subject_data import SubjectData
 logger = logging.getLogger(__name__)
 
 
-class LocalNeurotransmitterMapping(BaseAnalysis):
-    """Local neurotransmitter mapping: NT scores within the lesion footprint.
+class LocalNeurotransmitterFingerprinting(BaseAnalysis):
+    """Local neurotransmitter fingerprinting: NT scores within the lesion footprint.
 
     Computes, for each NT target, the mean z-scored NT density within the
     lesion mask (excluding zero-valued voxels).
@@ -29,7 +29,7 @@ class LocalNeurotransmitterMapping(BaseAnalysis):
     Parameters
     ----------
     atlas_cache_dir : Path
-        Directory containing the prepared NT atlas (from `lacuna prepare lntm`).
+        Directory containing the prepared NT atlas (from `lacuna prepare lntf`).
     targets : str or list[str]
         Target selection. Preset name ("all", "dopaminergic", etc.) or
         explicit list of target names. Default "all".
@@ -99,7 +99,7 @@ class LocalNeurotransmitterMapping(BaseAnalysis):
                 name=target,
                 data=score,
                 data_type="scalar",
-                metadata={"analysis": "lntm", "aggregation": self.aggregation},
+                metadata={"analysis": "lntf", "aggregation": self.aggregation},
             )
 
         return results

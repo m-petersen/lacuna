@@ -1,10 +1,10 @@
-"""Integration test: full lntm pipeline from raw PET maps to scores."""
+"""Integration test: full lntf pipeline from raw PET maps to scores."""
 
 import nibabel as nib
 import numpy as np
 import pytest
 
-from lacuna.analysis import LocalNeurotransmitterMapping
+from lacuna.analysis import LocalNeurotransmitterFingerprinting
 from lacuna.atlas.store import build_nt_atlas, save_atlas
 from lacuna.core.data_types import ScalarMetric
 from lacuna.core.subject_data import SubjectData
@@ -50,17 +50,17 @@ def pet_atlas(tmp_path):
 
 
 @pytest.mark.integration
-class TestLNTMIntegration:
+class TestLNTFIntegration:
     def test_full_pipeline(self, pet_atlas):
         """Test: raw PET maps -> build atlas -> save -> load -> score lesion."""
         affine = np.eye(4) * 2
         affine[3, 3] = 1
         subject = _make_subject(affine)
 
-        lntm = LocalNeurotransmitterMapping(atlas_cache_dir=pet_atlas)
-        result = lntm.run(subject)
+        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas)
+        result = lntf.run(subject)
 
-        lntm_results = result.results["LocalNeurotransmitterMapping"]
+        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
         assert "D1" in lntm_results
         assert "5HT1a" in lntm_results
         assert isinstance(lntm_results["D1"], ScalarMetric)
@@ -72,17 +72,17 @@ class TestLNTMIntegration:
         affine[3, 3] = 1
         subject = _make_subject(affine)
 
-        lntm = LocalNeurotransmitterMapping(
+        lntf = LocalNeurotransmitterFingerprinting(
             atlas_cache_dir=pet_atlas,
             targets=["D1"],
         )
-        result = lntm.run(subject)
-        lntm_results = result.results["LocalNeurotransmitterMapping"]
+        result = lntf.run(subject)
+        lntm_results = result.results["LocalNeurotransmitterFingerprinting"]
         assert "D1" in lntm_results
         assert "5HT1a" not in lntm_results
 
     def test_pipeline_chaining(self, pet_atlas):
-        """Test lntm works in a Pipeline with other analyses."""
+        """Test lntf works in a Pipeline with other analyses."""
         from lacuna.core.pipeline import Pipeline
 
         affine = np.eye(4) * 2
@@ -90,7 +90,7 @@ class TestLNTMIntegration:
         subject = _make_subject(affine)
 
         pipe = Pipeline(name="test_ntm")
-        pipe.add(LocalNeurotransmitterMapping(atlas_cache_dir=pet_atlas))
+        pipe.add(LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas))
         result = pipe.run(subject)
 
-        assert "LocalNeurotransmitterMapping" in result.results
+        assert "LocalNeurotransmitterFingerprinting" in result.results
