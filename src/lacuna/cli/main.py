@@ -365,29 +365,33 @@ def _handle_collect_command(args: Namespace) -> int:
     overwrite = getattr(args, "overwrite", False)
     pattern = getattr(args, "pattern", None)
 
-    # Build glob pattern - if user provides pattern, wrap it to match parcelstats files
+    # Build glob pattern - if user provides one, wrap it for either suffix.
     if pattern:
-        # User provides a pattern fragment to match within parcelstats filenames
-        # e.g., "*400*inputmask*" -> "*400*inputmask*_parcelstats.tsv"
-        if "_parcelstats.tsv" in pattern:
-            glob_pattern = pattern
+        if "_parcelstats.tsv" in pattern or "_profilestats.tsv" in pattern:
+            glob_patterns = [pattern]
         else:
-            # Ensure pattern ends with _parcelstats.tsv
-            glob_pattern = f"*{pattern.strip('*')}*_parcelstats.tsv"
+            stem = pattern.strip("*")
+            glob_patterns = [
+                f"*{stem}*_parcelstats.tsv",
+                f"*{stem}*_profilestats.tsv",
+            ]
     else:
-        glob_pattern = "*_parcelstats.tsv"
+        glob_patterns = ["*_parcelstats.tsv", "*_profilestats.tsv"]
 
     logger.info("Running collect (group-level aggregation)")
     logger.info(f"Scanning derivatives directory: {derivatives_dir}")
     if output_dir != derivatives_dir:
         logger.info(f"Output directory: {output_dir}")
-    logger.info(f"Pattern: {glob_pattern}")
+    logger.info(f"Patterns: {', '.join(glob_patterns)}")
 
     # Pre-scan to inform user what was found
     from lacuna.io.bids import _extract_output_type
 
     matched_files = [
-        f for f in Path(derivatives_dir).rglob(glob_pattern) if not f.name.startswith("group_")
+        f
+        for gp in glob_patterns
+        for f in Path(derivatives_dir).rglob(gp)
+        if not f.name.startswith("group_")
     ]
     n_subjects = len(
         {
@@ -403,12 +407,24 @@ def _handle_collect_command(args: Namespace) -> int:
     )
 
     try:
-        created_files = aggregate_parcelstats(
-            derivatives_dir=derivatives_dir,
-            output_dir=output_dir,
-            pattern=glob_pattern,
-            overwrite=overwrite,
-        )
+        created_files: dict = {}
+        for gp in glob_patterns:
+            try:
+                created_files.update(
+                    aggregate_parcelstats(
+                        derivatives_dir=derivatives_dir,
+                        output_dir=output_dir,
+                        pattern=gp,
+                        overwrite=overwrite,
+                    )
+                )
+            except BidsError:
+                # No files matched this pattern — try the next one.
+                continue
+        if not created_files and not matched_files:
+            raise BidsError(
+                f"No parcelstats/profilestats files found in {derivatives_dir}"
+            )
 
         if not created_files:
             if not overwrite:

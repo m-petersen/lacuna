@@ -986,7 +986,7 @@ def export_bids_derivatives(
                         overwrite=overwrite,
                     )
 
-                # LabeledScalars -> TSV (labelstats suffix)
+                # LabeledScalars -> TSV (profilestats suffix)
                 elif isinstance(value, LabeledScalarsType) and export_parcel_data:
                     bf = BidsFilename.from_result_key(key, "labels", namespace=_namespace)
                     bids_key = str(bf)
@@ -1312,18 +1312,19 @@ def validate_bids_derivatives(
 def aggregate_parcelstats(
     derivatives_dir: str | Path,
     output_dir: str | Path | None = None,
-    pattern: str = "*_parcelstats.tsv",
+    pattern: str | None = None,
     overwrite: bool = False,
     label_filter: str | None = None,
     analysis_filter: str | None = None,
     progress: bool = True,
 ) -> dict[str, Path]:
     """
-    Aggregate subject-level parcelstats TSV files into group-level DataFrames.
+    Aggregate subject-level tabular TSV files into group-level DataFrames.
 
-    Scans a BIDS derivatives directory for parcelstats TSV files and combines
-    them into single TSV files per output type, with each row representing a
-    subject and each column representing a brain region.
+    Scans a BIDS derivatives directory for ``parcelstats`` or ``profilestats``
+    TSV files and combines them into single TSV files per output type, with
+    each row representing a subject and each column representing one
+    region (parcelstats) or one label (profilestats).
 
     This is the "group" analysis level, similar to fMRIprep's group analysis.
 
@@ -1382,13 +1383,25 @@ def aggregate_parcelstats(
     output_dir = Path(output_dir) if output_dir else derivatives_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Find all parcelstats files (exclude group-level files from previous runs)
-    parcelstats_files = [
-        f for f in derivatives_dir.rglob(pattern) if not f.name.startswith("group_")
-    ]
+    # Find all parcelstats / profilestats files (exclude group-level files from previous runs)
+    if pattern is None:
+        parcelstats_files = [
+            f
+            for f in derivatives_dir.rglob("*.tsv")
+            if not f.name.startswith("group_")
+            and (f.name.endswith("_parcelstats.tsv") or f.name.endswith("_profilestats.tsv"))
+        ]
+    else:
+        parcelstats_files = [
+            f for f in derivatives_dir.rglob(pattern) if not f.name.startswith("group_")
+        ]
 
     if not parcelstats_files:
-        raise BidsError(f"No parcelstats files found matching '{pattern}' in {derivatives_dir}")
+        raise BidsError(
+            f"No parcelstats/profilestats files found"
+            + (f" matching '{pattern}'" if pattern else "")
+            + f" in {derivatives_dir}"
+        )
 
     # Apply filters if specified
     if label_filter:
@@ -1502,25 +1515,29 @@ def aggregate_parcelstats(
             try:
                 df = pd.read_csv(tsv_file, sep="\t")
 
-                # Pivot the data: region -> value becomes columns
-                if "region" in df.columns and "value" in df.columns:
-                    # Create a row dict with metadata + region values
-                    row_data = {
-                        "participant_id": entities.get("sub", "unknown"),
-                    }
+                # Both parcelstats and profilestats are two-column tables:
+                # first column = entity name (region | target | …), second = value.
+                if "value" in df.columns and len(df.columns) >= 2:
+                    label_col = next(
+                        (c for c in df.columns if c != "value"), None
+                    )
+                    if label_col is None:
+                        skipped_files.append(
+                            f"{tsv_file.name} (no entity column besides 'value')"
+                        )
+                        continue
+                    row_data = {"participant_id": entities.get("sub", "unknown")}
                     if "ses" in entities:
                         row_data["session_id"] = entities["ses"]
                     if "label" in entities:
                         row_data["label"] = entities["label"]
-
-                    # Add all region values as columns
-                    for _, region_row in df.iterrows():
-                        region_name = region_row["region"]
-                        row_data[region_name] = region_row["value"]
-
+                    for _, entity_row in df.iterrows():
+                        row_data[entity_row[label_col]] = entity_row["value"]
                     rows.append(row_data)
                 else:
-                    skipped_files.append(f"{tsv_file.name} (missing 'region'/'value' columns)")
+                    skipped_files.append(
+                        f"{tsv_file.name} (missing '<entity>'/'value' columns)"
+                    )
             except Exception as e:
                 warnings.warn(f"Failed to read {tsv_file}: {e}", stacklevel=2)
                 continue
@@ -1531,7 +1548,7 @@ def aggregate_parcelstats(
                 warnings.warn(
                     f"No valid data for '{output_type}': "
                     f"{len(skipped_files)} file(s) skipped due to incompatible format. "
-                    f"Files need 'region' and 'value' columns.",
+                    f"Files need a label column plus 'value'.",
                     stacklevel=2,
                 )
             else:

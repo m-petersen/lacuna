@@ -269,7 +269,7 @@ class LabeledScalars(DataContainer):
     Use for outputs that are a vector of named values where the labels
     don't represent anatomical parcels — e.g., neurotransmitter target
     fingerprints, gene-expression profiles, behavioural score panels.
-    Exports as a single TSV (``labelstats`` suffix) with the label kind
+    Exports as a single TSV (``profilestats`` suffix) with the label kind
     in the first column header.
 
     Attributes

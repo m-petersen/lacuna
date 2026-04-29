@@ -282,7 +282,7 @@ DESC_TO_SOURCE_MAPPING = {
 BIDS_SUFFIX_MAPPING = {
     "values": "parcelstats",  # Tabular parcel statistics
     "parcels": "parcelstats",  # Tabular parcel data
-    "labels": "labelstats",  # Tabular labeled-scalar profile
+    "labels": "profilestats",  # Tabular labeled-scalar profile
     "map": "",  # VoxelMap NIfTI - no suffix needed (e.g., fnmrmap.nii.gz)
     "connmatrix": "connmatrix",  # Connectivity matrix (valid BIDS derivative)
     "metrics": "stats",  # Scalar metrics as tabular

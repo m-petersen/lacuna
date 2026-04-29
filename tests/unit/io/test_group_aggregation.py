@@ -174,7 +174,7 @@ class TestAggregateParcelstats:
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
 
-        with pytest.raises(BidsError, match="No parcelstats files found"):
+        with pytest.raises(BidsError, match="No parcelstats/profilestats files found"):
             aggregate_parcelstats(empty_dir)
 
     def test_aggregate_parcelstats_nonexistent_dir_raises(self, tmp_path):
