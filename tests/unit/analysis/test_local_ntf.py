@@ -8,9 +8,18 @@ from lacuna.analysis.local_neurotransmitter_fingerprinting import (
     LocalNeurotransmitterFingerprinting,
 )
 from lacuna.atlas.store import build_nt_atlas, save_atlas
-from lacuna.core.data_types import ScalarMetric
+from lacuna.core.data_types import ParcelData
 from lacuna.core.subject_data import SubjectData
 from lacuna.data.ntatlas import load_collection
+
+
+def _lntf_parcel(result) -> ParcelData:
+    """Extract the single ParcelData produced by lntf from a Result."""
+    bag = result.results["LocalNeurotransmitterFingerprinting"]
+    assert len(bag) == 1
+    parcel = next(iter(bag.values()))
+    assert isinstance(parcel, ParcelData)
+    return parcel
 
 
 def _write_synthetic_collection(src, targets):
@@ -75,28 +84,23 @@ class TestLocalNTFConstruction:
 
 
 class TestLocalNTFRun:
-    def test_produces_scalar_metrics(self, atlas_cache, lesion_subject):
+    def test_returns_parcel_data(self, atlas_cache, lesion_subject):
         lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
-        result = lntf.run(lesion_subject)
-        lntf_results = result.results["LocalNeurotransmitterFingerprinting"]
-        assert "D1" in lntf_results
-        assert "5HT1a" in lntf_results
-        assert isinstance(lntf_results["D1"], ScalarMetric)
+        parcel = _lntf_parcel(lntf.run(lesion_subject))
+        assert "D1" in parcel.data
+        assert "5HT1a" in parcel.data
 
     def test_scores_are_finite(self, atlas_cache, lesion_subject):
         lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
-        result = lntf.run(lesion_subject)
-        lntf_results = result.results["LocalNeurotransmitterFingerprinting"]
+        parcel = _lntf_parcel(lntf.run(lesion_subject))
         for target in ["D1", "5HT1a"]:
-            score = lntf_results[target].get_data()
-            assert np.isfinite(score)
+            assert np.isfinite(parcel.data[target])
 
     def test_target_subsetting(self, atlas_cache, lesion_subject):
         lntf = LocalNeurotransmitterFingerprinting(
             atlas_cache_dir=atlas_cache,
             targets=["D1"],
         )
-        result = lntf.run(lesion_subject)
-        lntf_results = result.results["LocalNeurotransmitterFingerprinting"]
-        assert "D1" in lntf_results
-        assert "5HT1a" not in lntf_results
+        parcel = _lntf_parcel(lntf.run(lesion_subject))
+        assert "D1" in parcel.data
+        assert "5HT1a" not in parcel.data

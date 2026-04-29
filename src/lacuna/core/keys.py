@@ -31,6 +31,9 @@ SOURCE_ABBREVIATIONS: dict[str, str] = {
     "LocalDamage": "LocalDamage",
     "ParcelAggregation": "ParcelAggregation",
     "AcceleratedFunctionalNetworkMapping": "AcceleratedFunctionalNetworkMapping",
+    "LocalNeurotransmitterFingerprinting": "LocalNeurotransmitterFingerprinting",
+    "StructuralNeurotransmitterFingerprinting": "StructuralNeurotransmitterFingerprinting",
+    "FunctionalNeurotransmitterFingerprinting": "FunctionalNeurotransmitterFingerprinting",
 }
 
 
@@ -214,6 +217,9 @@ EXPORT_SOURCE_ABBREVIATIONS = {
     "LocalDamage": "localdamage",
     "ParcelAggregation": "parcelaggregation",
     "AcceleratedFunctionalNetworkMapping": "afnm",
+    "LocalNeurotransmitterFingerprinting": "lntf",
+    "StructuralNeurotransmitterFingerprinting": "sntf",
+    "FunctionalNeurotransmitterFingerprinting": "fntf",
 }
 
 # Mapping of desc values to their source analysis - for constructing combined desc
@@ -270,6 +276,10 @@ DESC_TO_SOURCE_MAPPING = {
     # AFNM outputs
     "afnmap": "afnm",
     "afnmweights": "afnm",
+    # NTF outputs
+    "lntfscores": "lntf",
+    "sntfscores": "sntf",
+    "fntfscores": "fntf",
 }
 
 # BIDS suffix mapping - map internal suffixes to BIDS-compliant suffixes
@@ -288,6 +298,9 @@ METHOD_ABBREVIATIONS: dict[str, str] = {
     "LocalDamage": "ld",
     "ParcelAggregation": "pa",
     "AcceleratedFunctionalNetworkMapping": "afnm",
+    "LocalNeurotransmitterFingerprinting": "lntf",
+    "StructuralNeurotransmitterFingerprinting": "sntf",
+    "FunctionalNeurotransmitterFingerprinting": "fntf",
 }
 
 # Desc overrides: internal desc -> canonical BIDS desc
