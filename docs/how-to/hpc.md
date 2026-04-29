@@ -12,7 +12,7 @@ The typical HPC workflow is:
 
 Ready-to-use scripts for FNM and SNM are provided in the [`hpc_scripts/`](https://github.com/m-petersen/lacuna/tree/main/docs/how-to/hpc_scripts) directory.
 
-Regional damage analysis is fast enough to run locally and does not require HPC resources.
+Local damage analysis is fast enough to run locally and does not require HPC resources.
 
 ## Prerequisites
 

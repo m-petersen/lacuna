@@ -25,7 +25,7 @@ Technical reference documentation for Lacuna.
 ### Core Modules
 
 - `lacuna.core` — Core data structures (`SubjectData`, `MaskData`)
-- `lacuna.analysis` — Analysis modules (fLNM, sLNM, RegionalDamage)
+- `lacuna.analysis` — Analysis modules (fLNM, sLNM, LocalDamage)
 - `lacuna.spatial` — Spatial operations and transformations
 
 ### Assets

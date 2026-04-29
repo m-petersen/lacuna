@@ -12,7 +12,7 @@ lacuna run <analysis> <bids_dir> <output_dir> [options]
 
 | Analysis | Alias | Description |
 |----------|-------|-------------|
-| `rd` | `regionaldamage` | Lesion overlap with brain parcellations |
+| `ld` | `localdamage` | Lesion overlap with brain parcellations |
 | `fnm` | `functionalnetworkmapping` | Voxel-level functional connectivity mapping |
 | `afnm` | `acceleratedfunctionalnetworkmapping` | Accelerated parcel-level functional network mapping (M @ C) |
 | `snm` | `structuralnetworkmapping` | White matter disconnection mapping |
@@ -60,11 +60,11 @@ All `lacuna run` subcommands share these options:
 
 ---
 
-## `lacuna run rd` — Regional Damage
+## `lacuna run ld` — Local Damage
 
 Computes lesion overlap with brain parcellations (atlases). For each parcel, calculates the percentage of voxels overlapping with the lesion mask.
 
-### RegionalDamage options
+### LocalDamage options
 
 | Option | Description |
 |--------|-------------|
@@ -77,19 +77,19 @@ Computes lesion overlap with brain parcellations (atlases). For each parcel, cal
 ### Examples
 
 ```bash
-# Basic regional damage with one atlas
-lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7
+# Basic local damage with one atlas
+lacuna run ld /bids /output --parcel-atlases schaefer2018parcels100networks7
 
 # Multiple atlases
-lacuna run rd /bids /output \
+lacuna run ld /bids /output \
     --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
 
 # With custom parcellation
-lacuna run rd /bids /output \
+lacuna run ld /bids /output \
     --custom-parcellation MyAtlas /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
 
 # Mix bundled and custom atlases
-lacuna run rd /bids /output \
+lacuna run ld /bids /output \
     --parcel-atlases schaefer2018parcels100networks7 \
     --custom-parcellation MyAtlas /path/to/my_atlas.nii.gz /path/to/labels.txt MNI152NLin6Asym
 ```

@@ -8,49 +8,49 @@ Start with the getting started tutorial, then explore the analysis-specific guid
 
 <div class="grid cards" markdown>
 
--   [**Getting started**](getting-started.ipynb)
+-   [**Getting started**](01-getting-started.ipynb)
 
     ---
 
     Introduction to Lacuna's CLI: tutorial data, bidsify, fetch, run, check and collect.
 
--   [**Regional damage**](regional-damage.ipynb)
+-   [**Local damage**](02-local-damage.ipynb)
 
     ---
 
     Measure lesion overlap with brain parcellation atlases.
 
--   [**Functional lesion network mapping**](functional-network-mapping.ipynb)
+-   [**Functional lesion network mapping**](03-functional-network-mapping.ipynb)
 
     ---
 
     Map functional brain circuitry linked to a lesion.
 
--   [**Accelerated functional network mapping**](accelerated-functional-network-mapping.ipynb)
+-   [**Accelerated functional network mapping**](04-accelerated-functional-network-mapping.ipynb)
 
     ---
 
     Map functional brain circuitry via a fast matrix-based implementation.
 
--   [**Structural lesion network mapping**](structural-network-mapping.ipynb)
+-   [**Structural lesion network mapping**](05-structural-network-mapping.ipynb)
 
     ---
 
     Map structural disconnectivity using normative tractogram data.
 
--   [**Local neurotransmitter fingerprinting**](local-neurotransmitter-fingerprinting.ipynb)
+-   [**Local neurotransmitter fingerprinting**](06-local-neurotransmitter-fingerprinting.ipynb)
 
     ---
 
     Score neurotransmitter density within a lesion using PET atlas data.
 
--   [**Structural neurotransmitter fingerprinting**](structural-neurotransmitter-fingerprinting.ipynb)
+-   [**Structural neurotransmitter fingerprinting**](07-structural-neurotransmitter-fingerprinting.ipynb)
 
     ---
 
     Compute NT-weighted structural disconnectivity scores.
 
--   [**Functional neurotransmitter fingerprinting**](functional-neurotransmitter-fingerprinting.ipynb)
+-   [**Functional neurotransmitter fingerprinting**](08-functional-neurotransmitter-fingerprinting.ipynb)
 
     ---
 

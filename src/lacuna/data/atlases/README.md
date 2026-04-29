@@ -86,10 +86,10 @@ Each atlas uses BIDS-style naming:
 
 ### Automatic (Default)
 ```python
-from lacuna.analysis import RegionalDamage
+from lacuna.analysis import LocalDamage
 
 # Uses bundled atlases automatically
-analysis = RegionalDamage()
+analysis = LocalDamage()
 result = analysis.run(lesion_data)
 ```
 
@@ -125,13 +125,13 @@ print(citation)
 You can still use your own atlas directory:
 
 ```python
-from lacuna.analysis import RegionalDamage
+from lacuna.analysis import LocalDamage
 
 # Use custom directory
-analysis = RegionalDamage(atlas_dir="/path/to/my/atlases")
+analysis = LocalDamage(atlas_dir="/path/to/my/atlases")
 
 # Or mix bundled + custom
-analysis = RegionalDamage(
+analysis = LocalDamage(
     atlas_dir="/path/to/my/atlases",
     include_bundled=True
 )

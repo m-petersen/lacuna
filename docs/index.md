@@ -12,7 +12,7 @@ A Python package for advanced brain lesion analysis.
 
 Lacuna bridges the gap between individual lesion masks and normative brain data.
 It provides a reproducible workflow for lesion network mapping
-and regional damage quantification, using BIDS-style naming conventions for input and output organization.
+and local damage quantification, using BIDS-style naming conventions for input and output organization.
 
 </div>
 <img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;">
@@ -36,11 +36,11 @@ and regional damage quantification, using BIDS-style naming conventions for inpu
 
     Map the structural disconnectivity of a lesion using normative tractogram data.
 
--   **Regional damage**
+-   **Local damage**
 
     ---
 
-    Quantify regional damage by measuring lesion overlap with standard brain parcellation atlases.
+    Quantify local damage by measuring lesion overlap with standard brain parcellation atlases.
 
 </div>
 
@@ -65,7 +65,7 @@ lacuna run snm my_dataset output \
     --mask-space MNI152NLin6Asym
 ```
 
-For the full walkthrough, see the [Getting started](tutorials/getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
+For the full walkthrough, see the [Getting started](tutorials/01-getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
 
 ## Documentation
 
