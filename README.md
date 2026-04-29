@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-m--petersen.github.io%2Flacuna-blue)](https://m-petersen.github.io/lacuna)
+[![Documentation](https://readthedocs.org/projects/lacuna-py/badge/?version=latest)](https://lacuna-py.readthedocs.io/en/latest/)
 [![status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/m-petersen/lacuna)
 
 A scientific Python package for advanced brain lesion analysis. Lacuna bridges the gap between individual lesion masks and normative brain data.
@@ -39,4 +39,4 @@ Lacuna expects lesion masks in MNI space (`MNI152NLin6Asym` or `MNI152NLin2009cA
 
 ## Documentation
 
-Full documentation including tutorials, how-to guides, and API reference: **[m-petersen.github.io/lacuna](https://m-petersen.github.io/lacuna)**
+Full documentation including tutorials, how-to guides, and API reference: **[lacuna-py.readthedocs.io](https://lacuna-py.readthedocs.io)**
