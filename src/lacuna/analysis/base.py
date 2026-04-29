@@ -75,6 +75,11 @@ class BaseAnalysis(ABC):
     #: Preferred batch processing strategy (default: parallel)
     batch_strategy: str = "parallel"
 
+    #: If True, the base run() will add an `analysis_mask` VoxelMap when
+    #: keep_intermediate=True. Subclasses whose mask-in-target-space is not
+    #: meaningful (e.g. tractogram-based analyses) can set this to False.
+    EMIT_ANALYSIS_MASK: bool = True
+
     def __init__(self, verbose: bool = False, keep_intermediate: bool = False) -> None:
         """
         Initialize the analysis module.
@@ -254,7 +259,11 @@ class BaseAnalysis(ABC):
         # Analyses that resample further (e.g., FNM to connectome grid) should
         # store their own 'analysis_mask' in _run_analysis with the actual
         # mask used for computation. That will override this default.
-        if self.keep_intermediate and "analysis_mask" not in results_dict:
+        if (
+            self.keep_intermediate
+            and self.EMIT_ANALYSIS_MASK
+            and "analysis_mask" not in results_dict
+        ):
             from lacuna.core.data_types import VoxelMap
 
             was_transformed = (

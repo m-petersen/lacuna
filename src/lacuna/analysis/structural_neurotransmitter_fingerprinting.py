@@ -60,6 +60,10 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     TARGET_SPACE = None
     TARGET_RESOLUTION = None
     batch_strategy = "sequential"
+    # The mask itself isn't the analysis input — sntf works off the
+    # tractogram filtered by the lesion. No need to emit a default
+    # analysis_mask intermediate.
+    EMIT_ANALYSIS_MASK = False
 
     def __init__(
         self,
