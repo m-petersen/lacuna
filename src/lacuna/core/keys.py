@@ -276,16 +276,13 @@ DESC_TO_SOURCE_MAPPING = {
     # AFNM outputs
     "afnmap": "afnm",
     "afnmweights": "afnm",
-    # NTF outputs
-    "lntfscores": "lntf",
-    "sntfscores": "sntf",
-    "fntfscores": "fntf",
 }
 
 # BIDS suffix mapping - map internal suffixes to BIDS-compliant suffixes
 BIDS_SUFFIX_MAPPING = {
     "values": "parcelstats",  # Tabular parcel statistics
     "parcels": "parcelstats",  # Tabular parcel data
+    "labels": "labelstats",  # Tabular labeled-scalar profile
     "map": "",  # VoxelMap NIfTI - no suffix needed (e.g., fnmrmap.nii.gz)
     "connmatrix": "connmatrix",  # Connectivity matrix (valid BIDS derivative)
     "metrics": "stats",  # Scalar metrics as tabular
@@ -405,7 +402,7 @@ class BidsFilename:
         if "source" in parsed:
             source = parsed["source"]
             export_abbrev = EXPORT_SOURCE_ABBREVIATIONS.get(source, source.lower())
-            if export_abbrev in ("fnm", "snm", "afnm"):
+            if export_abbrev in ("fnm", "snm", "afnm", "lntf", "sntf", "fntf"):
                 method = export_abbrev
             elif export_abbrev == "localdamage":
                 method = "ld"

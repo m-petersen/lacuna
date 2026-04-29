@@ -29,15 +29,19 @@
             "target-5HT6_tracer-gsk215083_n-30_dx-hc_pub-radhakrishnan2018",
             "target-5HTT_tracer-dasb_n-18_dx-hc_pub-savli2012"
         ],
-        "Noradrenaline/Acetylcholine": [
-            "target-NET_tracer-mrb_n-10_dx-hc_pub-hesse2017",
+        "Noradrenaline": [
+            "target-NET_tracer-mrb_n-10_dx-hc_pub-hesse2017"
+        ],
+        "Acetylcholine": [
             "target-A4B2_tracer-flubatine_n-30_dx-hc_pub-hillmer2016",
             "target-M1_tracer-lsn3172176_n-24_dx-hc_pub-naganawa2020",
             "target-VAChT_tracer-feobv_n-18_dx-hc_pub-aghourian2017"
         ],
-        "Opioids/Endocannabinoids": [
+        "Opioids": [
             "target-MOR_tracer-carfentanil_n-204_dx-hc_pub-kantonen2020",
-            "target-KOR_tracer-ly2795050_n-28_dx-hc_pub-vijay2018",
+            "target-KOR_tracer-ly2795050_n-28_dx-hc_pub-vijay2018"
+        ],
+        "Endocannabinoids": [
             "target-CB1_tracer-omar_n-77_dx-hc_pub-normandin2015"
         ],
         "Histamine": [

@@ -1408,12 +1408,8 @@ def _build_prepare_parser(subparsers) -> None:
 
 
 def _add_ntm_common_args(parser: ArgumentParser) -> None:
-    """Add arguments shared by all NTM analyses."""
-    g_ntm = parser.add_argument_group("Neurotransmitter mapping options")
-    g_ntm.add_argument(
-        "--targets", type=str, default="all",
-        help="Target preset or comma-separated list (default: all)",
-    )
+    """Add arguments shared by all NT fingerprinting analyses."""
+    g_ntm = parser.add_argument_group("Neurotransmitter fingerprinting options")
     atlas_source = g_ntm.add_mutually_exclusive_group(required=True)
     atlas_source.add_argument(
         "--atlas-cache-dir", type=str, default=None,
@@ -1435,9 +1431,8 @@ def _build_lntf_parser(subparsers) -> None:
             "Local neurotransmitter fingerprinting: score NT atlas values directly\n"
             "within the lesion mask.\n\n"
             "Examples:\n"
-            "  lacuna run lntf /bids /output\n"
-            "  lacuna run lntf /bids /output --targets dopaminergic\n"
-            "  lacuna run lntf /bids /output --parcel-atlases schaefer2018parcels100networks7"
+            "  lacuna run lntf /bids /output --atlas-cache-dir /path/to/ntatlas\n"
+            "  lacuna run lntf /bids /output --ace-cache-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -1462,8 +1457,8 @@ def _build_sntf_parser(subparsers) -> None:
             "endpoints of lesion-disconnected streamlines. Answers: 'what\n"
             "NT-weighted structural connectivity does the lesion disrupt?'\n\n"
             "Examples:\n"
-            "  lacuna run sntf /bids /output --connectome-path /path/to/tractogram.tck\n"
-            "  lacuna run sntf /bids /output --connectome-path /path/to/tractogram.tck --targets serotonergic"
+            "  lacuna run sntf /bids /output --connectome-path /path/to/tractogram.tck \\\n"
+            "      --atlas-cache-dir /path/to/ntatlas"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )

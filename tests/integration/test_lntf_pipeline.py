@@ -6,16 +6,16 @@ import pytest
 
 from lacuna.analysis import LocalNeurotransmitterFingerprinting
 from lacuna.atlas.store import build_nt_atlas, save_atlas
-from lacuna.core.data_types import ParcelData
+from lacuna.core.data_types import LabeledScalars
 from lacuna.core.subject_data import SubjectData
 from lacuna.data.ntatlas import load_collection
 
 
-def _lntf_parcel(result):
+def _lntf_fingerprint(result):
     bag = result.results["LocalNeurotransmitterFingerprinting"]
-    parcel = next(iter(bag.values()))
-    assert isinstance(parcel, ParcelData)
-    return parcel
+    fp = next(iter(bag.values()))
+    assert isinstance(fp, LabeledScalars)
+    return fp
 
 
 def _write_synthetic_collection(src, targets, shape=(91, 109, 91)):
@@ -69,7 +69,7 @@ class TestLNTFIntegration:
         subject = _make_subject(affine)
 
         lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas)
-        parcel = _lntf_parcel(lntf.run(subject))
+        parcel = _lntf_fingerprint(lntf.run(subject))
         assert "D1" in parcel.data
         assert "5HT1a" in parcel.data
         assert np.isfinite(parcel.data["D1"])
@@ -84,7 +84,7 @@ class TestLNTFIntegration:
             atlas_cache_dir=pet_atlas,
             targets=["D1"],
         )
-        parcel = _lntf_parcel(lntf.run(subject))
+        parcel = _lntf_fingerprint(lntf.run(subject))
         assert "D1" in parcel.data
         assert "5HT1a" not in parcel.data
 

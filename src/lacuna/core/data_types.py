@@ -263,6 +263,56 @@ class ParcelData(DataContainer):
 
 
 @dataclass
+class LabeledScalars(DataContainer):
+    """Container for a labeled-scalar profile (one scalar per label).
+
+    Use for outputs that are a vector of named values where the labels
+    don't represent anatomical parcels — e.g., neurotransmitter target
+    fingerprints, gene-expression profiles, behavioural score panels.
+    Exports as a single TSV (``labelstats`` suffix) with the label kind
+    in the first column header.
+
+    Attributes
+    ----------
+    name : str
+        Name/identifier for this result.
+    data : dict[str, float]
+        Mapping label -> scalar value. Insertion order is preserved.
+    label_kind : str, default="label"
+        Column header for the label axis in the exported TSV
+        (e.g. "target" for NT receptors, "gene" for transcripts).
+    aggregation_method : str, optional
+        Method used to compute each scalar (e.g. "mean", "sum",
+        "static", "enriched").
+    metadata : dict
+        Additional metadata (e.g. systems grouping, mode, source atlas).
+    """
+
+    name: str
+    data: dict[str, float]
+    label_kind: str = "label"
+    aggregation_method: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        super().__init__(name=self.name, metadata=self.metadata)
+
+    def get_data(self) -> dict[str, float]:
+        return self.data
+
+    def summary(self) -> str:
+        method_info = f", method={self.aggregation_method}" if self.aggregation_method else ""
+        return f"{self.name}: {len(self.data)} {self.label_kind}s{method_info}"
+
+    def __repr__(self) -> str:
+        method_str = f", method='{self.aggregation_method}'" if self.aggregation_method else ""
+        return (
+            f"LabeledScalars(name='{self.name}', "
+            f"n_{self.label_kind}s={len(self.data)}{method_str})"
+        )
+
+
+@dataclass
 class ConnectivityMatrix(DataContainer):
     """Result container for connectivity matrices.
 

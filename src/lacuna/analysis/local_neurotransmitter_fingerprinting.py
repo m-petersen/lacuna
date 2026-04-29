@@ -13,7 +13,7 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.atlas.config import resolve_targets
 from lacuna.atlas.scoring import score_focal
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import ParcelData
+from lacuna.core.data_types import LabeledScalars
 from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
@@ -106,24 +106,24 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
         lesion_mask = mask_img.get_fdata().astype(bool)
         scores = score_focal(atlas, lesion_mask, aggregation=self.aggregation)
 
-        parcel_data = ParcelData(
+        fingerprint = LabeledScalars(
             name="neurotransmitter",
             data={target: float(score) for target, score in scores.items()},
-            region_labels=list(scores.keys()),
-            parcel_names=["neurotransmitter"],
+            label_kind="target",
             aggregation_method=self.aggregation,
             metadata={
                 "analysis": "lntf",
-                "enriched": self.enriched,
+                "mode": "enriched" if self.enriched else "static",
                 "systems": atlas.metadata.get("systems"),
             },
         )
+        desc = "enriched" if self.enriched else "static"
         key = build_result_key(
             atlas="neurotransmitter",
             source="LocalNeurotransmitterFingerprinting",
-            desc="lntfscores",
+            desc=desc,
         )
-        return {key: parcel_data}
+        return {key: fingerprint}
 
     def _get_parameters(self) -> dict:
         return {

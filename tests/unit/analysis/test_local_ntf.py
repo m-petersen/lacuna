@@ -8,18 +8,18 @@ from lacuna.analysis.local_neurotransmitter_fingerprinting import (
     LocalNeurotransmitterFingerprinting,
 )
 from lacuna.atlas.store import build_nt_atlas, save_atlas
-from lacuna.core.data_types import ParcelData
+from lacuna.core.data_types import LabeledScalars
 from lacuna.core.subject_data import SubjectData
 from lacuna.data.ntatlas import load_collection
 
 
-def _lntf_parcel(result) -> ParcelData:
-    """Extract the single ParcelData produced by lntf from a Result."""
+def _lntf_fingerprint(result) -> LabeledScalars:
+    """Extract the single LabeledScalars produced by lntf from a Result."""
     bag = result.results["LocalNeurotransmitterFingerprinting"]
     assert len(bag) == 1
-    parcel = next(iter(bag.values()))
-    assert isinstance(parcel, ParcelData)
-    return parcel
+    fp = next(iter(bag.values()))
+    assert isinstance(fp, LabeledScalars)
+    return fp
 
 
 def _write_synthetic_collection(src, targets):
@@ -84,15 +84,15 @@ class TestLocalNTFConstruction:
 
 
 class TestLocalNTFRun:
-    def test_returns_parcel_data(self, atlas_cache, lesion_subject):
+    def test_returns_fingerprint(self, atlas_cache, lesion_subject):
         lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
-        parcel = _lntf_parcel(lntf.run(lesion_subject))
+        parcel = _lntf_fingerprint(lntf.run(lesion_subject))
         assert "D1" in parcel.data
         assert "5HT1a" in parcel.data
 
     def test_scores_are_finite(self, atlas_cache, lesion_subject):
         lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
-        parcel = _lntf_parcel(lntf.run(lesion_subject))
+        parcel = _lntf_fingerprint(lntf.run(lesion_subject))
         for target in ["D1", "5HT1a"]:
             assert np.isfinite(parcel.data[target])
 
@@ -101,6 +101,6 @@ class TestLocalNTFRun:
             atlas_cache_dir=atlas_cache,
             targets=["D1"],
         )
-        parcel = _lntf_parcel(lntf.run(lesion_subject))
+        parcel = _lntf_fingerprint(lntf.run(lesion_subject))
         assert "D1" in parcel.data
         assert "5HT1a" not in parcel.data

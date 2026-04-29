@@ -23,7 +23,7 @@ from ..core.keys import BidsFilename
 from ..core.subject_data import SubjectData
 
 if TYPE_CHECKING:
-    from ..core.data_types import ConnectivityMatrix, ParcelData, VoxelMap
+    from ..core.data_types import ConnectivityMatrix, LabeledScalars, ParcelData, VoxelMap
 
 
 class NumpyJSONEncoder(json.JSONEncoder):
@@ -592,6 +592,56 @@ def export_parcel_data(
     return tsv_path
 
 
+def export_labeled_scalars(
+    labeled: LabeledScalars,
+    output_dir: str | Path,
+    subject_id: str,
+    session_id: str | None = None,
+    desc: str = "labels",
+    label: str | None = None,
+    overwrite: bool = False,
+) -> Path:
+    """Export LabeledScalars to a BIDS-compliant TSV with JSON sidecar.
+
+    Produces a two-column TSV (``<label_kind>\\tvalue``) keyed by the
+    ``LabeledScalars.label_kind`` attribute (e.g. ``target\\tvalue``
+    for NT receptor fingerprints).
+    """
+    import pandas as pd
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    label_part = f"_label-{label}" if label else ""
+    base_name = (
+        f"{subject_id}_{session_id}{label_part}_{desc}"
+        if session_id
+        else f"{subject_id}{label_part}_{desc}"
+    )
+    tsv_path = output_dir / f"{base_name}.tsv"
+    sidecar_path = output_dir / f"{base_name}.json"
+
+    if tsv_path.exists() and not overwrite:
+        raise FileExistsError(f"File exists: {tsv_path}. Use overwrite=True.")
+
+    col = labeled.label_kind or "label"
+    df = pd.DataFrame(
+        [{col: k, "value": v} for k, v in labeled.data.items()]
+    )
+    df.to_csv(tsv_path, sep="\t", index=False)
+
+    sidecar = {"Description": labeled.name, "LabelKind": col}
+    if labeled.aggregation_method:
+        sidecar["AggregationMethod"] = labeled.aggregation_method
+    if labeled.metadata:
+        sidecar["Metadata"] = labeled.metadata
+
+    with open(sidecar_path, "w") as f:
+        json.dump(sidecar, f, indent=2, cls=NumpyJSONEncoder)
+
+    return tsv_path
+
+
 def export_connectivity_matrix(
     matrix: ConnectivityMatrix,
     output_dir: str | Path,
@@ -829,6 +879,7 @@ def export_bids_derivatives(
 
     from ..core.data_types import (
         ConnectivityMatrix,
+        LabeledScalars as LabeledScalarsType,
         ScalarMetric,
         Tractogram,
         VoxelMap,
@@ -935,6 +986,20 @@ def export_bids_derivatives(
                         overwrite=overwrite,
                     )
 
+                # LabeledScalars -> TSV (labelstats suffix)
+                elif isinstance(value, LabeledScalarsType) and export_parcel_data:
+                    bf = BidsFilename.from_result_key(key, "labels", namespace=_namespace)
+                    bids_key = str(bf)
+                    _export_labeled_scalars(
+                        value,
+                        anat_dir,
+                        subject_id=subject_id,
+                        session_id=session_id,
+                        desc=bids_key,
+                        label=label,
+                        overwrite=overwrite,
+                    )
+
                 # ConnectivityMatrix -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ConnectivityMatrix) and export_connectivity:
                     bf = BidsFilename.from_result_key(key, "connmatrix", namespace=_namespace)
@@ -1015,6 +1080,7 @@ def export_bids_derivatives(
 
 # Alias to avoid name collision with ParcelData type
 _export_parcel_data = export_parcel_data
+_export_labeled_scalars = export_labeled_scalars
 
 
 def save_nifti(

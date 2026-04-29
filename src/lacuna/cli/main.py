@@ -159,8 +159,6 @@ class RunConfig:
                 analysis_options["atlas_cache_dir"] = args.atlas_cache_dir
             if getattr(args, "ace_cache_dir", None) is not None:
                 analysis_options["ace_cache_dir"] = args.ace_cache_dir
-            if getattr(args, "targets", None) is not None:
-                analysis_options["targets"] = args.targets
 
         # LNTF-specific
         if args.analysis in ("lntf", "localneurotransmitterfingerprinting"):

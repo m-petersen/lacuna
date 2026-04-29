@@ -244,7 +244,6 @@ def _handle_ntatlas(args: argparse.Namespace) -> int:
     print("Fetching neurotransmitter PET maps...")
     print(f"  Source: {coll['source']}")
     print(f"  Commit: {coll['nispace_commit']}")
-    print(f"  Output: {output_dir}")
     print()
 
     try:

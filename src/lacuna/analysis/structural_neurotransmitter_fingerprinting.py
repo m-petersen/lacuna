@@ -16,7 +16,7 @@ from lacuna.assets.connectomes import load_structural_connectome
 from lacuna.atlas.config import resolve_targets
 from lacuna.atlas.scoring import score_structural_endpoints
 from lacuna.atlas.store import load_atlas
-from lacuna.core.data_types import ParcelData, Tractogram
+from lacuna.core.data_types import LabeledScalars, Tractogram
 from lacuna.core.keys import build_result_key
 from lacuna.core.subject_data import SubjectData
 
@@ -132,25 +132,25 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
                 atlas, endpoints_start, endpoints_end, intersecting_ids
             )
 
-        parcel_data = ParcelData(
+        fingerprint = LabeledScalars(
             name="neurotransmitter",
             data={target: float(score) for target, score in scores.items()},
-            region_labels=list(scores.keys()),
-            parcel_names=["neurotransmitter"],
+            label_kind="target",
             aggregation_method="endpoint_sum",
             metadata={
                 "analysis": "sntf",
-                "enriched": self.enriched,
+                "mode": "enriched" if self.enriched else "static",
                 "streamline_count": int(count),
                 "systems": atlas.metadata.get("systems"),
             },
         )
+        desc = "enriched" if self.enriched else "static"
         key = build_result_key(
             atlas="neurotransmitter",
             source="StructuralNeurotransmitterFingerprinting",
-            desc="sntfscores",
+            desc=desc,
         )
-        return {key: parcel_data}
+        return {key: fingerprint}
 
     def _find_or_compute_filtered_tractogram(
         self, mask_data: SubjectData
