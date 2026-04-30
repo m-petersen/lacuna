@@ -174,12 +174,8 @@ class RunConfig:
             if getattr(args, "aggregation", None) is not None:
                 analysis_options["aggregation"] = args.aggregation
 
-        # FNTF-specific
-        if args.analysis in ("fntf", "functionalneurotransmitterfingerprinting"):
-            if getattr(args, "connectome_name", None) is not None:
-                analysis_options["connectome_name"] = args.connectome_name
-            if getattr(args, "method", None) is not None:
-                analysis_options["method"] = args.method
+        # FNTF: connectome path (auto-registered downstream) and method are captured
+        # by the shared --connectome-path / --method handling above.
 
         return cls(
             bids_dir=args.bids_dir,

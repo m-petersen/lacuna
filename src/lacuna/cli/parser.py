@@ -1495,8 +1495,10 @@ def _build_fntf_parser(subparsers) -> None:
             "weighted by functional connectivity of the lesion. Answers:\n"
             "'what NT systems are functionally connected to the lesion?'\n\n"
             "Examples:\n"
-            "  lacuna run fntf /bids /output --connectome-name GSP1000 --ntatlas-dir /path/to/ntatlas\n"
-            "  lacuna run fntf /bids /output --connectome-name GSP1000 --ace-cache-dir /path/to/ace"
+            "  lacuna run fntf /bids /output --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
+            "      --ntatlas-dir /path/to/ntatlas\n"
+            "  lacuna run fntf /bids /output --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
+            "      --ace-cache-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -1505,8 +1507,11 @@ def _build_fntf_parser(subparsers) -> None:
 
     g_fntf = fntf_parser.add_argument_group("FNTF-specific options")
     g_fntf.add_argument(
-        "--connectome-name", type=str, required=True,
-        help="Functional connectome name (e.g., GSP1000)",
+        "--connectome-path",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help="Path to HDF5 connectome file or directory of batch files (from 'lacuna fetch gsp1000')",
     )
     g_fntf.add_argument(
         "--method", choices=["boes", "pini"], default="boes",
