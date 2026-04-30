@@ -281,16 +281,15 @@ def run_prepare_ace(args) -> None:
     (cache_dir / "subject_ids.txt").write_text("\n".join(subject_ids) + "\n")
 
     n_timepoints = int(stage1_timeseries[0].shape[0]) if stage1_timeseries else 0
+    # Source ntatlas is build-time provenance, NOT a runtime requirement:
+    # FNTF in enriched mode consumes <ace_dir>/stage2_atlas (which has its
+    # own envelope), and the original ntatlas may be gone by then. Recording
+    # its identity here keeps the audit trail.
+    source_ntatlas_identity = fingerprint(atlas_dir, AssetType.NTATLAS)
     env = AssetEnvelope(
         asset_type=AssetType.ACE_CACHE,
         identity=fingerprint(cache_dir, AssetType.ACE_CACHE),
         requires=[
-            RequiresEntry(
-                role="ntatlas",
-                asset_type=AssetType.NTATLAS,
-                identity=fingerprint(atlas_dir, AssetType.NTATLAS),
-                path_hint=str(atlas_dir.resolve()),
-            ),
             RequiresEntry(
                 role="connectome",
                 asset_type=AssetType.FUNCTIONAL_CONNECTOME,
@@ -304,6 +303,8 @@ def run_prepare_ace(args) -> None:
             "max_subjects": max_subjects,
             "space": atlas.space,
             "n_targets": len(atlas.targets),
+            "source_ntatlas_path": str(atlas_dir.resolve()),
+            "source_ntatlas_identity": source_ntatlas_identity.to_dict(),
         },
         data={
             "n_targets": len(atlas.targets),

@@ -199,14 +199,6 @@ def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
             identity=fingerprint(ace_dir, AssetType.ACE_CACHE),
             requires=[
                 RequiresEntry(
-                    role="ntatlas",
-                    asset_type=AssetType.NTATLAS,
-                    identity=fingerprint(
-                        ace_dir / "stage2_atlas", AssetType.NTATLAS
-                    ),
-                    path_hint=str((ace_dir / "stage2_atlas").resolve()),
-                ),
-                RequiresEntry(
                     role="connectome",
                     asset_type=AssetType.FUNCTIONAL_CONNECTOME,
                     identity=fingerprint(
@@ -215,6 +207,12 @@ def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
                     path_hint=str(Path(connectome_path).resolve()),
                 ),
             ],
+            provenance={
+                "source_ntatlas_path": str((ace_dir / "stage2_atlas").resolve()),
+                "source_ntatlas_identity": fingerprint(
+                    ace_dir / "stage2_atlas", AssetType.NTATLAS
+                ).to_dict(),
+            },
             data={"n_targets": n_targets, "n_timepoints": n_timepoints},
         )
         _write_env(env, ace_dir)

@@ -202,20 +202,17 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         return np.stack([np.load(f) for f in files], axis=0)
 
     def _verify_cache_against_connectome(self, fnm) -> None:
-        """Verify the cache's recorded inputs still match the runtime inputs."""
+        """Verify the cache's recorded inputs still match the runtime inputs.
+
+        Only the connectome is a runtime requirement: FNTF in enriched mode
+        consumes ``<ace_dir>/stage2_atlas`` directly, and the source ntatlas
+        the cache was built from is recorded only as build-time provenance
+        (``envelope.provenance.source_ntatlas_*``).
+        """
         from lacuna.assets.envelope import read_envelope, validate_requires
 
         env = read_envelope(self.ace_dir)
-        runtime_paths: dict[str, Path] = {
-            "connectome": Path(fnm.connectome_path),
-        }
-        if self.ntatlas_dir is not None:
-            runtime_paths["ntatlas"] = Path(self.ntatlas_dir)
-        else:
-            # An ACE cache always carries its own stage2_atlas — that IS the
-            # ntatlas identity that downstream consumers should re-fingerprint.
-            runtime_paths["ntatlas"] = self.ace_dir / "stage2_atlas"
-        validate_requires(env, runtime_paths)
+        validate_requires(env, {"connectome": Path(fnm.connectome_path)})
 
     def _verify_dimension_alignment(
         self, lesion_ts: np.ndarray, stage1: np.ndarray

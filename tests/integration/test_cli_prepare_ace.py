@@ -97,5 +97,6 @@ def test_prepare_ace_cli_e2e(tmp_path):
     assert env.asset_type == AssetType.ACE_CACHE
     assert env.provenance["max_subjects"] == 2
     assert env.provenance["n_subjects"] == 2
+    assert "source_ntatlas_path" in env.provenance
     roles = {r.role for r in env.requires}
-    assert roles == {"ntatlas", "connectome"}
+    assert roles == {"connectome"}

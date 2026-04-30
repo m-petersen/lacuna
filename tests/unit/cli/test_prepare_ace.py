@@ -139,7 +139,14 @@ def test_prepare_ace_writes_full_cache(ace_inputs, tmp_path):
     assert ids[0] == "batch_0001-0000"
 
 
-def test_prepare_ace_envelope_has_both_requires(ace_inputs, tmp_path):
+def test_prepare_ace_envelope_pins_only_connectome_in_requires(ace_inputs, tmp_path):
+    """Only the connectome is a runtime requirement.
+
+    The source ntatlas is build-time provenance — FNTF in enriched mode
+    consumes ``<ace_dir>/stage2_atlas`` (which has its own envelope), so
+    the source ntatlas's identity is recorded in ``provenance``, NOT
+    ``requires``.
+    """
     atlas_dir, conn_dir = ace_inputs
     cache_dir = tmp_path / "ace_cache"
 
@@ -147,15 +154,15 @@ def test_prepare_ace_envelope_has_both_requires(ace_inputs, tmp_path):
 
     env = read_envelope(cache_dir)
     roles = {r.role for r in env.requires}
-    assert roles == {"ntatlas", "connectome"}
-
-    ntatlas_req = next(r for r in env.requires if r.role == "ntatlas")
-    assert ntatlas_req.asset_type == AssetType.NTATLAS
-    assert ntatlas_req.identity.fields["n_targets"] == 2
+    assert roles == {"connectome"}
 
     conn_req = next(r for r in env.requires if r.role == "connectome")
     assert conn_req.asset_type == AssetType.FUNCTIONAL_CONNECTOME
     assert "sha256" in conn_req.identity.fields
+
+    # Source ntatlas information is in provenance, not requires.
+    assert env.provenance["source_ntatlas_path"] == str(atlas_dir.resolve())
+    assert env.provenance["source_ntatlas_identity"]["fields"]["n_targets"] == 2
 
 
 def test_prepare_ace_max_subjects_truncates(ace_inputs, tmp_path):
