@@ -1340,7 +1340,7 @@ def _build_prepare_parser(subparsers) -> None:
             "  ace  - Run ACE (Atlas Connectivity Enrichment) on normative data\n\n"
             "Examples:\n"
             "  lacuna prepare sntf --connectome-path /path/to/tractogram.tck\n"
-            "  lacuna prepare ace --connectome-name GSP1000\n\n"
+            "  lacuna prepare ace --connectome-path /path/to/gsp1000_batches/\n\n"
             "(The local NT atlas is built directly by 'lacuna fetch ntatlas'.)"
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -1381,8 +1381,8 @@ def _build_prepare_parser(subparsers) -> None:
         help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
     )
     prepare_ace.add_argument(
-        "--connectome-name", type=str, required=True,
-        help="Normative fMRI connectome name (e.g., GSP1000)",
+        "--connectome-path", type=str, required=True,
+        help="Path to HDF5 connectome file or directory of batch files (from 'lacuna fetch gsp1000')",
     )
     prepare_ace.add_argument(
         "--cache-dir", type=str, required=True,

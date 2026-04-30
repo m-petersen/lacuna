@@ -1389,48 +1389,56 @@ def _register_connectome_from_path(
         "FunctionalNetworkMapping",
         "FunctionalNeurotransmitterFingerprinting",
     ):
-        from lacuna.assets.connectomes import (
-            list_functional_connectomes,
-            register_functional_connectome,
+        analysis_options["connectome_name"] = register_functional_connectome_from_path(
+            connectome_path
         )
 
-        # Validate it's an HDF5 file or directory
-        valid_extensions = {".h5", ".hdf5"}
-        is_hdf5 = connectome_path.suffix.lower() in valid_extensions
-        is_directory = connectome_path.is_dir()
 
-        if not is_hdf5 and not is_directory:
-            raise ValueError(
-                f"Functional connectomes require HDF5 files (.h5/.hdf5) or batch directories.\n"
-                f"Got: {connectome_path.name} (suffix: '{connectome_path.suffix}')\n\n"
-                "Hint: Use 'lacuna fetch gsp1000' to download a functional connectome."
-            )
+def register_functional_connectome_from_path(connectome_path: Path) -> str:
+    """Auto-register a functional connectome from a path; return the registered name.
 
-        # Check if already registered (avoid duplicate registration)
-        registered_names = [c.name for c in list_functional_connectomes()]
-        auto_name = f"cli_{connectome_path.stem}"
+    Used by ``run fnm/fntf`` and ``prepare ace`` so users only ever need to
+    pass ``--connectome-path`` (the directory or file produced by
+    ``lacuna fetch gsp1000``). Idempotent: if the same path has already been
+    registered with the auto-generated name ``cli_<stem>``, returns it
+    without re-registering.
+    """
+    from lacuna.assets.connectomes import (
+        list_functional_connectomes,
+        register_functional_connectome,
+    )
 
-        if auto_name not in registered_names:
-            logger.info(f"Registering functional connectome: {connectome_path.name}")
-            # Try to infer space from filename or default to MNI152NLin6Asym
-            space = "MNI152NLin6Asym"  # Common default for GSP
-            if "MNI152NLin2009" in str(connectome_path):
-                space = "MNI152NLin2009cAsym"
+    valid_extensions = {".h5", ".hdf5"}
+    is_hdf5 = connectome_path.suffix.lower() in valid_extensions
+    is_directory = connectome_path.is_dir()
+    if not is_hdf5 and not is_directory:
+        raise ValueError(
+            f"Functional connectomes require HDF5 files (.h5/.hdf5) or batch directories.\n"
+            f"Got: {connectome_path.name} (suffix: '{connectome_path.suffix}')\n\n"
+            "Hint: Use 'lacuna fetch gsp1000' to download a functional connectome."
+        )
 
-            # Infer resolution from path or default to 2mm
-            resolution = 2
-            if "_1mm" in str(connectome_path) or "res-01" in str(connectome_path):
-                resolution = 1
+    registered_names = [c.name for c in list_functional_connectomes()]
+    auto_name = f"cli_{connectome_path.stem}"
+    if auto_name in registered_names:
+        return auto_name
 
-            register_functional_connectome(
-                name=auto_name,
-                space=space,
-                resolution=resolution,
-                data_path=connectome_path,
-                description=f"Registered from CLI: {connectome_path}",
-            )
+    logger.info(f"Registering functional connectome: {connectome_path.name}")
+    space = "MNI152NLin6Asym"
+    if "MNI152NLin2009" in str(connectome_path):
+        space = "MNI152NLin2009cAsym"
+    resolution = 2
+    if "_1mm" in str(connectome_path) or "res-01" in str(connectome_path):
+        resolution = 1
 
-        analysis_options["connectome_name"] = auto_name
+    register_functional_connectome(
+        name=auto_name,
+        space=space,
+        resolution=resolution,
+        data_path=connectome_path,
+        description=f"Registered from CLI: {connectome_path}",
+    )
+    return auto_name
 
 
 def _register_custom_parcellations(

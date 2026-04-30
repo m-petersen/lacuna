@@ -16,7 +16,8 @@ def run_prepare_sntf(args) -> None:
     from lacuna.atlas.store import load_atlas
 
     atlas_dir = Path(args.ntatlas_dir)
-    if not (atlas_dir / "manifest.json").exists():
+    from lacuna.assets.envelope import ENVELOPE_FILENAME
+    if not (atlas_dir / ENVELOPE_FILENAME).exists() and not (atlas_dir / "manifest.json").exists():
         raise FileNotFoundError(
             f"NT atlas not found at {atlas_dir}.\n"
             f"Run 'lacuna fetch ntatlas --output-dir {atlas_dir}' first."
@@ -112,14 +113,24 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
 def run_prepare_ace(args) -> None:
     """Run ACE (Atlas Connectivity Enrichment) on normative fMRI data."""
     from lacuna.atlas.store import load_atlas
+    from lacuna.cli.main import register_functional_connectome_from_path
 
     atlas_dir = Path(args.ntatlas_dir)
     atlas = load_atlas(atlas_dir)
 
+    connectome_path = Path(args.connectome_path)
+    if not connectome_path.exists():
+        raise FileNotFoundError(
+            f"Connectome path does not exist: {connectome_path}\n\n"
+            "To download a functional connectome:\n"
+            "  lacuna fetch gsp1000"
+        )
+    connectome_name = register_functional_connectome_from_path(connectome_path)
+
     cache_dir = Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Loading normative fMRI connectome: %s", args.connectome_name)
+    logger.info("Loading normative fMRI connectome: %s", connectome_name)
     raise NotImplementedError(
         "ACE preparation requires connectome loading integration. "
         "Implement after connectome HDF5 structure is confirmed."
