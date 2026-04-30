@@ -207,7 +207,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
         env = read_envelope(self.ace_dir)
         runtime_paths: dict[str, Path] = {
-            "connectome": _connectome_dir(fnm.connectome_path),
+            "connectome": Path(fnm.connectome_path),
         }
         if self.ntatlas_dir is not None:
             runtime_paths["ntatlas"] = Path(self.ntatlas_dir)
@@ -301,13 +301,3 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         }
 
 
-def _connectome_dir(connectome_path: Path) -> Path:
-    """Return the directory the FUNCTIONAL_CONNECTOME fingerprint should hash.
-
-    The connectome registry's ``data_path`` may be either a single ``.h5``
-    file or a directory of batches. The shared ``fingerprint`` dispatcher
-    expects a directory (it walks ``*.h5`` / ``*.hdf5``), so single-file
-    paths are normalised to their parent.
-    """
-    p = Path(connectome_path)
-    return p.parent if p.is_file() else p

@@ -207,7 +207,13 @@ def _fingerprint_functional_connectome(asset_root: Path) -> IdentityRef:
     block). That is fast and content-sensitive enough to detect any
     realistic mismatch — a re-conversion with different parameters or a
     swapped dataset will reshape filenames or sizes.
+
+    Single-file HDF5 paths are normalised to their parent directory so
+    callers can pass either ``/path/to/conn.h5`` or ``/path/to/conn/``
+    interchangeably (matching ``list_connectome_batch_files``'s behavior).
     """
+    if asset_root.is_file():
+        asset_root = asset_root.parent
     if not asset_root.is_dir():
         raise FileNotFoundError(
             f"Functional connectome directory not found: {asset_root}"

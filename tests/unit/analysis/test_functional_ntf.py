@@ -168,7 +168,7 @@ def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
         AssetEnvelope,
         AssetType,
         RequiresEntry,
-        fingerprint as compute_fingerprint,
+        fingerprint,
         write_envelope as _write_env,
     )
 
@@ -196,12 +196,12 @@ def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
     if write_envelope:
         env = AssetEnvelope(
             asset_type=AssetType.ACE_CACHE,
-            identity=compute_fingerprint(ace_dir, AssetType.ACE_CACHE),
+            identity=fingerprint(ace_dir, AssetType.ACE_CACHE),
             requires=[
                 RequiresEntry(
                     role="ntatlas",
                     asset_type=AssetType.NTATLAS,
-                    identity=compute_fingerprint(
+                    identity=fingerprint(
                         ace_dir / "stage2_atlas", AssetType.NTATLAS
                     ),
                     path_hint=str((ace_dir / "stage2_atlas").resolve()),
@@ -209,11 +209,8 @@ def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
                 RequiresEntry(
                     role="connectome",
                     asset_type=AssetType.FUNCTIONAL_CONNECTOME,
-                    identity=compute_fingerprint(
-                        Path(connectome_path).parent
-                        if Path(connectome_path).is_file()
-                        else Path(connectome_path),
-                        AssetType.FUNCTIONAL_CONNECTOME,
+                    identity=fingerprint(
+                        Path(connectome_path), AssetType.FUNCTIONAL_CONNECTOME,
                     ),
                     path_hint=str(Path(connectome_path).resolve()),
                 ),
