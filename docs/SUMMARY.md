@@ -15,6 +15,7 @@
     * [HPC](how-to/hpc.md)
 * [Explanation](explanation/index.md)
     * [Coordinate spaces](explanation/coordinate-spaces.md)
+    * [Asset envelopes](explanation/asset-envelope.md)
 * [Reference](reference/index.md)
     * [CLI Reference](reference/cli/index.md)
         * [Run](reference/cli/run.md)
