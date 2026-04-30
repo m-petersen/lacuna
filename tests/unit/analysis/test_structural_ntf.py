@@ -88,7 +88,8 @@ def fake_weights_cache(tmp_path, atlas_cache, fake_connectome):
     atlas = load_atlas(atlas_cache)
     tck_path = load_structural_connectome(fake_connectome).tractogram_path
     _build_fake_weights_cache(
-        cache_dir, atlas, _FAKE_TCK_N_STREAMLINES, tractogram_path=tck_path
+        cache_dir, atlas, _FAKE_TCK_N_STREAMLINES,
+        tractogram_path=tck_path, atlas_dir=atlas_cache,
     )
     return cache_dir
 
@@ -122,17 +123,15 @@ class TestStructuralNTMConstruction:
             )
 
 
-def _build_fake_weights_cache(cache_dir, atlas, n_streamlines, tractogram_path):
-    """Write a synthetic precomputed-weights cache and matching endpoints.tck.
-
-    ``tractogram_path`` is the .tck the cache pretends to have been built
-    from; its content fingerprint is recorded in ``connectome_meta.json``
-    so downstream cache validation succeeds when this same tractogram is
-    used at runtime.
-    """
-    import json
-
-    from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
+def _build_fake_weights_cache(cache_dir, atlas, n_streamlines, tractogram_path, atlas_dir):
+    """Write a synthetic precomputed-weights cache and matching envelope."""
+    from lacuna.assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        RequiresEntry,
+        fingerprint,
+        write_envelope,
+    )
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
@@ -147,15 +146,32 @@ def _build_fake_weights_cache(cache_dir, atlas, n_streamlines, tractogram_path):
         np.arange(n_streamlines, dtype=np.float32),
         fmt="%.0f",
     )
-    # Minimal endpoints.tck so _build_endpoint_density_from_cache can read it
     affine = np.eye(4)
     streamlines = nib.streamlines.ArraySequence(
         [np.array([[i, 0, 0], [0, i, 0]], dtype=np.float32) for i in range(n_streamlines)]
     )
     tractogram = nib.streamlines.Tractogram(streamlines, affine_to_rasmm=affine)
     nib.streamlines.save(tractogram, str(cache_dir / "endpoints.tck"))
-    fingerprint = compute_tractogram_fingerprint(tractogram_path)
-    (cache_dir / "connectome_meta.json").write_text(json.dumps(fingerprint))
+    env = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=fingerprint(cache_dir, AssetType.SNTF_CACHE),
+        requires=[
+            RequiresEntry(
+                role="tractogram",
+                asset_type=AssetType.STRUCTURAL_CONNECTOME,
+                identity=fingerprint(tractogram_path, AssetType.STRUCTURAL_CONNECTOME),
+                path_hint=str(tractogram_path),
+            ),
+            RequiresEntry(
+                role="ntatlas",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas_dir, AssetType.NTATLAS),
+                path_hint=str(atlas_dir),
+            ),
+        ],
+        data={"targets": list(atlas.targets)},
+    )
+    write_envelope(env, cache_dir)
     return start_w, end_w
 
 
@@ -182,7 +198,8 @@ class TestStructuralNTFCache:
         n_streamlines = _FAKE_TCK_N_STREAMLINES
         tck_path = load_structural_connectome(fake_connectome).tractogram_path
         start_w, end_w = _build_fake_weights_cache(
-            weights_dir, atlas, n_streamlines, tractogram_path=tck_path
+            weights_dir, atlas, n_streamlines,
+            tractogram_path=tck_path, atlas_dir=atlas_cache,
         )
 
         # Surviving IDs we want tckedit to "find"
@@ -250,7 +267,8 @@ class TestStructuralNTFCache:
 
         weights_dir = tmp_path / "weights"
         _build_fake_weights_cache(
-            weights_dir, atlas, _FAKE_TCK_N_STREAMLINES, tractogram_path=tck_a,
+            weights_dir, atlas, _FAKE_TCK_N_STREAMLINES,
+            tractogram_path=tck_a, atlas_dir=atlas_cache,
         )
 
         name = "test_sntf_mismatch_connectome"
@@ -268,24 +286,26 @@ class TestStructuralNTFCache:
                 check_dependencies=False,
             )
             sntf._validate_inputs(self._lesion_subject())
-            with pytest.raises(ValueError, match="connectome.*does not match"):
+            with pytest.raises(ValueError, match="does not match"):
                 sntf._score_from_cache(self._lesion_subject(), atlas)
         finally:
             unregister_structural_connectome(name)
 
-    def test_cache_without_connectome_meta_raises(
+    def test_cache_without_envelope_raises(
         self, atlas_cache, fake_connectome, tmp_path
     ):
-        """Caches from older lacuna versions (no connectome_meta.json) must not silently load."""
+        """Caches written without the envelope (older lacuna or corrupted) must not silently load."""
+        from lacuna.assets.connectomes import load_structural_connectome
+        from lacuna.assets.envelope import ENVELOPE_FILENAME
+
         atlas = load_atlas(atlas_cache)
         weights_dir = tmp_path / "weights"
-        from lacuna.assets.connectomes import load_structural_connectome
-
         tck_path = load_structural_connectome(fake_connectome).tractogram_path
         _build_fake_weights_cache(
-            weights_dir, atlas, _FAKE_TCK_N_STREAMLINES, tractogram_path=tck_path,
+            weights_dir, atlas, _FAKE_TCK_N_STREAMLINES,
+            tractogram_path=tck_path, atlas_dir=atlas_cache,
         )
-        (weights_dir / "connectome_meta.json").unlink()
+        (weights_dir / ENVELOPE_FILENAME).unlink()
 
         sntf = StructuralNeurotransmitterFingerprinting(
             connectome_name=fake_connectome,
@@ -294,5 +314,5 @@ class TestStructuralNTFCache:
             check_dependencies=False,
         )
         sntf._validate_inputs(self._lesion_subject())
-        with pytest.raises(FileNotFoundError, match="connectome_meta.json"):
+        with pytest.raises(FileNotFoundError, match=ENVELOPE_FILENAME):
             sntf._score_from_cache(self._lesion_subject(), atlas)

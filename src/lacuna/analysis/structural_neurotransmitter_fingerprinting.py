@@ -166,43 +166,19 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         return results
 
     def _validate_connectome_matches_cache(self, cache: Path) -> None:
-        """Reject caches built from a different tractogram than the one supplied at run time.
+        """Verify the cache's recorded inputs still match the runtime inputs."""
+        from lacuna.assets.envelope import read_envelope, validate_requires
 
-        Without this check, ``tckedit`` may not flag a count mismatch between
-        the streamline-index file and the user's tractogram, and even when
-        counts coincide the per-streamline weight arrays describe a different
-        connectome — yielding silently random scores.
-        """
-        import json
-
-        from lacuna.utils.tractogram_id import (
-            compute_tractogram_fingerprint,
-            fingerprints_match,
-        )
-
-        meta_path = cache / "connectome_meta.json"
-        if not meta_path.exists():
-            raise FileNotFoundError(
-                f"Precomputed weights cache at {cache} is missing 'connectome_meta.json'.\n"
-                "This file records which tractogram the cache was built from. "
-                "Re-run 'lacuna prepare sntf --connectome-path ... --cache-dir "
-                f"{cache}' to refresh the cache."
-            )
-        expected = json.loads(meta_path.read_text())
-        actual = compute_tractogram_fingerprint(self.tractogram_path)
-        if not fingerprints_match(expected, actual):
-            raise ValueError(
-                "Precomputed weights cache connectome does not match the "
-                "tractogram supplied at run time.\n"
-                f"  cache:    {expected.get('path')} "
-                f"({expected.get('size_bytes')} bytes, "
-                f"sha256[:1MiB]={expected.get('sha256_first_mib', '')[:12]}…)\n"
-                f"  runtime:  {actual['path']} "
-                f"({actual['size_bytes']} bytes, "
-                f"sha256[:1MiB]={actual['sha256_first_mib'][:12]}…)\n"
-                "Re-run 'lacuna prepare sntf' with the runtime tractogram or "
-                "point '--connectome-path' at the same tractogram used during prepare."
-            )
+        env = read_envelope(cache)
+        runtime_paths: dict[str, Path] = {
+            "tractogram": Path(self.tractogram_path),
+        }
+        if self.ntatlas_dir is not None:
+            runtime_paths["ntatlas"] = Path(self.ntatlas_dir)
+        elif self.ace_dir is not None:
+            # ACE caches publish a stage2 atlas — that is what sntf consumes.
+            runtime_paths["ntatlas"] = Path(self.ace_dir) / "stage2_atlas"
+        validate_requires(env, runtime_paths)
 
     def _score_from_cache(
         self, mask_data: SubjectData, atlas
