@@ -369,6 +369,15 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
         help="Keep intermediate results in output",
     )
     g_other.add_argument(
+        "--export-provenance",
+        action="store_true",
+        help=(
+            "Write a per-subject *_desc-provenance.json sidecar capturing the "
+            "transformations and analyses applied. Off by default — enable for "
+            "reproducible runs."
+        ),
+    )
+    g_other.add_argument(
         "-v",
         "--verbose",
         dest="verbose_count",

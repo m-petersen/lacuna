@@ -56,6 +56,7 @@ class RunConfig:
     tmp_dir: Path | None = None
     overwrite: bool = False
     keep_intermediate: bool = False
+    export_provenance: bool = False
     on_empty: str = "warn"  # "warn", "skip", or "error"
     verbose_count: int = 0
     # Analysis-specific options stored as dict
@@ -186,6 +187,7 @@ class RunConfig:
             tmp_dir=getattr(args, "tmp_dir", None),
             overwrite=getattr(args, "overwrite", False),
             keep_intermediate=getattr(args, "keep_intermediate", False),
+            export_provenance=getattr(args, "export_provenance", False),
             on_empty=getattr(args, "on_empty", "warn"),
             verbose_count=getattr(args, "verbose_count", 0),
             analysis_options=analysis_options,
@@ -1691,7 +1693,7 @@ def _process_single_subject(
                 subject_data=result,
                 output_dir=config.output_dir,
                 export_lesion_mask=False,
-                export_provenance=False,
+                export_provenance=config.export_provenance,
                 overwrite=True,
             )
 
@@ -1794,7 +1796,7 @@ def _process_batch(
                         subject_data=result,
                         output_dir=config.output_dir,
                         export_lesion_mask=False,
-                        export_provenance=False,
+                        export_provenance=config.export_provenance,
                         overwrite=True,
                     )
                     processed_count += 1
