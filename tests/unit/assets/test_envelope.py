@@ -1,5 +1,14 @@
+import pytest
+
 from lacuna.assets.envelope import (
-    AssetEnvelope, AssetType, IdentityRef, RequiresEntry, ENVELOPE_SCHEMA_VERSION,
+    AssetEnvelope,
+    AssetType,
+    ENVELOPE_FILENAME,
+    ENVELOPE_SCHEMA_VERSION,
+    IdentityRef,
+    read_envelope,
+    RequiresEntry,
+    write_envelope,
 )
 
 
@@ -49,14 +58,6 @@ def test_envelope_with_empty_requires_round_trips():
         identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
     )
     assert AssetEnvelope.from_dict(env.to_dict()) == env
-
-
-from pathlib import Path
-import pytest
-
-from lacuna.assets.envelope import (
-    ENVELOPE_FILENAME, read_envelope, write_envelope,
-)
 
 
 def _minimal_envelope():
