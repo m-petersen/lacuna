@@ -54,7 +54,7 @@ def test_iter_yields_one_timeseries_per_subject_across_batches(tmp_path):
     expected_constants = [1.0, 2.0, 3.0, 1.0, 2.0]  # batch1 has 3, batch2 has 2
     for (sid, ts), constant in zip(yielded, expected_constants):
         assert isinstance(sid, str)
-        assert ts.shape == (8, ts.shape[1])  # (n_timepoints, n_voxels)
+        assert ts.shape == (8, 62)  # (n_timepoints, n_voxels)
         assert np.allclose(ts, constant)
 
 

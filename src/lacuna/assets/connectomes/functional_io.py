@@ -13,6 +13,7 @@ Each HDF5 file is expected to contain:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Iterator
 
 import h5py
 import numpy as np
@@ -66,13 +67,16 @@ def read_mask_info(h5_path: Path) -> dict:
     }
 
 
-def iter_subject_timeseries(path: Path):
+def iter_subject_timeseries(path: Path) -> Iterator[tuple[str, np.ndarray]]:
     """Yield ``(subject_id, timeseries)`` per subject across all batches.
 
     Each ``timeseries`` is shape ``(n_timepoints, n_voxels)`` in
-    connectome-mask space. Use this for whole-brain operations such as
-    ACE prepare. For lesion-masked reads (which fancy-index only the
-    lesion slice from disk), use
+    connectome-mask space. Reads are per-subject so the caller pays at
+    most one HDF5 chunk per yield (the GSP1000 schema chunks at
+    ``(1, n_timepoints, n_voxels)`` precisely so this access pattern is
+    cheap). Use this for whole-brain operations such as ACE prepare. For
+    lesion-masked reads (which fancy-index only the lesion slice from
+    disk), use
     :meth:`FunctionalNetworkMapping._iter_batch_lesion_timeseries`.
 
     Subject IDs are synthesised from the batch filename and row index
@@ -83,8 +87,9 @@ def iter_subject_timeseries(path: Path):
     across passes must rely on iteration order, not ID.
     """
     for batch_file in list_connectome_batch_files(path):
-        with h5py.File(batch_file, "r") as hf:
-            ts = hf["timeseries"][:]  # (n_subjects, n_timepoints, n_voxels)
         stem = batch_file.stem
-        for row_idx in range(ts.shape[0]):
-            yield f"{stem}-{row_idx:04d}", ts[row_idx]
+        with h5py.File(batch_file, "r") as hf:
+            ts = hf["timeseries"]
+            n_subjects = ts.shape[0]
+            for row_idx in range(n_subjects):
+                yield f"{stem}-{row_idx:04d}", ts[row_idx]
