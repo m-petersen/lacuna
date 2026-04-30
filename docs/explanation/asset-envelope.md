@@ -90,15 +90,6 @@ records the upstream asset's `identity` at build time. The
 never used as a fallback path; runtime callers must supply the path
 explicitly.
 
-## Backward compatibility
-
-Caches written by older lacuna versions used per-asset metadata files
-(`manifest.json` for the NT atlas, `connectome_meta.json` for the SNTF
-cache). Readers tolerate both shapes for one release with a deprecation
-warning. To upgrade an existing cache, re-run the prepare step
-(`lacuna fetch ntatlas` or `lacuna prepare sntf`); the next save will
-write `lacuna_asset.json`.
-
 ## Provenance sidecars
 
 Subject-output provenance is a separate concern. By default,

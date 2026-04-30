@@ -282,21 +282,6 @@ def test_asset_present_detects_envelope(tmp_path):
     assert asset_present(tmp_path, AssetType.NTATLAS)
 
 
-def test_asset_present_detects_legacy_manifest_for_ntatlas(tmp_path):
-    from lacuna.assets.envelope import asset_present
-
-    (tmp_path / "manifest.json").write_text("{}")
-    assert asset_present(tmp_path, AssetType.NTATLAS)
-
-
-def test_asset_present_returns_false_for_unrelated_legacy_file(tmp_path):
-    """Legacy filenames are per-asset-type — manifest.json shouldn't satisfy a SNTF cache check."""
-    from lacuna.assets.envelope import asset_present
-
-    (tmp_path / "manifest.json").write_text("{}")
-    assert not asset_present(tmp_path, AssetType.SNTF_CACHE)
-
-
 def test_validate_requires_is_noop_on_empty_requires():
     env = AssetEnvelope(
         asset_type=AssetType.NTATLAS,

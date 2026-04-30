@@ -231,50 +231,9 @@ def test_save_atlas_writes_envelope(tmp_path):
     assert env.identity.fields["n_targets"] == 2
 
 
-def test_load_atlas_reads_envelope(tmp_path, caplog):
+def test_load_atlas_reads_envelope(tmp_path):
     atlas = _toy_atlas()
     save_atlas(atlas, tmp_path)
     loaded = load_atlas(tmp_path)
     assert sorted(loaded.targets) == ["A", "B"]
     assert loaded.space == "MNI152NLin6Asym"
-
-
-def test_load_atlas_falls_back_to_legacy_manifest(tmp_path, caplog):
-    """Atlases written by older lacuna only have manifest.json — still readable."""
-    import json
-    import logging
-
-    atlas = _toy_atlas()
-    save_atlas(atlas, tmp_path)
-    # Simulate legacy: drop the new envelope, recreate manifest.json by hand.
-    (tmp_path / "lacuna_asset.json").unlink()
-    legacy_manifest = {
-        "targets": list(atlas.targets),
-        "space": atlas.space,
-        "resolution": atlas.resolution,
-        "domain": atlas.domain,
-        "metadata": atlas.metadata,
-    }
-    (tmp_path / "manifest.json").write_text(json.dumps(legacy_manifest))
-
-    with caplog.at_level(logging.WARNING, logger="lacuna.atlas.store"):
-        loaded = load_atlas(tmp_path)
-    assert sorted(loaded.targets) == ["A", "B"]
-    assert any("legacy manifest.json" in r.message for r in caplog.records)
-
-
-def test_load_atlas_prefers_envelope_when_both_files_present(tmp_path, caplog):
-    """If both lacuna_asset.json and manifest.json exist, envelope wins (no deprecation warning)."""
-    import json
-    import logging
-
-    atlas = _toy_atlas()
-    save_atlas(atlas, tmp_path)
-    # Plant a corrupt manifest.json alongside the real envelope. If load_atlas
-    # reads the wrong one, it would either fail or produce different data.
-    (tmp_path / "manifest.json").write_text(json.dumps({"targets": ["JUNK"]}))
-
-    with caplog.at_level(logging.WARNING, logger="lacuna.atlas.store"):
-        loaded = load_atlas(tmp_path)
-    assert sorted(loaded.targets) == ["A", "B"]
-    assert not any("legacy manifest.json" in r.message for r in caplog.records)

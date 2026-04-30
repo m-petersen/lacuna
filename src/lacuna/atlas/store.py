@@ -8,7 +8,6 @@ by neurotransmitter system in metadata.
 
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -148,32 +147,17 @@ def save_atlas(atlas: VoxelAtlas, cache_dir: Path) -> None:
 
 
 def load_atlas(cache_dir: Path) -> VoxelAtlas:
-    """Load a VoxelAtlas from disk.
-
-    Prefers the shared ``lacuna_asset.json`` envelope. Falls back to the
-    legacy ``manifest.json`` for one release with a deprecation warning;
-    re-saving the atlas via ``save_atlas`` writes the envelope.
-    """
+    """Load a VoxelAtlas from disk."""
     from lacuna.assets.envelope import ENVELOPE_FILENAME, read_envelope
 
     cache_dir = Path(cache_dir)
 
-    if (cache_dir / ENVELOPE_FILENAME).exists():
-        env = read_envelope(cache_dir)
-        data = env.data
-    elif (cache_dir / "manifest.json").exists():
-        logger.warning(
-            "Reading legacy manifest.json from %s. Re-run 'lacuna fetch ntatlas' "
-            "or call save_atlas() to upgrade to the shared envelope.",
-            cache_dir,
-        )
-        with open(cache_dir / "manifest.json") as f:
-            data = json.load(f)
-    else:
+    if not (cache_dir / ENVELOPE_FILENAME).exists():
         raise FileNotFoundError(
             f"No atlas found at {cache_dir}. "
             f"Run 'lacuna fetch ntatlas --output-dir {cache_dir}' to create one."
         )
+    data = read_envelope(cache_dir).data
 
     maps = {}
     maps_dir = cache_dir / "maps"

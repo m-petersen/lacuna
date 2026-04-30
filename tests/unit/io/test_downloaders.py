@@ -650,23 +650,6 @@ class TestFetchNtatlas:
         prepared = list((tmp_path / "maps").glob("*.nii.gz"))
         assert len(prepared) == len(all_map_ids())
 
-    def test_fetch_ntatlas_skips_existing_manifest(self, tmp_path):
-        """Existing manifest.json means fetch is a no-op without force."""
-        from lacuna.io.fetch import fetch_ntatlas
-
-        (tmp_path / "manifest.json").write_text("{}")
-        (tmp_path / "maps").mkdir()
-
-        def fail_if_called(*_, **__):
-            raise AssertionError("urlopen/urlretrieve should not be called")
-
-        with patch("urllib.request.urlopen", side_effect=fail_if_called), \
-             patch("urllib.request.urlretrieve", side_effect=fail_if_called):
-            result = fetch_ntatlas(output_dir=tmp_path)
-
-        assert result.success
-        assert result.warnings  # signals reuse
-
     def test_fetch_ntatlas_skips_existing_envelope(self, tmp_path):
         """Existing lacuna_asset.json means fetch is a no-op without force."""
         from lacuna.io.fetch import fetch_ntatlas
@@ -685,11 +668,11 @@ class TestFetchNtatlas:
         assert result.warnings  # signals reuse
 
     def test_fetch_ntatlas_force_rebuilds(self, tmp_path):
-        """force=True re-downloads even if manifest exists."""
+        """force=True re-downloads even if envelope exists."""
         from lacuna.data.ntatlas import all_map_ids
         from lacuna.io.fetch import fetch_ntatlas
 
-        (tmp_path / "manifest.json").write_text("{}")  # stale manifest
+        (tmp_path / "lacuna_asset.json").write_text("{}")  # stale envelope
         content = self._synthetic_nifti_bytes()
         hashes_payload, _ = self._build_hash_payload(content)
 
