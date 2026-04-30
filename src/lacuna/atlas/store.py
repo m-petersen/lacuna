@@ -115,8 +115,16 @@ def _zscore_excluding_zeros(data: np.ndarray) -> np.ndarray:
 def save_atlas(atlas: VoxelAtlas, cache_dir: Path) -> None:
     """Save a VoxelAtlas to disk.
 
-    Stores each map as a NIfTI file and metadata as JSON manifest.
+    Writes one NIfTI per target plus a ``lacuna_asset.json`` envelope
+    describing the atlas's content fingerprint and metadata.
     """
+    from lacuna.assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        fingerprint,
+        write_envelope,
+    )
+
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -125,15 +133,18 @@ def save_atlas(atlas: VoxelAtlas, cache_dir: Path) -> None:
     for target in atlas.targets:
         nib.save(atlas.get_map(target), str(maps_dir / f"{target}.nii.gz"))
 
-    manifest = {
-        "targets": atlas.targets,
-        "space": atlas.space,
-        "resolution": atlas.resolution,
-        "domain": atlas.domain,
-        "metadata": atlas.metadata,
-    }
-    with open(cache_dir / "manifest.json", "w") as f:
-        json.dump(manifest, f, indent=2, default=str)
+    env = AssetEnvelope(
+        asset_type=AssetType.NTATLAS,
+        identity=fingerprint(cache_dir, AssetType.NTATLAS),
+        data={
+            "targets": list(atlas.targets),
+            "space": atlas.space,
+            "resolution": atlas.resolution,
+            "domain": atlas.domain,
+            "metadata": atlas.metadata,
+        },
+    )
+    write_envelope(env, cache_dir)
 
 
 def load_atlas(cache_dir: Path) -> VoxelAtlas:

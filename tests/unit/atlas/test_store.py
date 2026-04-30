@@ -8,6 +8,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
+from lacuna.assets.envelope import AssetType, ENVELOPE_FILENAME, read_envelope
 from lacuna.atlas.store import (
     _zscore_excluding_zeros,
     build_nt_atlas,
@@ -201,3 +202,36 @@ class TestSaveLoadAtlas:
     def test_load_nonexistent_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             load_atlas(tmp_path / "nonexistent")
+
+
+# ---------------------------------------------------------------------------
+# save_atlas writes the lacuna_asset.json envelope
+# ---------------------------------------------------------------------------
+
+
+def _toy_atlas():
+    """A tiny in-memory atlas for envelope-write tests."""
+    affine = np.eye(4)
+    maps = {
+        "A": nib.Nifti1Image(np.zeros((2, 2, 2), dtype=np.float32), affine),
+        "B": nib.Nifti1Image(np.ones((2, 2, 2), dtype=np.float32), affine),
+    }
+    from lacuna.atlas.types import VoxelAtlas
+    return VoxelAtlas(
+        maps=maps,
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        domain="neurotransmitter",
+        metadata={"systems": {"toy": ["A", "B"]}},
+    )
+
+
+def test_save_atlas_writes_envelope(tmp_path):
+    atlas = _toy_atlas()
+    save_atlas(atlas, tmp_path)
+    assert (tmp_path / ENVELOPE_FILENAME).exists()
+    env = read_envelope(tmp_path)
+    assert env.asset_type == AssetType.NTATLAS
+    assert env.data["targets"] == ["A", "B"]
+    assert env.data["space"] == "MNI152NLin6Asym"
+    assert env.identity.fields["n_targets"] == 2
