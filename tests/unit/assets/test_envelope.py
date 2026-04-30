@@ -82,3 +82,28 @@ def test_read_envelope_round_trip(tmp_path):
 def test_read_envelope_raises_when_missing(tmp_path):
     with pytest.raises(FileNotFoundError, match=ENVELOPE_FILENAME):
         read_envelope(tmp_path)
+
+
+def test_read_write_envelope_round_trips_populated_envelope(tmp_path):
+    env = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=IdentityRef(
+            kind="sha256_concat",
+            fields={"sha256": "abc", "n_streamlines": 985},
+        ),
+        requires=[
+            RequiresEntry(
+                role="tractogram",
+                asset_type=AssetType.STRUCTURAL_CONNECTOME,
+                identity=IdentityRef(
+                    kind="sha256_first_mib+size",
+                    fields={"sha256_first_mib": "def", "size_bytes": 1000},
+                ),
+                path_hint="/data/tractogram.tck",
+            ),
+        ],
+        provenance={"command": "lacuna prepare sntf"},
+        data={"targets": ["D1", "5HT1a"]},
+    )
+    write_envelope(env, tmp_path)
+    assert read_envelope(tmp_path) == env

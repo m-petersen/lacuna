@@ -105,7 +105,10 @@ class AssetEnvelope:
 
 
 def write_envelope(env: AssetEnvelope, asset_root: Path | str) -> Path:
-    """Write the envelope to ``<asset_root>/lacuna_asset.json``."""
+    """Write the envelope to ``<asset_root>/lacuna_asset.json``.
+
+    Creates ``asset_root`` (and missing parents) if it does not exist.
+    """
     asset_root = Path(asset_root)
     asset_root.mkdir(parents=True, exist_ok=True)
     path = asset_root / ENVELOPE_FILENAME
