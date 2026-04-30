@@ -68,7 +68,7 @@ class TestLNTFIntegration:
         affine[3, 3] = 1
         subject = _make_subject(affine)
 
-        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas)
+        lntf = LocalNeurotransmitterFingerprinting(ntatlas_dir=pet_atlas)
         parcel = _lntf_fingerprint(lntf.run(subject))
         assert "D1" in parcel.data
         assert "5HT1a" in parcel.data
@@ -81,7 +81,7 @@ class TestLNTFIntegration:
         subject = _make_subject(affine)
 
         lntf = LocalNeurotransmitterFingerprinting(
-            atlas_cache_dir=pet_atlas,
+            ntatlas_dir=pet_atlas,
             targets=["D1"],
         )
         parcel = _lntf_fingerprint(lntf.run(subject))
@@ -97,7 +97,7 @@ class TestLNTFIntegration:
         subject = _make_subject(affine)
 
         pipe = Pipeline(name="test_ntf")
-        pipe.add(LocalNeurotransmitterFingerprinting(atlas_cache_dir=pet_atlas))
+        pipe.add(LocalNeurotransmitterFingerprinting(ntatlas_dir=pet_atlas))
         result = pipe.run(subject)
 
         assert "LocalNeurotransmitterFingerprinting" in result.results

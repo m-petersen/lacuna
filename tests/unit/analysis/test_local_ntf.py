@@ -72,12 +72,12 @@ def lesion_subject():
 
 class TestLocalNTFConstruction:
     def test_basic_construction(self, atlas_cache):
-        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
+        lntf = LocalNeurotransmitterFingerprinting(ntatlas_dir=atlas_cache)
         assert lntf.TARGET_SPACE is None
 
     def test_targets_parameter(self, atlas_cache):
         lntf = LocalNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             targets=["D1"],
         )
         assert lntf._target_spec == ["D1"]
@@ -85,20 +85,20 @@ class TestLocalNTFConstruction:
 
 class TestLocalNTFRun:
     def test_returns_fingerprint(self, atlas_cache, lesion_subject):
-        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
+        lntf = LocalNeurotransmitterFingerprinting(ntatlas_dir=atlas_cache)
         parcel = _lntf_fingerprint(lntf.run(lesion_subject))
         assert "D1" in parcel.data
         assert "5HT1a" in parcel.data
 
     def test_scores_are_finite(self, atlas_cache, lesion_subject):
-        lntf = LocalNeurotransmitterFingerprinting(atlas_cache_dir=atlas_cache)
+        lntf = LocalNeurotransmitterFingerprinting(ntatlas_dir=atlas_cache)
         parcel = _lntf_fingerprint(lntf.run(lesion_subject))
         for target in ["D1", "5HT1a"]:
             assert np.isfinite(parcel.data[target])
 
     def test_target_subsetting(self, atlas_cache, lesion_subject):
         lntf = LocalNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             targets=["D1"],
         )
         parcel = _lntf_fingerprint(lntf.run(lesion_subject))

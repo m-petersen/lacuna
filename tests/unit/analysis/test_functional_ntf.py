@@ -45,7 +45,7 @@ def atlas_cache(tmp_path):
 class TestFunctionalNTMConstruction:
     def test_basic_construction(self, atlas_cache):
         fntf = FunctionalNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             connectome_name="GSP1000",
         )
         assert fntf._target_spec == "all"
@@ -76,7 +76,7 @@ class TestFunctionalNTMConstruction:
         # Both passed → ValueError
         with pytest.raises(ValueError, match="exactly one"):
             FunctionalNeurotransmitterFingerprinting(
-                atlas_cache_dir=atlas_cache,
+                ntatlas_dir=atlas_cache,
                 ace_cache_dir=atlas_cache,
                 connectome_name="GSP1000",
             )
@@ -88,7 +88,7 @@ class TestFunctionalNTMConstruction:
 
     def test_targets_parameter(self, atlas_cache):
         fntf = FunctionalNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             connectome_name="GSP1000",
             targets=["D1"],
         )

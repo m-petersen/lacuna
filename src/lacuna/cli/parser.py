@@ -1376,7 +1376,7 @@ def _build_prepare_parser(subparsers) -> None:
         help="Precompute structural endpoint NT weights",
     )
     prepare_sntf.add_argument(
-        "--atlas-cache-dir", type=str, required=True,
+        "--ntatlas-dir", type=str, required=True,
         help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
     )
     prepare_sntf.add_argument(
@@ -1394,7 +1394,7 @@ def _build_prepare_parser(subparsers) -> None:
         help="Run ACE (Atlas Connectivity Enrichment) on normative data",
     )
     prepare_ace.add_argument(
-        "--atlas-cache-dir", type=str, required=True,
+        "--ntatlas-dir", type=str, required=True,
         help="Directory with prepared NT atlas (from 'lacuna fetch ntatlas')",
     )
     prepare_ace.add_argument(
@@ -1412,7 +1412,7 @@ def _add_ntm_common_args(parser: ArgumentParser) -> None:
     g_ntm = parser.add_argument_group("Neurotransmitter fingerprinting options")
     atlas_source = g_ntm.add_mutually_exclusive_group(required=True)
     atlas_source.add_argument(
-        "--atlas-cache-dir", type=str, default=None,
+        "--ntatlas-dir", type=str, default=None,
         help="Directory with NT atlas from 'lacuna fetch ntatlas' (static mode)",
     )
     atlas_source.add_argument(
@@ -1431,7 +1431,7 @@ def _build_lntf_parser(subparsers) -> None:
             "Local neurotransmitter fingerprinting: score NT atlas values directly\n"
             "within the lesion mask.\n\n"
             "Examples:\n"
-            "  lacuna run lntf /bids /output --atlas-cache-dir /path/to/ntatlas\n"
+            "  lacuna run lntf /bids /output --ntatlas-dir /path/to/ntatlas\n"
             "  lacuna run lntf /bids /output --ace-cache-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -1458,7 +1458,7 @@ def _build_sntf_parser(subparsers) -> None:
             "NT-weighted structural connectivity does the lesion disrupt?'\n\n"
             "Examples:\n"
             "  lacuna run sntf /bids /output --connectome-path /path/to/tractogram.tck \\\n"
-            "      --atlas-cache-dir /path/to/ntatlas"
+            "      --ntatlas-dir /path/to/ntatlas"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -1495,7 +1495,7 @@ def _build_fntf_parser(subparsers) -> None:
             "weighted by functional connectivity of the lesion. Answers:\n"
             "'what NT systems are functionally connected to the lesion?'\n\n"
             "Examples:\n"
-            "  lacuna run fntf /bids /output --connectome-name GSP1000 --atlas-cache-dir /path/to/ntatlas\n"
+            "  lacuna run fntf /bids /output --connectome-name GSP1000 --ntatlas-dir /path/to/ntatlas\n"
             "  lacuna run fntf /bids /output --connectome-name GSP1000 --ace-cache-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,

@@ -15,7 +15,7 @@ def run_prepare_sntf(args) -> None:
     """Precompute endpoint NT weights for all streamlines."""
     from lacuna.atlas.store import load_atlas
 
-    atlas_dir = Path(args.atlas_cache_dir)
+    atlas_dir = Path(args.ntatlas_dir)
     if not (atlas_dir / "manifest.json").exists():
         raise FileNotFoundError(
             f"NT atlas not found at {atlas_dir}.\n"
@@ -104,7 +104,7 @@ def run_prepare_ace(args) -> None:
     """Run ACE (Atlas Connectivity Enrichment) on normative fMRI data."""
     from lacuna.atlas.store import load_atlas
 
-    atlas_dir = Path(args.atlas_cache_dir)
+    atlas_dir = Path(args.ntatlas_dir)
     atlas = load_atlas(atlas_dir)
 
     cache_dir = Path(args.cache_dir)

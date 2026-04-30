@@ -31,7 +31,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
     Computes functional connectivity of the lesion (using FunctionalNetworkMapping
     internally), then scores the resulting z-map against the NT atlas.
 
-    Provide exactly one of ``atlas_cache_dir`` (static mode: NT atlas
+    Provide exactly one of ``ntatlas_dir`` (static mode: NT atlas
     × fLNM z-map) or ``ace_cache_dir`` (enriched mode: temporal
     correlation of lesion BOLD with stage-1 NT timeseries).
 
@@ -39,7 +39,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
     ----------
     connectome_name : str
         Name of the functional connectome (e.g., "GSP1000").
-    atlas_cache_dir : Path or None
+    ntatlas_dir : Path or None
         Directory with the prepared NT atlas (output of ``lacuna fetch ntatlas``).
         Triggers static-mode scoring.
     ace_cache_dir : Path or None
@@ -66,7 +66,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
     def __init__(
         self,
         connectome_name: str,
-        atlas_cache_dir: str | Path | None = None,
+        ntatlas_dir: str | Path | None = None,
         ace_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
         parcel_atlases: list[str] | None = None,
@@ -76,11 +76,11 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        if (atlas_cache_dir is None) == (ace_cache_dir is None):
+        if (ntatlas_dir is None) == (ace_cache_dir is None):
             raise ValueError(
-                "Provide exactly one of atlas_cache_dir or ace_cache_dir."
+                "Provide exactly one of ntatlas_dir or ace_cache_dir."
             )
-        self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
+        self.ntatlas_dir = Path(ntatlas_dir) if ntatlas_dir else None
         self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
@@ -96,7 +96,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
     def _resolve_atlas_dir(self) -> Path:
         if self.ace_cache_dir is not None:
             return self.ace_cache_dir / "stage2_atlas"
-        return self.atlas_cache_dir
+        return self.ntatlas_dir
 
     def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate atlas and connectome inputs."""
@@ -204,7 +204,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
     def _get_parameters(self) -> dict:
         return {
-            "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
+            "ntatlas_dir": str(self.ntatlas_dir) if self.ntatlas_dir else None,
             "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "connectome_name": self.connectome_name,
             "targets": self._target_spec,

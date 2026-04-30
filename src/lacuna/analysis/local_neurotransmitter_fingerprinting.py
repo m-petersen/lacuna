@@ -26,14 +26,14 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
     Computes, for each NT target, the mean z-scored NT density within the
     lesion mask (excluding zero-valued voxels).
 
-    Provide exactly one of ``atlas_cache_dir`` (static NT atlas from
+    Provide exactly one of ``ntatlas_dir`` (static NT atlas from
     ``lacuna fetch ntatlas``) or ``ace_cache_dir`` (ACE-enriched atlas
     from ``lacuna prepare ace``). The scoring is identical in both
     cases — only the underlying atlas values differ.
 
     Parameters
     ----------
-    atlas_cache_dir : Path or None
+    ntatlas_dir : Path or None
         Directory with the prepared NT atlas (output of ``lacuna fetch ntatlas``).
     ace_cache_dir : Path or None
         Directory with the ACE cache (output of ``lacuna prepare ace``).
@@ -56,7 +56,7 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
 
     def __init__(
         self,
-        atlas_cache_dir: str | Path | None = None,
+        ntatlas_dir: str | Path | None = None,
         ace_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
         parcel_atlases: list[str] | None = None,
@@ -65,11 +65,11 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        if (atlas_cache_dir is None) == (ace_cache_dir is None):
+        if (ntatlas_dir is None) == (ace_cache_dir is None):
             raise ValueError(
-                "Provide exactly one of atlas_cache_dir or ace_cache_dir."
+                "Provide exactly one of ntatlas_dir or ace_cache_dir."
             )
-        self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
+        self.ntatlas_dir = Path(ntatlas_dir) if ntatlas_dir else None
         self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self._target_spec = targets
         self.parcel_atlases = parcel_atlases
@@ -84,7 +84,7 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
         """Return the directory the VoxelAtlas should be loaded from."""
         if self.ace_cache_dir is not None:
             return self.ace_cache_dir / "stage2_atlas"
-        return self.atlas_cache_dir
+        return self.ntatlas_dir
 
     def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate that the atlas cache exists and targets are available."""
@@ -127,7 +127,7 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
 
     def _get_parameters(self) -> dict:
         return {
-            "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
+            "ntatlas_dir": str(self.ntatlas_dir) if self.ntatlas_dir else None,
             "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "targets": self._target_spec,
             "aggregation": self.aggregation,

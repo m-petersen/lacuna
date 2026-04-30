@@ -76,7 +76,7 @@ def fake_weights_cache(tmp_path, atlas_cache):
 class TestStructuralNTMConstruction:
     def test_basic_construction(self, atlas_cache, fake_connectome, fake_weights_cache):
         sntf = StructuralNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             connectome_name=fake_connectome,
             precomputed_weights_dir=fake_weights_cache,
             check_dependencies=False,
@@ -85,7 +85,7 @@ class TestStructuralNTMConstruction:
 
     def test_targets_parameter(self, atlas_cache, fake_connectome, fake_weights_cache):
         sntf = StructuralNeurotransmitterFingerprinting(
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             connectome_name=fake_connectome,
             precomputed_weights_dir=fake_weights_cache,
             targets=["D1"],
@@ -96,7 +96,7 @@ class TestStructuralNTMConstruction:
     def test_precomputed_weights_dir_required(self, atlas_cache, fake_connectome):
         with pytest.raises(TypeError, match="precomputed_weights_dir"):
             StructuralNeurotransmitterFingerprinting(
-                atlas_cache_dir=atlas_cache,
+                ntatlas_dir=atlas_cache,
                 connectome_name=fake_connectome,
                 check_dependencies=False,
             )
@@ -155,7 +155,7 @@ class TestStructuralNTFCache:
 
         sntf = StructuralNeurotransmitterFingerprinting(
             connectome_name=fake_connectome,
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             precomputed_weights_dir=weights_dir,
             check_dependencies=False,
             endpoint_combine="mean",
@@ -185,7 +185,7 @@ class TestStructuralNTFCache:
     def test_cache_missing_raises(self, atlas_cache, fake_connectome, tmp_path):
         sntf = StructuralNeurotransmitterFingerprinting(
             connectome_name=fake_connectome,
-            atlas_cache_dir=atlas_cache,
+            ntatlas_dir=atlas_cache,
             precomputed_weights_dir=tmp_path / "nonexistent_cache",
             check_dependencies=False,
         )

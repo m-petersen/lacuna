@@ -28,7 +28,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     For each lesion-intersecting streamline, computes the mean NT value at its
     two endpoints, then sums across all intersecting streamlines.
 
-    Provide exactly one of ``atlas_cache_dir`` (static NT atlas from
+    Provide exactly one of ``ntatlas_dir`` (static NT atlas from
     ``lacuna fetch ntatlas``) or ``ace_cache_dir`` (ACE-enriched atlas
     from ``lacuna prepare ace``).
 
@@ -44,7 +44,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     precomputed_weights_dir : Path
         Directory with the prepared endpoint NT weights cache
         (output of ``lacuna prepare sntf``). Required.
-    atlas_cache_dir : Path or None
+    ntatlas_dir : Path or None
         Directory with the prepared NT atlas.
     ace_cache_dir : Path or None
         Directory with the ACE cache.
@@ -72,7 +72,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         self,
         connectome_name: str,
         precomputed_weights_dir: str | Path,
-        atlas_cache_dir: str | Path | None = None,
+        ntatlas_dir: str | Path | None = None,
         ace_cache_dir: str | Path | None = None,
         targets: str | list[str] = "all",
         endpoint_combine: str = "mean",
@@ -83,9 +83,9 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        if (atlas_cache_dir is None) == (ace_cache_dir is None):
+        if (ntatlas_dir is None) == (ace_cache_dir is None):
             raise ValueError(
-                "Provide exactly one of atlas_cache_dir or ace_cache_dir."
+                "Provide exactly one of ntatlas_dir or ace_cache_dir."
             )
         if endpoint_combine not in ("mean", "sum", "product"):
             raise ValueError(
@@ -95,7 +95,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             raise ValueError(
                 f"aggregation must be 'sum' or 'mean'; got '{aggregation}'"
             )
-        self.atlas_cache_dir = Path(atlas_cache_dir) if atlas_cache_dir else None
+        self.ntatlas_dir = Path(ntatlas_dir) if ntatlas_dir else None
         self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
@@ -122,7 +122,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     def _resolve_atlas_dir(self) -> Path:
         if self.ace_cache_dir is not None:
             return self.ace_cache_dir / "stage2_atlas"
-        return self.atlas_cache_dir
+        return self.ntatlas_dir
 
     def _validate_inputs(self, mask_data: SubjectData) -> None:
         """Validate atlas, connectome, and resolve targets."""
@@ -295,7 +295,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
     def _get_parameters(self) -> dict:
         return {
-            "atlas_cache_dir": str(self.atlas_cache_dir) if self.atlas_cache_dir else None,
+            "ntatlas_dir": str(self.ntatlas_dir) if self.ntatlas_dir else None,
             "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
             "connectome_name": self.connectome_name,
             "precomputed_weights_dir": str(self.precomputed_weights_dir),
