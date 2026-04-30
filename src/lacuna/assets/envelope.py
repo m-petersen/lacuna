@@ -156,6 +156,8 @@ def fingerprint(path: Path | str, asset_type: AssetType) -> IdentityRef:
         return _fingerprint_sntf_cache(path)
     if asset_type == AssetType.FUNCTIONAL_CONNECTOME:
         return _fingerprint_functional_connectome(path)
+    if asset_type == AssetType.ACE_CACHE:
+        return _fingerprint_ace_cache(path)
     raise NotImplementedError(f"No fingerprint for asset_type={asset_type.value}")
 
 
@@ -226,6 +228,39 @@ def _fingerprint_sntf_cache(asset_root: Path) -> IdentityRef:
     return IdentityRef(
         kind="sha256_concat",
         fields={"sha256": h.hexdigest()},
+    )
+
+
+def _fingerprint_ace_cache(asset_root: Path) -> IdentityRef:
+    """Fingerprint an ACE cache by hashing its stage1 timeseries files.
+
+    Mirrors the FUNCTIONAL_CONNECTOME pattern: each file contributes its
+    name + size + sha256 of the first 1 MiB. The stage2_atlas sub-asset
+    has its own envelope (written by save_atlas) and is not double-counted
+    here — the ACE cache's identity is the per-subject regression output,
+    which is what stage1 timeseries are.
+    """
+    stage1_dir = asset_root / "stage1_timeseries"
+    if not stage1_dir.is_dir():
+        raise FileNotFoundError(
+            f"ACE cache missing stage1_timeseries/ directory: {asset_root}"
+        )
+    files = sorted(stage1_dir.glob("*.npy"))
+    if not files:
+        raise FileNotFoundError(
+            f"No subject .npy files found in {stage1_dir}"
+        )
+    h = hashlib.sha256()
+    for p in files:
+        h.update(p.name.encode("utf-8"))
+        h.update(b"\0")
+        h.update(str(p.stat().st_size).encode("ascii"))
+        h.update(b"\0")
+        with p.open("rb") as f:
+            h.update(f.read(_HASH_CHUNK_BYTES))
+    return IdentityRef(
+        kind="sha256_first_mib_per_file",
+        fields={"sha256": h.hexdigest(), "n_subjects": len(files)},
     )
 
 

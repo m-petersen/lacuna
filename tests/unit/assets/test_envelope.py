@@ -167,11 +167,6 @@ def test_fingerprint_sntf_cache_is_deterministic_and_content_sensitive(tmp_path)
     assert f3 != f1
 
 
-def test_fingerprint_unsupported_type_raises(tmp_path):
-    with pytest.raises(NotImplementedError, match="ace_cache"):
-        fingerprint(tmp_path, AssetType.ACE_CACHE)
-
-
 def test_fingerprint_ntatlas_missing_maps_dir_raises(tmp_path):
     with pytest.raises(FileNotFoundError, match="maps/ directory"):
         fingerprint(tmp_path, AssetType.NTATLAS)
@@ -343,3 +338,37 @@ def test_validate_requires_handles_multiple_entries(tmp_path):
         consumer,
         runtime_paths={"atlas_a": atlas_a, "atlas_b": atlas_b},
     )  # no raise
+
+
+def test_fingerprint_ace_cache_is_deterministic_and_content_sensitive(tmp_path):
+    stage1 = tmp_path / "stage1_timeseries"
+    stage1.mkdir()
+    np.save(stage1 / "subject-0000.npy", np.zeros((4, 2), dtype=np.float32))
+    np.save(stage1 / "subject-0001.npy", np.ones((4, 2), dtype=np.float32))
+
+    f1 = fingerprint(tmp_path, AssetType.ACE_CACHE)
+    f2 = fingerprint(tmp_path, AssetType.ACE_CACHE)
+    assert f1 == f2
+    assert f1.fields["n_subjects"] == 2
+
+    # Adding a subject changes the fingerprint
+    np.save(stage1 / "subject-0002.npy", np.full((4, 2), 2.0, dtype=np.float32))
+    f3 = fingerprint(tmp_path, AssetType.ACE_CACHE)
+    assert f3 != f1
+    assert f3.fields["n_subjects"] == 3
+
+    # Mutating an existing subject also changes the fingerprint
+    np.save(stage1 / "subject-0000.npy", np.full((4, 2), 99.0, dtype=np.float32))
+    f4 = fingerprint(tmp_path, AssetType.ACE_CACHE)
+    assert f4 != f3
+
+
+def test_fingerprint_ace_cache_missing_stage1_dir_raises(tmp_path):
+    with pytest.raises(FileNotFoundError, match="stage1_timeseries"):
+        fingerprint(tmp_path, AssetType.ACE_CACHE)
+
+
+def test_fingerprint_ace_cache_empty_stage1_raises(tmp_path):
+    (tmp_path / "stage1_timeseries").mkdir()
+    with pytest.raises(FileNotFoundError, match="No subject"):
+        fingerprint(tmp_path, AssetType.ACE_CACHE)
