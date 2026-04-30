@@ -151,7 +151,6 @@ def run_prepare_ace(args) -> None:
     """Build an ACE-enriched atlas cache from an NT atlas + functional connectome."""
     import shutil
 
-    import nibabel as nib  # noqa: F401  (used by save_atlas / atlas internals)
     import numpy as np
 
     from lacuna.assets.connectomes.functional_io import (
@@ -162,7 +161,6 @@ def run_prepare_ace(args) -> None:
     from lacuna.assets.envelope import (
         AssetEnvelope,
         AssetType,
-        ENVELOPE_FILENAME,
         RequiresEntry,
         asset_present,
         fingerprint,
@@ -207,6 +205,12 @@ def run_prepare_ace(args) -> None:
         )
 
     # Iterate subjects (capped by max_subjects), materialize the list
+    if max_subjects is None:
+        logger.warning(
+            "Loading all subjects into RAM (no --max-subjects). "
+            "Expect ~1.2 GB per subject for GSP1000-shape data."
+        )
+
     subjects: list[np.ndarray] = []
     subject_ids: list[str] = []
     for subj_id, ts in iter_subject_timeseries(conn_path):
@@ -232,14 +236,18 @@ def run_prepare_ace(args) -> None:
     stage2_atlas = result["stage2_atlas"]
     stage1_timeseries = result["stage1_timeseries"]
 
-    # Write the cache (envelope is LAST; partial dirs are visibly invalid)
+    # Write the cache (envelope is LAST; partial dirs are visibly invalid).
+    # Wipe stale sub-asset dirs so re-runs against a different atlas (with
+    # different target lists) don't leave orphan files behind.
     cache_dir.mkdir(parents=True, exist_ok=True)
-    save_atlas(stage2_atlas, cache_dir / "stage2_atlas")
+
+    stage2_dir = cache_dir / "stage2_atlas"
+    if stage2_dir.exists():
+        shutil.rmtree(stage2_dir)
+    save_atlas(stage2_atlas, stage2_dir)
 
     stage1_dir = cache_dir / "stage1_timeseries"
     if stage1_dir.exists():
-        # Wipe a previous (potentially partial) stage1 dir so re-runs don't
-        # leave stale subject-NNNN files lying around.
         shutil.rmtree(stage1_dir)
     stage1_dir.mkdir()
     for i, ts in enumerate(stage1_timeseries):

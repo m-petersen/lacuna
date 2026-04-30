@@ -232,3 +232,29 @@ def test_prepare_ace_empty_connectome_raises(tmp_path):
     cache_dir = tmp_path / "ace_cache"
     with pytest.raises(FileNotFoundError):
         run_prepare_ace(_ace_args(atlas_dir, empty_conn, cache_dir))
+
+
+def test_prepare_ace_affine_mismatch_raises(tmp_path):
+    """Same shape but mismatched affine → fail before running ACE."""
+    pet_dir = tmp_path / "pet_raw"
+    pet_dir.mkdir()
+    _write_synthetic_collection(pet_dir, ["D1", "5HT1a"])
+    atlas = build_nt_atlas(pet_dir)
+    atlas_dir = tmp_path / "atlas"
+    save_atlas(atlas, atlas_dir)
+
+    conn_dir = tmp_path / "conn"
+    conn_dir.mkdir()
+    atlas_ref = atlas.get_map(atlas.targets[0])
+    # Same shape, different affine (atlas was built with np.eye(4)*2):
+    _write_synthetic_gsp_batch(
+        conn_dir / "batch_0001.h5",
+        n_subjects=2,
+        n_timepoints=8,
+        atlas_shape=atlas_ref.shape,
+        atlas_affine=np.eye(4),
+    )
+    cache_dir = tmp_path / "ace_cache"
+
+    with pytest.raises(ValueError, match="affine"):
+        run_prepare_ace(_ace_args(atlas_dir, conn_dir, cache_dir))
