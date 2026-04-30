@@ -167,6 +167,22 @@ def _hash_file_into(h: "hashlib._Hash", path: Path) -> None:
             h.update(chunk)
 
 
+def _hash_file_prefix(h: "hashlib._Hash", path: Path, n_bytes: int) -> None:
+    """Hash the file's name + size + first ``n_bytes`` of content into ``h``.
+
+    Sibling of :func:`_hash_file_into` — same shape, different read strategy:
+    use this when the file is too large to hash in full but its header
+    + size is enough to detect realistic mismatches (HDF5 batches, .npy
+    files with type-specific headers).
+    """
+    h.update(path.name.encode("utf-8"))
+    h.update(b"\0")
+    h.update(str(path.stat().st_size).encode("ascii"))
+    h.update(b"\0")
+    with path.open("rb") as f:
+        h.update(f.read(n_bytes))
+
+
 def _fingerprint_ntatlas(asset_root: Path) -> IdentityRef:
     maps_dir = asset_root / "maps"
     if not maps_dir.is_dir():
@@ -205,12 +221,7 @@ def _fingerprint_functional_connectome(asset_root: Path) -> IdentityRef:
         )
     h = hashlib.sha256()
     for p in batch_files:
-        h.update(p.name.encode("utf-8"))
-        h.update(b"\0")
-        h.update(str(p.stat().st_size).encode("ascii"))
-        h.update(b"\0")
-        with p.open("rb") as f:
-            h.update(f.read(_HASH_CHUNK_BYTES))
+        _hash_file_prefix(h, p, _HASH_CHUNK_BYTES)
     return IdentityRef(
         kind="sha256_first_mib_per_file",
         fields={"sha256": h.hexdigest(), "n_batches": len(batch_files)},
@@ -252,12 +263,7 @@ def _fingerprint_ace_cache(asset_root: Path) -> IdentityRef:
         )
     h = hashlib.sha256()
     for p in files:
-        h.update(p.name.encode("utf-8"))
-        h.update(b"\0")
-        h.update(str(p.stat().st_size).encode("ascii"))
-        h.update(b"\0")
-        with p.open("rb") as f:
-            h.update(f.read(_HASH_CHUNK_BYTES))
+        _hash_file_prefix(h, p, _HASH_CHUNK_BYTES)
     return IdentityRef(
         kind="sha256_first_mib_per_file",
         fields={"sha256": h.hexdigest(), "n_subjects": len(files)},
