@@ -404,6 +404,35 @@ class TestConnectomeSources:
         assert hcp.space == "MNI152NLin2009cAsym"
         assert hcp.estimated_size_gb > 0
 
+    def test_fetch_gsp1000_writes_envelope_on_existing_hdf5(self, tmp_path):
+        """fetch_gsp1000's reuse-existing path writes a lacuna_asset.json envelope."""
+        from lacuna.assets.envelope import (
+            AssetType,
+            ENVELOPE_FILENAME,
+            read_envelope,
+        )
+        from lacuna.io.fetch import fetch_gsp1000
+
+        # Pre-create the processed dir with an HDF5 batch so the early-return
+        # branch fires. The fetcher checks <output_dir>/processed/*.h5
+        processed_dir = tmp_path / "processed"
+        processed_dir.mkdir()
+        (processed_dir / "batch_0001.h5").write_bytes(b"fake-hdf5-payload")
+
+        result = fetch_gsp1000(output_dir=tmp_path, register=False, force=False)
+
+        assert result.success
+        envelope_path = processed_dir / ENVELOPE_FILENAME
+        assert envelope_path.exists()
+        assert envelope_path in result.output_files
+
+        env = read_envelope(processed_dir)
+        assert env.asset_type == AssetType.FUNCTIONAL_CONNECTOME
+        assert env.data["space"] == "MNI152NLin6Asym"
+        assert env.data["n_subjects"] == 1000
+        assert env.identity.fields["n_batches"] == 1
+        assert env.provenance["command"] == "lacuna fetch gsp1000"
+
     def test_fetch_hcp1065_writes_envelope_on_existing_tck(self, tmp_path):
         """fetch_hcp1065's reuse-existing path writes a lacuna_asset.json envelope."""
         import nibabel as nib

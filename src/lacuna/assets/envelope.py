@@ -154,6 +154,8 @@ def fingerprint(path: Path | str, asset_type: AssetType) -> IdentityRef:
         return _fingerprint_ntatlas(path)
     if asset_type == AssetType.SNTF_CACHE:
         return _fingerprint_sntf_cache(path)
+    if asset_type == AssetType.FUNCTIONAL_CONNECTOME:
+        return _fingerprint_functional_connectome(path)
     raise NotImplementedError(f"No fingerprint for asset_type={asset_type.value}")
 
 
@@ -176,6 +178,40 @@ def _fingerprint_ntatlas(asset_root: Path) -> IdentityRef:
     return IdentityRef(
         kind="sha256_concat",
         fields={"sha256": h.hexdigest(), "n_targets": len(map_files)},
+    )
+
+
+def _fingerprint_functional_connectome(asset_root: Path) -> IdentityRef:
+    """Fingerprint a directory of HDF5 batch files.
+
+    HDF5 batches can be hundreds of GB total, so each file contributes its
+    name + size + sha256 of the first 1 MiB (which covers the HDF5 header
+    block). That is fast and content-sensitive enough to detect any
+    realistic mismatch — a re-conversion with different parameters or a
+    swapped dataset will reshape filenames or sizes.
+    """
+    if not asset_root.is_dir():
+        raise FileNotFoundError(
+            f"Functional connectome directory not found: {asset_root}"
+        )
+    batch_files = sorted(
+        list(asset_root.glob("*.h5")) + list(asset_root.glob("*.hdf5"))
+    )
+    if not batch_files:
+        raise FileNotFoundError(
+            f"No HDF5 batch files found in {asset_root} (expected *.h5 / *.hdf5)"
+        )
+    h = hashlib.sha256()
+    for p in batch_files:
+        h.update(p.name.encode("utf-8"))
+        h.update(b"\0")
+        h.update(str(p.stat().st_size).encode("ascii"))
+        h.update(b"\0")
+        with p.open("rb") as f:
+            h.update(f.read(_HASH_CHUNK_BYTES))
+    return IdentityRef(
+        kind="sha256_first_mib_per_file",
+        fields={"sha256": h.hexdigest(), "n_batches": len(batch_files)},
     )
 
 

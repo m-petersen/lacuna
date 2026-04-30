@@ -322,12 +322,15 @@ def fetch_gsp1000(
             registered = _register_gsp1000(
                 register, register_name, source, processed_dir, progress_callback, warn_list
             )
+            envelope_path = _write_functional_connectome_envelope(
+                processed_dir, source,
+            )
 
             return FetchResult(
                 success=True,
                 connectome_name="gsp1000",
                 output_dir=processed_dir,
-                output_files=existing_hdf5,
+                output_files=[*existing_hdf5, envelope_path],
                 registered=registered,
                 register_name=register_name if registered else None,
                 duration_seconds=time.time() - start_time,
@@ -421,6 +424,7 @@ def fetch_gsp1000(
         registered = _register_gsp1000(
             register, register_name, source, processed_dir, progress_callback, warn_list
         )
+        envelope_path = _write_functional_connectome_envelope(processed_dir, source)
 
         duration = time.time() - start_time
 
@@ -428,7 +432,7 @@ def fetch_gsp1000(
             success=True,
             connectome_name="gsp1000",
             output_dir=processed_dir,
-            output_files=output_files,
+            output_files=[*output_files, envelope_path],
             registered=registered,
             register_name=register_name if registered else None,
             duration_seconds=duration,
@@ -685,6 +689,42 @@ def fetch_dtor985(
         raise
     except Exception as e:
         raise ProcessingError(operation="fetch_dtor985", reason=str(e)) from e
+
+
+def _write_functional_connectome_envelope(processed_dir: Path, source) -> Path:
+    """Write a ``lacuna_asset.json`` envelope for a fetched HDF5 batch dir.
+
+    Records a content fingerprint of the batches plus source metadata
+    (space, subject count, citation) so downstream consumers can verify
+    the directory still matches what the fetch produced.
+    """
+    from ..assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        ENVELOPE_FILENAME,
+        fingerprint,
+        write_envelope,
+    )
+
+    provenance: dict[str, object] = {
+        "command": f"lacuna fetch {source.name}",
+        "citation": source.citation,
+    }
+    if getattr(source, "download_url", None):
+        provenance["source_url"] = source.download_url
+    if getattr(source, "persistent_id", None):
+        provenance["persistent_id"] = source.persistent_id
+    env = AssetEnvelope(
+        asset_type=AssetType.FUNCTIONAL_CONNECTOME,
+        identity=fingerprint(processed_dir, AssetType.FUNCTIONAL_CONNECTOME),
+        provenance=provenance,
+        data={
+            "space": source.space,
+            "n_subjects": source.n_subjects,
+        },
+    )
+    write_envelope(env, processed_dir)
+    return processed_dir / ENVELOPE_FILENAME
 
 
 def _write_tractogram_envelope(output_dir: Path, tck_path: Path, source) -> Path:

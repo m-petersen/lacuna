@@ -168,8 +168,8 @@ def test_fingerprint_sntf_cache_is_deterministic_and_content_sensitive(tmp_path)
 
 
 def test_fingerprint_unsupported_type_raises(tmp_path):
-    with pytest.raises(NotImplementedError, match="functional_connectome"):
-        fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
+    with pytest.raises(NotImplementedError, match="ace_cache"):
+        fingerprint(tmp_path, AssetType.ACE_CACHE)
 
 
 def test_fingerprint_ntatlas_missing_maps_dir_raises(tmp_path):
@@ -193,6 +193,29 @@ def test_fingerprint_ntatlas_changes_when_map_added(tmp_path):
     f2 = fingerprint(tmp_path, AssetType.NTATLAS)
     assert f2 != f1
     assert f2.fields["n_targets"] == 2
+
+
+def test_fingerprint_functional_connectome_is_deterministic_and_content_sensitive(tmp_path):
+    (tmp_path / "batch_0001.h5").write_bytes(b"hdf5-batch-1-payload" * 10)
+    (tmp_path / "batch_0002.h5").write_bytes(b"hdf5-batch-2-payload" * 10)
+    f1 = fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
+    f2 = fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
+    assert f1 == f2
+    assert f1.fields["n_batches"] == 2
+    # Adding a batch changes the fingerprint
+    (tmp_path / "batch_0003.h5").write_bytes(b"hdf5-batch-3-payload" * 10)
+    f3 = fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
+    assert f3 != f1
+    assert f3.fields["n_batches"] == 3
+    # Mutating a batch's content also changes the fingerprint
+    (tmp_path / "batch_0001.h5").write_bytes(b"different-content" * 10)
+    f4 = fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
+    assert f4 != f3
+
+
+def test_fingerprint_functional_connectome_empty_dir_raises(tmp_path):
+    with pytest.raises(FileNotFoundError, match="No HDF5 batch files"):
+        fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
 
 
 def _write_atlas_dir(tmp_path):
