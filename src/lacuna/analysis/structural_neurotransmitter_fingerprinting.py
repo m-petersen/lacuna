@@ -171,13 +171,9 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
 
         env = read_envelope(cache)
         runtime_paths: dict[str, Path] = {
-            "tractogram": Path(self.tractogram_path),
+            "tractogram": self.tractogram_path,
+            "ntatlas": self._resolve_atlas_dir(),
         }
-        if self.ntatlas_dir is not None:
-            runtime_paths["ntatlas"] = Path(self.ntatlas_dir)
-        elif self.ace_dir is not None:
-            # ACE caches publish a stage2 atlas — that is what sntf consumes.
-            runtime_paths["ntatlas"] = Path(self.ace_dir) / "stage2_atlas"
         validate_requires(env, runtime_paths)
 
     def _score_from_cache(

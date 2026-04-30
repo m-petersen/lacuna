@@ -291,6 +291,58 @@ class TestStructuralNTFCache:
         finally:
             unregister_structural_connectome(name)
 
+    def test_cache_built_for_different_atlas_raises(
+        self, atlas_cache, fake_connectome, tmp_path
+    ):
+        """Cache prepared against atlas A must not silently load with atlas B.
+
+        Validates that envelope.validate_requires walks ALL requires entries —
+        not just the tractogram. A drift in the NT atlas (e.g. user re-fetches
+        with different content) should raise, even if the tractogram matches.
+        """
+        from lacuna.assets.connectomes import load_structural_connectome
+
+        # atlas_cache fixture provides one atlas; build a second, distinct atlas.
+        atlas_b_pet = tmp_path / "pet_raw_b"
+        atlas_b_pet.mkdir()
+        _write_synthetic_collection(atlas_b_pet, ["D1", "5HT1a"])
+        atlas_b = build_nt_atlas(atlas_b_pet)
+        # Make atlas_b's content differ from atlas_a so fingerprints diverge.
+        # build_nt_atlas seeds RNG from map IDs, so two builds from identical
+        # source dirs would produce identical content. Mutate one map's data.
+        affine = atlas_b.get_map("D1").affine
+        new_d1 = nib.Nifti1Image(
+            np.full(atlas_b.get_map("D1").shape, 99.0, dtype=np.float32),
+            affine,
+        )
+        atlas_b.maps["D1"] = new_d1
+        atlas_b_dir = tmp_path / "atlas_b"
+        save_atlas(atlas_b, atlas_b_dir)
+
+        # Build the SNTF cache against the original atlas (atlas_cache).
+        weights_dir = tmp_path / "weights"
+        atlas = load_atlas(atlas_cache)
+        tck_path = load_structural_connectome(fake_connectome).tractogram_path
+        _build_fake_weights_cache(
+            weights_dir,
+            atlas,
+            _FAKE_TCK_N_STREAMLINES,
+            tractogram_path=tck_path,
+            atlas_dir=atlas_cache,
+        )
+
+        # Run the analysis with atlas_b. The cache's ntatlas RequiresEntry pins
+        # atlas_cache's fingerprint, so this MUST raise.
+        sntf = StructuralNeurotransmitterFingerprinting(
+            connectome_name=fake_connectome,
+            ntatlas_dir=atlas_b_dir,
+            precomputed_weights_dir=weights_dir,
+            check_dependencies=False,
+        )
+        sntf._validate_inputs(self._lesion_subject())
+        with pytest.raises(ValueError, match="ntatlas.*does not match"):
+            sntf._score_from_cache(self._lesion_subject(), atlas)
+
     def test_cache_without_envelope_raises(
         self, atlas_cache, fake_connectome, tmp_path
     ):
