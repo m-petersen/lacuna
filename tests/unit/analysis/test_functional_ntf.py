@@ -1,6 +1,6 @@
 """Tests for FunctionalNeurotransmitterFingerprinting analysis."""
 
-import json
+from pathlib import Path
 
 import h5py
 import nibabel as nib
@@ -17,7 +17,6 @@ from lacuna.assets.connectomes import (
 from lacuna.atlas.store import build_nt_atlas, load_atlas, save_atlas
 from lacuna.core.subject_data import SubjectData
 from lacuna.data.ntatlas import load_collection
-from lacuna.utils.connectome_id import compute_functional_connectome_fingerprint
 
 
 def _write_synthetic_collection(src, targets):
@@ -153,8 +152,26 @@ def fake_functional_connectome(tmp_path):
 
 
 def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
-                    n_subjects, n_timepoints, *, write_meta=True):
-    """Build an ACE cache aligned with a connectome (stage2_atlas + stage1 ts + meta)."""
+                    n_subjects, n_timepoints, *, write_envelope: bool = True):
+    """Build an ACE cache aligned with a connectome.
+
+    Layout matches what `lacuna prepare ace` produces:
+    - <ace_dir>/stage2_atlas/      (an ntatlas, copied from atlas_cache_dir)
+    - <ace_dir>/stage1_timeseries/ (n_subjects subject-NNNN.npy files)
+    - <ace_dir>/lacuna_asset.json  (envelope; only when write_envelope=True)
+
+    Returns (ace_dir, stage1_array). When write_envelope is False, the
+    cache directory is left without lacuna_asset.json so callers can
+    test the missing-envelope error path.
+    """
+    from lacuna.assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        RequiresEntry,
+        fingerprint as compute_fingerprint,
+        write_envelope as _write_env,
+    )
+
     ace_dir = tmp_path / "ace"
     (ace_dir / "stage2_atlas").mkdir(parents=True)
     stage1_dir = ace_dir / "stage1_timeseries"
@@ -176,9 +193,34 @@ def _seed_ace_cache(tmp_path, atlas_cache_dir, connectome_path,
     for s in range(n_subjects):
         np.save(stage1_dir / f"sub-{s:02d}.npy", stage1[s])
 
-    if write_meta:
-        fp = compute_functional_connectome_fingerprint(connectome_path)
-        (ace_dir / "connectome_meta.json").write_text(json.dumps(fp))
+    if write_envelope:
+        env = AssetEnvelope(
+            asset_type=AssetType.ACE_CACHE,
+            identity=compute_fingerprint(ace_dir, AssetType.ACE_CACHE),
+            requires=[
+                RequiresEntry(
+                    role="ntatlas",
+                    asset_type=AssetType.NTATLAS,
+                    identity=compute_fingerprint(
+                        ace_dir / "stage2_atlas", AssetType.NTATLAS
+                    ),
+                    path_hint=str((ace_dir / "stage2_atlas").resolve()),
+                ),
+                RequiresEntry(
+                    role="connectome",
+                    asset_type=AssetType.FUNCTIONAL_CONNECTOME,
+                    identity=compute_fingerprint(
+                        Path(connectome_path).parent
+                        if Path(connectome_path).is_file()
+                        else Path(connectome_path),
+                        AssetType.FUNCTIONAL_CONNECTOME,
+                    ),
+                    path_hint=str(Path(connectome_path).resolve()),
+                ),
+            ],
+            data={"n_targets": n_targets, "n_timepoints": n_timepoints},
+        )
+        _write_env(env, ace_dir)
 
     return ace_dir, stage1
 
@@ -241,40 +283,57 @@ class TestFunctionalNTFEnriched:
     def test_fingerprint_mismatch_raises(
         self, tmp_path, atlas_cache, fake_functional_connectome
     ):
+        """Cache built against connectome A, FNTF run against connectome B → AssetMismatchError."""
         connectome_name, connectome_path = fake_functional_connectome
         ace_dir, _ = _seed_ace_cache(
             tmp_path, atlas_cache, connectome_path,
-            n_subjects=4, n_timepoints=30, write_meta=False,
+            n_subjects=4, n_timepoints=30,
         )
-        # Write a digest from a *different* connectome (different shape).
-        other_path = tmp_path / "other.h5"
+
+        # Write a different connectome (different shape ⇒ different fingerprint)
+        # and register it under a fresh name. The cache's envelope still pins
+        # the ORIGINAL connectome's fingerprint, so swapping at run time MUST
+        # raise AssetMismatchError.
+        other_path = tmp_path / "other_fc.h5"
         _write_fake_connectome(other_path, n_subjects=8, n_timepoints=30,
                                n_voxels=200, seed=2)
-        bad_fp = compute_functional_connectome_fingerprint(other_path)
-        (ace_dir / "connectome_meta.json").write_text(json.dumps(bad_fp))
-
-        fntf = FunctionalNeurotransmitterFingerprinting(
-            ace_dir=ace_dir,
-            connectome_name=connectome_name,
+        other_name = "test_fntf_other_connectome"
+        register_functional_connectome(
+            name=other_name,
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            data_path=other_path,
+            n_subjects=8,
+            description="Different functional connectome for mismatch test",
         )
-        fntf._validate_inputs(self._lesion_subject())
-        with pytest.raises(ValueError, match="different\\s+connectome"):
-            fntf._run_enriched(self._lesion_subject())
+        try:
+            fntf = FunctionalNeurotransmitterFingerprinting(
+                ace_dir=ace_dir,
+                connectome_name=other_name,
+            )
+            fntf._validate_inputs(self._lesion_subject())
+            with pytest.raises(ValueError, match="connectome"):
+                fntf._run_enriched(self._lesion_subject())
+        finally:
+            unregister_functional_connectome(other_name)
 
-    def test_missing_connectome_meta_raises(
+    def test_missing_envelope_raises(
         self, tmp_path, atlas_cache, fake_functional_connectome
     ):
+        """ACE cache without lacuna_asset.json → FileNotFoundError with envelope filename."""
+        from lacuna.assets.envelope import ENVELOPE_FILENAME
+
         connectome_name, connectome_path = fake_functional_connectome
         ace_dir, _ = _seed_ace_cache(
             tmp_path, atlas_cache, connectome_path,
-            n_subjects=4, n_timepoints=30, write_meta=False,
+            n_subjects=4, n_timepoints=30, write_envelope=False,
         )
         fntf = FunctionalNeurotransmitterFingerprinting(
             ace_dir=ace_dir,
             connectome_name=connectome_name,
         )
         fntf._validate_inputs(self._lesion_subject())
-        with pytest.raises(FileNotFoundError, match="connectome_meta.json"):
+        with pytest.raises(FileNotFoundError, match=ENVELOPE_FILENAME):
             fntf._run_enriched(self._lesion_subject())
 
     def test_subject_count_mismatch_raises(

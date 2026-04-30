@@ -10,7 +10,6 @@ Two scoring modes:
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -201,30 +200,20 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         return np.stack([np.load(f) for f in files], axis=0)
 
     def _verify_cache_against_connectome(self, fnm) -> None:
-        """Reject ACE caches built against a different connectome."""
-        from lacuna.utils.connectome_id import (
-            compute_functional_connectome_fingerprint,
-            fingerprints_match,
-        )
+        """Verify the cache's recorded inputs still match the runtime inputs."""
+        from lacuna.assets.envelope import read_envelope, validate_requires
 
-        meta_path = self.ace_dir / "connectome_meta.json"
-        if not meta_path.exists():
-            raise FileNotFoundError(
-                f"ACE cache at {self.ace_dir} is missing 'connectome_meta.json'.\n"
-                "This file records the connectome the cache was built from. "
-                "Re-run 'lacuna prepare ace' to refresh the cache."
-            )
-        expected = json.loads(meta_path.read_text())
-        actual = compute_functional_connectome_fingerprint(fnm.connectome_path)
-        if not fingerprints_match(expected, actual):
-            raise ValueError(
-                f"ACE cache at {self.ace_dir} was built from a different "
-                f"connectome than '{self.connectome_name}'.\n"
-                f"  expected digest: {expected.get('digest')}\n"
-                f"  actual digest:   {actual.get('digest')}\n"
-                "Either point --connectome-path at the connectome the cache "
-                "was built from, or re-run 'lacuna prepare ace'."
-            )
+        env = read_envelope(self.ace_dir)
+        runtime_paths: dict[str, Path] = {
+            "connectome": _connectome_dir(fnm.connectome_path),
+        }
+        if self.ntatlas_dir is not None:
+            runtime_paths["ntatlas"] = Path(self.ntatlas_dir)
+        else:
+            # An ACE cache always carries its own stage2_atlas — that IS the
+            # ntatlas identity that downstream consumers should re-fingerprint.
+            runtime_paths["ntatlas"] = self.ace_dir / "stage2_atlas"
+        validate_requires(env, runtime_paths)
 
     def _verify_dimension_alignment(
         self, lesion_ts: np.ndarray, stage1: np.ndarray
@@ -308,3 +297,15 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             "targets": self._target_spec,
             "n_jobs": self.n_jobs,
         }
+
+
+def _connectome_dir(connectome_path: Path) -> Path:
+    """Return the directory the FUNCTIONAL_CONNECTOME fingerprint should hash.
+
+    The connectome registry's ``data_path`` may be either a single ``.h5``
+    file or a directory of batches. The shared ``fingerprint`` dispatcher
+    expects a directory (it walks ``*.h5`` / ``*.hdf5``), so single-file
+    paths are normalised to their parent.
+    """
+    p = Path(connectome_path)
+    return p.parent if p.is_file() else p
