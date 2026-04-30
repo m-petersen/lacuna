@@ -97,7 +97,6 @@ def test_streaming_aggregation_produces_correct_results(mock_connectome_batched,
         # Create analysis
         analysis = FunctionalNetworkMapping(
             connectome_name="test_streaming_connectome",
-            method="boes",
             verbose=False,
             t_threshold=2.0,
         )
@@ -160,7 +159,6 @@ def test_streaming_aggregation_with_lesion_batches(mock_connectome_batched, mock
 
         analysis = FunctionalNetworkMapping(
             connectome_name="test_lesion_batch_connectome",
-            method="boes",
             verbose=False,
         )
 
@@ -209,7 +207,6 @@ def test_float32_optimization(mock_connectome_batched, mock_lesions):
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_float32_connectome",
-            method="boes",
             verbose=False,
         )
 
@@ -246,7 +243,6 @@ def test_t_statistics_with_streaming(mock_connectome_batched, mock_lesions):
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_tstat_connectome",
-            method="boes",
             verbose=False,
             t_threshold=2.5,
         )

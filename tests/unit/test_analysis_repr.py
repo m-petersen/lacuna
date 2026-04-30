@@ -48,14 +48,13 @@ class TestFunctionalNetworkMappingRepr:
             registered = True
 
             analysis = FunctionalNetworkMapping(
-                connectome_name="test_repr_connectome", method="boes"
+                connectome_name="test_repr_connectome"
             )
 
             repr_str = repr(analysis)
 
             assert "FunctionalNetworkMapping(" in repr_str
             assert "connectome_name='test_repr_connectome'" in repr_str
-            assert "method='boes'" in repr_str
             assert repr_str.endswith(")")
         finally:
             if registered:
@@ -91,15 +90,11 @@ class TestFunctionalNetworkMappingRepr:
 
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_repr_all_connectome",
-                method="pini",
-                pini_percentile=30,
                 t_threshold=2.5,
             )
 
             repr_str = repr(analysis)
 
-            assert "method='pini'" in repr_str
-            assert "pini_percentile=30" in repr_str
             assert "t_threshold=2.5" in repr_str
         finally:
             if registered:
@@ -134,7 +129,7 @@ class TestFunctionalNetworkMappingRepr:
             )
             registered = True
 
-            analysis = FunctionalNetworkMapping(connectome_name=long_name, method="boes")
+            analysis = FunctionalNetworkMapping(connectome_name=long_name)
 
             repr_str = repr(analysis)
 
@@ -178,7 +173,6 @@ class TestFunctionalNetworkMappingRepr:
 
             analysis = FunctionalNetworkMapping(
                 connectome_name="test_str_connectome",
-                method="boes",
                 t_threshold=2.0,
             )
 
@@ -187,7 +181,6 @@ class TestFunctionalNetworkMappingRepr:
             assert "FunctionalNetworkMapping Analysis" in str_output
             assert "Configuration:" in str_output
             assert "connectome_name: test_str_connectome" in str_output
-            assert "method: boes" in str_output
             assert "t_threshold: 2.0" in str_output
         finally:
             if registered:
@@ -222,7 +215,7 @@ class TestFunctionalNetworkMappingRepr:
             registered = True
 
             analysis = FunctionalNetworkMapping(
-                connectome_name="test_multiline_connectome", method="boes"
+                connectome_name="test_multiline_connectome"
             )
 
             str_output = str(analysis)

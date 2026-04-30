@@ -62,8 +62,6 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         ``connectome_meta.json``.
     targets : str or list[str]
         Target selection. Default "all".
-    method : str
-        Lesion timeseries extraction method ("boes" or "pini").
     n_jobs : int
         Number of parallel jobs for the internal FNM run.
     verbose : bool
@@ -82,7 +80,6 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         ntatlas_dir: str | Path | None = None,
         ace_dir: str | Path | None = None,
         targets: str | list[str] = "all",
-        method: str = "boes",
         n_jobs: int = 1,
         verbose: bool = False,
         keep_intermediate: bool = False,
@@ -92,15 +89,10 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             raise ValueError(
                 "Provide exactly one of ntatlas_dir or ace_dir."
             )
-        if method not in ("boes", "pini"):
-            raise ValueError(
-                f"method must be 'boes' or 'pini'; got '{method}'"
-            )
         self.ntatlas_dir = Path(ntatlas_dir) if ntatlas_dir else None
         self.ace_dir = Path(ace_dir) if ace_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
-        self.method = method
         self.n_jobs = n_jobs
 
     @property
@@ -163,7 +155,6 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
         fnm = FunctionalNetworkMapping(
             connectome_name=self.connectome_name,
-            method=self.method,
             n_jobs=self.n_jobs,
             verbose=self.verbose,
             compute_p_map=False,
@@ -299,7 +290,6 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
         fnm = FunctionalNetworkMapping(
             connectome_name=self.connectome_name,
-            method=self.method,
             n_jobs=self.n_jobs,
             verbose=self.verbose,
             compute_p_map=False,
@@ -316,6 +306,5 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             "ace_dir": str(self.ace_dir) if self.ace_dir else None,
             "connectome_name": self.connectome_name,
             "targets": self._target_spec,
-            "method": self.method,
             "n_jobs": self.n_jobs,
         }

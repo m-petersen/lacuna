@@ -215,29 +215,7 @@ class TestSNMNJobsValidation:
 
 
 class TestFNMRangeValidation:
-    """Test that FNM validates pini_percentile and fdr_alpha ranges."""
-
-    def test_pini_percentile_below_1_raises(self, temp_functional_connectome):
-        from lacuna.analysis.functional_network_mapping import (
-            FunctionalNetworkMapping,
-        )
-
-        with pytest.raises(ValueError, match="pini_percentile"):
-            FunctionalNetworkMapping(
-                connectome_name=temp_functional_connectome,
-                pini_percentile=0,
-            )
-
-    def test_pini_percentile_above_100_raises(self, temp_functional_connectome):
-        from lacuna.analysis.functional_network_mapping import (
-            FunctionalNetworkMapping,
-        )
-
-        with pytest.raises(ValueError, match="pini_percentile"):
-            FunctionalNetworkMapping(
-                connectome_name=temp_functional_connectome,
-                pini_percentile=101,
-            )
+    """Test that FNM validates fdr_alpha range."""
 
     def test_fdr_alpha_zero_raises(self, temp_functional_connectome):
         from lacuna.analysis.functional_network_mapping import (

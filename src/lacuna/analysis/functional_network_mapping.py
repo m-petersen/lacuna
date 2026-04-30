@@ -1,11 +1,8 @@
 """Functional lesion network mapping (fLNM) analysis.
-from __future__ import annotations
-
 
 This module implements functional connectivity-based lesion network mapping
-using normative connectome data. It supports two timeseries extraction methods:
-- BOES (Boes et al.): Mean timeseries across all lesion voxels
-- PINI (Pini et al.): PCA-based selection of most representative voxels
+using normative connectome data. The lesion timeseries is the mean BOLD
+across all lesion voxels (Boes et al., 2015).
 
 The analysis computes whole-brain correlation maps showing functional
 connectivity disruption patterns associated with the lesion.
@@ -16,6 +13,8 @@ Memory-efficient processing:
 - Accumulates statistics across batches for final aggregation
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -23,7 +22,6 @@ import h5py
 import nibabel as nib
 import numpy as np
 from scipy import stats
-from sklearn.decomposition import PCA
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets.connectomes import (
@@ -69,13 +67,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         - 'mask_indices': (3, n_voxels) or (n_voxels, 3) brain mask coordinates
         - 'mask_affine': (4, 4) affine transformation matrix
         - 'mask_shape': Tuple stored in attributes
-    method : {"boes", "pini"}, default="boes"
-        Timeseries extraction method:
-        - "boes": Mean timeseries across all lesion voxels
-        - "pini": PCA-based selection of representative voxels
-    pini_percentile : int, default=20
-        For PINI method: percentile threshold for PC1 loadings (0-100).
-        Higher values select fewer, more representative voxels.
     n_jobs : int, default=1
         Number of parallel jobs for batch processing (not yet implemented).
 
@@ -113,10 +104,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
     >>>
     >>> # Use registered connectome
     >>> lesion = SubjectData.from_nifti("lesion_mni.nii.gz")
-    >>> analysis = FunctionalNetworkMapping(
-    ...     connectome_name="GSP1000",
-    ...     method="boes"
-    ... )
+    >>> analysis = FunctionalNetworkMapping(connectome_name="GSP1000")
     >>> result = analysis.run(lesion)
     >>> correlation_map = result.results["FunctionalNetworkMapping"]["rmap"]
     >>> z_map = result.results["FunctionalNetworkMapping"]["zmap"]
@@ -134,7 +122,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
     References
     ----------
     - Boes et al. (2015): https://doi.org/10.1093/brain/awv228
-    - Pini et al. (2020): https://doi.org/10.1093/braincomms/fcab259
     """
 
     # Class attribute for batch processing strategy
@@ -143,8 +130,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
     def __init__(
         self,
         connectome_name: str,
-        method: str = "boes",
-        pini_percentile: int = 20,
         n_jobs: int = 1,
         verbose: bool = False,
         compute_p_map: bool = True,
@@ -161,10 +146,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         connectome_name : str
             Name of registered functional connectome (e.g., "GSP1000").
             Use list_functional_connectomes() to see available options.
-        method : {"boes", "pini"}, default="boes"
-            Timeseries extraction method.
-        pini_percentile : int, default=20
-            Percentile threshold for PINI method (0-100).
         n_jobs : int, default=1
             Number of parallel jobs for post-processing (result aggregation
             and spatial resampling). Set to -1 to use all available CPUs.
@@ -193,17 +174,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         Raises
         ------
-        ValueError
-            If method is not 'boes' or 'pini'.
         KeyError
             If connectome_name not found in registry.
         """
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-
-        # Validate method parameter
-        if method not in ("boes", "pini"):
-            msg = f"method must be 'boes' or 'pini', got '{method}'"
-            raise ValueError(msg)
 
         # Load connectome from registry
         try:
@@ -228,10 +202,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.TARGET_RESOLUTION = connectome.metadata.resolution
 
         # Analysis parameters
-        self.method = method
-        self.pini_percentile = pini_percentile
-        if not (1 <= pini_percentile <= 100):
-            raise ValueError(f"pini_percentile must be between 1 and 100, got {pini_percentile}")
         self.n_jobs = n_jobs
         self.compute_p_map = compute_p_map
         self.fdr_alpha = fdr_alpha
@@ -605,7 +575,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
             space=self.output_space,
             resolution=self.output_resolution,
             metadata={
-                "method": self.method,
                 "n_subjects": total_subjects,
                 "n_batches": len(connectome_files),
                 "statistic": "pearson_correlation_coefficient",
@@ -620,7 +589,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
             space=self.output_space,
             resolution=self.output_resolution,
             metadata={
-                "method": self.method,
                 "n_subjects": total_subjects,
                 "n_batches": len(connectome_files),
                 "statistic": "fisher_z",
@@ -646,7 +614,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "t_statistic",
                 },
@@ -662,7 +629,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "threshold": self.t_threshold,
                     "statistic": "thresholded_t",
                 },
@@ -679,7 +645,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "p_value_two_tailed",
                     "degrees_of_freedom": total_subjects - 1,
@@ -697,7 +662,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "p_value_fdr_corrected",
                     "fdr_alpha": self.fdr_alpha,
@@ -721,7 +685,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "fdr_significant_binary",
                     "fdr_alpha": self.fdr_alpha,
@@ -735,7 +698,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
             name="summarystatistics",
             data=summary_dict,
             metadata={
-                "method": self.method,
                 "n_subjects": total_subjects,
             },
         )
@@ -792,7 +754,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             data=nib.Nifti1Image(zero_vol.copy(), mask_affine),
             space=self.output_space,
             resolution=self.output_resolution,
-            metadata={"method": self.method, "empty_mask": True},
+            metadata={"empty_mask": True},
         )
 
         results["zmap"] = VoxelMap(
@@ -800,7 +762,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             data=nib.Nifti1Image(zero_vol.copy(), mask_affine),
             space=self.output_space,
             resolution=self.output_resolution,
-            metadata={"method": self.method, "empty_mask": True},
+            metadata={"empty_mask": True},
         )
 
         results["summarystatistics"] = ScalarMetric(
@@ -814,7 +776,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "n_batches": 0,
                 "empty_mask": True,
             },
-            metadata={"method": self.method},
+            metadata={},
         )
 
         return results
@@ -890,71 +852,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     batch_ts = None
                     lesion_subset = hf["timeseries"][:, :, sorted_idx]
 
-            if self.method == "boes":
-                # boes is a plain mean across the lesion-voxel axis; the
-                # extractor expects (batch, n_voxels) indexing into the full
-                # voxel dim, but we already pre-sliced to lesion voxels.
-                mask_ts = lesion_subset.mean(axis=2)
-            else:
-                # pini needs a (n_subjects, n_timepoints, n_voxels) tensor
-                # restricted to the lesion voxels — pass the subset directly.
-                mask_ts = self._extract_pini_from_lesion_subset(lesion_subset)
-
+            mask_ts = lesion_subset.mean(axis=2)
             yield batch_ts, mask_ts
             del lesion_subset
             if batch_ts is not None:
                 del batch_ts
-
-    def _extract_pini_from_lesion_subset(self, lesion_ts: np.ndarray) -> np.ndarray:
-        """PCA-based representative timeseries from a lesion-only voxel slice.
-
-        ``lesion_ts`` has shape ``(n_subjects, n_timepoints, n_lesion_voxels)``
-        and is the output of either ``batch_ts[:, :, lesion_indices]`` or an
-        HDF5 fancy-index read targeting the same indices.
-        """
-        # Compute initial mean timeseries
-        mean_ts_across_voxels = np.mean(lesion_ts, axis=2)
-
-        # Center timeseries
-        mean_ts_centered = mean_ts_across_voxels - mean_ts_across_voxels.mean(axis=1, keepdims=True)
-        voxel_ts_centered = lesion_ts - lesion_ts.mean(axis=1, keepdims=True)
-
-        # Compute correlation between mean and each voxel
-        # Using einsum for efficiency
-        covariance = np.einsum(
-            "it,itv->iv",
-            mean_ts_centered,
-            voxel_ts_centered,
-            dtype=np.float64,
-            optimize="optimal",
-        )
-
-        std_mean = np.sqrt(np.sum(mean_ts_centered**2, axis=1))
-        std_voxels = np.sqrt(np.sum(voxel_ts_centered**2, axis=1))
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            pca_input_matrix = covariance / (std_mean[:, np.newaxis] * std_voxels)
-
-        pca_input_matrix = np.nan_to_num(pca_input_matrix)
-
-        # Apply PCA to find principal component
-        pca = PCA(n_components=1)
-        pca.fit(pca_input_matrix)
-        pc1_loadings = pca.components_[0, :]
-
-        # Select voxels above percentile threshold
-        threshold = np.percentile(np.abs(pc1_loadings), self.pini_percentile)
-        suprathreshold_indices = np.where(np.abs(pc1_loadings) >= threshold)[0]
-
-        # Extract refined timeseries from selected voxels
-        if len(suprathreshold_indices) == 0:
-            # Fallback to all voxels if none selected
-            refined_lesion_ts = lesion_ts
-        else:
-            refined_lesion_ts = lesion_ts[:, :, suprathreshold_indices]
-
-        # Return mean timeseries from selected voxels
-        return np.mean(refined_lesion_ts, axis=2)
 
     def _get_mask_voxel_indices(self, mask_data: SubjectData) -> tuple[np.ndarray, nib.Nifti1Image]:
         """Get indices of mask voxels within connectome mask (vectorized O(N) version).
@@ -1362,17 +1264,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         for mask_info in mask_batch:
             voxel_indices = mask_info["voxel_indices"]
 
-            # Extract mask timeseries: (n_subjects, n_timepoints, n_mask_voxels)
-            mask_ts = timeseries_data[:, :, voxel_indices]
-
-            if self.method == "boes":
-                # Simple mean across voxels
-                mask_mean_ts = np.mean(mask_ts, axis=2)
-
-            elif self.method == "pini":
-                # PINI: PCA-based selection
-                mask_mean_ts = self._compute_pini_timeseries_batch(mask_ts)
-
+            # Extract mask timeseries and average across voxels
+            mask_mean_ts = np.mean(timeseries_data[:, :, voxel_indices], axis=2)
             mask_mean_ts_list.append(mask_mean_ts)
 
         # Stack into (n_masks, n_subjects, n_timepoints)
@@ -1406,65 +1299,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         all_r_maps = np.nan_to_num(all_r_maps, nan=0, posinf=1, neginf=-1)
 
         return all_r_maps.astype(np.float32)
-
-    def _compute_pini_timeseries_batch(self, lesion_ts: np.ndarray) -> np.ndarray:
-        """Compute PINI timeseries for a batch of subjects.
-
-        Parameters
-        ----------
-        lesion_ts : np.ndarray
-            Shape (n_subjects, n_timepoints, n_lesion_voxels)
-
-        Returns
-        -------
-        np.ndarray
-            Shape (n_subjects, n_timepoints). PINI-refined timeseries.
-        """
-        n_subjects, n_timepoints, n_voxels = lesion_ts.shape
-
-        # Compute mean timeseries first
-        mean_ts_across_voxels = np.mean(lesion_ts, axis=2)  # (n_subjects, n_timepoints)
-
-        # Center timeseries
-        mean_ts_centered = mean_ts_across_voxels - mean_ts_across_voxels.mean(axis=1, keepdims=True)
-        voxel_ts_centered = lesion_ts - lesion_ts.mean(axis=1, keepdims=True)
-
-        # Compute covariance between mean and each voxel
-        covariance = np.einsum(
-            "it,itv->iv",
-            mean_ts_centered,
-            voxel_ts_centered,
-            dtype=np.float64,
-            optimize="optimal",
-        )
-
-        # Compute standard deviations
-        std_mean = np.sqrt(np.sum(mean_ts_centered**2, axis=1))
-        std_voxels = np.sqrt(np.sum(voxel_ts_centered**2, axis=1))
-
-        # Compute correlation matrix for PCA
-        with np.errstate(divide="ignore", invalid="ignore"):
-            pca_input_matrix = covariance / (std_mean[:, np.newaxis] * std_voxels)
-
-        pca_input_matrix = np.nan_to_num(pca_input_matrix)
-
-        # Apply PCA to find principal component
-        pca = PCA(n_components=1)
-        pca.fit(pca_input_matrix)
-        pc1_loadings = pca.components_[0, :]
-
-        # Select voxels based on percentile threshold
-        threshold = np.percentile(np.abs(pc1_loadings), self.pini_percentile)
-        suprathreshold_indices = np.where(np.abs(pc1_loadings) >= threshold)[0]
-
-        # Use refined voxel set or fall back to all voxels
-        if len(suprathreshold_indices) == 0:
-            refined_lesion_ts = lesion_ts
-        else:
-            refined_lesion_ts = lesion_ts[:, :, suprathreshold_indices]
-
-        # Return mean of refined voxels
-        return np.mean(refined_lesion_ts, axis=2)
 
     def _aggregate_results_from_statistics(
         self,
@@ -1572,7 +1406,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "pearson_correlation_coefficient",
                 },
@@ -1583,7 +1416,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "fisher_z",
                 },
@@ -1598,7 +1430,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "n_subjects": total_subjects,
                     "n_batches": len(self._get_connectome_files()),
                 },
-                metadata={"method": self.method},
+                metadata={},
             ),
         }
 
@@ -1614,7 +1446,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "t_statistic",
                 },
@@ -1637,7 +1468,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     space=self.output_space,
                     resolution=self.output_resolution,
                     metadata={
-                        "method": self.method,
                         "threshold": self.t_threshold,
                         "statistic": "thresholded_t",
                     },
@@ -1659,7 +1489,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "p_value_two_tailed",
                     "degrees_of_freedom": total_subjects - 1,
@@ -1680,7 +1509,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "p_value_fdr_corrected",
                     "fdr_alpha": self.fdr_alpha,
@@ -1703,7 +1531,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "fdr_significant_binary",
                     "fdr_alpha": self.fdr_alpha,
@@ -1809,7 +1636,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "pearson_correlation_coefficient",
                 },
@@ -1821,7 +1647,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "fisher_z",
                 },
@@ -1837,7 +1662,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     "n_subjects": total_subjects,
                     "n_batches": len(self._get_connectome_files()),
                 },
-                metadata={"method": self.method},
+                metadata={},
             ),
         }
 
@@ -1853,7 +1678,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 space=self.output_space,
                 resolution=self.output_resolution,
                 metadata={
-                    "method": self.method,
                     "n_subjects": total_subjects,
                     "statistic": "t_statistic",
                 },
@@ -1875,7 +1699,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     space=self.output_space,
                     resolution=self.output_resolution,
                     metadata={
-                        "method": self.method,
                         "threshold": self.t_threshold,
                         "statistic": "thresholded_t",
                     },
@@ -1912,8 +1735,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
         """
         return {
             "connectome_name": self.connectome_name,
-            "method": self.method,
-            "pini_percentile": self.pini_percentile,
             "n_jobs": self.n_jobs,
             "compute_p_map": self.compute_p_map,
             "fdr_alpha": self.fdr_alpha,

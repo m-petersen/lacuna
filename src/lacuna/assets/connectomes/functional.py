@@ -225,10 +225,7 @@ def load_functional_connectome(name: str) -> FunctionalConnectome:
     >>> from lacuna.analysis import FunctionalNetworkMapping
     >>>
     >>> connectome = load_functional_connectome("GSP1000")
-    >>> analysis = FunctionalNetworkMapping(
-    ...     connectome_path=connectome.data_path,
-    ...     method="boes"
-    ... )
+    >>> analysis = FunctionalNetworkMapping(connectome_name="GSP1000")
     """
     metadata = _functional_connectome_registry.get(name)
 

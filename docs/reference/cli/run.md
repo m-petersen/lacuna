@@ -105,8 +105,6 @@ Computes functional connectivity disruption using a normative functional connect
 | Option | Description |
 |--------|-------------|
 | `--connectome-path PATH` | **(required)** Path to HDF5 connectome file or directory of batch files (from `lacuna fetch gsp1000`) |
-| `--method {boes,pini}` | Timeseries extraction method (default: `boes`). `boes` = mean timeseries across lesion voxels. `pini` = PCA-based selection of representative voxels. |
-| `--pini-percentile N` | For PINI method: PC1 loading percentile threshold (default: 20) |
 | `--no-p-map` | Disable p-value map computation (enabled by default) |
 | `--fdr-alpha ALPHA` | FDR correction alpha (default: 0.05, use 0 to disable) |
 | `--t-threshold VALUE` | Create binary mask for \|t\| > threshold |
@@ -127,10 +125,9 @@ Computes functional connectivity disruption using a normative functional connect
 lacuna run fnm /bids /output \
     --connectome-path ~/.cache/lacuna/connectomes/gsp1000/
 
-# With PINI method and atlas aggregation
+# With atlas aggregation
 lacuna run fnm /bids /output \
     --connectome-path /data/gsp1000_batches \
-    --method pini \
     --parcel-atlases schaefer2018parcels100networks7
 
 # Specific participants with t-threshold

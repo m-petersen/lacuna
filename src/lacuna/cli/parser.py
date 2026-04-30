@@ -263,7 +263,7 @@ def _build_run_parser(subparsers) -> None:
             "  fntf (functionalneurotransmitterfingerprinting)   - NT weighted by connectivity\n\n"
             "Examples:\n"
             "  lacuna run ld /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
-            "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
+            "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches\n"
             "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4\n"
             "  lacuna run afnm /bids /output --matrix-path /path/to/gsp1000_schaefer400.tsv \\\n"
             "      --parcel-atlases schaefer2018parcels400networks17"
@@ -455,9 +455,6 @@ def _build_fnm_parser(subparsers) -> None:
             "functional connectome. Generates correlation, z-score, t-score,\n"
             "and p-value maps.\n\n"
             "Use 'lacuna info connectomes' to see available connectomes.\n\n"
-            "Methods:\n"
-            "  boes - Mean timeseries across all lesion voxels (default)\n"
-            "  pini - PCA-based selection of representative voxels\n\n"
             "Examples:\n"
             "  lacuna run fnm /bids /output --connectome-path ~/.cache/lacuna/gsp1000/\n"
         ),
@@ -495,20 +492,6 @@ def _build_fnm_parser(subparsers) -> None:
         required=True,
         metavar="PATH",
         help="Path to HDF5 connectome file or directory of batch files (from 'lacuna fetch gsp1000')",
-    )
-    g_fnm.add_argument(
-        "--method",
-        type=str,
-        choices=["boes", "pini"],
-        default="boes",
-        help="Timeseries extraction method (default: boes)",
-    )
-    g_fnm.add_argument(
-        "--pini-percentile",
-        type=int,
-        default=20,
-        metavar="N",
-        help="For PINI method: PC1 loading percentile threshold (default: 20)",
     )
     g_fnm.add_argument(
         "--no-p-map",
@@ -1512,8 +1495,4 @@ def _build_fntf_parser(subparsers) -> None:
         required=True,
         metavar="PATH",
         help="Path to HDF5 connectome file or directory of batch files (from 'lacuna fetch gsp1000')",
-    )
-    g_fntf.add_argument(
-        "--method", choices=["boes", "pini"], default="boes",
-        help="Lesion timeseries extraction method (default: boes)",
     )

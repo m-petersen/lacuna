@@ -53,7 +53,7 @@ def test_bug_fix_load_mask_info_returns_tuple(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_load_mask", method="boes", verbose=False
+            connectome_name="test_bug_load_mask", verbose=False
         )
 
         # Call the method - should not raise TypeError
@@ -93,7 +93,7 @@ def test_bug_fix_get_mask_voxel_indices_signature(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_voxel_indices", method="boes", verbose=False
+            connectome_name="test_bug_voxel_indices", verbose=False
         )
 
         # Load mask info first (required)
@@ -149,7 +149,7 @@ def test_both_fixes_together(simple_connectome):
 
     try:
         analysis = FunctionalNetworkMapping(
-            connectome_name="test_bug_both_fixes", method="boes", verbose=False
+            connectome_name="test_bug_both_fixes", verbose=False
         )
 
         # Create a dummy mask
@@ -240,7 +240,6 @@ def test_bug_fix_aggregate_results_returns_with_data(tmp_path):
         # Create analysis
         analysis = FunctionalNetworkMapping(
             connectome_name="test_bug_aggregate",
-            method="boes",
             verbose=False,
             t_threshold=2.0,
         )
@@ -353,7 +352,6 @@ def test_bug_fix_all_masks_no_overlap_does_not_crash(tmp_path):
     try:
         analysis = FunctionalNetworkMapping(
             connectome_name="test_bug_no_overlap",
-            method="boes",
             verbose=False,
         )
 

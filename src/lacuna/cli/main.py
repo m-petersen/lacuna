@@ -98,10 +98,6 @@ class RunConfig:
         # FNM/SNM connectome path - always provided as path
         if hasattr(args, "connectome_path") and args.connectome_path:
             analysis_options["_connectome_path"] = args.connectome_path
-        if hasattr(args, "method") and args.method:
-            analysis_options["method"] = args.method
-        if hasattr(args, "pini_percentile"):
-            analysis_options["pini_percentile"] = args.pini_percentile
         # Handle --no-p-map flag (default is to compute p-map)
         if hasattr(args, "no_p_map") and args.no_p_map:
             analysis_options["compute_p_map"] = False
@@ -174,8 +170,8 @@ class RunConfig:
             if getattr(args, "aggregation", None) is not None:
                 analysis_options["aggregation"] = args.aggregation
 
-        # FNTF: connectome path (auto-registered downstream) and method are captured
-        # by the shared --connectome-path / --method handling above.
+        # FNTF: connectome path is captured by the shared --connectome-path
+        # handling above; auto-registration happens in _register_connectome_from_path.
 
         return cls(
             bids_dir=args.bids_dir,

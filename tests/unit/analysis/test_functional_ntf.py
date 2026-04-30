@@ -98,14 +98,6 @@ class TestFunctionalNTMConstruction:
         )
         assert fntf._target_spec == ["D1"]
 
-    def test_invalid_method_rejected(self, atlas_cache):
-        with pytest.raises(ValueError, match="method must be"):
-            FunctionalNeurotransmitterFingerprinting(
-                ntatlas_dir=atlas_cache,
-                connectome_name="GSP1000",
-                method="bogus",
-            )
-
 
 # ----- ACE-enriched fixtures and tests -----
 

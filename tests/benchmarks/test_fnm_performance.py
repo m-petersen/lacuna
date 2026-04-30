@@ -134,8 +134,6 @@ class TestGetMaskVoxelIndicesPerformance:
 
         # Initialize minimal required attributes
         analysis.connectome_name = "mock_gsp1000"
-        analysis.method = "boes"
-        analysis.pini_percentile = 20
         analysis.n_jobs = 1
         analysis.t_threshold = None
         analysis.logger = type(

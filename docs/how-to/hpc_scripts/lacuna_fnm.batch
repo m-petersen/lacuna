@@ -60,7 +60,6 @@ apptainer run \
     --participant-label ${SUBJECT_SUBSET[*]} \
     --mask-space MNI152NLin6Asym \
     --connectome-path /connectomes/gsp1000/processed/ \
-    --method boes \
     --fdr-alpha 0.05 \
     --t-threshold 9 \
     --output-resolution 2 \

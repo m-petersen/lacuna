@@ -58,6 +58,10 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         Enable verbose logging.
     keep_intermediate : bool
         Keep intermediate results.
+
+    References
+    ----------
+    - Koch, Frey et al. (2025): https://doi.org/10.1093/brain/awaf185
     """
 
     TARGET_SPACE = None
