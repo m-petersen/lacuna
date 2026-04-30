@@ -64,3 +64,27 @@ def read_mask_info(h5_path: Path) -> dict:
         "mask_affine": mask_affine,
         "mask_shape": mask_shape,
     }
+
+
+def iter_subject_timeseries(path: Path):
+    """Yield ``(subject_id, timeseries)`` per subject across all batches.
+
+    Each ``timeseries`` is shape ``(n_timepoints, n_voxels)`` in
+    connectome-mask space. Use this for whole-brain operations such as
+    ACE prepare. For lesion-masked reads (which fancy-index only the
+    lesion slice from disk), use
+    :meth:`FunctionalNetworkMapping._iter_batch_lesion_timeseries`.
+
+    Subject IDs are synthesised from the batch filename and row index
+    (``f"{batch_stem}-{row_idx:04d}"``) — the GSP1000 HDF5 schema does
+    not currently store explicit per-subject IDs. The ID is stable
+    given the schema (sorted batch order + row order is deterministic)
+    and is informational only; downstream consumers that pair subjects
+    across passes must rely on iteration order, not ID.
+    """
+    for batch_file in list_connectome_batch_files(path):
+        with h5py.File(batch_file, "r") as hf:
+            ts = hf["timeseries"][:]  # (n_subjects, n_timepoints, n_voxels)
+        stem = batch_file.stem
+        for row_idx in range(ts.shape[0]):
+            yield f"{stem}-{row_idx:04d}", ts[row_idx]
