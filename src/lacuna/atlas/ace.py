@@ -214,6 +214,7 @@ def compute_ace_atlas(
     # Process each subject
     stage2_accumulator = np.zeros((int(np.sum(flat_mask)), n_targets), dtype=np.float64)
 
+    actual_n_subjects = 0
     for i, bold in enumerate(subjects):
         logger.info("ACE: processing subject %d/%d", i + 1, n_subjects)
 
@@ -229,9 +230,20 @@ def compute_ace_atlas(
         beta2_clipped = np.clip(beta2, -0.9999, 0.9999)
         beta2_z = np.arctanh(beta2_clipped)
         stage2_accumulator += beta2_z
+        actual_n_subjects = i + 1
+
+    # Iterator-vs-promise sanity check: callers (e.g. ``lacuna prepare ace``)
+    # pre-scan HDF5 attrs to choose ``n_subjects``; if the iterator under-yields
+    # we'd otherwise silently divide by the wrong count and produce wrong-scaled
+    # enriched maps.
+    if actual_n_subjects != n_subjects:
+        raise ValueError(
+            f"ACE iterator yielded {actual_n_subjects} subjects but caller "
+            f"promised {n_subjects}. Refusing to write a wrong-scaled atlas."
+        )
 
     # Average across subjects
-    mean_stage2_z = stage2_accumulator / n_subjects
+    mean_stage2_z = stage2_accumulator / actual_n_subjects
 
     # Build enriched atlas maps
     reference_affine = atlas.get_map(atlas.targets[0]).affine

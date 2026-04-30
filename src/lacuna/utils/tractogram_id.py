@@ -30,11 +30,3 @@ def compute_tractogram_fingerprint(path: str | Path) -> dict[str, Any]:
         "size_bytes": int(size),
         "sha256_first_mib": h.hexdigest(),
     }
-
-
-def fingerprints_match(expected: dict[str, Any], actual: dict[str, Any]) -> bool:
-    """Return True iff the two fingerprints describe the same tractogram content."""
-    return (
-        expected.get("size_bytes") == actual.get("size_bytes")
-        and expected.get("sha256_first_mib") == actual.get("sha256_first_mib")
-    )

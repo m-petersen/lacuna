@@ -204,7 +204,6 @@ def run_prepare_ace(args) -> None:
             f"  connectome affine:\n{mask_info['mask_affine']}"
         )
 
-    # Iterate subjects (capped by max_subjects), materialize the list
     # Pre-scan HDF5 attrs (cheap — no timeseries reads) so the user sees
     # an honest subject count and RAM estimate before the long iteration.
     import h5py
