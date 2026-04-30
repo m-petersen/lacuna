@@ -113,7 +113,8 @@ class TestComputeAceAtlas:
 
         result = compute_ace_atlas(
             atlas=small_atlas,
-            subjects_data=subjects_data,
+            subjects=subjects_data,
+            n_subjects=len(subjects_data),
             brain_mask=brain_mask,
             mask_shape=shape,
         )
@@ -121,3 +122,32 @@ class TestComputeAceAtlas:
         assert set(result["stage2_atlas"].targets) == {"5HT1a", "D1"}
         assert "stage1_timeseries" in result
         assert len(result["stage1_timeseries"]) == 3
+
+    def test_streaming_via_callback_omits_stage1_from_result(self, small_atlas):
+        """When on_subject_done is provided, stage1 is delivered via callback,
+        not retained in the returned dict."""
+        shape = (10, 10, 10)
+        n_voxels = np.prod(shape)
+        n_timepoints = 50
+        rng = np.random.default_rng(42)
+        subjects_data = [
+            rng.standard_normal((n_timepoints, n_voxels)).astype(np.float32)
+            for _ in range(3)
+        ]
+        brain_mask = np.ones(shape, dtype=bool)
+        seen: list[tuple[int, tuple[int, ...]]] = []
+
+        def cb(i, beta1):
+            seen.append((i, tuple(beta1.shape)))
+
+        result = compute_ace_atlas(
+            atlas=small_atlas,
+            subjects=subjects_data,
+            n_subjects=len(subjects_data),
+            brain_mask=brain_mask,
+            mask_shape=shape,
+            on_subject_done=cb,
+        )
+        assert isinstance(result["stage2_atlas"], VoxelAtlas)
+        assert "stage1_timeseries" not in result
+        assert seen == [(0, (n_timepoints, 2)), (1, (n_timepoints, 2)), (2, (n_timepoints, 2))]

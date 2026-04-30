@@ -223,64 +223,72 @@ def run_prepare_ace(args) -> None:
         if max_subjects is not None
         else total_in_conn
     )
-    est_gb = n_to_load * n_timepoints_attr * n_voxels_attr * 4 / 1e9
-    if max_subjects is not None and n_to_load < total_in_conn:
-        logger.info(
-            "Loading %d of %d subjects (capped via --max-subjects); "
-            "estimated %.2f GB into RAM.",
-            n_to_load, total_in_conn, est_gb,
-        )
-    else:
-        logger.info(
-            "Loading all %d subjects from connectome; estimated %.2f GB into RAM.",
-            n_to_load, est_gb,
-        )
-
-    subjects: list[np.ndarray] = []
-    subject_ids: list[str] = []
-    for subj_id, ts in iter_subject_timeseries(conn_path):
-        subjects.append(ts)
-        subject_ids.append(subj_id)
-        if max_subjects is not None and len(subjects) >= max_subjects:
-            break
-    n_subjects = len(subjects)
-    if n_subjects == 0:
+    if n_to_load == 0:
         raise ValueError(
             f"No subjects found in connectome at {conn_path}; cannot prepare ACE."
         )
+    # Memory peak is ONE subject's BOLD plus the cross-subject accumulator
+    # (~50 MB at GSP1000-shape) — subjects are streamed through compute_ace_atlas.
+    per_subject_gb = n_timepoints_attr * n_voxels_attr * 4 / 1e9
+    if max_subjects is not None and n_to_load < total_in_conn:
+        logger.info(
+            "Streaming %d of %d subjects (capped via --max-subjects); "
+            "memory peak ~%.2f GB per subject.",
+            n_to_load, total_in_conn, per_subject_gb,
+        )
+    else:
+        logger.info(
+            "Streaming %d subjects from connectome; memory peak ~%.2f GB per subject.",
+            n_to_load, per_subject_gb,
+        )
 
-    logger.info(
-        "Preparing ACE cache: %d subjects × %d targets",
-        n_subjects, len(atlas.targets),
-    )
+    # Wipe stale stage1 BEFORE the stream starts; the streaming callback
+    # writes each subject's .npy as soon as compute_ace_atlas yields it.
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    stage1_dir = cache_dir / "stage1_timeseries"
+    if stage1_dir.exists():
+        shutil.rmtree(stage1_dir)
+    stage1_dir.mkdir()
 
-    # Run the ACE algorithm
+    subject_ids: list[str] = []
+
+    def _yield_bold():
+        """Yield BOLD arrays from the connectome iterator and capture IDs.
+
+        Lives inline so the closure over ``subject_ids`` and ``max_subjects``
+        is obvious. Truncates at ``max_subjects`` when set.
+        """
+        n_yielded = 0
+        for subj_id, ts in iter_subject_timeseries(conn_path):
+            if max_subjects is not None and n_yielded >= max_subjects:
+                break
+            subject_ids.append(subj_id)
+            n_yielded += 1
+            yield ts
+
+    def _save_stage1(i: int, beta1: np.ndarray) -> None:
+        np.save(stage1_dir / f"subject-{i:04d}.npy", beta1)
+
     result = compute_ace_atlas(
-        atlas, subjects, brain_mask, mask_info["mask_shape"],
+        atlas,
+        _yield_bold(),
+        n_to_load,
+        brain_mask,
+        mask_info["mask_shape"],
+        on_subject_done=_save_stage1,
     )
     stage2_atlas = result["stage2_atlas"]
-    stage1_timeseries = result["stage1_timeseries"]
+    n_subjects = len(subject_ids)
 
-    # Write the cache (envelope is LAST; partial dirs are visibly invalid).
-    # Wipe stale sub-asset dirs so re-runs against a different atlas (with
-    # different target lists) don't leave orphan files behind.
-    cache_dir.mkdir(parents=True, exist_ok=True)
-
+    # Write stage2_atlas (envelope last). Wipe stale stage2 too.
     stage2_dir = cache_dir / "stage2_atlas"
     if stage2_dir.exists():
         shutil.rmtree(stage2_dir)
     save_atlas(stage2_atlas, stage2_dir)
 
-    stage1_dir = cache_dir / "stage1_timeseries"
-    if stage1_dir.exists():
-        shutil.rmtree(stage1_dir)
-    stage1_dir.mkdir()
-    for i, ts in enumerate(stage1_timeseries):
-        np.save(stage1_dir / f"subject-{i:04d}.npy", ts)
-
     (cache_dir / "subject_ids.txt").write_text("\n".join(subject_ids) + "\n")
 
-    n_timepoints = int(stage1_timeseries[0].shape[0]) if stage1_timeseries else 0
+    n_timepoints = n_timepoints_attr
     # Source ntatlas is build-time provenance, NOT a runtime requirement:
     # FNTF in enriched mode consumes <ace_dir>/stage2_atlas (which has its
     # own envelope), and the original ntatlas may be gone by then. Recording

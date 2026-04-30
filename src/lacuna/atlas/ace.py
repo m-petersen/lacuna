@@ -11,7 +11,7 @@ Stage 2: Regress BOLD timeseries onto atlas timeseries -> enriched spatial maps
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Callable, Iterable
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -136,33 +136,54 @@ def ace_stage2(
 
 def compute_ace_atlas(
     atlas: VoxelAtlas,
-    subjects_data: list[np.ndarray],
+    subjects: "Iterable[np.ndarray]",
+    n_subjects: int,
     brain_mask: np.ndarray,
     mask_shape: tuple[int, int, int],
+    *,
+    on_subject_done: "Callable[[int, np.ndarray], None] | None" = None,
 ) -> dict[str, Any]:
-    """Run full ACE pipeline across normative subjects.
+    """Run full ACE pipeline streaming subjects one at a time.
+
+    Memory peak is one subject's BOLD plus a (n_voxels, n_targets) stage-2
+    accumulator (~50 MB at GSP1000-shape). The cross-subject state is the
+    accumulator alone — each subject's BOLD can be released after the
+    inner loop iteration.
 
     Parameters
     ----------
     atlas : VoxelAtlas
         The prepared (averaged, z-scored) NT atlas.
-    subjects_data : list[np.ndarray]
-        Per-subject fMRI data. Each is (n_timepoints, n_voxels) where n_voxels
-        corresponds to the flattened brain_mask.
+    subjects : Iterable[np.ndarray]
+        Per-subject fMRI data, yielded one at a time. Each element is
+        ``(n_timepoints, n_voxels)`` where ``n_voxels`` corresponds to
+        the flattened ``brain_mask``.
+    n_subjects : int
+        How many subjects ``subjects`` will yield. Used as the divisor for
+        the cross-subject Fisher-z mean and for progress logging. The
+        caller is responsible for ensuring iteration produces this count.
     brain_mask : np.ndarray
         Boolean 3D brain mask. Shape must match atlas maps.
     mask_shape : tuple
         3D shape of the brain volume.
+    on_subject_done : Callable[[int, np.ndarray], None], optional
+        If provided, called once per subject with ``(subject_index,
+        stage1_timeseries)`` immediately after that subject is processed.
+        Use this to stream stage-1 ``(n_timepoints, n_targets)`` arrays to
+        disk rather than retaining them in memory. When omitted, all
+        stage-1 arrays are collected into a list and returned under
+        ``stage1_timeseries``.
 
     Returns
     -------
     dict with keys:
-        "stage2_atlas": VoxelAtlas -- Fisher-z averaged enriched maps
-        "stage1_timeseries": list[np.ndarray] -- per-subject NT timeseries
+        ``"stage2_atlas"``: VoxelAtlas -- Fisher-z averaged enriched maps
+        ``"stage1_timeseries"``: list[np.ndarray] -- per-subject NT
+            timeseries (only present when ``on_subject_done`` is None;
+            with the callback path the caller has already received them).
     """
     import nibabel as nib
 
-    n_subjects = len(subjects_data)
     n_targets = len(atlas.targets)
 
     # Build atlas matrix within brain mask
@@ -189,15 +210,18 @@ def compute_ace_atlas(
         )
 
     # Process each subject
-    stage1_timeseries = []
+    stage1_timeseries: list[np.ndarray] = []
     stage2_accumulator = np.zeros((int(np.sum(flat_mask)), n_targets), dtype=np.float64)
 
-    for i, bold in enumerate(subjects_data):
+    for i, bold in enumerate(subjects):
         logger.info("ACE: processing subject %d/%d", i + 1, n_subjects)
 
         # Stage 1
         beta1 = ace_stage1(bold, atlas_matrix, stage1_nonzero)
-        stage1_timeseries.append(beta1)
+        if on_subject_done is None:
+            stage1_timeseries.append(beta1)
+        else:
+            on_subject_done(i, beta1)
 
         # Stage 2
         beta2 = ace_stage2(bold, beta1, stage2_mask)
@@ -232,7 +256,7 @@ def compute_ace_atlas(
         },
     )
 
-    return {
-        "stage2_atlas": stage2_atlas,
-        "stage1_timeseries": stage1_timeseries,
-    }
+    result: dict[str, Any] = {"stage2_atlas": stage2_atlas}
+    if on_subject_done is None:
+        result["stage1_timeseries"] = stage1_timeseries
+    return result
