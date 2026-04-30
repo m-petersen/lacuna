@@ -9,8 +9,10 @@ built from?" without reaching into asset-specific code.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 ENVELOPE_FILENAME = "lacuna_asset.json"
@@ -100,3 +102,25 @@ class AssetEnvelope:
             provenance=dict(blob.get("provenance", {})),
             data=dict(blob.get("data", {})),
         )
+
+
+def write_envelope(env: AssetEnvelope, asset_root: Path | str) -> Path:
+    """Write the envelope to ``<asset_root>/lacuna_asset.json``."""
+    asset_root = Path(asset_root)
+    asset_root.mkdir(parents=True, exist_ok=True)
+    path = asset_root / ENVELOPE_FILENAME
+    path.write_text(json.dumps(env.to_dict(), indent=2))
+    return path
+
+
+def read_envelope(asset_root: Path | str) -> AssetEnvelope:
+    """Read the envelope from ``<asset_root>/lacuna_asset.json``."""
+    asset_root = Path(asset_root)
+    path = asset_root / ENVELOPE_FILENAME
+    if not path.exists():
+        raise FileNotFoundError(
+            f"No {ENVELOPE_FILENAME} at {asset_root}. "
+            "This asset directory is either missing, corrupted, or written by an "
+            "older lacuna version."
+        )
+    return AssetEnvelope.from_dict(json.loads(path.read_text()))

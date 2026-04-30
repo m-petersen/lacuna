@@ -12,6 +12,18 @@ All asset types follow a consistent registry pattern with register/list/load fun
 # Import parcellation management
 from lacuna.assets import parcellations  # noqa: F401
 
+# Asset envelope and metadata
+from lacuna.assets.envelope import (
+    ENVELOPE_FILENAME,
+    ENVELOPE_SCHEMA_VERSION,
+    AssetEnvelope,
+    AssetType,
+    IdentityRef,
+    RequiresEntry,
+    read_envelope,
+    write_envelope,
+)
+
 # Base classes
 from lacuna.assets.base import (
     AssetMetadata,
@@ -64,6 +76,15 @@ from lacuna.assets.transforms import (
 )
 
 __all__ = [
+    # Asset envelope
+    "ENVELOPE_FILENAME",
+    "ENVELOPE_SCHEMA_VERSION",
+    "AssetEnvelope",
+    "AssetType",
+    "IdentityRef",
+    "RequiresEntry",
+    "read_envelope",
+    "write_envelope",
     # Base classes
     "AssetMetadata",
     "SpatialAssetMetadata",

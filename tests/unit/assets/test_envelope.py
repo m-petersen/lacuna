@@ -49,3 +49,35 @@ def test_envelope_with_empty_requires_round_trips():
         identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
     )
     assert AssetEnvelope.from_dict(env.to_dict()) == env
+
+
+from pathlib import Path
+import pytest
+
+from lacuna.assets.envelope import (
+    ENVELOPE_FILENAME, read_envelope, write_envelope,
+)
+
+
+def _minimal_envelope():
+    return AssetEnvelope(
+        asset_type=AssetType.NTATLAS,
+        identity=IdentityRef(kind="content_hash", fields={"sha256": "x"}),
+    )
+
+
+def test_write_envelope_creates_canonical_filename(tmp_path):
+    env = _minimal_envelope()
+    write_envelope(env, tmp_path)
+    assert (tmp_path / ENVELOPE_FILENAME).exists()
+
+
+def test_read_envelope_round_trip(tmp_path):
+    env = _minimal_envelope()
+    write_envelope(env, tmp_path)
+    assert read_envelope(tmp_path) == env
+
+
+def test_read_envelope_raises_when_missing(tmp_path):
+    with pytest.raises(FileNotFoundError, match=ENVELOPE_FILENAME):
+        read_envelope(tmp_path)
