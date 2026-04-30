@@ -148,27 +148,147 @@ def _precompute_endpoint_weights(atlas, atlas_dir, tractogram_path, cache_dir):
 
 
 def run_prepare_ace(args) -> None:
-    """Run ACE (Atlas Connectivity Enrichment) on normative fMRI data."""
-    from lacuna.atlas.store import load_atlas
-    from lacuna.cli.main import register_functional_connectome_from_path
+    """Build an ACE-enriched atlas cache from an NT atlas + functional connectome."""
+    import shutil
+
+    import nibabel as nib  # noqa: F401  (used by save_atlas / atlas internals)
+    import numpy as np
+
+    from lacuna.assets.connectomes.functional_io import (
+        iter_subject_timeseries,
+        list_connectome_batch_files,
+        read_mask_info,
+    )
+    from lacuna.assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        ENVELOPE_FILENAME,
+        RequiresEntry,
+        asset_present,
+        fingerprint,
+        write_envelope,
+    )
+    from lacuna.atlas.ace import compute_ace_atlas
+    from lacuna.atlas.store import load_atlas, save_atlas
 
     atlas_dir = Path(args.ntatlas_dir)
-    atlas = load_atlas(atlas_dir)
-
-    connectome_path = Path(args.connectome_path)
-    if not connectome_path.exists():
-        raise FileNotFoundError(
-            f"Connectome path does not exist: {connectome_path}\n\n"
-            "To download a functional connectome:\n"
-            "  lacuna fetch gsp1000"
-        )
-    connectome_name = register_functional_connectome_from_path(connectome_path)
-
+    conn_path = Path(args.connectome_path)
     cache_dir = Path(args.cache_dir)
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    max_subjects = getattr(args, "max_subjects", None)
 
-    logger.info("Loading normative fMRI connectome: %s", connectome_name)
-    raise NotImplementedError(
-        "ACE preparation requires connectome loading integration. "
-        "Implement after connectome HDF5 structure is confirmed."
+    # Pre-flight asset checks
+    if not asset_present(atlas_dir, AssetType.NTATLAS):
+        raise FileNotFoundError(
+            f"NT atlas not found at {atlas_dir}.\n"
+            f"Run 'lacuna fetch ntatlas --output-dir {atlas_dir}' first."
+        )
+    batch_files = list_connectome_batch_files(conn_path)  # raises FileNotFoundError on empty
+
+    # Load atlas + connectome metadata
+    atlas = load_atlas(atlas_dir)
+    mask_info = read_mask_info(batch_files[0])
+    brain_mask = _reconstruct_3d_mask(mask_info)
+
+    # Atlas/connectome compatibility — fail fast before the expensive part
+    ref = atlas.get_map(atlas.targets[0])
+    atlas_shape_3d = tuple(ref.shape[:3])
+    if atlas_shape_3d != tuple(mask_info["mask_shape"]):
+        raise ValueError(
+            "atlas shape does not match the connectome's brain-mask shape.\n"
+            f"  atlas:     {atlas_shape_3d}\n"
+            f"  connectome: {tuple(mask_info['mask_shape'])}\n"
+            "Re-fetch the atlas and connectome at matching resolution/space."
+        )
+    if not np.allclose(ref.affine, mask_info["mask_affine"], atol=1e-3):
+        raise ValueError(
+            "atlas affine does not match the connectome's brain-mask affine.\n"
+            f"  atlas affine:\n{ref.affine}\n"
+            f"  connectome affine:\n{mask_info['mask_affine']}"
+        )
+
+    # Iterate subjects (capped by max_subjects), materialize the list
+    subjects: list[np.ndarray] = []
+    subject_ids: list[str] = []
+    for subj_id, ts in iter_subject_timeseries(conn_path):
+        subjects.append(ts)
+        subject_ids.append(subj_id)
+        if max_subjects is not None and len(subjects) >= max_subjects:
+            break
+    n_subjects = len(subjects)
+    if n_subjects == 0:
+        raise ValueError(
+            f"No subjects found in connectome at {conn_path}; cannot prepare ACE."
+        )
+
+    logger.info(
+        "Preparing ACE cache: %d subjects × %d targets",
+        n_subjects, len(atlas.targets),
     )
+
+    # Run the ACE algorithm
+    result = compute_ace_atlas(
+        atlas, subjects, brain_mask, mask_info["mask_shape"],
+    )
+    stage2_atlas = result["stage2_atlas"]
+    stage1_timeseries = result["stage1_timeseries"]
+
+    # Write the cache (envelope is LAST; partial dirs are visibly invalid)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    save_atlas(stage2_atlas, cache_dir / "stage2_atlas")
+
+    stage1_dir = cache_dir / "stage1_timeseries"
+    if stage1_dir.exists():
+        # Wipe a previous (potentially partial) stage1 dir so re-runs don't
+        # leave stale subject-NNNN files lying around.
+        shutil.rmtree(stage1_dir)
+    stage1_dir.mkdir()
+    for i, ts in enumerate(stage1_timeseries):
+        np.save(stage1_dir / f"subject-{i:04d}.npy", ts)
+
+    (cache_dir / "subject_ids.txt").write_text("\n".join(subject_ids) + "\n")
+
+    n_timepoints = int(stage1_timeseries[0].shape[0]) if stage1_timeseries else 0
+    env = AssetEnvelope(
+        asset_type=AssetType.ACE_CACHE,
+        identity=fingerprint(cache_dir, AssetType.ACE_CACHE),
+        requires=[
+            RequiresEntry(
+                role="ntatlas",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas_dir, AssetType.NTATLAS),
+                path_hint=str(atlas_dir.resolve()),
+            ),
+            RequiresEntry(
+                role="connectome",
+                asset_type=AssetType.FUNCTIONAL_CONNECTOME,
+                identity=fingerprint(conn_path, AssetType.FUNCTIONAL_CONNECTOME),
+                path_hint=str(conn_path.resolve()),
+            ),
+        ],
+        provenance={
+            "command": "lacuna prepare ace",
+            "n_subjects": n_subjects,
+            "max_subjects": max_subjects,
+            "space": atlas.space,
+            "n_targets": len(atlas.targets),
+        },
+        data={
+            "n_targets": len(atlas.targets),
+            "n_timepoints": n_timepoints,
+        },
+    )
+    write_envelope(env, cache_dir)
+
+    print(f"ACE cache written to {cache_dir}")
+    print(f"  Subjects: {n_subjects}")
+    print(f"  Targets:  {len(atlas.targets)}")
+
+
+def _reconstruct_3d_mask(mask_info: dict) -> "np.ndarray":
+    """Build a 3D boolean mask from the connectome's flat indices."""
+    import numpy as np
+
+    ix, iy, iz = mask_info["mask_indices"]
+    mask = np.zeros(mask_info["mask_shape"], dtype=bool)
+    mask[ix, iy, iz] = True
+    return mask
