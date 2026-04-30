@@ -18,6 +18,7 @@ Functions:
 from __future__ import annotations
 
 import os
+import argparse
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from pathlib import Path
 
@@ -1396,6 +1397,26 @@ def _build_prepare_parser(subparsers) -> None:
     prepare_ace.add_argument(
         "--cache-dir", type=str, required=True,
         help="Output cache directory",
+    )
+
+    def _positive_int(value: str) -> int:
+        n = int(value)
+        if n < 1:
+            raise argparse.ArgumentTypeError(
+                f"--max-subjects must be >= 1, got {n}"
+            )
+        return n
+
+    prepare_ace.add_argument(
+        "--max-subjects",
+        type=_positive_int,
+        default=None,
+        help=(
+            "Cap iteration at the first N subjects (default: process all). "
+            "Use for testing — the resulting cache will fail FNTF's "
+            "dimension-alignment check at run time, which is the intended "
+            "loud-failure behaviour."
+        ),
     )
 
 
