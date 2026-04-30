@@ -9,6 +9,7 @@ built from?" without reaching into asset-specific code.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field
 from enum import Enum
@@ -127,3 +128,58 @@ def read_envelope(asset_root: Path | str) -> AssetEnvelope:
             "older lacuna version."
         )
     return AssetEnvelope.from_dict(json.loads(path.read_text()))
+
+
+def fingerprint(path: Path | str, asset_type: AssetType) -> IdentityRef:
+    """Compute the canonical identity for an asset on disk.
+
+    Dispatches by ``asset_type``. Each concrete fingerprint is a content hash
+    plus a few type-specific fields used for at-a-glance debugging
+    (e.g. ``n_streamlines`` for tractograms, ``n_targets`` for atlases).
+    """
+    path = Path(path)
+    if asset_type == AssetType.STRUCTURAL_CONNECTOME:
+        from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
+        fp = compute_tractogram_fingerprint(path)
+        return IdentityRef(
+            kind="sha256_first_mib+size",
+            fields={
+                "sha256_first_mib": fp["sha256_first_mib"],
+                "size_bytes": fp["size_bytes"],
+            },
+        )
+    if asset_type == AssetType.NTATLAS:
+        return _fingerprint_ntatlas(path)
+    if asset_type == AssetType.SNTF_CACHE:
+        return _fingerprint_sntf_cache(path)
+    raise NotImplementedError(f"No fingerprint for asset_type={asset_type}")
+
+
+def _fingerprint_ntatlas(asset_root: Path) -> IdentityRef:
+    maps_dir = asset_root / "maps"
+    if not maps_dir.is_dir():
+        raise FileNotFoundError(f"NT atlas missing maps/ directory: {asset_root}")
+    map_files = sorted(maps_dir.glob("*.nii.gz"))
+    h = hashlib.sha256()
+    for p in map_files:
+        h.update(p.name.encode())
+        h.update(b"\0")
+        with p.open("rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+    return IdentityRef(
+        kind="sha256_concat",
+        fields={"sha256": h.hexdigest(), "n_targets": len(map_files)},
+    )
+
+
+def _fingerprint_sntf_cache(asset_root: Path) -> IdentityRef:
+    h = hashlib.sha256()
+    for name in ("start_weights.npy", "end_weights.npy"):
+        with (asset_root / name).open("rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+    return IdentityRef(
+        kind="sha256_concat",
+        fields={"sha256": h.hexdigest()},
+    )

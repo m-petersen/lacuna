@@ -20,6 +20,7 @@ from lacuna.assets.envelope import (
     AssetType,
     IdentityRef,
     RequiresEntry,
+    fingerprint,
     read_envelope,
     write_envelope,
 )
@@ -83,6 +84,7 @@ __all__ = [
     "AssetType",
     "IdentityRef",
     "RequiresEntry",
+    "fingerprint",
     "read_envelope",
     "write_envelope",
     # Base classes

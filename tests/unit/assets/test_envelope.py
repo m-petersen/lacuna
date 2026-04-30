@@ -1,3 +1,5 @@
+import nibabel as nib
+import numpy as np
 import pytest
 
 from lacuna.assets.envelope import (
@@ -6,6 +8,7 @@ from lacuna.assets.envelope import (
     ENVELOPE_FILENAME,
     ENVELOPE_SCHEMA_VERSION,
     IdentityRef,
+    fingerprint,
     read_envelope,
     RequiresEntry,
     write_envelope,
@@ -107,3 +110,41 @@ def test_read_write_envelope_round_trips_populated_envelope(tmp_path):
     )
     write_envelope(env, tmp_path)
     assert read_envelope(tmp_path) == env
+
+
+def test_fingerprint_tractogram_matches_helper(tmp_path):
+    from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
+    tck = tmp_path / "t.tck"
+    streams = nib.streamlines.ArraySequence(
+        [np.zeros((2, 3), dtype=np.float32) for _ in range(5)]
+    )
+    nib.streamlines.save(
+        nib.streamlines.Tractogram(streams, affine_to_rasmm=np.eye(4)),
+        str(tck),
+    )
+    ref = compute_tractogram_fingerprint(tck)
+    out = fingerprint(tck, AssetType.STRUCTURAL_CONNECTOME)
+    assert out.fields["sha256_first_mib"] == ref["sha256_first_mib"]
+    assert out.fields["size_bytes"] == ref["size_bytes"]
+
+
+def test_fingerprint_ntatlas_is_deterministic(tmp_path):
+    maps = tmp_path / "maps"
+    maps.mkdir()
+    affine = np.eye(4)
+    for name in ["A", "B"]:
+        nib.save(
+            nib.Nifti1Image(np.full((2, 2, 2), ord(name), dtype=np.float32), affine),
+            str(maps / f"{name}.nii.gz"),
+        )
+    f1 = fingerprint(tmp_path, AssetType.NTATLAS)
+    f2 = fingerprint(tmp_path, AssetType.NTATLAS)
+    assert f1 == f2
+    assert f1.fields["n_targets"] == 2
+    # Changing one map changes the fingerprint
+    nib.save(
+        nib.Nifti1Image(np.zeros((2, 2, 2), dtype=np.float32), affine),
+        str(maps / "A.nii.gz"),
+    )
+    f3 = fingerprint(tmp_path, AssetType.NTATLAS)
+    assert f3 != f1
