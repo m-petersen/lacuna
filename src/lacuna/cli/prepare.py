@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 def run_prepare_sntf(args) -> None:
     """Precompute endpoint NT weights for all streamlines."""
+    from lacuna.assets.envelope import AssetType, asset_present
     from lacuna.atlas.store import load_atlas
 
     atlas_dir = Path(args.ntatlas_dir)
-    from lacuna.assets.envelope import ENVELOPE_FILENAME
-    if not (atlas_dir / ENVELOPE_FILENAME).exists() and not (atlas_dir / "manifest.json").exists():
+    if not asset_present(atlas_dir, AssetType.NTATLAS):
         raise FileNotFoundError(
             f"NT atlas not found at {atlas_dir}.\n"
             f"Run 'lacuna fetch ntatlas --output-dir {atlas_dir}' first."

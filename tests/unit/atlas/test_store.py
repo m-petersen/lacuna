@@ -261,3 +261,20 @@ def test_load_atlas_falls_back_to_legacy_manifest(tmp_path, caplog):
         loaded = load_atlas(tmp_path)
     assert sorted(loaded.targets) == ["A", "B"]
     assert any("legacy manifest.json" in r.message for r in caplog.records)
+
+
+def test_load_atlas_prefers_envelope_when_both_files_present(tmp_path, caplog):
+    """If both lacuna_asset.json and manifest.json exist, envelope wins (no deprecation warning)."""
+    import json
+    import logging
+
+    atlas = _toy_atlas()
+    save_atlas(atlas, tmp_path)
+    # Plant a corrupt manifest.json alongside the real envelope. If load_atlas
+    # reads the wrong one, it would either fail or produce different data.
+    (tmp_path / "manifest.json").write_text(json.dumps({"targets": ["JUNK"]}))
+
+    with caplog.at_level(logging.WARNING, logger="lacuna.atlas.store"):
+        loaded = load_atlas(tmp_path)
+    assert sorted(loaded.targets) == ["A", "B"]
+    assert not any("legacy manifest.json" in r.message for r in caplog.records)

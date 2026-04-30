@@ -1106,14 +1106,14 @@ def fetch_ntatlas(
     verifies each against ``file_hashes.json``, then z-scores and saves
     the resulting :class:`~lacuna.atlas.types.VoxelAtlas` directly to
     ``output_dir``. The output is a ready-to-use atlas cache:
-    ``output_dir/manifest.json`` + ``output_dir/maps/<target>.nii.gz``.
+    ``output_dir/lacuna_asset.json`` + ``output_dir/maps/<target>.nii.gz``.
 
     Parameters
     ----------
     output_dir : str or Path
         Directory where the prepared atlas is written.
     force : bool, default=False
-        Re-download and rebuild even if a manifest already exists.
+        Re-download and rebuild even if an atlas already exists at the destination.
     progress_callback : callable, optional
         Called with ``FetchProgress`` updates per file.
 
@@ -1126,6 +1126,7 @@ def fetch_ntatlas(
     import urllib.error
     import urllib.request
 
+    from lacuna.assets.envelope import AssetType, asset_present
     from lacuna.atlas.store import build_nt_atlas, save_atlas
     from lacuna.core.exceptions import DownloadError
     from lacuna.data.ntatlas import all_map_ids, hashes_url, map_rel_path, map_url
@@ -1135,10 +1136,7 @@ def fetch_ntatlas(
     output_dir.mkdir(parents=True, exist_ok=True)
     start_time = time.time()
 
-    if not force and (
-        (output_dir / "lacuna_asset.json").exists()
-        or (output_dir / "manifest.json").exists()
-    ):
+    if not force and asset_present(output_dir, AssetType.NTATLAS):
         return FetchResult(
             success=True,
             connectome_name="ntatlas",

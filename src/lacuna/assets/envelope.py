@@ -193,6 +193,29 @@ def _fingerprint_sntf_cache(asset_root: Path) -> IdentityRef:
     )
 
 
+# Legacy per-type metadata filenames that lacuna readers still tolerate
+# for one release while users re-run their prepare/fetch steps.
+_LEGACY_FILENAMES: dict[AssetType, str] = {
+    AssetType.NTATLAS: "manifest.json",
+}
+
+
+def asset_present(asset_root: Path | str, asset_type: AssetType) -> bool:
+    """True iff ``asset_root`` contains a loadable asset of ``asset_type``.
+
+    Recognises both the canonical ``lacuna_asset.json`` envelope and any
+    legacy per-type metadata filename still tolerated by readers (e.g.
+    ``manifest.json`` for an NT atlas).
+    """
+    asset_root = Path(asset_root)
+    if (asset_root / ENVELOPE_FILENAME).exists():
+        return True
+    legacy = _LEGACY_FILENAMES.get(asset_type)
+    if legacy is not None and (asset_root / legacy).exists():
+        return True
+    return False
+
+
 class AssetMismatchError(ValueError):
     """A required asset's runtime fingerprint does not match the cached one."""
 
