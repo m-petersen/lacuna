@@ -16,8 +16,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
+
 ENVELOPE_FILENAME = "lacuna_asset.json"
 ENVELOPE_SCHEMA_VERSION = 1
+_HASH_CHUNK_BYTES = 1 << 20  # 1 MiB
 
 
 class AssetType(str, Enum):
@@ -139,7 +142,6 @@ def fingerprint(path: Path | str, asset_type: AssetType) -> IdentityRef:
     """
     path = Path(path)
     if asset_type == AssetType.STRUCTURAL_CONNECTOME:
-        from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
         fp = compute_tractogram_fingerprint(path)
         return IdentityRef(
             kind="sha256_first_mib+size",
@@ -152,7 +154,13 @@ def fingerprint(path: Path | str, asset_type: AssetType) -> IdentityRef:
         return _fingerprint_ntatlas(path)
     if asset_type == AssetType.SNTF_CACHE:
         return _fingerprint_sntf_cache(path)
-    raise NotImplementedError(f"No fingerprint for asset_type={asset_type}")
+    raise NotImplementedError(f"No fingerprint for asset_type={asset_type.value}")
+
+
+def _hash_file_into(h: "hashlib._Hash", path: Path) -> None:
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(_HASH_CHUNK_BYTES), b""):
+            h.update(chunk)
 
 
 def _fingerprint_ntatlas(asset_root: Path) -> IdentityRef:
@@ -162,11 +170,9 @@ def _fingerprint_ntatlas(asset_root: Path) -> IdentityRef:
     map_files = sorted(maps_dir.glob("*.nii.gz"))
     h = hashlib.sha256()
     for p in map_files:
-        h.update(p.name.encode())
+        h.update(p.name.encode("utf-8"))
         h.update(b"\0")
-        with p.open("rb") as f:
-            for chunk in iter(lambda: f.read(1 << 20), b""):
-                h.update(chunk)
+        _hash_file_into(h, p)
     return IdentityRef(
         kind="sha256_concat",
         fields={"sha256": h.hexdigest(), "n_targets": len(map_files)},
@@ -174,11 +180,13 @@ def _fingerprint_ntatlas(asset_root: Path) -> IdentityRef:
 
 
 def _fingerprint_sntf_cache(asset_root: Path) -> IdentityRef:
+    # Files are guaranteed present by the SNTF prepare path; missing-file
+    # diagnostics live in the prepare/load sites, not here.
     h = hashlib.sha256()
     for name in ("start_weights.npy", "end_weights.npy"):
-        with (asset_root / name).open("rb") as f:
-            for chunk in iter(lambda: f.read(1 << 20), b""):
-                h.update(chunk)
+        h.update(name.encode("utf-8"))
+        h.update(b"\0")
+        _hash_file_into(h, asset_root / name)
     return IdentityRef(
         kind="sha256_concat",
         fields={"sha256": h.hexdigest()},

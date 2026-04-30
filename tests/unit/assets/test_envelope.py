@@ -148,3 +148,46 @@ def test_fingerprint_ntatlas_is_deterministic(tmp_path):
     )
     f3 = fingerprint(tmp_path, AssetType.NTATLAS)
     assert f3 != f1
+
+
+def test_fingerprint_sntf_cache_is_deterministic_and_content_sensitive(tmp_path):
+    rng = np.random.default_rng(0)
+    np.save(tmp_path / "start_weights.npy", rng.standard_normal((3, 5)).astype(np.float32))
+    np.save(tmp_path / "end_weights.npy", rng.standard_normal((3, 5)).astype(np.float32))
+    f1 = fingerprint(tmp_path, AssetType.SNTF_CACHE)
+    f2 = fingerprint(tmp_path, AssetType.SNTF_CACHE)
+    assert f1 == f2
+    np.save(
+        tmp_path / "start_weights.npy",
+        np.zeros((3, 5), dtype=np.float32),
+    )
+    f3 = fingerprint(tmp_path, AssetType.SNTF_CACHE)
+    assert f3 != f1
+
+
+def test_fingerprint_unsupported_type_raises(tmp_path):
+    with pytest.raises(NotImplementedError, match="functional_connectome"):
+        fingerprint(tmp_path, AssetType.FUNCTIONAL_CONNECTOME)
+
+
+def test_fingerprint_ntatlas_missing_maps_dir_raises(tmp_path):
+    with pytest.raises(FileNotFoundError, match="maps/ directory"):
+        fingerprint(tmp_path, AssetType.NTATLAS)
+
+
+def test_fingerprint_ntatlas_changes_when_map_added(tmp_path):
+    maps = tmp_path / "maps"
+    maps.mkdir()
+    affine = np.eye(4)
+    nib.save(
+        nib.Nifti1Image(np.zeros((2, 2, 2), dtype=np.float32), affine),
+        str(maps / "A.nii.gz"),
+    )
+    f1 = fingerprint(tmp_path, AssetType.NTATLAS)
+    nib.save(
+        nib.Nifti1Image(np.zeros((2, 2, 2), dtype=np.float32), affine),
+        str(maps / "B.nii.gz"),
+    )
+    f2 = fingerprint(tmp_path, AssetType.NTATLAS)
+    assert f2 != f1
+    assert f2.fields["n_targets"] == 2
