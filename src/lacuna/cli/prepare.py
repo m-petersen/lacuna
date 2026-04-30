@@ -205,10 +205,35 @@ def run_prepare_ace(args) -> None:
         )
 
     # Iterate subjects (capped by max_subjects), materialize the list
-    if max_subjects is None:
-        logger.warning(
-            "Loading all subjects into RAM (no --max-subjects). "
-            "Expect ~1.2 GB per subject for GSP1000-shape data."
+    # Pre-scan HDF5 attrs (cheap — no timeseries reads) so the user sees
+    # an honest subject count and RAM estimate before the long iteration.
+    import h5py
+
+    total_in_conn = 0
+    n_timepoints_attr = 0
+    n_voxels_attr = 0
+    for bf in batch_files:
+        with h5py.File(bf, "r") as hf:
+            total_in_conn += int(hf.attrs.get("n_subjects", 0))
+            if n_timepoints_attr == 0:
+                n_timepoints_attr = int(hf.attrs.get("n_timepoints", 0))
+                n_voxels_attr = int(hf.attrs.get("n_voxels", 0))
+    n_to_load = (
+        min(max_subjects, total_in_conn)
+        if max_subjects is not None
+        else total_in_conn
+    )
+    est_gb = n_to_load * n_timepoints_attr * n_voxels_attr * 4 / 1e9
+    if max_subjects is not None and n_to_load < total_in_conn:
+        logger.info(
+            "Loading %d of %d subjects (capped via --max-subjects); "
+            "estimated %.2f GB into RAM.",
+            n_to_load, total_in_conn, est_gb,
+        )
+    else:
+        logger.info(
+            "Loading all %d subjects from connectome; estimated %.2f GB into RAM.",
+            n_to_load, est_gb,
         )
 
     subjects: list[np.ndarray] = []
