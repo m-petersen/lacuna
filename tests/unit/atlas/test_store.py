@@ -193,12 +193,6 @@ class TestSaveLoadAtlas:
         assert loaded.domain == atlas.domain
         assert loaded.metadata["systems"] == atlas.metadata["systems"]
 
-    def test_manifest_json_created(self, small_atlas_dir, tmp_path):
-        atlas = build_nt_atlas(small_atlas_dir)
-        cache = tmp_path / "cache"
-        save_atlas(atlas, cache)
-        assert (cache / "manifest.json").exists()
-
     def test_load_nonexistent_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             load_atlas(tmp_path / "nonexistent")
@@ -235,3 +229,35 @@ def test_save_atlas_writes_envelope(tmp_path):
     assert env.data["targets"] == ["A", "B"]
     assert env.data["space"] == "MNI152NLin6Asym"
     assert env.identity.fields["n_targets"] == 2
+
+
+def test_load_atlas_reads_envelope(tmp_path, caplog):
+    atlas = _toy_atlas()
+    save_atlas(atlas, tmp_path)
+    loaded = load_atlas(tmp_path)
+    assert sorted(loaded.targets) == ["A", "B"]
+    assert loaded.space == "MNI152NLin6Asym"
+
+
+def test_load_atlas_falls_back_to_legacy_manifest(tmp_path, caplog):
+    """Atlases written by older lacuna only have manifest.json — still readable."""
+    import json
+    import logging
+
+    atlas = _toy_atlas()
+    save_atlas(atlas, tmp_path)
+    # Simulate legacy: drop the new envelope, recreate manifest.json by hand.
+    (tmp_path / "lacuna_asset.json").unlink()
+    legacy_manifest = {
+        "targets": list(atlas.targets),
+        "space": atlas.space,
+        "resolution": atlas.resolution,
+        "domain": atlas.domain,
+        "metadata": atlas.metadata,
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(legacy_manifest))
+
+    with caplog.at_level(logging.WARNING, logger="lacuna.atlas.store"):
+        loaded = load_atlas(tmp_path)
+    assert sorted(loaded.targets) == ["A", "B"]
+    assert any("legacy manifest.json" in r.message for r in caplog.records)

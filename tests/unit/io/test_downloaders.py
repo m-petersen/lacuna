@@ -617,7 +617,7 @@ class TestFetchNtatlas:
         assert callable(fetch_ntatlas)
 
     def test_fetch_ntatlas_creates_prepared_atlas(self, tmp_path):
-        """fetch_ntatlas should produce manifest.json + maps/<target>.nii.gz."""
+        """fetch_ntatlas should produce lacuna_asset.json + maps/<target>.nii.gz."""
         from lacuna.data.ntatlas import all_map_ids
         from lacuna.io.fetch import fetch_ntatlas
 
@@ -645,7 +645,7 @@ class TestFetchNtatlas:
             result = fetch_ntatlas(output_dir=tmp_path)
 
         assert result.success
-        assert (tmp_path / "manifest.json").exists()
+        assert (tmp_path / "lacuna_asset.json").exists()
         # One prepared NIfTI per representative map
         prepared = list((tmp_path / "maps").glob("*.nii.gz"))
         assert len(prepared) == len(all_map_ids())

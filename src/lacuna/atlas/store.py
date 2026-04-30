@@ -150,23 +150,34 @@ def save_atlas(atlas: VoxelAtlas, cache_dir: Path) -> None:
 def load_atlas(cache_dir: Path) -> VoxelAtlas:
     """Load a VoxelAtlas from disk.
 
-    Raises FileNotFoundError if cache_dir or manifest does not exist.
+    Prefers the shared ``lacuna_asset.json`` envelope. Falls back to the
+    legacy ``manifest.json`` for one release with a deprecation warning;
+    re-saving the atlas via ``save_atlas`` writes the envelope.
     """
-    cache_dir = Path(cache_dir)
-    manifest_path = cache_dir / "manifest.json"
+    from lacuna.assets.envelope import ENVELOPE_FILENAME, read_envelope
 
-    if not manifest_path.exists():
+    cache_dir = Path(cache_dir)
+
+    if (cache_dir / ENVELOPE_FILENAME).exists():
+        env = read_envelope(cache_dir)
+        data = env.data
+    elif (cache_dir / "manifest.json").exists():
+        logger.warning(
+            "Reading legacy manifest.json from %s. Re-run 'lacuna fetch ntatlas' "
+            "or call save_atlas() to upgrade to the shared envelope.",
+            cache_dir,
+        )
+        with open(cache_dir / "manifest.json") as f:
+            data = json.load(f)
+    else:
         raise FileNotFoundError(
             f"No atlas found at {cache_dir}. "
             f"Run 'lacuna fetch ntatlas --output-dir {cache_dir}' to create one."
         )
 
-    with open(manifest_path) as f:
-        manifest = json.load(f)
-
     maps = {}
     maps_dir = cache_dir / "maps"
-    for target in manifest["targets"]:
+    for target in data["targets"]:
         map_path = maps_dir / f"{target}.nii.gz"
         if not map_path.exists():
             raise FileNotFoundError(
@@ -176,8 +187,8 @@ def load_atlas(cache_dir: Path) -> VoxelAtlas:
 
     return VoxelAtlas(
         maps=maps,
-        space=manifest["space"],
-        resolution=manifest["resolution"],
-        domain=manifest["domain"],
-        metadata=manifest.get("metadata", {}),
+        space=data["space"],
+        resolution=data["resolution"],
+        domain=data["domain"],
+        metadata=data.get("metadata", {}),
     )

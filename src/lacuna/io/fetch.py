@@ -1135,7 +1135,10 @@ def fetch_ntatlas(
     output_dir.mkdir(parents=True, exist_ok=True)
     start_time = time.time()
 
-    if not force and (output_dir / "manifest.json").exists():
+    if not force and (
+        (output_dir / "lacuna_asset.json").exists()
+        or (output_dir / "manifest.json").exists()
+    ):
         return FetchResult(
             success=True,
             connectome_name="ntatlas",
