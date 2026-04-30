@@ -103,7 +103,6 @@ def _handle_gsp1000(args: argparse.Namespace) -> int:
     force = getattr(args, "force", False)
 
     print("Fetching GSP1000 functional connectome...")
-    print(f"  Output: {output_dir}")
     if test_mode:
         print("  Mode: TEST (1 tarball only)")
     else:
@@ -158,7 +157,6 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
     force = getattr(args, "force", False)
 
     print("Fetching dTOR985 structural tractogram...")
-    print(f"  Output: {output_dir}")
     print(f"  Keep original: {keep_original}")
     print()
 
@@ -202,7 +200,6 @@ def _handle_hcp1065(args: argparse.Namespace) -> int:
     force = getattr(args, "force", False)
 
     print("Fetching HCP1065 structural tractogram...")
-    print(f"  Output: {output_dir}")
     print(f"  Keep original: {keep_original}")
     print()
 

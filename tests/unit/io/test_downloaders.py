@@ -404,6 +404,43 @@ class TestConnectomeSources:
         assert hcp.space == "MNI152NLin2009cAsym"
         assert hcp.estimated_size_gb > 0
 
+    def test_fetch_hcp1065_writes_envelope_on_existing_tck(self, tmp_path):
+        """fetch_hcp1065's reuse-existing path writes a lacuna_asset.json envelope."""
+        import nibabel as nib
+        import numpy as np
+
+        from lacuna.assets.envelope import (
+            AssetType,
+            ENVELOPE_FILENAME,
+            read_envelope,
+        )
+        from lacuna.io.fetch import fetch_hcp1065
+
+        # Pre-create a small valid .tck so the fetcher takes the early-return path.
+        tck_path = tmp_path / "hcp1065.tck"
+        streams = nib.streamlines.ArraySequence(
+            [np.zeros((2, 3), dtype=np.float32) for _ in range(3)]
+        )
+        nib.streamlines.save(
+            nib.streamlines.Tractogram(streams, affine_to_rasmm=np.eye(4)),
+            str(tck_path),
+        )
+
+        result = fetch_hcp1065(output_dir=tmp_path, register=False, force=False)
+
+        assert result.success
+        envelope_path = tmp_path / ENVELOPE_FILENAME
+        assert envelope_path.exists()
+        assert envelope_path in result.output_files
+
+        env = read_envelope(tmp_path)
+        assert env.asset_type == AssetType.STRUCTURAL_CONNECTOME
+        assert env.data["tractogram_filename"] == "hcp1065.tck"
+        assert env.data["space"] == "MNI152NLin2009cAsym"
+        assert env.data["n_subjects"] == 1065
+        assert "sha256_first_mib" in env.identity.fields
+        assert env.provenance["command"] == "lacuna fetch hcp1065"
+
 
 class TestOsfDownloader:
     """Unit tests for OsfDownloader."""

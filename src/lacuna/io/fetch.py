@@ -586,12 +586,13 @@ def fetch_dtor985(
         registered = _register_dtor985(
             register, register_name, source, tck_path, progress_callback, warn_list
         )
+        envelope_path = _write_tractogram_envelope(output_dir, tck_path, source)
 
         return FetchResult(
             success=True,
             connectome_name="dtor985",
             output_dir=output_dir,
-            output_files=[tck_path],
+            output_files=[tck_path, envelope_path],
             registered=registered,
             register_name=register_name if registered else None,
             duration_seconds=time.time() - start_time,
@@ -659,10 +660,11 @@ def fetch_dtor985(
         registered = _register_dtor985(
             register, register_name, source, tck_path, progress_callback, warn_list
         )
+        envelope_path = _write_tractogram_envelope(output_dir, tck_path, source)
 
         duration = time.time() - start_time
 
-        output_files = [tck_path]
+        output_files = [tck_path, envelope_path]
         if keep_original and trk_path.exists():
             output_files.insert(0, trk_path)
 
@@ -683,6 +685,39 @@ def fetch_dtor985(
         raise
     except Exception as e:
         raise ProcessingError(operation="fetch_dtor985", reason=str(e)) from e
+
+
+def _write_tractogram_envelope(output_dir: Path, tck_path: Path, source) -> Path:
+    """Write a ``lacuna_asset.json`` envelope alongside a fetched .tck tractogram.
+
+    Records the .tck's content fingerprint plus source metadata (space,
+    subject count, citation) so downstream consumers can verify the file
+    on disk still matches what the fetch produced.
+    """
+    from ..assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        ENVELOPE_FILENAME,
+        fingerprint,
+        write_envelope,
+    )
+
+    env = AssetEnvelope(
+        asset_type=AssetType.STRUCTURAL_CONNECTOME,
+        identity=fingerprint(tck_path, AssetType.STRUCTURAL_CONNECTOME),
+        provenance={
+            "command": f"lacuna fetch {source.name}",
+            "source_url": source.download_url,
+            "citation": source.citation,
+        },
+        data={
+            "tractogram_filename": tck_path.name,
+            "space": source.space,
+            "n_subjects": source.n_subjects,
+        },
+    )
+    write_envelope(env, output_dir)
+    return output_dir / ENVELOPE_FILENAME
 
 
 def _register_dtor985(
@@ -802,12 +837,13 @@ def fetch_hcp1065(
         registered = _register_hcp1065(
             register, register_name, source, tck_path, progress_callback, warn_list
         )
+        envelope_path = _write_tractogram_envelope(output_dir, tck_path, source)
 
         return FetchResult(
             success=True,
             connectome_name="hcp1065",
             output_dir=output_dir,
-            output_files=[tck_path],
+            output_files=[tck_path, envelope_path],
             registered=registered,
             register_name=register_name if registered else None,
             duration_seconds=time.time() - start_time,
@@ -903,10 +939,11 @@ def fetch_hcp1065(
         registered = _register_hcp1065(
             register, register_name, source, tck_path, progress_callback, warn_list
         )
+        envelope_path = _write_tractogram_envelope(output_dir, tck_path, source)
 
         duration = time.time() - start_time
 
-        output_files = [tck_path]
+        output_files = [tck_path, envelope_path]
         if keep_original and zip_path.exists():
             output_files.insert(0, zip_path)
 
