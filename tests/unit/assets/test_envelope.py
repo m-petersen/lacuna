@@ -29,3 +29,23 @@ def test_envelope_round_trips_to_dict():
     assert blob["identity"]["fields"]["n_streamlines"] == 985
     restored = AssetEnvelope.from_dict(blob)
     assert restored == env
+
+
+def test_from_dict_falls_back_to_current_schema_version_when_missing():
+    blob = {
+        "asset_type": "ntatlas",
+        "identity": {"kind": "sha256_concat", "fields": {"sha256": "abc"}},
+    }
+    env = AssetEnvelope.from_dict(blob)
+    assert env.lacuna_schema_version == ENVELOPE_SCHEMA_VERSION
+    assert env.requires == []
+    assert env.provenance == {}
+    assert env.data == {}
+
+
+def test_envelope_with_empty_requires_round_trips():
+    env = AssetEnvelope(
+        asset_type=AssetType.NTATLAS,
+        identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
+    )
+    assert AssetEnvelope.from_dict(env.to_dict()) == env

@@ -9,7 +9,7 @@ built from?" without reaching into asset-specific code.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -18,6 +18,8 @@ ENVELOPE_SCHEMA_VERSION = 1
 
 
 class AssetType(str, Enum):
+    """Kinds of lacuna-managed assets that carry an envelope."""
+
     NTATLAS = "ntatlas"
     STRUCTURAL_CONNECTOME = "structural_connectome"
     FUNCTIONAL_CONNECTOME = "functional_connectome"
@@ -69,6 +71,8 @@ class RequiresEntry:
 
 @dataclass
 class AssetEnvelope:
+    """Shared metadata for a lacuna asset directory: identity + dependencies + provenance + per-type payload."""
+
     asset_type: AssetType
     identity: IdentityRef
     requires: list[RequiresEntry] = field(default_factory=list)
