@@ -179,13 +179,15 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         self, fnm, mask_in_connectome_space: SubjectData
     ) -> np.ndarray:
         """Per-subject lesion BOLD timeseries (HDF5 fancy-index read)."""
+        import h5py
+
         per_batch: list[np.ndarray] = []
         for _, mask_ts in fnm._iter_batch_lesion_timeseries(
             mask_in_connectome_space, full_batch=False
         ):
             per_batch.append(mask_ts)
         if not per_batch:
-            with __import__("h5py").File(fnm._get_connectome_files()[0], "r") as hf:
+            with h5py.File(fnm._get_connectome_files()[0], "r") as hf:
                 n_timepoints = int(hf["timeseries"].shape[1])
             return np.zeros((0, n_timepoints), dtype=np.float64)
         return np.vstack(per_batch)

@@ -151,7 +151,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
                 "endpoint_combine": self.endpoint_combine,
                 "aggregation": self.aggregation,
                 "streamline_count": int(count),
-                "systems": atlas.metadata.get("systems"),
+                "systems": self._atlas.metadata.get("systems"),
             },
         )
         desc = "enriched" if self.enriched else "static"

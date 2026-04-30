@@ -118,7 +118,7 @@ class LocalNeurotransmitterFingerprinting(BaseAnalysis):
             metadata={
                 "analysis": "lntf",
                 "mode": "enriched" if self.enriched else "static",
-                "systems": atlas.metadata.get("systems"),
+                "systems": self._atlas.metadata.get("systems"),
             },
         )
         desc = "enriched" if self.enriched else "static"

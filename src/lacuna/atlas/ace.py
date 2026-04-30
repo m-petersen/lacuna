@@ -11,7 +11,7 @@ Stage 2: Regress BOLD timeseries onto atlas timeseries -> enriched spatial maps
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Iterable
+from typing import Callable, Iterable
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -142,13 +142,19 @@ def compute_ace_atlas(
     mask_shape: tuple[int, int, int],
     *,
     on_subject_done: "Callable[[int, np.ndarray], None] | None" = None,
-) -> dict[str, Any]:
+) -> VoxelAtlas:
     """Run full ACE pipeline streaming subjects one at a time.
 
     Memory peak is one subject's BOLD plus a (n_voxels, n_targets) stage-2
     accumulator (~50 MB at GSP1000-shape). The cross-subject state is the
     accumulator alone — each subject's BOLD can be released after the
     inner loop iteration.
+
+    Stage-1 timeseries are delivered exclusively via ``on_subject_done``.
+    Callers that need the timeseries (e.g. ``lacuna prepare ace`` writing
+    one ``.npy`` per subject) supply a callback. Callers that only need
+    the enriched stage-2 atlas (e.g. ad-hoc analyses, tests) omit it and
+    stage-1 outputs are discarded.
 
     Parameters
     ----------
@@ -170,17 +176,13 @@ def compute_ace_atlas(
         If provided, called once per subject with ``(subject_index,
         stage1_timeseries)`` immediately after that subject is processed.
         Use this to stream stage-1 ``(n_timepoints, n_targets)`` arrays to
-        disk rather than retaining them in memory. When omitted, all
-        stage-1 arrays are collected into a list and returned under
-        ``stage1_timeseries``.
+        disk. When omitted, stage-1 outputs are computed (they're needed
+        for stage-2) and then discarded.
 
     Returns
     -------
-    dict with keys:
-        ``"stage2_atlas"``: VoxelAtlas -- Fisher-z averaged enriched maps
-        ``"stage1_timeseries"``: list[np.ndarray] -- per-subject NT
-            timeseries (only present when ``on_subject_done`` is None;
-            with the callback path the caller has already received them).
+    VoxelAtlas
+        The Fisher-z averaged enriched stage-2 atlas.
     """
     import nibabel as nib
 
@@ -210,7 +212,6 @@ def compute_ace_atlas(
         )
 
     # Process each subject
-    stage1_timeseries: list[np.ndarray] = []
     stage2_accumulator = np.zeros((int(np.sum(flat_mask)), n_targets), dtype=np.float64)
 
     for i, bold in enumerate(subjects):
@@ -218,9 +219,7 @@ def compute_ace_atlas(
 
         # Stage 1
         beta1 = ace_stage1(bold, atlas_matrix, stage1_nonzero)
-        if on_subject_done is None:
-            stage1_timeseries.append(beta1)
-        else:
+        if on_subject_done is not None:
             on_subject_done(i, beta1)
 
         # Stage 2
@@ -256,7 +255,4 @@ def compute_ace_atlas(
         },
     )
 
-    result: dict[str, Any] = {"stage2_atlas": stage2_atlas}
-    if on_subject_done is None:
-        result["stage1_timeseries"] = stage1_timeseries
-    return result
+    return stage2_atlas

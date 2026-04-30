@@ -111,21 +111,18 @@ class TestComputeAceAtlas:
 
         brain_mask = np.ones(shape, dtype=bool)
 
-        result = compute_ace_atlas(
+        stage2_atlas = compute_ace_atlas(
             atlas=small_atlas,
             subjects=subjects_data,
             n_subjects=len(subjects_data),
             brain_mask=brain_mask,
             mask_shape=shape,
         )
-        assert isinstance(result["stage2_atlas"], VoxelAtlas)
-        assert set(result["stage2_atlas"].targets) == {"5HT1a", "D1"}
-        assert "stage1_timeseries" in result
-        assert len(result["stage1_timeseries"]) == 3
+        assert isinstance(stage2_atlas, VoxelAtlas)
+        assert set(stage2_atlas.targets) == {"5HT1a", "D1"}
 
-    def test_streaming_via_callback_omits_stage1_from_result(self, small_atlas):
-        """When on_subject_done is provided, stage1 is delivered via callback,
-        not retained in the returned dict."""
+    def test_streaming_callback_receives_each_stage1(self, small_atlas):
+        """on_subject_done is called once per subject with (index, beta1)."""
         shape = (10, 10, 10)
         n_voxels = np.prod(shape)
         n_timepoints = 50
@@ -140,7 +137,7 @@ class TestComputeAceAtlas:
         def cb(i, beta1):
             seen.append((i, tuple(beta1.shape)))
 
-        result = compute_ace_atlas(
+        stage2_atlas = compute_ace_atlas(
             atlas=small_atlas,
             subjects=subjects_data,
             n_subjects=len(subjects_data),
@@ -148,6 +145,5 @@ class TestComputeAceAtlas:
             mask_shape=shape,
             on_subject_done=cb,
         )
-        assert isinstance(result["stage2_atlas"], VoxelAtlas)
-        assert "stage1_timeseries" not in result
+        assert isinstance(stage2_atlas, VoxelAtlas)
         assert seen == [(0, (n_timepoints, 2)), (1, (n_timepoints, 2)), (2, (n_timepoints, 2))]

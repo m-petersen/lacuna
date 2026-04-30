@@ -269,7 +269,7 @@ def run_prepare_ace(args) -> None:
     def _save_stage1(i: int, beta1: np.ndarray) -> None:
         np.save(stage1_dir / f"subject-{i:04d}.npy", beta1)
 
-    result = compute_ace_atlas(
+    stage2_atlas = compute_ace_atlas(
         atlas,
         _yield_bold(),
         n_to_load,
@@ -277,7 +277,6 @@ def run_prepare_ace(args) -> None:
         mask_info["mask_shape"],
         on_subject_done=_save_stage1,
     )
-    stage2_atlas = result["stage2_atlas"]
     n_subjects = len(subject_ids)
 
     # Write stage2_atlas (envelope last). Wipe stale stage2 too.
