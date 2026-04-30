@@ -29,11 +29,13 @@ def run_prepare_sntf(args) -> None:
     cache_dir = Path(args.cache_dir)
 
     logger.info("Computing endpoint NT weights for tractogram...")
-    _precompute_endpoint_weights(atlas, Path(args.connectome_path), cache_dir)
+    _precompute_endpoint_weights(
+        atlas, atlas_dir, Path(args.connectome_path), cache_dir,
+    )
     print(f"Endpoint weights saved to {cache_dir}")
 
 
-def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
+def _precompute_endpoint_weights(atlas, atlas_dir, tractogram_path, cache_dir):
     """Build the SNTF cache for a (atlas, tractogram) pair.
 
     Produces, in ``cache_dir``:
@@ -48,16 +50,21 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
                                   Pass to ``tckedit -tck_weights_in`` so
                                   ``-tck_weights_out`` returns the surviving
                                   original streamline IDs after lesion filtering.
-    * ``connectome_meta.json`` — content fingerprint of the source tractogram
-                                so ``lacuna run sntf`` can detect a mismatched
-                                ``--connectome-path``.
+    * ``lacuna_asset.json`` — shared envelope describing the cache's identity
+                              and the (tractogram, ntatlas) inputs it was
+                              built from. Read at run time to catch a
+                              mismatched ``--connectome-path`` or atlas swap.
     """
-    import json
-
     import nibabel as nib
     import numpy as np
+    from lacuna.assets.envelope import (
+        AssetEnvelope,
+        AssetType,
+        RequiresEntry,
+        fingerprint,
+        write_envelope,
+    )
     from lacuna.utils.mrtrix import run_mrtrix_command
-    from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
 
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -101,8 +108,38 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
     indices_path = cache_dir / "streamline_indices.txt"
     np.savetxt(indices_path, np.arange(n_streamlines, dtype=np.float32), fmt="%.0f")
 
-    fingerprint = compute_tractogram_fingerprint(tractogram_path)
-    (cache_dir / "connectome_meta.json").write_text(json.dumps(fingerprint, indent=2))
+    atlas_dir = Path(atlas_dir).resolve()
+    tractogram_path_resolved = Path(tractogram_path).resolve()
+    env = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=fingerprint(cache_dir, AssetType.SNTF_CACHE),
+        requires=[
+            RequiresEntry(
+                role="tractogram",
+                asset_type=AssetType.STRUCTURAL_CONNECTOME,
+                identity=fingerprint(
+                    tractogram_path_resolved, AssetType.STRUCTURAL_CONNECTOME,
+                ),
+                path_hint=str(tractogram_path_resolved),
+            ),
+            RequiresEntry(
+                role="ntatlas",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas_dir, AssetType.NTATLAS),
+                path_hint=str(atlas_dir),
+            ),
+        ],
+        provenance={
+            "command": "lacuna prepare sntf",
+            "n_streamlines": int(n_streamlines),
+            "n_targets": int(n_targets),
+        },
+        data={
+            "n_streamlines": int(n_streamlines),
+            "targets": list(atlas.targets),
+        },
+    )
+    write_envelope(env, cache_dir)
 
     logger.info(
         "Cached endpoint weights for %d streamlines × %d targets",
