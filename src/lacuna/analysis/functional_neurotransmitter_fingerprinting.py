@@ -1,13 +1,16 @@
 """Functional Neurotransmitter Fingerprinting (fntf).
 
-Scores NT atlas values weighted by lesion functional connectivity.
-Static mode: NT atlas x fLNM z-map.
-ACE-enriched mode: global = temporal correlation with atlas timeseries,
-                   regional = ACE atlas x fLNM z-map.
+Two scoring modes:
+* Static (``ntatlas_dir``): voxelwise NT atlas × lesion-FC z-map.
+* ACE-enriched (``ace_dir``): per-subject Pearson correlation between the
+  ACE stage-1 NT-weighted timeseries and the lesion BOLD timeseries from
+  the same connectome subject, Fisher-z transformed, then averaged across
+  subjects to get one Fisher-z per target.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -16,7 +19,7 @@ import numpy as np
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.atlas.config import resolve_targets
-from lacuna.atlas.scoring import score_ace_temporal, score_functional_overlap
+from lacuna.atlas.scoring import score_functional_overlap
 from lacuna.atlas.store import load_atlas
 from lacuna.core.data_types import LabeledScalars
 from lacuna.core.keys import build_result_key
@@ -28,31 +31,41 @@ logger = logging.getLogger(__name__)
 class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
     """Functional neurotransmitter fingerprinting: NT scores via functional connectivity.
 
-    Computes functional connectivity of the lesion (using FunctionalNetworkMapping
-    internally), then scores the resulting z-map against the NT atlas.
+    Provide exactly one of ``ntatlas_dir`` or ``ace_dir``:
 
-    Provide exactly one of ``ntatlas_dir`` (static mode: NT atlas
-    × fLNM z-map) or ``ace_cache_dir`` (enriched mode: temporal
-    correlation of lesion BOLD with stage-1 NT timeseries).
+    * ``ntatlas_dir`` (static): the lesion's functional connectivity z-map
+      (computed via ``FunctionalNetworkMapping`` internally) is dot-producted
+      against each NT atlas map.
+    * ``ace_dir`` (enriched): for each connectome subject ``s`` and target
+      ``T``, we compute Pearson r between the lesion BOLD ts from subject
+      ``s`` and the ACE stage-1 NT-weighted ts ``stage1[s, :, T]``,
+      Fisher-z transform, then average across subjects. The output is one
+      Fisher-z value per target.
+
+    The ACE cache must have been built from the same connectome that
+    ``connectome_name`` refers to. Two checks at runtime guard alignment:
+    a structural connectome fingerprint (recorded by ``lacuna prepare ace``
+    in ``ace_dir/connectome_meta.json``) and dimension matches between
+    the stage-1 .npy files and the connectome HDF5 batches.
 
     Parameters
     ----------
     connectome_name : str
-        Name of the functional connectome (e.g., "GSP1000").
+        Name of the registered functional connectome (e.g., "GSP1000").
     ntatlas_dir : Path or None
         Directory with the prepared NT atlas (output of ``lacuna fetch ntatlas``).
-        Triggers static-mode scoring.
-    ace_cache_dir : Path or None
-        Directory with the ACE cache (output of ``lacuna prepare ace``).
-        Triggers enriched-mode scoring.
+    ace_dir : Path or None
+        Directory with the ACE cache. Expected layout:
+        ``stage2_atlas/`` + ``stage1_timeseries/*.npy`` (one .npy per
+        connectome subject, sorted to match connectome subject order;
+        each .npy has shape ``(n_timepoints, n_targets)``) +
+        ``connectome_meta.json``.
     targets : str or list[str]
         Target selection. Default "all".
-    parcel_atlases : list[str] or None
-        Atlas names for regional scoring.
     method : str
         Lesion timeseries extraction method ("boes" or "pini").
     n_jobs : int
-        Number of parallel jobs.
+        Number of parallel jobs for the internal FNM run.
     verbose : bool
         Enable verbose logging.
     keep_intermediate : bool
@@ -67,53 +80,54 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         self,
         connectome_name: str,
         ntatlas_dir: str | Path | None = None,
-        ace_cache_dir: str | Path | None = None,
+        ace_dir: str | Path | None = None,
         targets: str | list[str] = "all",
-        parcel_atlases: list[str] | None = None,
         method: str = "boes",
         n_jobs: int = 1,
         verbose: bool = False,
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        if (ntatlas_dir is None) == (ace_cache_dir is None):
+        if (ntatlas_dir is None) == (ace_dir is None):
             raise ValueError(
-                "Provide exactly one of ntatlas_dir or ace_cache_dir."
+                "Provide exactly one of ntatlas_dir or ace_dir."
+            )
+        if method not in ("boes", "pini"):
+            raise ValueError(
+                f"method must be 'boes' or 'pini'; got '{method}'"
             )
         self.ntatlas_dir = Path(ntatlas_dir) if ntatlas_dir else None
-        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
+        self.ace_dir = Path(ace_dir) if ace_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
-        self.parcel_atlases = parcel_atlases
         self.method = method
         self.n_jobs = n_jobs
 
     @property
     def enriched(self) -> bool:
         """Whether the analysis is sourcing from an ACE cache."""
-        return self.ace_cache_dir is not None
+        return self.ace_dir is not None
 
     def _resolve_atlas_dir(self) -> Path:
-        if self.ace_cache_dir is not None:
-            return self.ace_cache_dir / "stage2_atlas"
+        if self.ace_dir is not None:
+            return self.ace_dir / "stage2_atlas"
         return self.ntatlas_dir
 
     def _validate_inputs(self, mask_data: SubjectData) -> None:
-        """Validate atlas and connectome inputs."""
+        """Load the atlas (sets ``self._atlas``) and resolve targets."""
         atlas = load_atlas(self._resolve_atlas_dir())
         self._atlas = atlas
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
-        """Compute functional NT scores. Returns a single ParcelData with one row per target."""
-        atlas = self._atlas.subset(self._resolved_targets)
-
+        """Compute functional NT scores. Returns a single LabeledScalars with one row per target."""
         if self.enriched:
-            scores = self._run_enriched(mask_data, atlas)
+            scores = self._run_enriched(mask_data)
             mode = "enriched"
         else:
+            atlas = self._atlas.subset(self._resolved_targets)
             z_map = self._compute_functional_connectivity(mask_data)
-            scores = self._run_static(atlas, z_map)
+            scores = self._score_overlap(atlas, z_map)
             mode = "static"
 
         fingerprint = LabeledScalars(
@@ -124,7 +138,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             metadata={
                 "analysis": "fntf",
                 "mode": mode,
-                "systems": atlas.metadata.get("systems"),
+                "systems": self._atlas.metadata.get("systems"),
             },
         )
         key = build_result_key(
@@ -134,34 +148,153 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         )
         return {key: fingerprint}
 
-    def _run_static(self, atlas, z_map) -> dict[str, float]:
-        """Static mode: NT atlas x fLNM z-map. Returns target → score."""
-        z_shape = z_map.shape[:3]
-        atlas_shape = atlas.get_map(atlas.targets[0]).shape[:3]
-        if atlas_shape != z_shape:
-            atlas = atlas.resample_to(z_map.affine, z_shape)
+    def _score_overlap(self, atlas, z_map) -> dict[str, float]:
+        """Voxelwise NT-atlas × z-map scoring on a shared grid."""
+        atlas_img = atlas.get_map(atlas.targets[0])
+        if atlas_img.shape[:3] != z_map.shape[:3] or not np.allclose(
+            atlas_img.affine, z_map.affine
+        ):
+            atlas = atlas.resample_to(z_map.affine, z_map.shape[:3])
         return score_functional_overlap(atlas, z_map)
 
-    def _run_enriched(self, mask_data, atlas) -> dict[str, float]:
-        """ACE-enriched mode: temporal correlation for global scoring. Returns target → score."""
-        ace_data = self._load_ace_data()
-        lesion_ts = self._extract_lesion_timeseries(mask_data)
+    def _run_enriched(self, mask_data: SubjectData) -> dict[str, float]:
+        """Subject-level Fisher-z mean of ACE-stage1 vs. lesion-BOLD correlations."""
+        from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
-        # Average ACE stage 1 atlas timeseries across subjects
-        all_stage1 = ace_data["stage1_timeseries"]
-        avg_stage1 = np.mean(all_stage1, axis=0)  # (n_timepoints, n_targets)
+        fnm = FunctionalNetworkMapping(
+            connectome_name=self.connectome_name,
+            method=self.method,
+            n_jobs=self.n_jobs,
+            verbose=self.verbose,
+            compute_p_map=False,
+            fdr_alpha=None,
+            return_in_input_space=False,
+        )
 
-        # Build target-keyed timeseries dict
-        nt_timeseries = {}
-        ace_targets = ace_data["stage2_atlas"].targets
-        for i, target in enumerate(ace_targets):
-            if target in self._resolved_targets:
-                nt_timeseries[target] = avg_stage1[:, i]
+        self._verify_cache_against_connectome(fnm)
 
-        return score_ace_temporal(nt_timeseries, lesion_ts)
+        in_connectome_space = fnm._ensure_target_space(mask_data)
+        per_subject_lesion_ts = self._collect_per_subject_lesion_ts(
+            fnm, in_connectome_space
+        )
+
+        stage1 = self._load_ace_stage1_array()
+        self._verify_dimension_alignment(per_subject_lesion_ts, stage1)
+
+        return self._fisher_z_mean_per_target(per_subject_lesion_ts, stage1)
+
+    def _collect_per_subject_lesion_ts(
+        self, fnm, mask_in_connectome_space: SubjectData
+    ) -> np.ndarray:
+        """Per-subject lesion BOLD timeseries (HDF5 fancy-index read)."""
+        per_batch: list[np.ndarray] = []
+        for _, mask_ts in fnm._iter_batch_lesion_timeseries(
+            mask_in_connectome_space, full_batch=False
+        ):
+            per_batch.append(mask_ts)
+        if not per_batch:
+            with __import__("h5py").File(fnm._get_connectome_files()[0], "r") as hf:
+                n_timepoints = int(hf["timeseries"].shape[1])
+            return np.zeros((0, n_timepoints), dtype=np.float64)
+        return np.vstack(per_batch)
+
+    def _load_ace_stage1_array(self) -> np.ndarray:
+        """Stack ACE stage-1 timeseries: shape (n_subjects, n_timepoints, n_targets)."""
+        stage1_dir = self.ace_dir / "stage1_timeseries"
+        files = sorted(stage1_dir.glob("*.npy"))
+        if not files:
+            raise FileNotFoundError(
+                f"No stage-1 timeseries (*.npy) found in {stage1_dir}.\n"
+                "Run 'lacuna prepare ace' first to populate the cache."
+            )
+        return np.stack([np.load(f) for f in files], axis=0)
+
+    def _verify_cache_against_connectome(self, fnm) -> None:
+        """Reject ACE caches built against a different connectome."""
+        from lacuna.utils.connectome_id import (
+            compute_functional_connectome_fingerprint,
+            fingerprints_match,
+        )
+
+        meta_path = self.ace_dir / "connectome_meta.json"
+        if not meta_path.exists():
+            raise FileNotFoundError(
+                f"ACE cache at {self.ace_dir} is missing 'connectome_meta.json'.\n"
+                "This file records the connectome the cache was built from. "
+                "Re-run 'lacuna prepare ace' to refresh the cache."
+            )
+        expected = json.loads(meta_path.read_text())
+        actual = compute_functional_connectome_fingerprint(fnm.connectome_path)
+        if not fingerprints_match(expected, actual):
+            raise ValueError(
+                f"ACE cache at {self.ace_dir} was built from a different "
+                f"connectome than '{self.connectome_name}'.\n"
+                f"  expected digest: {expected.get('digest')}\n"
+                f"  actual digest:   {actual.get('digest')}\n"
+                "Either point --connectome-path at the connectome the cache "
+                "was built from, or re-run 'lacuna prepare ace'."
+            )
+
+    def _verify_dimension_alignment(
+        self, lesion_ts: np.ndarray, stage1: np.ndarray
+    ) -> None:
+        """Catch mismatched subject counts or timepoint counts."""
+        n_lesion_subj, n_lesion_t = lesion_ts.shape
+        n_stage1_subj, n_stage1_t, _ = stage1.shape
+        if n_lesion_subj != n_stage1_subj:
+            raise ValueError(
+                "ACE stage-1 subject count does not match the connectome.\n"
+                f"  stage1 .npy files: {n_stage1_subj}\n"
+                f"  connectome subjects: {n_lesion_subj}\n"
+                "Re-run 'lacuna prepare ace' against the current connectome."
+            )
+        if n_lesion_t != n_stage1_t:
+            raise ValueError(
+                "ACE stage-1 timepoint count does not match the connectome.\n"
+                f"  stage1 timepoints: {n_stage1_t}\n"
+                f"  connectome timepoints: {n_lesion_t}"
+            )
+
+    def _fisher_z_mean_per_target(
+        self, lesion_ts: np.ndarray, stage1: np.ndarray
+    ) -> dict[str, float]:
+        """Vectorized per-subject Pearson r → Fisher z → mean across subjects.
+
+        ``lesion_ts``: (n_subjects, n_timepoints).
+        ``stage1``:    (n_subjects, n_timepoints, n_targets_in_cache).
+        """
+        if lesion_ts.shape[0] == 0:
+            return {target: 0.0 for target in self._resolved_targets}
+
+        # Center along the timepoint axis.
+        L = lesion_ts - lesion_ts.mean(axis=1, keepdims=True)
+        S = stage1 - stage1.mean(axis=1, keepdims=True)
+
+        # Pearson r per (subject, target):
+        #   numerator[s, T]   = Σ_t L[s,t] * S[s,t,T]
+        #   denominator[s, T] = ||L[s]|| * ||S[s,:,T]||
+        numerator = np.einsum("st,stT->sT", L, S)
+        l_norm = np.linalg.norm(L, axis=1)
+        s_norm = np.linalg.norm(S, axis=1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r = numerator / (l_norm[:, None] * s_norm)
+        r = np.nan_to_num(r, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # Fisher z, then mean across subjects per target.
+        r = np.clip(r, -1.0 + 1e-9, 1.0 - 1e-9)
+        z = np.arctanh(r)
+        z_mean = z.mean(axis=0)  # (n_targets_in_cache,)
+
+        full_targets = self._atlas.targets
+        resolved = set(self._resolved_targets)
+        return {
+            target: float(z_mean[i])
+            for i, target in enumerate(full_targets)
+            if target in resolved
+        }
 
     def _compute_functional_connectivity(self, mask_data):
-        """Compute fLNM z-map using FunctionalNetworkMapping logic."""
+        """Compute fLNM z-map using FunctionalNetworkMapping."""
         from lacuna.analysis.functional_network_mapping import FunctionalNetworkMapping
 
         fnm = FunctionalNetworkMapping(
@@ -177,36 +310,12 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         z_map_result = result.results["FunctionalNetworkMapping"]["zmap"]
         return z_map_result.data  # nib.Nifti1Image
 
-    def _extract_lesion_timeseries(self, mask_data):
-        """Extract mean lesion BOLD timeseries from connectome data.
-
-        Reuses the extraction logic from FunctionalNetworkMapping.
-        """
-        raise NotImplementedError(
-            "Lesion timeseries extraction for ACE enriched mode "
-            "requires refactoring FNM internals into shared utility."
-        )
-
-    def _load_ace_data(self):
-        """Load ACE stage 1 timeseries and stage 2 atlas from cache."""
-        stage2_atlas = load_atlas(self.ace_cache_dir / "stage2_atlas")
-
-        # Load stage 1 timeseries
-        stage1_dir = self.ace_cache_dir / "stage1_timeseries"
-        stage1_list = []
-        for ts_file in sorted(stage1_dir.glob("*.npy")):
-            stage1_list.append(np.load(ts_file))
-
-        return {
-            "stage2_atlas": stage2_atlas,
-            "stage1_timeseries": stage1_list,
-        }
-
     def _get_parameters(self) -> dict:
         return {
             "ntatlas_dir": str(self.ntatlas_dir) if self.ntatlas_dir else None,
-            "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
+            "ace_dir": str(self.ace_dir) if self.ace_dir else None,
             "connectome_name": self.connectome_name,
             "targets": self._target_spec,
             "method": self.method,
+            "n_jobs": self.n_jobs,
         }

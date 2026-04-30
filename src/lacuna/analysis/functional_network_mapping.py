@@ -428,44 +428,27 @@ class FunctionalNetworkMapping(BaseAnalysis):
         else:
             self.logger.info(f"Processing {n_batches} connectome batches...")
 
-        for batch_idx, batch_file in enumerate(connectome_files, 1):
-            self.logger.progress(f"Loading {batch_file.name}", current=batch_idx, total=n_batches)
-
-            # Load this batch's timeseries
-            with h5py.File(batch_file, "r") as hf:
-                batch_timeseries = hf["timeseries"][:]
-                batch_n_subjects = batch_timeseries.shape[0]
-
+        for batch_idx, (batch_timeseries, mask_ts) in enumerate(
+            self._iter_batch_lesion_timeseries(mask_data, full_batch=True), start=1
+        ):
+            batch_file = connectome_files[batch_idx - 1]
+            self.logger.progress(
+                f"Loading {batch_file.name}", current=batch_idx, total=n_batches
+            )
+            batch_n_subjects = batch_timeseries.shape[0]
             self.logger.debug(
                 f"Extracting mask timeseries ({batch_n_subjects} subjects)", indent_level=1
             )
-
-            # Extract mask timeseries for this batch
-            if self.method == "boes":
-                mask_ts = self._extract_lesion_timeseries_boes_batch(
-                    batch_timeseries, mask_voxel_indices
-                )
-            else:  # pini
-                mask_ts = self._extract_lesion_timeseries_pini_batch(
-                    batch_timeseries, mask_voxel_indices
-                )
-
             self.logger.debug("Computing correlation maps", indent_level=1)
-
-            # Compute correlation maps for this batch
             batch_r_maps = self._compute_correlation_maps_batch(mask_ts, batch_timeseries)
 
             self.logger.debug("Applying Fisher z-transform", indent_level=1)
-
-            # Fisher z-transform
             batch_z_maps = np.arctanh(batch_r_maps)
             batch_z_maps = np.nan_to_num(batch_z_maps, nan=0, posinf=10, neginf=-10)
 
-            # Accumulate
             all_z_maps.append(batch_z_maps)
-            total_subjects += batch_timeseries.shape[0]
+            total_subjects += batch_n_subjects
 
-            # Explicitly free memory
             del batch_timeseries, mask_ts, batch_r_maps, batch_z_maps
 
         self.logger.info(f"Aggregating results across {total_subjects} subjects...")
@@ -860,61 +843,75 @@ class FunctionalNetworkMapping(BaseAnalysis):
             self._mask_info["mask_shape"],
         )
 
-    def _extract_lesion_timeseries_boes_batch(
-        self, batch_timeseries: np.ndarray, lesion_voxel_indices: np.ndarray
-    ) -> np.ndarray:
-        """Extract mean timeseries across all lesion voxels (BOES method).
+    def _iter_batch_lesion_timeseries(
+        self,
+        mask_data: SubjectData,
+        *,
+        full_batch: bool = False,
+    ):
+        """Yield per-batch lesion timeseries (and optionally the full batch).
 
-        Memory-efficient version that works on a single batch.
+        Shared inner loop for both FNM (which needs the full
+        ``batch_timeseries`` to correlate lesion ts against every voxel)
+        and FNTF's ACE-enriched mode (which only needs the lesion ts and
+        wants to skip loading the rest of the connectome).
 
-        Parameters
-        ----------
-        batch_timeseries : np.ndarray
-            Shape (n_subjects, n_timepoints, n_voxels). Connectome batch data.
-        lesion_voxel_indices : np.ndarray
-            1D array of voxel indices within the connectome mask.
+        When ``full_batch=False`` (default), HDF5 fancy-indexing reads only
+        the lesion-voxel slice from disk — typically two-to-three orders of
+        magnitude less I/O than reading the whole batch.
 
-        Returns
-        -------
-        np.ndarray
-            Shape (n_subjects, n_timepoints). Mean timeseries for each subject.
+        The mask must already be in connectome space; callers should run
+        ``self._ensure_target_space(mask_data)`` first when invoking this
+        outside ``_run_analysis``.
+
+        Yields
+        ------
+        tuple[np.ndarray | None, np.ndarray]
+            ``(batch_timeseries_or_None, lesion_ts)``.
+            ``batch_timeseries`` is ``None`` when ``full_batch=False``.
+            ``lesion_ts`` has shape ``(n_subjects_in_batch, n_timepoints)``.
         """
-        # Extract timeseries for lesion voxels
-        # Shape: (n_subjects, n_timepoints, n_lesion_voxels)
-        lesion_ts = batch_timeseries[:, :, lesion_voxel_indices]
+        if self._mask_info is None:
+            self._load_mask_info()
 
-        # Compute mean across voxels
-        # Shape: (n_subjects, n_timepoints)
-        lesion_mean_ts = np.mean(lesion_ts, axis=2)
+        mask_voxel_indices, _ = self._get_mask_voxel_indices(mask_data)
+        if len(mask_voxel_indices) == 0:
+            return
 
-        return lesion_mean_ts
+        # HDF5 fancy indexing requires sorted, unique indices.
+        sorted_idx = np.sort(np.unique(mask_voxel_indices))
 
-    def _extract_lesion_timeseries_pini_batch(
-        self, batch_timeseries: np.ndarray, lesion_voxel_indices: np.ndarray
-    ) -> np.ndarray:
-        """Extract representative timeseries using PCA (PINI method).
+        for batch_file in self._get_connectome_files():
+            with h5py.File(batch_file, "r") as hf:
+                if full_batch:
+                    batch_ts: np.ndarray | None = hf["timeseries"][:]
+                    lesion_subset = batch_ts[:, :, sorted_idx]
+                else:
+                    batch_ts = None
+                    lesion_subset = hf["timeseries"][:, :, sorted_idx]
 
-        Memory-efficient version that works on a single batch.
+            if self.method == "boes":
+                # boes is a plain mean across the lesion-voxel axis; the
+                # extractor expects (batch, n_voxels) indexing into the full
+                # voxel dim, but we already pre-sliced to lesion voxels.
+                mask_ts = lesion_subset.mean(axis=2)
+            else:
+                # pini needs a (n_subjects, n_timepoints, n_voxels) tensor
+                # restricted to the lesion voxels — pass the subset directly.
+                mask_ts = self._extract_pini_from_lesion_subset(lesion_subset)
 
-        Uses PCA to identify most representative voxels based on their
-        correlation with the mean timeseries, then extracts mean from
-        these selected voxels.
+            yield batch_ts, mask_ts
+            del lesion_subset
+            if batch_ts is not None:
+                del batch_ts
 
-        Parameters
-        ----------
-        batch_timeseries : np.ndarray
-            Shape (n_subjects, n_timepoints, n_voxels). Connectome batch data.
-        lesion_voxel_indices : np.ndarray
-            1D array of voxel indices within the connectome mask.
+    def _extract_pini_from_lesion_subset(self, lesion_ts: np.ndarray) -> np.ndarray:
+        """PCA-based representative timeseries from a lesion-only voxel slice.
 
-        Returns
-        -------
-        np.ndarray
-            Shape (n_subjects, n_timepoints). Representative timeseries.
+        ``lesion_ts`` has shape ``(n_subjects, n_timepoints, n_lesion_voxels)``
+        and is the output of either ``batch_ts[:, :, lesion_indices]`` or an
+        HDF5 fancy-index read targeting the same indices.
         """
-        # Extract timeseries for lesion voxels
-        lesion_ts = batch_timeseries[:, :, lesion_voxel_indices]
-
         # Compute initial mean timeseries
         mean_ts_across_voxels = np.mean(lesion_ts, axis=2)
 

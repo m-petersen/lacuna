@@ -47,10 +47,16 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
                                   Pass to ``tckedit -tck_weights_in`` so
                                   ``-tck_weights_out`` returns the surviving
                                   original streamline IDs after lesion filtering.
+    * ``connectome_meta.json`` — content fingerprint of the source tractogram
+                                so ``lacuna run sntf`` can detect a mismatched
+                                ``--connectome-path``.
     """
+    import json
+
     import nibabel as nib
     import numpy as np
     from lacuna.utils.mrtrix import run_mrtrix_command
+    from lacuna.utils.tractogram_id import compute_tractogram_fingerprint
 
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -93,6 +99,9 @@ def _precompute_endpoint_weights(atlas, tractogram_path, cache_dir):
     # Pure float index file for use with tckedit -tck_weights_in.
     indices_path = cache_dir / "streamline_indices.txt"
     np.savetxt(indices_path, np.arange(n_streamlines, dtype=np.float32), fmt="%.0f")
+
+    fingerprint = compute_tractogram_fingerprint(tractogram_path)
+    (cache_dir / "connectome_meta.json").write_text(json.dumps(fingerprint, indent=2))
 
     logger.info(
         "Cached endpoint weights for %d streamlines × %d targets",

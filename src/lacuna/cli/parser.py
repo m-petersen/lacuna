@@ -1416,7 +1416,7 @@ def _add_ntm_common_args(parser: ArgumentParser) -> None:
         help="Directory with NT atlas from 'lacuna fetch ntatlas' (static mode)",
     )
     atlas_source.add_argument(
-        "--ace-cache-dir", type=str, default=None,
+        "--ace-dir", type=str, default=None,
         help="Directory with ACE cache from 'lacuna prepare ace' (enriched mode)",
     )
 
@@ -1432,7 +1432,7 @@ def _build_lntf_parser(subparsers) -> None:
             "within the lesion mask.\n\n"
             "Examples:\n"
             "  lacuna run lntf /bids /output --ntatlas-dir /path/to/ntatlas\n"
-            "  lacuna run lntf /bids /output --ace-cache-dir /path/to/ace"
+            "  lacuna run lntf /bids /output --ace-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -1498,7 +1498,7 @@ def _build_fntf_parser(subparsers) -> None:
             "  lacuna run fntf /bids /output --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
             "      --ntatlas-dir /path/to/ntatlas\n"
             "  lacuna run fntf /bids /output --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
-            "      --ace-cache-dir /path/to/ace"
+            "      --ace-dir /path/to/ace"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )

@@ -157,8 +157,8 @@ class RunConfig:
         if args.analysis in ntm_analyses:
             if getattr(args, "ntatlas_dir", None) is not None:
                 analysis_options["ntatlas_dir"] = args.ntatlas_dir
-            if getattr(args, "ace_cache_dir", None) is not None:
-                analysis_options["ace_cache_dir"] = args.ace_cache_dir
+            if getattr(args, "ace_dir", None) is not None:
+                analysis_options["ace_dir"] = args.ace_dir
 
         # LNTF-specific
         if args.analysis in ("lntf", "localneurotransmitterfingerprinting"):

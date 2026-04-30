@@ -29,7 +29,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     two endpoints, then sums across all intersecting streamlines.
 
     Provide exactly one of ``ntatlas_dir`` (static NT atlas from
-    ``lacuna fetch ntatlas``) or ``ace_cache_dir`` (ACE-enriched atlas
+    ``lacuna fetch ntatlas``) or ``ace_dir`` (ACE-enriched atlas
     from ``lacuna prepare ace``).
 
     Requires a prepared (atlas, tractogram) cache produced by
@@ -46,7 +46,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         (output of ``lacuna prepare sntf``). Required.
     ntatlas_dir : Path or None
         Directory with the prepared NT atlas.
-    ace_cache_dir : Path or None
+    ace_dir : Path or None
         Directory with the ACE cache.
     targets : str or list[str]
         Target selection. Default "all".
@@ -73,7 +73,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         connectome_name: str,
         precomputed_weights_dir: str | Path,
         ntatlas_dir: str | Path | None = None,
-        ace_cache_dir: str | Path | None = None,
+        ace_dir: str | Path | None = None,
         targets: str | list[str] = "all",
         endpoint_combine: str = "mean",
         aggregation: str = "sum",
@@ -83,9 +83,9 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
         keep_intermediate: bool = False,
     ):
         super().__init__(verbose=verbose, keep_intermediate=keep_intermediate)
-        if (ntatlas_dir is None) == (ace_cache_dir is None):
+        if (ntatlas_dir is None) == (ace_dir is None):
             raise ValueError(
-                "Provide exactly one of ntatlas_dir or ace_cache_dir."
+                "Provide exactly one of ntatlas_dir or ace_dir."
             )
         if endpoint_combine not in ("mean", "sum", "product"):
             raise ValueError(
@@ -96,7 +96,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
                 f"aggregation must be 'sum' or 'mean'; got '{aggregation}'"
             )
         self.ntatlas_dir = Path(ntatlas_dir) if ntatlas_dir else None
-        self.ace_cache_dir = Path(ace_cache_dir) if ace_cache_dir else None
+        self.ace_dir = Path(ace_dir) if ace_dir else None
         self.connectome_name = connectome_name
         self._target_spec = targets
         self.precomputed_weights_dir = Path(precomputed_weights_dir)
@@ -117,11 +117,11 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     @property
     def enriched(self) -> bool:
         """Whether the analysis is sourcing from an ACE cache."""
-        return self.ace_cache_dir is not None
+        return self.ace_dir is not None
 
     def _resolve_atlas_dir(self) -> Path:
-        if self.ace_cache_dir is not None:
-            return self.ace_cache_dir / "stage2_atlas"
+        if self.ace_dir is not None:
+            return self.ace_dir / "stage2_atlas"
         return self.ntatlas_dir
 
     def _validate_inputs(self, mask_data: SubjectData) -> None:
@@ -161,6 +161,45 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
             results["endpointdensity"] = endpoint_density
         return results
 
+    def _validate_connectome_matches_cache(self, cache: Path) -> None:
+        """Reject caches built from a different tractogram than the one supplied at run time.
+
+        Without this check, ``tckedit`` may not flag a count mismatch between
+        the streamline-index file and the user's tractogram, and even when
+        counts coincide the per-streamline weight arrays describe a different
+        connectome — yielding silently random scores.
+        """
+        import json
+
+        from lacuna.utils.tractogram_id import (
+            compute_tractogram_fingerprint,
+            fingerprints_match,
+        )
+
+        meta_path = cache / "connectome_meta.json"
+        if not meta_path.exists():
+            raise FileNotFoundError(
+                f"Precomputed weights cache at {cache} is missing 'connectome_meta.json'.\n"
+                "This file records which tractogram the cache was built from. "
+                "Re-run 'lacuna prepare sntf --connectome-path ... --cache-dir "
+                f"{cache}' to refresh the cache."
+            )
+        expected = json.loads(meta_path.read_text())
+        actual = compute_tractogram_fingerprint(self.tractogram_path)
+        if not fingerprints_match(expected, actual):
+            raise ValueError(
+                "Precomputed weights cache connectome does not match the "
+                "tractogram supplied at run time.\n"
+                f"  cache:    {expected.get('path')} "
+                f"({expected.get('size_bytes')} bytes, "
+                f"sha256[:1MiB]={expected.get('sha256_first_mib', '')[:12]}…)\n"
+                f"  runtime:  {actual['path']} "
+                f"({actual['size_bytes']} bytes, "
+                f"sha256[:1MiB]={actual['sha256_first_mib'][:12]}…)\n"
+                "Re-run 'lacuna prepare sntf' with the runtime tractogram or "
+                "point '--connectome-path' at the same tractogram used during prepare."
+            )
+
     def _score_from_cache(
         self, mask_data: SubjectData, atlas
     ) -> tuple[dict[str, float], int, VoxelMap | None]:
@@ -186,6 +225,8 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
                     f"Precomputed weights cache missing '{required}' in {cache}.\n"
                     f"Run 'lacuna prepare sntf --connectome-path ... --cache-dir {cache}' first."
                 )
+
+        self._validate_connectome_matches_cache(cache)
 
         # Load cache contents and validate target alignment.
         cached_targets = (cache / "targets.txt").read_text().splitlines()
@@ -296,7 +337,7 @@ class StructuralNeurotransmitterFingerprinting(BaseAnalysis):
     def _get_parameters(self) -> dict:
         return {
             "ntatlas_dir": str(self.ntatlas_dir) if self.ntatlas_dir else None,
-            "ace_cache_dir": str(self.ace_cache_dir) if self.ace_cache_dir else None,
+            "ace_dir": str(self.ace_dir) if self.ace_dir else None,
             "connectome_name": self.connectome_name,
             "precomputed_weights_dir": str(self.precomputed_weights_dir),
             "endpoint_combine": self.endpoint_combine,
