@@ -17,11 +17,13 @@ from lacuna.assets.envelope import (
     ENVELOPE_FILENAME,
     ENVELOPE_SCHEMA_VERSION,
     AssetEnvelope,
+    AssetMismatchError,
     AssetType,
     IdentityRef,
     RequiresEntry,
     fingerprint,
     read_envelope,
+    validate_requires,
     write_envelope,
 )
 
@@ -81,11 +83,13 @@ __all__ = [
     "ENVELOPE_FILENAME",
     "ENVELOPE_SCHEMA_VERSION",
     "AssetEnvelope",
+    "AssetMismatchError",
     "AssetType",
     "IdentityRef",
     "RequiresEntry",
     "fingerprint",
     "read_envelope",
+    "validate_requires",
     "write_envelope",
     # Base classes
     "AssetMetadata",

@@ -191,3 +191,38 @@ def _fingerprint_sntf_cache(asset_root: Path) -> IdentityRef:
         kind="sha256_concat",
         fields={"sha256": h.hexdigest()},
     )
+
+
+class AssetMismatchError(ValueError):
+    """A required asset's runtime fingerprint does not match the cached one."""
+
+
+def validate_requires(
+    env: AssetEnvelope,
+    runtime_paths: dict[str, Path | str],
+) -> None:
+    """Verify every entry in ``env.requires`` still matches its on-disk asset.
+
+    ``runtime_paths`` maps each entry's ``role`` to the path the caller
+    intends to use at run time. Roles missing from the map fall back to
+    ``RequiresEntry.path_hint`` (informational; warned but not used unless
+    explicitly allowed by the caller).
+    """
+    for entry in env.requires:
+        path = runtime_paths.get(entry.role)
+        if path is None:
+            raise AssetMismatchError(
+                f"Required asset '{entry.role}' ({entry.asset_type.value}) "
+                f"has no runtime path supplied. The cache recorded path_hint="
+                f"{entry.path_hint!r}; pass it explicitly via runtime_paths."
+            )
+        actual = fingerprint(Path(path), entry.asset_type)
+        if actual != entry.identity:
+            raise AssetMismatchError(
+                f"Required asset '{entry.role}' ({entry.asset_type.value}) at "
+                f"{path} does not match the one this cache was built from.\n"
+                f"  cache identity:   {entry.identity.to_dict()}\n"
+                f"  runtime identity: {actual.to_dict()}\n"
+                "Re-run the prepare step against the runtime asset, or point "
+                "the runtime path at the original asset."
+            )

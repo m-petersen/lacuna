@@ -4,6 +4,7 @@ import pytest
 
 from lacuna.assets.envelope import (
     AssetEnvelope,
+    AssetMismatchError,
     AssetType,
     ENVELOPE_FILENAME,
     ENVELOPE_SCHEMA_VERSION,
@@ -11,6 +12,7 @@ from lacuna.assets.envelope import (
     fingerprint,
     read_envelope,
     RequiresEntry,
+    validate_requires,
     write_envelope,
 )
 
@@ -191,3 +193,60 @@ def test_fingerprint_ntatlas_changes_when_map_added(tmp_path):
     f2 = fingerprint(tmp_path, AssetType.NTATLAS)
     assert f2 != f1
     assert f2.fields["n_targets"] == 2
+
+
+def _write_atlas_dir(tmp_path):
+    """Write a fake NT atlas dir with envelope and one map file."""
+    asset = tmp_path / "atlas"
+    (asset / "maps").mkdir(parents=True)
+    nib.save(
+        nib.Nifti1Image(np.zeros((2, 2, 2), dtype=np.float32), np.eye(4)),
+        str(asset / "maps" / "A.nii.gz"),
+    )
+    env = AssetEnvelope(
+        asset_type=AssetType.NTATLAS,
+        identity=fingerprint(asset, AssetType.NTATLAS),
+    )
+    write_envelope(env, asset)
+    return asset
+
+
+def test_validate_requires_passes_when_inputs_match(tmp_path):
+    atlas = _write_atlas_dir(tmp_path)
+    consumer = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
+        requires=[
+            RequiresEntry(
+                role="ntatlas",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas, AssetType.NTATLAS),
+                path_hint=str(atlas),
+            ),
+        ],
+    )
+    # Should not raise.
+    validate_requires(consumer, runtime_paths={"ntatlas": atlas})
+
+
+def test_validate_requires_raises_on_content_change(tmp_path):
+    atlas = _write_atlas_dir(tmp_path)
+    consumer = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
+        requires=[
+            RequiresEntry(
+                role="ntatlas",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas, AssetType.NTATLAS),
+                path_hint=str(atlas),
+            ),
+        ],
+    )
+    # Mutate the atlas after the cache was built.
+    nib.save(
+        nib.Nifti1Image(np.ones((2, 2, 2), dtype=np.float32), np.eye(4)),
+        str(atlas / "maps" / "A.nii.gz"),
+    )
+    with pytest.raises(AssetMismatchError, match="ntatlas"):
+        validate_requires(consumer, runtime_paths={"ntatlas": atlas})
