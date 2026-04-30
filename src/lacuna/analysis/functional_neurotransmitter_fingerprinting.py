@@ -43,9 +43,11 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
     The ACE cache must have been built from the same connectome that
     ``connectome_name`` refers to. Two checks at runtime guard alignment:
-    a structural connectome fingerprint (recorded by ``lacuna prepare ace``
-    in ``ace_dir/connectome_meta.json``) and dimension matches between
-    the stage-1 .npy files and the connectome HDF5 batches.
+    the cache's shared envelope (``ace_dir/lacuna_asset.json``) is walked
+    by :func:`lacuna.assets.envelope.validate_requires` to re-fingerprint
+    the recorded ntatlas + connectome inputs, and a dimension check
+    matches the stage-1 .npy file count against the connectome HDF5
+    batches.
 
     Parameters
     ----------
@@ -58,7 +60,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         ``stage2_atlas/`` + ``stage1_timeseries/*.npy`` (one .npy per
         connectome subject, sorted to match connectome subject order;
         each .npy has shape ``(n_timepoints, n_targets)``) +
-        ``connectome_meta.json``.
+        ``lacuna_asset.json`` (the shared envelope).
     targets : str or list[str]
         Target selection. Default "all".
     n_jobs : int
