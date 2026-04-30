@@ -204,9 +204,12 @@ def validate_requires(
     """Verify every entry in ``env.requires`` still matches its on-disk asset.
 
     ``runtime_paths`` maps each entry's ``role`` to the path the caller
-    intends to use at run time. Roles missing from the map fall back to
-    ``RequiresEntry.path_hint`` (informational; warned but not used unless
-    explicitly allowed by the caller).
+    intends to use at run time. Each entry's ``role`` must be present in
+    ``runtime_paths``; missing roles raise :class:`AssetMismatchError`.
+    Fingerprints are recomputed via :func:`fingerprint` and compared to
+    the cached :class:`IdentityRef`; a mismatch raises
+    :class:`AssetMismatchError`. ``RequiresEntry.path_hint`` is surfaced
+    in the missing-role error message but never used as a fallback path.
     """
     for entry in env.requires:
         path = runtime_paths.get(entry.role)
@@ -216,7 +219,7 @@ def validate_requires(
                 f"has no runtime path supplied. The cache recorded path_hint="
                 f"{entry.path_hint!r}; pass it explicitly via runtime_paths."
             )
-        actual = fingerprint(Path(path), entry.asset_type)
+        actual = fingerprint(path, entry.asset_type)
         if actual != entry.identity:
             raise AssetMismatchError(
                 f"Required asset '{entry.role}' ({entry.asset_type.value}) at "

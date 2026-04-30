@@ -248,5 +248,67 @@ def test_validate_requires_raises_on_content_change(tmp_path):
         nib.Nifti1Image(np.ones((2, 2, 2), dtype=np.float32), np.eye(4)),
         str(atlas / "maps" / "A.nii.gz"),
     )
-    with pytest.raises(AssetMismatchError, match="ntatlas"):
+    with pytest.raises(AssetMismatchError) as excinfo:
         validate_requires(consumer, runtime_paths={"ntatlas": atlas})
+    msg = str(excinfo.value)
+    assert "ntatlas" in msg
+    assert "cache identity" in msg
+    assert "runtime identity" in msg
+
+
+def test_validate_requires_raises_when_runtime_path_missing(tmp_path):
+    atlas = _write_atlas_dir(tmp_path)
+    consumer = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
+        requires=[
+            RequiresEntry(
+                role="ntatlas",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas, AssetType.NTATLAS),
+                path_hint=str(atlas),
+            ),
+        ],
+    )
+    with pytest.raises(AssetMismatchError, match="no runtime path"):
+        validate_requires(consumer, runtime_paths={})
+
+
+def test_validate_requires_is_noop_on_empty_requires():
+    env = AssetEnvelope(
+        asset_type=AssetType.NTATLAS,
+        identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
+    )
+    validate_requires(env, runtime_paths={})  # no raise
+
+
+def test_validate_requires_handles_multiple_entries(tmp_path):
+    atlas_a = _write_atlas_dir(tmp_path / "a")
+    atlas_b = _write_atlas_dir(tmp_path / "b")
+    # Make atlas_b's content distinct from atlas_a so the fingerprints differ.
+    nib.save(
+        nib.Nifti1Image(np.ones((2, 2, 2), dtype=np.float32), np.eye(4)),
+        str(atlas_b / "maps" / "A.nii.gz"),
+    )
+    consumer = AssetEnvelope(
+        asset_type=AssetType.SNTF_CACHE,
+        identity=IdentityRef(kind="sha256_concat", fields={"sha256": "x"}),
+        requires=[
+            RequiresEntry(
+                role="atlas_a",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas_a, AssetType.NTATLAS),
+                path_hint=str(atlas_a),
+            ),
+            RequiresEntry(
+                role="atlas_b",
+                asset_type=AssetType.NTATLAS,
+                identity=fingerprint(atlas_b, AssetType.NTATLAS),
+                path_hint=str(atlas_b),
+            ),
+        ],
+    )
+    validate_requires(
+        consumer,
+        runtime_paths={"atlas_a": atlas_a, "atlas_b": atlas_b},
+    )  # no raise
