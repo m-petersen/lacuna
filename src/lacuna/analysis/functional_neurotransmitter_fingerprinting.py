@@ -367,6 +367,9 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
                     "mask_data": mask_data,
                     "in_connectome": in_connectome,
                     "voxel_indices": voxel_indices,
+                    # Pre-sort + dedupe once per lesion; the same indices are
+                    # used to slice every connectome batch in the loop below.
+                    "voxel_indices_sorted": np.sort(np.unique(voxel_indices)),
                     "index": i,
                 }
             )
@@ -407,7 +410,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             # Per-lesion mean BOLD: (n_lesions, n_subj_in_batch, n_t)
             lesion_ts = np.stack(
                 [
-                    ts[:, :, np.sort(np.unique(m["voxel_indices"]))].mean(axis=2)
+                    ts[:, :, m["voxel_indices_sorted"]].mean(axis=2)
                     for m in mask_batch
                 ],
                 axis=0,
@@ -418,10 +421,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             S = stage1_batch - stage1_batch.mean(axis=1, keepdims=True)
 
             numerator = np.einsum(
-                "lit,itT->liT",
-                L.astype(np.float32),
-                S.astype(np.float32),
-                optimize="optimal",
+                "lit,itT->liT", L, S, optimize="optimal",
             )
             l_norm = np.linalg.norm(L, axis=2)            # (l, i)
             s_norm = np.linalg.norm(S, axis=1)            # (i, T)
@@ -436,6 +436,10 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
                 aggregators[li]["n"] += n_in_batch
 
             subj_offset += n_in_batch
+            # Free this batch's large arrays before the next iteration's HDF5
+            # read allocates the next ts. CPython rebinds these names on the
+            # next loop pass, but the rebind happens AFTER the next allocation
+            # — explicit del lets the next ts allocate without holding both.
             del ts, lesion_ts, L, S, numerator, r, z
 
             self.logger.progress(

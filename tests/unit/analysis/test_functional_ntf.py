@@ -414,3 +414,53 @@ class TestFunctionalNTFEnriched:
             )
             for target, expected in scores_per_lesion[li].items():
                 assert fp.data[target] == pytest.approx(expected, rel=1e-6, abs=1e-6)
+
+    def test_run_batch_empty_list_returns_empty_list(
+        self, atlas_cache, fake_functional_connectome, tmp_path
+    ):
+        """Empty input list short-circuits without touching the connectome."""
+        connectome_name, connectome_path = fake_functional_connectome
+        ace_dir, _ = _seed_ace_cache(
+            tmp_path, atlas_cache, connectome_path,
+            n_subjects=4, n_timepoints=30,
+        )
+        analysis = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        assert analysis.run_batch([]) == []
+
+    def test_run_batch_all_empty_masks_returns_zero_results(
+        self, atlas_cache, fake_functional_connectome, tmp_path
+    ):
+        """All masks empty / non-overlapping → list of zero-valued results, no HDF5 read."""
+        connectome_name, connectome_path = fake_functional_connectome
+        ace_dir, _ = _seed_ace_cache(
+            tmp_path, atlas_cache, connectome_path,
+            n_subjects=4, n_timepoints=30,
+        )
+        # Two empty masks (all zeros)
+        empty_mask_data = np.zeros(_CONNECTOME_MASK_SHAPE, dtype=np.int8)
+        empties = [
+            SubjectData(
+                mask_img=nib.Nifti1Image(empty_mask_data, _CONNECTOME_AFFINE),
+                space="MNI152NLin6Asym",
+                resolution=2.0,
+                metadata={"subject_id": f"sub-empty-{i}"},
+            )
+            for i in range(2)
+        ]
+        analysis = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        results = analysis.run_batch(empties)
+        assert len(results) == 2
+
+        from lacuna.core.data_types import LabeledScalars
+        for r in results:
+            fp = next(
+                v for v in r.results[
+                    "FunctionalNeurotransmitterFingerprinting"
+                ].values()
+                if isinstance(v, LabeledScalars)
+            )
+            assert all(v == 0.0 for v in fp.data.values())
