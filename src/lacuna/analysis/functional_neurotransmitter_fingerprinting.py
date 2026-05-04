@@ -382,10 +382,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
                 fnm, mask_batch, empty_results, len(mask_data_list)
             )
 
-        # Static branch lands in Task 2.
-        raise NotImplementedError(
-            "static-mode run_batch arrives in Task 2 of this plan"
-        )
+        return self._run_batch_static(fnm, mask_batch, empty_results, len(mask_data_list))
 
     def _run_batch_enriched(self, fnm, mask_batch, empty_results, n_total):
         """Enriched-mode core: einsum across (lesion, subject, timepoint, target)."""
@@ -468,6 +465,30 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
             }
             out[mi["index"]] = self._build_result(
                 mi["mask_data"], scores, mode="enriched"
+            )
+        return [out[i] for i in range(n_total)]
+
+    def _run_batch_static(self, fnm, mask_batch, empty_results, n_total):
+        """Static-mode core: delegate to FNM.run_batch (HDF5 amortized across lesions),
+        then apply the existing per-lesion _score_overlap.
+
+        _score_overlap thresholds z>0 and skips zero-atlas voxels — not a plain
+        dot product — so we keep the per-lesion call rather than vectorizing it.
+        Per-lesion compute is cheap (microseconds) vs. the HDF5 work that
+        fnm.run_batch already amortized across the whole batch.
+        """
+        # FNM amortizes HDF5 reads across all lesions in this single call.
+        fnm_results = fnm.run_batch([m["mask_data"] for m in mask_batch])
+
+        atlas = self._atlas.subset(self._resolved_targets)
+
+        out = dict(empty_results)
+        for li, fnm_result in enumerate(fnm_results):
+            mi = mask_batch[li]
+            z_map = fnm_result.results["FunctionalNetworkMapping"]["zmap"].data
+            scores = self._score_overlap(atlas, z_map)
+            out[mi["index"]] = self._build_result(
+                mi["mask_data"], scores, mode="static"
             )
         return [out[i] for i in range(n_total)]
 

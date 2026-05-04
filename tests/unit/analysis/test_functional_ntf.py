@@ -464,3 +464,69 @@ class TestFunctionalNTFEnriched:
                 if isinstance(v, LabeledScalars)
             )
             assert all(v == 0.0 for v in fp.data.values())
+
+
+class TestFunctionalNTFStatic:
+    """Tests for the static (non-ACE) scoring path."""
+
+    def _lesion_subject(self):
+        # Mask in connectome space; overlap with mask_indices via voxels
+        # near (0,0,0). Same pattern as the enriched class.
+        mask_data = np.zeros(_CONNECTOME_MASK_SHAPE, dtype=np.int8)
+        mask_data[0:2, 0:2, 0:2] = 1
+        return SubjectData(
+            mask_img=nib.Nifti1Image(mask_data, _CONNECTOME_AFFINE),
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            metadata={"subject_id": "sub-01"},
+        )
+
+    def _lesion_subject_b(self):
+        mask_data = np.zeros(_CONNECTOME_MASK_SHAPE, dtype=np.int8)
+        mask_data[0:2, 0:1, 5:9] = 1
+        return SubjectData(
+            mask_img=nib.Nifti1Image(mask_data, _CONNECTOME_AFFINE),
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            metadata={"subject_id": "sub-02"},
+        )
+
+    def test_run_batch_static_matches_per_lesion_results(
+        self, atlas_cache, fake_functional_connectome
+    ):
+        """Batched static mode produces the same per-target scores as per-lesion."""
+        connectome_name, _ = fake_functional_connectome
+        m1 = self._lesion_subject()
+        m2 = self._lesion_subject_b()
+
+        # Per-lesion baseline
+        analysis_a = FunctionalNeurotransmitterFingerprinting(
+            ntatlas_dir=atlas_cache, connectome_name=connectome_name,
+        )
+        scores_per_lesion = []
+        for m in (m1, m2):
+            analysis_a._validate_inputs(m)
+            atlas = analysis_a._atlas.subset(analysis_a._resolved_targets)
+            z_map = analysis_a._compute_functional_connectivity(m)
+            scores_per_lesion.append(analysis_a._score_overlap(atlas, z_map))
+
+        # Batched
+        analysis_b = FunctionalNeurotransmitterFingerprinting(
+            ntatlas_dir=atlas_cache, connectome_name=connectome_name,
+        )
+        results = analysis_b.run_batch([m1, m2])
+
+        from lacuna.core.data_types import LabeledScalars
+        for li, _ in enumerate((m1, m2)):
+            fp = next(
+                v for v in results[li].results[
+                    "FunctionalNeurotransmitterFingerprinting"
+                ].values()
+                if isinstance(v, LabeledScalars)
+            )
+            for target, expected in scores_per_lesion[li].items():
+                got = fp.data[target]
+                if np.isnan(expected):
+                    assert np.isnan(got), f"{target}: expected nan, got {got}"
+                else:
+                    assert got == pytest.approx(expected, rel=1e-6, abs=1e-6)
