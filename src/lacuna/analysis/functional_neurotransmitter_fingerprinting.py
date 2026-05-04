@@ -74,7 +74,7 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
 
     TARGET_SPACE = None
     TARGET_RESOLUTION = None
-    batch_strategy = "sequential"
+    batch_strategy = "vectorized"
 
     def __init__(
         self,
@@ -115,33 +115,9 @@ class FunctionalNeurotransmitterFingerprinting(BaseAnalysis):
         self._resolved_targets = resolve_targets(self._target_spec, atlas.targets)
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, Any]:
-        """Compute functional NT scores. Returns a single LabeledScalars with one row per target."""
-        if self.enriched:
-            scores = self._run_enriched(mask_data)
-            mode = "enriched"
-        else:
-            atlas = self._atlas.subset(self._resolved_targets)
-            z_map = self._compute_functional_connectivity(mask_data)
-            scores = self._score_overlap(atlas, z_map)
-            mode = "static"
-
-        fingerprint = LabeledScalars(
-            name="neurotransmitter",
-            data={target: float(score) for target, score in scores.items()},
-            label_kind="target",
-            aggregation_method=mode,
-            metadata={
-                "analysis": "fntf",
-                "mode": mode,
-                "systems": self._atlas.metadata.get("systems"),
-            },
-        )
-        key = build_result_key(
-            atlas="neurotransmitter",
-            source="FunctionalNeurotransmitterFingerprinting",
-            desc=mode,
-        )
-        return {key: fingerprint}
+        """Single-lesion entry point; delegates to run_batch for one math path."""
+        result = self.run_batch([mask_data])[0]
+        return result.results[type(self).__name__]
 
     def _score_overlap(self, atlas, z_map) -> dict[str, float]:
         """Voxelwise NT-atlas × z-map scoring on a shared grid."""

@@ -624,3 +624,8 @@ class TestFunctionalNTFStatic:
                     assert np.isnan(got), f"{target}: expected nan, got {got}"
                 else:
                     assert got == pytest.approx(expected, rel=1e-6, abs=1e-6)
+
+
+def test_fntf_batch_strategy_is_vectorized():
+    """Guard against accidental reverts to sequential dispatch."""
+    assert FunctionalNeurotransmitterFingerprinting.batch_strategy == "vectorized"
