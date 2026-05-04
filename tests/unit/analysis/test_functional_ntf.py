@@ -364,3 +364,53 @@ class TestFunctionalNTFEnriched:
         fntf._validate_inputs(self._lesion_subject())
         with pytest.raises(ValueError, match="timepoint count"):
             fntf._run_enriched(self._lesion_subject())
+
+    def _lesion_subject_b(self):
+        """Second lesion with a different mask shape — exercises real cross-lesion math."""
+        mask_data = np.zeros(_CONNECTOME_MASK_SHAPE, dtype=np.int8)
+        mask_data[3:5, 0:2, 0:3] = 1
+        return SubjectData(
+            mask_img=nib.Nifti1Image(mask_data, _CONNECTOME_AFFINE),
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            metadata={"subject_id": "sub-02"},
+        )
+
+    def test_run_batch_enriched_matches_per_lesion_results(
+        self, tmp_path, atlas_cache, fake_functional_connectome
+    ):
+        """Batched enriched mode produces the same per-target scores as per-lesion."""
+        connectome_name, connectome_path = fake_functional_connectome
+        ace_dir, _ = _seed_ace_cache(
+            tmp_path, atlas_cache, connectome_path,
+            n_subjects=4, n_timepoints=30,
+        )
+        m1 = self._lesion_subject()
+        m2 = self._lesion_subject_b()
+
+        # Per-lesion baseline
+        analysis_a = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        scores_per_lesion = []
+        for m in (m1, m2):
+            analysis_a._validate_inputs(m)
+            scores_per_lesion.append(analysis_a._run_enriched(m))
+
+        # Batched
+        analysis_b = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        results = analysis_b.run_batch([m1, m2])
+
+        # Compare per-target scores
+        from lacuna.core.data_types import LabeledScalars
+        for li, m in enumerate((m1, m2)):
+            fp = next(
+                v for v in results[li].results[
+                    "FunctionalNeurotransmitterFingerprinting"
+                ].values()
+                if isinstance(v, LabeledScalars)
+            )
+            for target, expected in scores_per_lesion[li].items():
+                assert fp.data[target] == pytest.approx(expected, rel=1e-6, abs=1e-6)
