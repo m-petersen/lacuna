@@ -465,6 +465,100 @@ class TestFunctionalNTFEnriched:
             )
             assert all(v == 0.0 for v in fp.data.values())
 
+    def test_run_batch_filters_empty_mask(
+        self, atlas_cache, fake_functional_connectome, tmp_path
+    ):
+        """Empty mask in a mixed batch gets a zero placeholder; non-empty unaffected."""
+        connectome_name, connectome_path = fake_functional_connectome
+        ace_dir, _ = _seed_ace_cache(
+            tmp_path, atlas_cache, connectome_path,
+            n_subjects=4, n_timepoints=30,
+        )
+        non_empty = self._lesion_subject()
+        empty_mask_data = np.zeros(_CONNECTOME_MASK_SHAPE, dtype=np.int8)
+        empty = SubjectData(
+            mask_img=nib.Nifti1Image(empty_mask_data, _CONNECTOME_AFFINE),
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            metadata={"subject_id": "sub-empty"},
+        )
+        analysis = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        results = analysis.run_batch([non_empty, empty])
+        assert len(results) == 2
+
+        from lacuna.core.data_types import LabeledScalars
+        empty_fp = next(
+            v for v in results[1].results[
+                "FunctionalNeurotransmitterFingerprinting"
+            ].values()
+            if isinstance(v, LabeledScalars)
+        )
+        assert all(v == 0.0 for v in empty_fp.data.values())
+
+        non_empty_fp = next(
+            v for v in results[0].results[
+                "FunctionalNeurotransmitterFingerprinting"
+            ].values()
+            if isinstance(v, LabeledScalars)
+        )
+        assert any(v != 0.0 for v in non_empty_fp.data.values())
+
+    def test_run_batch_filters_non_overlapping_mask(
+        self, atlas_cache, fake_functional_connectome, tmp_path
+    ):
+        """Mask with voxels outside the connectome's brain mask → zero result."""
+        connectome_name, connectome_path = fake_functional_connectome
+        ace_dir, _ = _seed_ace_cache(
+            tmp_path, atlas_cache, connectome_path,
+            n_subjects=4, n_timepoints=30,
+        )
+        # The fake connectome's mask covers x=0, y=0..9, z=0..9 only.
+        # Place a voxel at x=50 — clearly outside the brain mask.
+        bad_mask_data = np.zeros(_CONNECTOME_MASK_SHAPE, dtype=np.int8)
+        bad_mask_data[50, 50, 50] = 1
+        bad = SubjectData(
+            mask_img=nib.Nifti1Image(bad_mask_data, _CONNECTOME_AFFINE),
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+            metadata={"subject_id": "sub-no-overlap"},
+        )
+        analysis = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        results = analysis.run_batch([bad])
+        assert len(results) == 1
+
+        from lacuna.core.data_types import LabeledScalars
+        fp = next(
+            v for v in results[0].results[
+                "FunctionalNeurotransmitterFingerprinting"
+            ].values()
+            if isinstance(v, LabeledScalars)
+        )
+        assert all(v == 0.0 for v in fp.data.values())
+
+    def test_run_batch_raises_when_stage1_size_mismatches_connectome(
+        self, atlas_cache, fake_functional_connectome, tmp_path
+    ):
+        """Stage1 .npy count ≠ connectome subject count → clear ValueError."""
+        connectome_name, connectome_path = fake_functional_connectome
+        ace_dir, _ = _seed_ace_cache(
+            tmp_path, atlas_cache, connectome_path,
+            n_subjects=4, n_timepoints=30,
+        )
+        # Inject one extra .npy → stage1 has 5 subjects, connectome has 4.
+        stage1_dir = ace_dir / "stage1_timeseries"
+        first = sorted(stage1_dir.glob("*.npy"))[0]
+        np.save(stage1_dir / "sub-9999.npy", np.load(first))
+
+        analysis = FunctionalNeurotransmitterFingerprinting(
+            ace_dir=ace_dir, connectome_name=connectome_name,
+        )
+        with pytest.raises(ValueError, match=r"5.*4|4.*5"):
+            analysis.run_batch([self._lesion_subject()])
+
 
 class TestFunctionalNTFStatic:
     """Tests for the static (non-ACE) scoring path."""
