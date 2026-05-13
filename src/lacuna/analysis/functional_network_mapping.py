@@ -1313,8 +1313,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             # didn't survive fork().
             with parallel_backend("loky", inner_max_num_threads=1):
                 pairs = Parallel(n_jobs=effective_n_jobs)(
-                    delayed(_aggregate_one)(i, mask_info)
-                    for i, mask_info in enumerate(mask_batch)
+                    delayed(_aggregate_one)(i, mask_info) for i, mask_info in enumerate(mask_batch)
                 )
             processed_results = dict(pairs)
         else:

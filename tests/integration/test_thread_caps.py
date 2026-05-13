@@ -32,7 +32,6 @@ from lacuna import SubjectData
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.batch.strategies import ParallelStrategy
 
-
 BLAS_VARS = (
     "OMP_NUM_THREADS",
     "MKL_NUM_THREADS",

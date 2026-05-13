@@ -444,13 +444,9 @@ def analyze(
                             delayed(run_single)(d) for d in tqdm(data, desc="Analyzing")
                         )
                     except ImportError:
-                        results = Parallel(n_jobs=n_jobs)(
-                            delayed(run_single)(d) for d in data
-                        )
+                        results = Parallel(n_jobs=n_jobs)(delayed(run_single)(d) for d in data)
                 else:
-                    results = Parallel(n_jobs=n_jobs)(
-                        delayed(run_single)(d) for d in data
-                    )
+                    results = Parallel(n_jobs=n_jobs)(delayed(run_single)(d) for d in data)
             return list(results)
 
     return run_single(data)
