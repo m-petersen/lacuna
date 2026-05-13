@@ -22,7 +22,6 @@ import json
 import os
 import subprocess
 import sys
-import textwrap
 
 import nibabel as nib
 import numpy as np
@@ -39,23 +38,22 @@ BLAS_VARS = (
     "NUMEXPR_NUM_THREADS",
 )
 
+_PROBE_CODE = """\
+import json, os
+import lacuna  # noqa: F401
+print(json.dumps({k: os.environ.get(k) for k in (
+    "OMP_NUM_THREADS", "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS",
+)}))
+"""
+
 
 def _probe_env_after_import(overrides: dict[str, str]) -> dict[str, str | None]:
     """Spawn a fresh Python, import lacuna, return the BLAS env vars."""
-    code = textwrap.dedent(
-        """
-        import json, os
-        import lacuna  # noqa: F401
-        print(json.dumps({k: os.environ.get(k) for k in (
-            "OMP_NUM_THREADS", "MKL_NUM_THREADS",
-            "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS",
-        )}))
-        """
-    )
     env = {k: v for k, v in os.environ.items() if k not in BLAS_VARS}
     env.update(overrides)
     result = subprocess.run(
-        [sys.executable, "-c", code],
+        [sys.executable, "-c", _PROBE_CODE],
         env=env,
         capture_output=True,
         text=True,
