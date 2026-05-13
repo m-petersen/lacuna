@@ -1365,11 +1365,14 @@ def aggregate_parcelstats(
             method = entities.get("method", "").lower()
             source = entities.get("source", "").lower()
             desc = entities.get("desc", "").lower()
-            if any(kw == method or kw == source for kw in method_kw):
-                return True
-            if any(kw in desc for kw in desc_kw):
-                return True
-            return False
+            # When a method/source entity is present it must exact-match. This
+            # prevents e.g. filter='fnm' from picking up 'method-afnm' files via
+            # the shared desc tokens (rmap/zmap/...) that both analyses produce.
+            if method or source:
+                return any(kw == method or kw == source for kw in method_kw)
+            # Fall back to desc-substring match only for files that lack a
+            # method/source entity (legacy / non-lacuna derivatives).
+            return any(kw in desc for kw in desc_kw)
 
         parcelstats_files = [f for f in parcelstats_files if _matches_analysis(f)]
         if not parcelstats_files:

@@ -1301,15 +1301,21 @@ class FunctionalNetworkMapping(BaseAnalysis):
         use_parallel = effective_n_jobs != 1 and len(mask_batch) > 1
 
         if use_parallel:
-            from joblib import Parallel, delayed
+            from joblib import Parallel, delayed, parallel_backend
 
             self.logger.info(
                 f"Aggregating {len(mask_batch)} subjects in parallel "
                 f"(n_jobs={effective_n_jobs})"
             )
-            pairs = Parallel(n_jobs=effective_n_jobs, backend="loky")(
-                delayed(_aggregate_one)(i, mask_info) for i, mask_info in enumerate(mask_batch)
-            )
+            # inner_max_num_threads=1 prevents fork-after-BLAS-init deadlock on
+            # many-core nodes: caps OMP/MKL/OpenBLAS thread pools to 1 in each
+            # worker so no inherited mutex can be left locked by a thread that
+            # didn't survive fork().
+            with parallel_backend("loky", inner_max_num_threads=1):
+                pairs = Parallel(n_jobs=effective_n_jobs)(
+                    delayed(_aggregate_one)(i, mask_info)
+                    for i, mask_info in enumerate(mask_batch)
+                )
             processed_results = dict(pairs)
         else:
             processed_results = {}

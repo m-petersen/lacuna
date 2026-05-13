@@ -430,10 +430,12 @@ def analyze(
             else:
                 return [run_single(d) for d in data]
         else:
-            # Parallel processing with joblib
-            try:
-                from joblib import Parallel, delayed
+            # Parallel processing with joblib.
+            # inner_max_num_threads=1 caps BLAS/OMP threads inside each worker
+            # to avoid fork-after-import deadlocks on many-core nodes.
+            from joblib import Parallel, delayed, parallel_backend
 
+            with parallel_backend("loky", inner_max_num_threads=1):
                 if show_progress:
                     try:
                         from tqdm import tqdm
@@ -442,12 +444,13 @@ def analyze(
                             delayed(run_single)(d) for d in tqdm(data, desc="Analyzing")
                         )
                     except ImportError:
-                        results = Parallel(n_jobs=n_jobs)(delayed(run_single)(d) for d in data)
+                        results = Parallel(n_jobs=n_jobs)(
+                            delayed(run_single)(d) for d in data
+                        )
                 else:
-                    results = Parallel(n_jobs=n_jobs)(delayed(run_single)(d) for d in data)
-                return list(results)
-            except ImportError:
-                # Fallback to sequential if joblib not available
-                return [run_single(d) for d in data]
+                    results = Parallel(n_jobs=n_jobs)(
+                        delayed(run_single)(d) for d in data
+                    )
+            return list(results)
 
     return run_single(data)

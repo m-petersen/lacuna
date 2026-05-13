@@ -12,7 +12,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_backend
 
 from lacuna.analysis.base import BaseAnalysis
 from lacuna.core.subject_data import SubjectData
@@ -237,13 +237,21 @@ class ParallelStrategy(BatchStrategy):
                 if progress_callback:
                     progress_callback(i)
         else:
-            # Parallel processing with joblib using user-specified backend
+            # Parallel processing with joblib using user-specified backend.
             # Uses module-level _process_one_subject for pickle compatibility
-            # with all backends including standard 'multiprocessing'
-            results = Parallel(n_jobs=self.n_jobs, backend=self.backend)(
-                delayed(_process_one_subject)(lesion, i, analysis)
-                for i, lesion in enumerate(inputs)
-            )
+            # with all backends including standard 'multiprocessing'.
+            # For process-based backends, inner_max_num_threads=1 prevents
+            # BLAS/OMP oversubscription and fork-after-import deadlocks on
+            # many-core nodes. The threading backend rejects the kwarg, so we
+            # only pass it where it applies.
+            backend_kwargs: dict = {}
+            if self.backend in ("loky", "multiprocessing"):
+                backend_kwargs["inner_max_num_threads"] = 1
+            with parallel_backend(self.backend, **backend_kwargs):
+                results = Parallel(n_jobs=self.n_jobs)(
+                    delayed(_process_one_subject)(lesion, i, analysis)
+                    for i, lesion in enumerate(inputs)
+                )
             # Update progress bar once for the entire batch (not per-item to avoid duplicates)
             if progress_callback:
                 for _ in range(len(results)):
