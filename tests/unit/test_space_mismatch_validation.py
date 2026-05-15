@@ -212,26 +212,28 @@ class TestBidsLoaderSpaceCrossValidation:
         from lacuna.io.bids import load_bids_dataset
 
         root, _ = self._make_bids_dataset(tmp_path, "MNI152NLin6Asym")
-        result = load_bids_dataset(root, space="MNI152NLin6Asym")
-        assert len(result) == 1
-        sd = list(result.values())[0]
+        entries = load_bids_dataset(root, space="MNI152NLin6Asym")
+        assert len(entries) == 1
+        sd = entries[0].load()
         assert sd.space == "MNI152NLin6Asym"
 
     @pytest.mark.fast
     def test_contradicting_cli_space_vs_affine_rejected(self, tmp_path):
-        """CLI --mask-space contradicting image affine is caught by SubjectData.
+        """CLI --mask-space contradicting image affine is caught at materialisation.
 
-        The BIDS loader passes through to SubjectData which checks the affine.
-        SubjectData.__init__ detects mismatch → ValueError, BIDS loader catches
-        it as a warning, but since no subjects succeed, raises BidsError.
+        Discovery is lazy now, so the contradiction surfaces on ``entry.load()``
+        (SubjectData.__init__ checks the affine against the declared space),
+        not at discovery time.
         """
-        from lacuna.io.bids import BidsError, load_bids_dataset
+        from lacuna.io.bids import load_bids_dataset
 
-        root, fname = self._make_bids_dataset(tmp_path, "MNI152NLin6Asym")
+        root, _ = self._make_bids_dataset(tmp_path, "MNI152NLin6Asym")
 
         # Image affine is NLin6Asym but CLI says NLin2009cAsym
-        with pytest.raises(BidsError, match="No valid mask files"):
-            load_bids_dataset(root, space="MNI152NLin2009cAsym")
+        entries = load_bids_dataset(root, space="MNI152NLin2009cAsym")
+        assert len(entries) == 1
+        with pytest.raises(ValueError):
+            entries[0].load()
 
     @pytest.mark.fast
     def test_cli_space_with_no_filename_entity(self, tmp_path):
@@ -261,7 +263,7 @@ class TestBidsLoaderSpaceCrossValidation:
         from lacuna.io.bids import load_bids_dataset
 
         root, _ = self._make_bids_dataset(tmp_path, "MNI152NLin6Asym")
-        result = load_bids_dataset(root)
-        assert len(result) == 1
-        sd = list(result.values())[0]
+        entries = load_bids_dataset(root)
+        assert len(entries) == 1
+        sd = entries[0].load()
         assert sd.space == "MNI152NLin6Asym"

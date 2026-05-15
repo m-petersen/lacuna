@@ -1573,22 +1573,29 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
     try:
         if config.is_single_file:
-            # Single file mode
-            subject_data = SubjectData.from_nifti(
-                config.bids_dir,
-                space=config.space,
-                resolution=None,  # Auto-detect
-                metadata={"subject_id": f"sub-{config.bids_dir.stem.split('_')[0]}"},
-            )
-            subjects_list = [subject_data]
+            # Single file mode — build a one-entry list so the loop below is
+            # uniform with BIDS-mode discovery.
+            from lacuna.io.bids import BidsMaskEntry
+
+            single = config.bids_dir
+            entries = [
+                BidsMaskEntry(
+                    path=single,
+                    key=single.stem,
+                    space=config.space,
+                    resolution=None,
+                    metadata={"subject_id": f"sub-{single.stem.split('_')[0]}"},
+                )
+            ]
             logger.info("Loaded single mask file")
         else:
-            # BIDS dataset mode
+            # BIDS dataset mode — discovery is lazy: no NIfTI bytes touched
+            # here, just an rglob + filename/sidecar parsing.
             pattern = _build_pattern(
                 config.session_id,
                 config.pattern,
             )
-            subjects_dict = load_bids_dataset(
+            entries = load_bids_dataset(
                 bids_root=config.bids_dir,
                 pattern=pattern,
                 space=config.space,
@@ -1596,29 +1603,34 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                 subjects=config.participant_label,  # Filter at file discovery level
             )
 
-            if not subjects_dict:
+            if not entries:
                 logger.error("No subjects found in BIDS dataset")
                 return EXIT_BIDS_ERROR
 
-            subjects_list = list(subjects_dict.values())
-
-            _log_discovery_summary(subjects_list, config)
+            _log_discovery_summary(entries, config)
 
         # Process subjects
-        if len(subjects_list) > 1 and config.batch_size != 1:
-            # Batch processing
-            result = _process_batch(subjects_list, steps, config, config.batch_size)
+        if len(entries) > 1 and config.batch_size != 1:
+            # Batch processing — _process_batch materialises per batch.
+            result = _process_batch(entries, steps, config, config.batch_size)
         else:
-            # Sequential processing
+            # Sequential processing — materialise one subject at a time so
+            # tqdm ticks from the first iteration and a corrupt or empty
+            # mask doesn't sink the whole run.
             from tqdm import tqdm
 
             processed_count = 0
             empty_mask_subjects = []
-            for subject_data in tqdm(
-                subjects_list,
+            for entry in tqdm(
+                entries,
                 desc="Processing subjects",
                 disable=not config.verbose,
             ):
+                try:
+                    subject_data = entry.load()
+                except Exception as e:
+                    logger.warning(f"Failed to load {entry.path}: {e}")
+                    continue
                 if subject_data.is_empty_mask:
                     sid = subject_data.metadata.get("subject_id", "unknown")
                     empty_mask_subjects.append(sid)
@@ -1706,50 +1718,25 @@ def _process_single_subject(
 
 
 def _process_batch(
-    subjects_list: list,
+    entries: list,
     steps: dict,
     config: RunConfig,
     batch_size: int,
 ) -> int:
-    """Process subjects in batches."""
+    """Process subjects in batches.
+
+    ``entries`` is a list of ``BidsMaskEntry`` (lazy handles). Each batch
+    materialises its slice on demand — large cohorts on slow storage no
+    longer pay the full discovery decompression cost up front.
+    """
     from lacuna.analysis import get_analysis
     from lacuna.batch import batch_process
     from lacuna.io import export_bids_derivatives
 
-    n_subjects = len(subjects_list)
+    n_subjects = len(entries)
     actual_batch_size = n_subjects if batch_size == -1 else min(batch_size, n_subjects)
 
     logger.info(f"Batch processing: {n_subjects} masks in batches of {actual_batch_size}")
-
-    # Report and optionally filter empty masks
-    empty_mask_subjects = [
-        s.metadata.get("subject_id", "unknown") for s in subjects_list if s.is_empty_mask
-    ]
-    if empty_mask_subjects:
-        if config.on_empty == "skip":
-            subjects_list = [s for s in subjects_list if not s.is_empty_mask]
-            logger.warning(
-                f"{len(empty_mask_subjects)} subject(s) with empty masks "
-                f"skipped: {', '.join(empty_mask_subjects)}"
-            )
-            n_subjects = len(subjects_list)
-            if n_subjects == 0:
-                logger.error("No subjects remaining after skipping empty masks")
-                return EXIT_ANALYSIS_ERROR
-            actual_batch_size = n_subjects if batch_size == -1 else min(batch_size, n_subjects)
-        elif config.on_empty == "error":
-            msg = (
-                f"{len(empty_mask_subjects)} subject(s) have empty masks: "
-                f"{', '.join(empty_mask_subjects)}. "
-                f"Use --on-empty warn or skip to handle gracefully."
-            )
-            logger.error(msg)
-            raise ValidationError(msg)
-        else:  # "warn"
-            logger.warning(
-                f"{len(empty_mask_subjects)} subject(s) have empty masks "
-                f"(zero-valued outputs will be produced): {', '.join(empty_mask_subjects)}"
-            )
 
     # Build analysis instances
     analyses = []
@@ -1762,10 +1749,40 @@ def _process_batch(
 
     processed_count = 0
     failed_count = 0
+    empty_mask_subjects: list[str] = []
 
     for batch_start in range(0, n_subjects, actual_batch_size):
         batch_end = min(batch_start + actual_batch_size, n_subjects)
-        batch = subjects_list[batch_start:batch_end]
+        batch_entries = entries[batch_start:batch_end]
+
+        # Materialise this batch (decompress + binarisation check).
+        # Failed loads are logged and dropped; empty masks are handled
+        # per-batch according to config.on_empty.
+        batch: list = []
+        for e in batch_entries:
+            try:
+                sd = e.load()
+            except Exception as err:
+                logger.warning(f"Failed to load {e.path}: {err}")
+                failed_count += 1
+                continue
+            if sd.is_empty_mask:
+                sid = sd.metadata.get("subject_id", "unknown")
+                empty_mask_subjects.append(sid)
+                if config.on_empty == "skip":
+                    continue
+                if config.on_empty == "error":
+                    msg = (
+                        f"Empty mask for {sid}: no non-zero voxels. "
+                        f"Use --on-empty warn or skip to handle gracefully."
+                    )
+                    logger.error(msg)
+                    raise ValidationError(msg)
+                # "warn": fall through and keep the empty mask in the batch
+            batch.append(sd)
+
+        if not batch:
+            continue
 
         batch_num = batch_start // actual_batch_size + 1
         total_batches = (n_subjects + actual_batch_size - 1) // actual_batch_size
@@ -1815,6 +1832,16 @@ def _process_batch(
 
     if failed_count > 0:
         logger.warning(f"Completed with {failed_count} failures out of {n_subjects} subjects")
+
+    if empty_mask_subjects:
+        action_str = {
+            "skip": "skipped",
+            "warn": "processed with zero-valued outputs",
+        }.get(config.on_empty, "processed")
+        logger.warning(
+            f"{len(empty_mask_subjects)} subject(s) had empty masks "
+            f"({action_str}): {', '.join(empty_mask_subjects)}"
+        )
 
     logger.info(f"Successfully processed {processed_count} subject(s)")
     return EXIT_SUCCESS
@@ -1897,17 +1924,21 @@ def _format_subject_id(subject_data) -> str:
     return "/".join(parts)
 
 
-def _log_discovery_summary(subjects_list: list, config: RunConfig) -> None:
-    """Log a summary of discovered subjects."""
-    if not subjects_list:
+def _log_discovery_summary(entries: list, config: RunConfig) -> None:
+    """Log a summary of discovered masks.
+
+    Reads only metadata (subject_id, session_id, label) from each entry,
+    which ``BidsMaskEntry`` carries directly — no NIfTI loads.
+    """
+    if not entries:
         return
 
     unique_subjects = set()
     unique_sessions = set()
     unique_labels = set()
 
-    for subject_data in subjects_list:
-        metadata = subject_data.metadata
+    for entry in entries:
+        metadata = entry.metadata
         if "subject_id" in metadata:
             unique_subjects.add(metadata["subject_id"])
         if "session_id" in metadata:
@@ -1919,7 +1950,7 @@ def _log_discovery_summary(subjects_list: list, config: RunConfig) -> None:
     logger.info("=" * 60)
     logger.info("DISCOVERY SUMMARY")
     logger.info("=" * 60)
-    logger.info(f"  Total mask images: {len(subjects_list)}")
+    logger.info(f"  Total mask images: {len(entries)}")
     logger.info(f"  Unique subjects:   {len(unique_subjects)}")
     if unique_sessions:
         logger.info(f"  Unique sessions:   {len(unique_sessions)}")
@@ -1940,10 +1971,10 @@ def _log_discovery_summary(subjects_list: list, config: RunConfig) -> None:
     logger.info("=" * 60)
     logger.info("")
 
-    if len(subjects_list) <= 20:
+    if len(entries) <= 20:
         logger.info("Masks to process:")
-        for i, subject_data in enumerate(subjects_list, 1):
-            logger.info(f"  {i:3d}. {_format_subject_id(subject_data)}")
+        for i, entry in enumerate(entries, 1):
+            logger.info(f"  {i:3d}. {_format_subject_id(entry)}")
         logger.info("")
 
 

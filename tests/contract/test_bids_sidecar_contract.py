@@ -90,27 +90,22 @@ class TestBidsSidecarContract:
         return tmp_path
 
     def test_sidecar_space_extracted(self, bids_dataset_with_sidecars):
-        """Contract: JSON sidecar Space field is extracted to SubjectData.space."""
-        result = load_bids_dataset(bids_dataset_with_sidecars)
-        # New API returns filename-based keys
-        mask_data = list(result.values())[0]
-        assert mask_data.space == "MNI152NLin6Asym"
+        """Contract: JSON sidecar Space field is extracted to entry.space."""
+        entries = load_bids_dataset(bids_dataset_with_sidecars)
+        assert entries[0].space == "MNI152NLin6Asym"
 
     def test_sidecar_resolution_extracted(self, bids_dataset_with_sidecars):
-        """Contract: JSON sidecar Resolution field is extracted to SubjectData.resolution."""
-        result = load_bids_dataset(bids_dataset_with_sidecars)
-        mask_data = list(result.values())[0]
-        assert mask_data.resolution == 2.0
+        """Contract: JSON sidecar Resolution field is extracted to entry.resolution."""
+        entries = load_bids_dataset(bids_dataset_with_sidecars)
+        assert entries[0].resolution == 2.0
 
     def test_sidecar_string_resolution_parsed(self, bids_dataset_with_string_resolution):
         """Contract: String resolution '2mm' is parsed to numeric 2.0."""
-        result = load_bids_dataset(bids_dataset_with_string_resolution)
-        mask_data = list(result.values())[0]
-        assert mask_data.resolution == 2.0
+        entries = load_bids_dataset(bids_dataset_with_string_resolution)
+        assert entries[0].resolution == 2.0
 
     def test_sidecar_metadata_preserved(self, bids_dataset_with_sidecars):
-        """Contract: BIDS metadata is preserved in SubjectData.metadata."""
-        result = load_bids_dataset(bids_dataset_with_sidecars)
-        mask_data = list(result.values())[0]
-        assert mask_data.metadata["subject_id"] == "sub-001"
-        assert "source_path" in mask_data.metadata
+        """Contract: BIDS metadata is preserved in entry.metadata."""
+        entries = load_bids_dataset(bids_dataset_with_sidecars)
+        assert entries[0].metadata["subject_id"] == "sub-001"
+        assert "source_path" in entries[0].metadata

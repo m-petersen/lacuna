@@ -14,6 +14,7 @@ Provides functions for:
 
 from .bids import (
     BidsError,
+    BidsMaskEntry,
     export_bids_derivatives,
     load_bids_dataset,
     save_nifti,
@@ -50,6 +51,7 @@ from .fetch import (
 __all__ = [
     # BIDS
     "BidsError",
+    "BidsMaskEntry",
     "load_bids_dataset",
     "export_bids_derivatives",
     "save_nifti",

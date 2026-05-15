@@ -13,14 +13,42 @@ import fnmatch
 import json
 import re
 import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from ..core.exceptions import LacunaError
 from ..core.keys import BidsFilename
 from ..core.subject_data import SubjectData
+
+
+@dataclass(frozen=True)
+class BidsMaskEntry:
+    """A discovered mask file plus its parsed metadata, NOT loaded.
+
+    ``load_bids_dataset`` returns a list of these; materialising
+    ``SubjectData`` happens on demand via ``entry.load()``. This keeps
+    discovery O(rglob) on large cohorts and lets the per-subject
+    processing loop start producing output as soon as the first entry
+    is materialised.
+    """
+
+    path: Path
+    key: str
+    space: str | None
+    resolution: float | None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def load(self) -> SubjectData:
+        """Materialise the ``SubjectData`` (decompresses NIfTI, validates binary)."""
+        return SubjectData.from_nifti(
+            mask_path=self.path,
+            metadata=self.metadata,
+            space=self.space,
+            resolution=self.resolution,
+        )
 
 if TYPE_CHECKING:
     from ..core.data_types import ConnectivityMatrix, LabeledScalars, ParcelData, VoxelMap
@@ -53,13 +81,20 @@ def load_bids_dataset(
     space: str | None = None,
     resolution: float | None = None,
     subjects: list[str] | None = None,
-) -> dict[str, SubjectData]:
+) -> list[BidsMaskEntry]:
     """
-    Load mask files from a BIDS dataset using pattern matching.
+    Discover mask files in a BIDS dataset without loading their voxel data.
 
-    This function finds all files matching the pattern and suffix in the BIDS
-    dataset structure and loads them as SubjectData objects. No external BIDS
-    validation library (pybids) is required.
+    Returns a list of ``BidsMaskEntry`` objects, each holding the file path
+    plus parsed metadata (subject_id, session_id, space, resolution, etc.).
+    No NIfTI decompression happens here — callers call
+    ``entry.load()`` on demand to materialise a ``SubjectData``.
+
+    This is a deliberate split: for large cohorts on slow storage,
+    eager-loading every mask up front pushes time-to-first-output to
+    minutes. Discovery is cheap (an ``rglob`` walk plus filename/sidecar
+    parsing); leaving the decompression to the processing loop lets a
+    ``tqdm`` bar tick from the first subject.
 
     Parameters
     ----------
@@ -95,8 +130,11 @@ def load_bids_dataset(
 
     Returns
     -------
-    dict of str -> SubjectData
-        Dictionary mapping filenames (without suffix) to SubjectData objects.
+    list of BidsMaskEntry
+        One entry per matching file. Each carries the file path, the
+        computed key (filename without suffix), the resolved space and
+        resolution, and the BIDS metadata parsed from the filename and
+        sidecar JSON. Voxel data is NOT loaded — call ``entry.load()``.
 
     Raises
     ------
@@ -246,65 +284,47 @@ def load_bids_dataset(
             diag_parts.append(f"No files with suffix '{suffix}' exist under {bids_root}.")
         raise BidsError("\n".join(diag_parts))
 
-    # Load each file as SubjectData
-    mask_data_dict = {}
-
+    entries: list[BidsMaskEntry] = []
     for filepath in sorted(matching_files):
-        # Create key from filename (without suffix)
         filename = filepath.name
         if filename.endswith(".nii.gz"):
-            key = filename[:-7]  # Remove .nii.gz
+            key = filename[:-7]
         elif filename.endswith(".nii"):
-            key = filename[:-4]  # Remove .nii
+            key = filename[:-4]
         else:
             key = filename
 
-        # Build metadata from BIDS entities in filename
         metadata = _parse_bids_entities(filename)
         metadata["source_path"] = str(filepath)
         metadata["bids_root"] = str(bids_root)
 
-        # Parse sidecar JSON if available
         sidecar_data = _parse_sidecar(filepath)
 
-        # Get space: function parameter > sidecar JSON > filename entity
+        # Resolution order: function param > sidecar JSON > filename entity
         file_space = (
-            space  # Function parameter takes precedence
+            space
             or sidecar_data.get("Space")
             or sidecar_data.get("space")
             or metadata.get("space")
         )
-
-        # Get resolution: function parameter > sidecar JSON > filename entity
         file_resolution = _parse_resolution(
-            resolution  # Function parameter takes precedence
+            resolution
             or sidecar_data.get("Resolution")
             or sidecar_data.get("resolution")
             or metadata.get("resolution")
         )
 
-        try:
-            mask_data = SubjectData.from_nifti(
-                mask_path=filepath,
-                metadata=metadata,
+        entries.append(
+            BidsMaskEntry(
+                path=filepath,
+                key=key,
                 space=file_space,
                 resolution=file_resolution,
+                metadata=metadata,
             )
-            mask_data_dict[key] = mask_data
-        except Exception as e:
-            warnings.warn(
-                f"Failed to load {filepath}: {e}",
-                UserWarning,
-                stacklevel=2,
-            )
-
-    if not mask_data_dict:
-        raise BidsError(
-            f"No valid mask files could be loaded from: {bids_root}\n"
-            f"Pattern: '{pattern}', Suffix: '{suffix}'"
         )
 
-    return mask_data_dict
+    return entries
 
 
 def _parse_bids_entities(filename: str) -> dict:
