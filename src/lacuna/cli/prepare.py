@@ -210,13 +210,11 @@ def run_prepare_ace(args) -> None:
 
     total_in_conn = 0
     n_timepoints_attr = 0
-    n_voxels_attr = 0
     for bf in batch_files:
         with h5py.File(bf, "r") as hf:
             total_in_conn += int(hf.attrs.get("n_subjects", 0))
             if n_timepoints_attr == 0:
                 n_timepoints_attr = int(hf.attrs.get("n_timepoints", 0))
-                n_voxels_attr = int(hf.attrs.get("n_voxels", 0))
     n_to_load = (
         min(max_subjects, total_in_conn)
         if max_subjects is not None
@@ -226,20 +224,13 @@ def run_prepare_ace(args) -> None:
         raise ValueError(
             f"No subjects found in connectome at {conn_path}; cannot prepare ACE."
         )
-    # Memory peak is ONE subject's BOLD plus the cross-subject accumulator
-    # (~50 MB at GSP1000-shape) — subjects are streamed through compute_ace_atlas.
-    per_subject_gb = n_timepoints_attr * n_voxels_attr * 4 / 1e9
     if max_subjects is not None and n_to_load < total_in_conn:
         logger.info(
-            "Streaming %d of %d subjects (capped via --max-subjects); "
-            "memory peak ~%.2f GB per subject.",
-            n_to_load, total_in_conn, per_subject_gb,
+            "Streaming %d of %d subjects (capped via --max-subjects).",
+            n_to_load, total_in_conn,
         )
     else:
-        logger.info(
-            "Streaming %d subjects from connectome; memory peak ~%.2f GB per subject.",
-            n_to_load, per_subject_gb,
-        )
+        logger.info("Streaming %d subjects from connectome.", n_to_load)
 
     # Wipe stale stage1 BEFORE the stream starts; the streaming callback
     # writes each subject's .npy as soon as compute_ace_atlas yields it.

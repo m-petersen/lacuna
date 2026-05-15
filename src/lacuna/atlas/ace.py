@@ -214,10 +214,12 @@ def compute_ace_atlas(
     # Process each subject
     stage2_accumulator = np.zeros((int(np.sum(flat_mask)), n_targets), dtype=np.float64)
 
-    actual_n_subjects = 0
-    for i, bold in enumerate(subjects):
-        logger.info("ACE: processing subject %d/%d", i + 1, n_subjects)
+    from tqdm import tqdm
 
+    actual_n_subjects = 0
+    for i, bold in enumerate(
+        tqdm(subjects, total=n_subjects, desc="ACE subjects", unit="subj")
+    ):
         # Stage 1
         beta1 = ace_stage1(bold, atlas_matrix, stage1_nonzero)
         if on_subject_done is not None:
