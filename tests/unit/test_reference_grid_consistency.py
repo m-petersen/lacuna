@@ -52,9 +52,9 @@ def test_reference_affine_origin_matches_templateflow(key, origin):
     Guards specifically against the 2mm-reuses-1mm-origin regression.
     """
     affine = REFERENCE_AFFINES[key]
-    assert tuple(affine[:3, 3]) == pytest.approx(origin, abs=1e-6), (
-        f"{key} origin {tuple(affine[:3, 3])} != canonical {origin}"
-    )
+    assert tuple(affine[:3, 3]) == pytest.approx(
+        origin, abs=1e-6
+    ), f"{key} origin {tuple(affine[:3, 3])} != canonical {origin}"
 
 
 def test_2mm_origin_is_not_the_1mm_origin():
@@ -62,9 +62,9 @@ def test_2mm_origin_is_not_the_1mm_origin():
     for space in ("MNI152NLin6Asym", "MNI152NLin2009cAsym"):
         o1 = REFERENCE_AFFINES[(space, 1)][:3, 3]
         o2 = REFERENCE_AFFINES[(space, 2)][:3, 3]
-        assert not np.allclose(o1, o2), (
-            f"{space}: 2mm origin equals 1mm origin — the resolution-origin bug is back"
-        )
+        assert not np.allclose(
+            o1, o2
+        ), f"{space}: 2mm origin equals 1mm origin — the resolution-origin bug is back"
 
 
 def test_reference_affine_matches_bundled_atlas_1mm():
@@ -72,9 +72,7 @@ def test_reference_affine_matches_bundled_atlas_1mm():
 
     Orientation-independent (compares world bounding boxes), network-free.
     """
-    matches = glob.glob(
-        "src/lacuna/data/atlases/*MNI152NLin6Asym_res-01*Parcels*.nii.gz"
-    )
+    matches = glob.glob("src/lacuna/data/atlases/*MNI152NLin6Asym_res-01*Parcels*.nii.gz")
     if not matches:
         pytest.skip("no bundled 6Asym 1mm atlas found")
     atlas = nib.load(sorted(matches)[0])

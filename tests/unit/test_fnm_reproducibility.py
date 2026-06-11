@@ -64,8 +64,12 @@ def test_run_and_run_batch_agree_on_random_data(tmp_path):
     _write_connectome(conn, ts)
 
     register_functional_connectome(
-        name="parity_rand", space="MNI152NLin6Asym", resolution=2.0,
-        data_path=conn, n_subjects=6, description="test",
+        name="parity_rand",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=conn,
+        n_subjects=6,
+        description="test",
     )
     try:
         a = FunctionalNetworkMapping(connectome_name="parity_rand", method="boes", verbose=False)
@@ -89,8 +93,12 @@ def test_run_and_run_batch_agree_in_clamp_band(tmp_path):
     _write_connectome(conn, ts)
 
     register_functional_connectome(
-        name="parity_band", space="MNI152NLin6Asym", resolution=2.0,
-        data_path=conn, n_subjects=6, description="test",
+        name="parity_band",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=conn,
+        n_subjects=6,
+        description="test",
     )
     try:
         a = FunctionalNetworkMapping(connectome_name="parity_band", method="boes", verbose=False)
@@ -101,7 +109,6 @@ def test_run_and_run_batch_agree_in_clamp_band(tmp_path):
             np.testing.assert_allclose(single[k], batched[k], atol=1e-3, err_msg=k)
         # The clamp band is genuinely exercised (z exceeds the old 3.0 cap).
         assert np.nanmax(np.abs(single["zmap"])) > 3.0
-
 
     finally:
         unregister_functional_connectome("parity_band")
@@ -142,8 +149,12 @@ def test_undefined_correlation_maps_to_zero(tmp_path):
     conn = tmp_path / "c.h5"
     _write_connectome(conn, rng.standard_normal((2, 50, N_VOX)))
     register_functional_connectome(
-        name="undef_corr", space="MNI152NLin6Asym", resolution=2.0,
-        data_path=conn, n_subjects=2, description="test",
+        name="undef_corr",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=conn,
+        n_subjects=2,
+        description="test",
     )
     try:
         a = FunctionalNetworkMapping(connectome_name="undef_corr", method="boes", verbose=False)

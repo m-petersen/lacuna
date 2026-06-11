@@ -87,7 +87,9 @@ def load_template(name: str) -> Path:
     # instead of downloading templates from TemplateFlow. This removes the
     # TemplateFlow runtime dependency and avoids redistributing FSL's
     # MNI152NLin6Asym intensity image.
-    resolution = int(metadata.resolution) if float(metadata.resolution).is_integer() else metadata.resolution
+    resolution = (
+        int(metadata.resolution) if float(metadata.resolution).is_integer() else metadata.resolution
+    )
     grid_dir = Path(__file__).parent.parent.parent / "data" / "templates"
     grid_path = grid_dir / f"{space_normalized}_res-{resolution}.nii.gz"
 

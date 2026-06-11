@@ -728,8 +728,7 @@ def _build_afnm_parser(subparsers) -> None:
         required=True,
         metavar="PATH",
         help=(
-            "Path to the parcel-level group FC matrix TSV (from "
-            "'lacuna prepare functional')."
+            "Path to the parcel-level group FC matrix TSV (from " "'lacuna prepare functional')."
         ),
     )
     g_afnm.add_argument(

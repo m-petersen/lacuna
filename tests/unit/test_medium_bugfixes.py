@@ -17,6 +17,7 @@ from lacuna.core.subject_data import SubjectData
 
 # --- resolution detection preserves 0.5mm -----------------------------------
 
+
 def test_detect_resolution_from_image_preserves_half_mm():
     img = nib.Nifti1Image(np.zeros((10, 10, 10), np.uint8), np.diag([0.5, 0.5, 0.5, 1.0]))
     assert SubjectData._detect_resolution_from_image(img) == 0.5
@@ -29,12 +30,14 @@ def test_detect_resolution_from_image_integers():
 
 
 def test_detect_space_from_filename_preserves_half_mm():
-    assert detect_space_from_filename(
-        "sub-01_space-MNI152NLin2009bAsym_res-0.5_mask.nii.gz"
-    ) == ("MNI152NLin2009bAsym", 0.5)
+    assert detect_space_from_filename("sub-01_space-MNI152NLin2009bAsym_res-0.5_mask.nii.gz") == (
+        "MNI152NLin2009bAsym",
+        0.5,
+    )
 
 
 # --- apply_resampling lands on the canonical grid ----------------------------
+
 
 def test_apply_resampling_uses_canonical_grid():
     from lacuna.spatial.transform import TransformationStrategy
@@ -52,6 +55,7 @@ def test_apply_resampling_uses_canonical_grid():
 
 
 # --- attribute access does not leak a mutable internal reference -------------
+
 
 def test_result_attribute_access_returns_copy():
     img = nib.Nifti1Image(

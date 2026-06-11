@@ -106,7 +106,11 @@ class TestAnalyzeContractSteps:
         )
 
         # Should accept dict
-        result = analyze(subject, steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}}, verbose=False)
+        result = analyze(
+            subject,
+            steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}},
+            verbose=False,
+        )
         assert result is not None
 
     @pytest.mark.slow
@@ -163,7 +167,11 @@ class TestAnalyzeBasicBehavior:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}}, verbose=False)
+        result = analyze(
+            simple_subject,
+            steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}},
+            verbose=False,
+        )
 
         assert isinstance(result, SubjectData)
 
@@ -172,7 +180,11 @@ class TestAnalyzeBasicBehavior:
         """Test that analyze adds results to SubjectData."""
         from lacuna import analyze
 
-        result = analyze(simple_subject, steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}}, verbose=False)
+        result = analyze(
+            simple_subject,
+            steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}},
+            verbose=False,
+        )
 
         # Should have at least FocalDamage results
         assert result.results is not None
@@ -184,7 +196,11 @@ class TestAnalyzeBasicBehavior:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        results = analyze([simple_subject], steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}}, verbose=False)
+        results = analyze(
+            [simple_subject],
+            steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}},
+            verbose=False,
+        )
 
         assert isinstance(results, list)
         assert len(results) == 1
@@ -220,7 +236,11 @@ class TestAnalyzeReturnType:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}}, verbose=False)
+        result = analyze(
+            simple_subject,
+            steps={"FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]}},
+            verbose=False,
+        )
 
         assert isinstance(result, SubjectData)
         assert not isinstance(result, list)

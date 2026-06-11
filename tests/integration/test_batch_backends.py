@@ -164,9 +164,7 @@ class TestThreadingBackend:
         assert len(results) == len(synthetic_lesions)
         assert all(isinstance(r, SubjectData) for r in results)
 
-    def test_threading_backend_with_single_worker(
-        self, synthetic_lesions, focal_damage_analysis
-    ):
+    def test_threading_backend_with_single_worker(self, synthetic_lesions, focal_damage_analysis):
         """Threading backend should work with n_jobs=1."""
         results = batch_process(
             inputs=synthetic_lesions,

@@ -357,8 +357,7 @@ def analyze(
     # Validate steps is not empty
     if not steps:
         raise ValueError(
-            "steps cannot be empty. Provide at least one analysis, e.g., "
-            '{"FocalDamage": None}'
+            "steps cannot be empty. Provide at least one analysis, e.g., " '{"FocalDamage": None}'
         )
 
     # Get available analysis names for validation

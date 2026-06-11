@@ -47,8 +47,7 @@ def handle_prepare_command(args: argparse.Namespace) -> int:
         return 1
 
     print(
-        "Error: 'lacuna prepare' requires a target. "
-        "Try 'lacuna prepare functional --help'.",
+        "Error: 'lacuna prepare' requires a target. Try 'lacuna prepare functional --help'.",
         file=sys.stderr,
     )
     return 1

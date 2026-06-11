@@ -14,7 +14,9 @@ from lacuna.io.convert import trk_to_tck
 
 def _make_trk(path):
     rng = np.random.default_rng(0)
-    streams = [rng.standard_normal((rng.integers(4, 12), 3)).astype(np.float32) * 20 for _ in range(120)]
+    streams = [
+        rng.standard_normal((rng.integers(4, 12), 3)).astype(np.float32) * 20 for _ in range(120)
+    ]
     affine = np.array([[2, 0, 0, -90], [0, 2, 0, -126], [0, 0, 2, -72], [0, 0, 0, 1]], float)
     nib.streamlines.save(Tractogram(streamlines=streams, affine_to_rasmm=affine), str(path))
     return path
@@ -32,7 +34,7 @@ def test_streaming_output_matches_eager_conversion(tmp_path):
     lazy = nib.streamlines.load(str(out)).streamlines
 
     assert len(lazy) == len(eager) == 120
-    for a, b in zip(lazy, eager):
+    for a, b in zip(lazy, eager, strict=True):
         np.testing.assert_allclose(a, b, atol=1e-4)
 
 

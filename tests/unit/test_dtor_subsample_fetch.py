@@ -32,9 +32,7 @@ def test_uses_existing_tck_without_downloading(tmp_path):
     # Pre-place the expected .tck so the fetch skips the (network) download.
     (tmp_path / "dtor985_10pct.tck").write_bytes(b"mrtrix tracks\nEND\n")
 
-    result = fetch_dtor985_subsample(
-        "10pct", tmp_path, register=False, force=False
-    )
+    result = fetch_dtor985_subsample("10pct", tmp_path, register=False, force=False)
 
     assert result.success
     assert result.connectome_name == "dtor985_10pct"
@@ -54,7 +52,9 @@ def test_cli_dispatch_routes_subsamples(monkeypatch, tmp_path):
         called["variant"] = variant
         from lacuna.io.downloaders.base import FetchResult
 
-        return FetchResult(success=True, connectome_name=f"dtor985_{variant}", output_dir=output_dir)
+        return FetchResult(
+            success=True, connectome_name=f"dtor985_{variant}", output_dir=output_dir
+        )
 
     monkeypatch.setattr("lacuna.io.fetch_dtor985_subsample", fake)
     args = argparse.Namespace(connectome="dtor985_25pct", output_dir=tmp_path, force=False)

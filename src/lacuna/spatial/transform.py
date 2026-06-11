@@ -389,7 +389,7 @@ class TransformationStrategy:
                 raise FileNotFoundError(
                     f"No reference grid available for {target.identifier}"
                     f"@{target.resolution}mm; cannot build a transform reference."
-                )
+                ) from None
             logger.warning(
                 f"Could not load template for {target.identifier}@{target.resolution}mm, "
                 "using a zero-filled reference on the canonical grid"

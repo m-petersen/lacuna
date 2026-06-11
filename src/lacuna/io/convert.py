@@ -456,9 +456,7 @@ def trk_to_tck(
             src = nib.streamlines.load(str(trk_path), lazy_load=True)
             yield from src.streamlines
 
-        lazy_out = nib.streamlines.LazyTractogram(
-            streamlines=_streamlines, affine_to_rasmm=affine
-        )
+        lazy_out = nib.streamlines.LazyTractogram(streamlines=_streamlines, affine_to_rasmm=affine)
         nib.streamlines.save(lazy_out, str(output_path))
 
     except Exception as e:

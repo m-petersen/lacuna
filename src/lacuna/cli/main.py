@@ -1532,9 +1532,7 @@ def _run_analysis_workflow(config: RunConfig) -> int:
             if config.session_id:
                 subjects_list = _filter_by_sessions(subjects_list, config.session_id)
                 if not subjects_list:
-                    logger.error(
-                        f"No subjects match the requested session(s): {config.session_id}"
-                    )
+                    logger.error(f"No subjects match the requested session(s): {config.session_id}")
                     return EXIT_BIDS_ERROR
 
             _log_discovery_summary(subjects_list, config)

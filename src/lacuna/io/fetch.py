@@ -1237,8 +1237,7 @@ def _is_connectome_registered(name: str) -> bool:
 
     try:
         registered = [
-            c.name.lower()
-            for c in (*list_functional_connectomes(), *list_structural_connectomes())
+            c.name.lower() for c in (*list_functional_connectomes(), *list_structural_connectomes())
         ]
     except Exception:
         return False

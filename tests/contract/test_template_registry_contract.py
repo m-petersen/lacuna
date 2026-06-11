@@ -251,9 +251,7 @@ def test_template_returns_bundled_grid_reference():
     img = nib.load(path)
     # Grid-only: zero intensity, but correct canonical geometry
     assert float(np.asarray(img.dataobj).max()) == 0.0
-    np.testing.assert_allclose(
-        img.affine, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 1)], atol=1e-3
-    )
+    np.testing.assert_allclose(img.affine, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 1)], atol=1e-3)
 
 
 def test_template_space_equivalence_maps_2009b_to_2009c():

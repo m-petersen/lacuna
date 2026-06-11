@@ -71,16 +71,13 @@ def load_transform(name: str) -> Path:
     metadata = TRANSFORM_REGISTRY.get(normalized_name)
 
     if not metadata.url:
-        raise FileNotFoundError(
-            f"Transform '{normalized_name}' has no download URL registered."
-        )
+        raise FileNotFoundError(f"Transform '{normalized_name}' has no download URL registered.")
 
     try:
         import pooch
     except ImportError as e:  # pragma: no cover - pooch is a hard dependency
         raise ImportError(
-            "pooch is required to download spatial transforms. "
-            "Install with: pip install pooch"
+            "pooch is required to download spatial transforms. " "Install with: pip install pooch"
         ) from e
 
     from lacuna.utils.cache import get_cache_dir
