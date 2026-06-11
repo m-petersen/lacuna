@@ -19,7 +19,7 @@ lacuna prepare afnm --connectome-path <PATH> \
 
 Given a voxelwise functional connectome (HDF5, the same format as
 [`lacuna run fnm`](run.md)) and a parcellation, `lacuna prepare afnm` produces a
-BIDS-style ConnectivityMatrix — a TSV with parcel labels as row/column index plus
+connectivity matrix — a TSV with parcel labels as row/column index plus
 a JSON sidecar describing provenance. Build it once per parcellation and reuse it
 for all subjects in `lacuna run afnm`.
 
@@ -28,7 +28,7 @@ for all subjects in `lacuna run afnm`.
 | Argument | Description |
 |----------|-------------|
 | `--connectome-path PATH` | Voxelwise functional connectome: HDF5 file or directory. |
-| `--output DIR` | Output directory for the ConnectivityMatrix TSV + JSON sidecar. |
+| `--output DIR` | Output directory for the connectivity matrix TSV + JSON sidecar. |
 
 ### Parcellation selection
 
@@ -50,7 +50,7 @@ lacuna prepare afnm \
 
 ### Output
 
-A BIDS-style ConnectivityMatrix per atlas, e.g.
+A connectivity matrix per atlas, e.g.
 
 ```
 method-parcellate_atlas-schaefer2018parcels400networks17_desc-groupconnectivity_connmatrix.tsv

@@ -10,12 +10,12 @@ hide:
 
 When a stroke, tumor, or other focal injury damages brain tissue, understanding its consequences requires placing the lesion in the broader context of brain organization.
 
-Lacuna is an open-source toolbox designed to facilitate this process. Given a lesion mask, it uses normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases, to generate a range of measures that characterize a lesion beyond its anatomical location alone.
+Lacuna is an open-source toolbox designed to facilitate this process. Using normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases, it generates a range of measures that characterize a lesion beyond its anatomical location alone.
 
-Lacuna is designed to be easy to adopt: you provide lesion masks in MNI space, and it takes care of the rest — fetching the normative reference data, aligning coordinate spaces, and writing BIDS-organized outputs — through both a clean Python API and a BIDS-App-style command line. Built for multicenter research, it standardizes inputs and outputs, scales from a single mask to entire cohorts with batch processing, and records traceable provenance for every result, all within a modular architecture designed to grow toward further lesion-characterization methods.
+Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, and it takes care of the rest — fetching the normative reference data, aligning coordinate spaces, and writing BIDS-organized outputs through a command line interface. Developed for multicenter research, it standardizes inputs and outputs, scales from a single mask to entire cohorts with batch processing, supports deployment on high-performance computing (HPC) systems through containerized environments and records traceable provenance for every result, all within a modular architecture designed to grow toward further lesion-characterization methods.
 
 </div>
-<img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;">
+<img src="assets/logo.svg" alt="Lacuna" width="800" style="flex-shrink: 0;">
 </div>
 
 !!! warning "This project is under active development and has not yet been fully validated. Use with caution."
