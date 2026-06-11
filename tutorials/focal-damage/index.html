@@ -2425,13 +2425,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">!lacuna run fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd/ \
+    /tmp/outputs_fd/ \
     --parcel-atlases schaefer2018parcels100networks7 \
     --mask-space MNI152NLin6Asym</div>
 </div>
@@ -2458,9 +2458,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">!ls /tmp/outputs_rd/</div>
+<div class="clipboard-copy-txt" id="cell-3">!ls /tmp/outputs_fd/</div>
 </div>
 </div>
 </div>
@@ -2509,9 +2509,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">!ls /tmp/outputs_rd/sub-01/ses-01/anat/</div>
+<div class="clipboard-copy-txt" id="cell-4">!ls /tmp/outputs_fd/sub-01/ses-01/anat/</div>
 </div>
 </div>
 </div>
@@ -2558,13 +2558,13 @@ sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="n">output_tsv</span> <span class="o">=</span> <span class="s2">"/tmp/outputs_rd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span>
+<span class="n">output_tsv</span> <span class="o">=</span> <span class="s2">"/tmp/outputs_fd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">output_tsv</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"value"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">import pandas as pd
 
-output_tsv = "/tmp/outputs_rd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"
+output_tsv = "/tmp/outputs_fd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"
 df = pd.read_csv(output_tsv, sep="\t")
 df.sort_values(by="value", ascending=False).head(10)</div>
 </div>
@@ -2782,13 +2782,13 @@ plot.add_overlay(
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">collect</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">pattern</span> <span class="s2">"*schaefer2018*"</span> \
     <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">group_outputs</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">verbose</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-7">!lacuna collect \
-    /tmp/outputs_rd/ \
+    /tmp/outputs_fd/ \
     --pattern "*schaefer2018*" \
     --output-dir /tmp/group_outputs/ \
     --verbose</div>

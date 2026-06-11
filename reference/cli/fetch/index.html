@@ -1416,6 +1416,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#download-a-dtor985-subsample-or-hcp1065-no-api-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download a dTOR985 subsample or HCP1065 (no API key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#download-to-custom-directory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1968,6 +1979,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#download-a-dtor985-subsample-or-hcp1065-no-api-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download a dTOR985 subsample or HCP1065 (no API key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#download-to-custom-directory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2114,7 +2136,7 @@
 <th>Type</th>
 <th>Description</th>
 <th>Size</th>
-<th>Source</th>
+<th>API key</th>
 </tr>
 </thead>
 <tbody>
@@ -2122,18 +2144,40 @@
 <td><code>gsp1000</code></td>
 <td>Functional</td>
 <td>GSP1000 functional connectome</td>
-<td>~100GB</td>
+<td>~200GB</td>
 <td>Dataverse</td>
 </tr>
 <tr>
 <td><code>dtor985</code></td>
 <td>Structural</td>
-<td>dTOR985 structural tractogram</td>
-<td>~10GB</td>
+<td>dTOR985 structural tractogram (full)</td>
+<td>~11GB</td>
 <td>Figshare</td>
+</tr>
+<tr>
+<td><code>dtor985_10pct</code></td>
+<td>Structural</td>
+<td>dTOR985 10% subsample, ~1.2M streamlines</td>
+<td>~1.3GB</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>dtor985_25pct</code></td>
+<td>Structural</td>
+<td>dTOR985 25% subsample, ~3M streamlines</td>
+<td>~3.1GB</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>hcp1065</code></td>
+<td>Structural</td>
+<td>HCP1065 structural tractogram</td>
+<td>~1.5GB</td>
+<td>None</td>
 </tr>
 </tbody>
 </table>
+<p>The <code>dtor985_10pct</code> / <code>dtor985_25pct</code> subsamples (CC0) and <code>hcp1065</code> download as ready-to-use <code>.tck</code> files and need no API key — a good starting point for structural network mapping.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <h3 id="positional-argument">Positional argument<a class="headerlink" href="#positional-argument" title="Permanent link">&para;</a></h3>
 <table>
@@ -2146,7 +2190,7 @@
 <tbody>
 <tr>
 <td><code>connectome</code></td>
-<td>Connectome to fetch: <code>gsp1000</code> or <code>dtor985</code></td>
+<td>Connectome to fetch: <code>gsp1000</code>, <code>dtor985</code>, <code>dtor985_10pct</code>, <code>dtor985_25pct</code>, or <code>hcp1065</code></td>
 </tr>
 </tbody>
 </table>
@@ -2247,14 +2291,22 @@
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Or pass key directly</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>dtor985<span class="w"> </span>--api-key<span class="w"> </span>YOUR_FIGSHARE_KEY
 </span></code></pre></div>
+<h3 id="download-a-dtor985-subsample-or-hcp1065-no-api-key">Download a dTOR985 subsample or HCP1065 (no API key)<a class="headerlink" href="#download-a-dtor985-subsample-or-hcp1065-no-api-key" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Smaller dTOR985 subsamples — ready-to-use .tck, no key required</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>dtor985_10pct
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>dtor985_25pct
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># HCP1065 structural tractogram</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>hcp1065
+</span></code></pre></div>
 <h3 id="download-to-custom-directory">Download to custom directory<a class="headerlink" href="#download-to-custom-directory" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY<span class="w"> </span>--output-dir<span class="w"> </span>/data/connectomes
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY<span class="w"> </span>--output-dir<span class="w"> </span>/data/connectomes
 </span></code></pre></div>
 <h3 id="force-re-download">Force re-download<a class="headerlink" href="#force-re-download" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY<span class="w"> </span>--force
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY<span class="w"> </span>--force
 </span></code></pre></div>
 <h3 id="clean-cached-data">Clean cached data<a class="headerlink" href="#clean-cached-data" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--clean
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--clean
 </span></code></pre></div>
 <h2 id="api-keys">API Keys<a class="headerlink" href="#api-keys" title="Permanent link">&para;</a></h2>
 <h3 id="dataverse-gsp1000">Dataverse (GSP1000)<a class="headerlink" href="#dataverse-gsp1000" title="Permanent link">&para;</a></h3>
@@ -2265,7 +2317,7 @@
 <li>Generate or copy your API token</li>
 </ol>
 <p>Set via environment variable (recommended):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DATAVERSE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-token-here&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DATAVERSE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-token-here&quot;</span>
 </span></code></pre></div>
 <h3 id="figshare-dtor985">Figshare (dTOR985)<a class="headerlink" href="#figshare-dtor985" title="Permanent link">&para;</a></h3>
 <p>The dTOR985 structural tractogram is hosted on Figshare and requires an API key:</p>
@@ -2275,21 +2327,21 @@
 <li>Copy the token</li>
 </ol>
 <p>Set via environment variable (recommended):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FIGSHARE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-token-here&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FIGSHARE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-token-here&quot;</span>
 </span></code></pre></div>
 <h2 id="cache-location">Cache Location<a class="headerlink" href="#cache-location" title="Permanent link">&para;</a></h2>
 <p>Downloaded and processed files are stored in:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>~/.cache/lacuna/connectomes/
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>├── gsp1000/
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>│   ├── GSP1000_batch_0.h5
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>│   ├── GSP1000_batch_1.h5
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>│   └── ...
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>└── dtor985/
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    └── dtor985.tck
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>~/.cache/lacuna/connectomes/
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>├── gsp1000/
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>│   ├── GSP1000_batch_0.h5
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>│   ├── GSP1000_batch_1.h5
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>│   └── ...
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>└── dtor985/
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    └── dtor985.tck
 </span></code></pre></div>
 <p>Override the base cache directory with the <code>LACUNA_CACHE</code> environment variable:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LACUNA_CACHE</span><span class="o">=</span>/path/to/custom/cache
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LACUNA_CACHE</span><span class="o">=</span>/path/to/custom/cache
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY
 </span></code></pre></div>
 <h2 id="exit-codes">Exit Codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
 <table>

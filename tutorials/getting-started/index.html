@@ -2729,7 +2729,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 └─tutorial    # Get the tutorial data
 └─bidsify     # Transform your directory of masks into a BIDS-compliant dataset
 └─fetch       # Download and fetch connectomes for network mapping analyses
-└─parcellate  # Reduce a whole-brain connectome to a parcel-level matrix (for AFNM)
+└─prepare     # Precompute connectome-derived data products
+  └─functional  # Reduce a functional connectome to a parcel-level matrix (for AFNM)
 └─run         # Run analyses
   └─fd        # Run focal damage analysis
   └─fnm       # Run functional network mapping
@@ -3275,7 +3276,7 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
 </pre></div>
 <p>Lacuna currently provides four analysis types:</p>
 <ul>
-<li><strong>rd</strong> (focal damage) — Lesion overlap with parcellation atlases. No connectome needed.</li>
+<li><strong>fd</strong> (focal damage) — Lesion overlap with parcellation atlases. No connectome needed.</li>
 <li><strong>fnm</strong> (functional network mapping) — Lesion-derived functional connectivity maps. Requires a functional connectome (GSP1000).</li>
 <li><strong>afnm</strong> (accelerated functional network mapping) — Fast accelerated functional network mapping.</li>
 <li><strong>snm</strong> (structural network mapping) — White matter disconnection maps. Requires a structural connectome (dTOR985 or HCP1065) and MRtrix3.</li>
@@ -3669,13 +3670,13 @@ FocalDamage: 100%|████████████████████�
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2g1heytbksh">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2g1heytbksh">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-15">
@@ -3690,41 +3691,13 @@ FocalDamage: 100%|████████████████████�
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-15">!lacuna check fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd/ \
+    /tmp/outputs_fd/ \
     --mask-space MNI152NLin6Asym</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>
-Checking rd outputs in /tmp/outputs_rd for 3 subject(s)...
-
-Subject  Session     Status
--------------------------------------------
-sub-01   ses-01      complete
-sub-02   ses-01      MISSING  (*method-fd*parcelstats.tsv)
-sub-03   ses-01      MISSING  (*method-fd*parcelstats.tsv)
-
-===========================================
-Summary: 1 / 3 complete, 2 missing
-===========================================
-
-Rerun missing subjects:
-  lacuna run fd /tmp/tutorial_bids /tmp/outputs_rd --participant-label 02 03
-
-</pre>
 </div>
 </div>
 </div>

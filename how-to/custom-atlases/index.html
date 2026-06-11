@@ -2840,7 +2840,7 @@ with open("/tmp/xtract_labels.txt", "w") as f:
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_xtract</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_xtract</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
     <span class="o">--</span><span class="n">custom</span><span class="o">-</span><span class="n">parcellation</span> \
@@ -2851,7 +2851,7 @@ with open("/tmp/xtract_labels.txt", "w") as f:
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">!lacuna run fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd_xtract/ \
+    /tmp/outputs_fd_xtract/ \
     --participant-label 01 \
     --mask-space MNI152NLin6Asym \
     --custom-parcellation \
@@ -2993,9 +2993,9 @@ FocalDamage options:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_xtract</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_xtract</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-7">!ls /tmp/outputs_rd_xtract/sub-01/ses-01/anat/</div>
+<div class="clipboard-copy-txt" id="cell-7">!ls /tmp/outputs_fd_xtract/sub-01/ses-01/anat/</div>
 </div>
 </div>
 </div>
@@ -3052,7 +3052,7 @@ sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"/tmp/outputs_rd_xtract/sub-01/ses-01/anat/"</span><span class="p">)</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"/tmp/outputs_fd_xtract/sub-01/ses-01/anat/"</span><span class="p">)</span>
 <span class="n">tsv_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">output_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*damagepct*parcelstats.tsv"</span><span class="p">))</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">tsv_files</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span>
@@ -3061,7 +3061,7 @@ sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 <div class="clipboard-copy-txt" id="cell-8">import pandas as pd
 from pathlib import Path
 
-output_dir = Path("/tmp/outputs_rd_xtract/sub-01/ses-01/anat/")
+output_dir = Path("/tmp/outputs_fd_xtract/sub-01/ses-01/anat/")
 tsv_files = list(output_dir.glob("*damagepct*parcelstats.tsv"))
 
 df = pd.read_csv(tsv_files[0], sep="\t")
@@ -3288,7 +3288,7 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_combined</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_combined</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
@@ -3300,7 +3300,7 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">!lacuna run fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd_combined/ \
+    /tmp/outputs_fd_combined/ \
     --participant-label 01 \
     --mask-space MNI152NLin6Asym \
     --parcel-atlases schaefer2018parcels100networks7 \
@@ -3333,9 +3333,9 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_combined</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_combined</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-11">!ls /tmp/outputs_rd_combined/sub-01/ses-01/anat/</div>
+<div class="clipboard-copy-txt" id="cell-11">!ls /tmp/outputs_fd_combined/sub-01/ses-01/anat/</div>
 </div>
 </div>
 </div>
