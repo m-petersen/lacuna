@@ -179,6 +179,28 @@ def gsp1000_to_hdf5(
             ):
                 # Load 4D functional data
                 func_img = nib.load(file_path)
+
+                # Validate this subject is on the mask's grid before indexing —
+                # otherwise the mask voxel indices extract the wrong anatomical
+                # voxels (or raise an opaque IndexError) and silently corrupt the
+                # connectome.
+                if func_img.shape[:3] != mask_data.shape:
+                    raise ValueError(
+                        f"Functional image '{file_path}' has spatial shape "
+                        f"{tuple(func_img.shape[:3])} but the brain mask is "
+                        f"{tuple(mask_data.shape)}. All subjects must share the mask grid."
+                    )
+                if not np.allclose(func_img.affine, mask_affine, atol=1e-3):
+                    raise ValueError(
+                        f"Functional image '{file_path}' affine does not match the brain "
+                        "mask affine; the data are on different grids."
+                    )
+                if func_img.shape[3] != n_timepoints:
+                    raise ValueError(
+                        f"Functional image '{file_path}' has {func_img.shape[3]} timepoints "
+                        f"but {n_timepoints} were expected (from the first subject)."
+                    )
+
                 func_data = func_img.get_fdata()
 
                 # Extract timeseries from masked voxels and transpose
@@ -387,7 +409,7 @@ def trk_to_tck(
     --------
     nibabel.streamlines: https://nipy.org/nibabel/reference/nibabel.streamlines.html
     """
-    from nibabel.streamlines import TckFile, TrkFile
+    import nibabel as nib
 
     trk_path = Path(trk_path)
     output_path = Path(output_path)
@@ -420,17 +442,24 @@ def trk_to_tck(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Load TRK file
-        print("Loading .trk file...")
-        trk = TrkFile.load(str(trk_path))
+        # Stream streamlines from disk via nibabel's lazy interface so the full
+        # tractogram is never held in memory. The eager TrkFile.load() path
+        # materializes every streamline at once (~32 GB for dTOR985's ~11M
+        # streamlines); lazy loading keeps peak memory to a single streamline
+        # plus I/O buffers, regardless of tractogram size.
+        print("Converting .trk -> .tck (streaming, low memory)...")
+        affine = nib.streamlines.load(str(trk_path), lazy_load=True).affine
 
-        # Create TCK file with same tractogram data
-        print("Creating .tck file...")
-        tck = TckFile(tractogram=trk.tractogram)
+        def _streamlines():
+            # Re-open per pass so the generator is replayable — the TCK writer
+            # iterates the streamlines more than once (write + finalize count).
+            src = nib.streamlines.load(str(trk_path), lazy_load=True)
+            yield from src.streamlines
 
-        # Save to disk
-        print("Writing to disk...")
-        tck.save(str(output_path))
+        lazy_out = nib.streamlines.LazyTractogram(
+            streamlines=_streamlines, affine_to_rasmm=affine
+        )
+        nib.streamlines.save(lazy_out, str(output_path))
 
     except Exception as e:
         raise RuntimeError(
