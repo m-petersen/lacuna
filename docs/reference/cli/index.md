@@ -38,11 +38,11 @@ lacuna <command> [options]
 
     Download normative connectomes and other assets to the local cache.
 
--   [**Parcellate**](parcellate.md)
+-   [**Prepare**](prepare.md)
 
     ---
 
-    Reduce a whole-brain connectome to a parcel-level connectivity matrix (used as input for `run afnm`).
+    Precompute connectome-derived data products — currently `prepare functional`, which reduces a functional connectome to a parcel-level matrix (input for `run afnm`).
 
 -   [**Info**](info.md)
 

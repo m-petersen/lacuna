@@ -19,7 +19,7 @@
         * [Run](reference/cli/run.md)
         * [Check](reference/cli/check.md)
         * [Fetch](reference/cli/fetch.md)
-        * [Parcellate](reference/cli/parcellate.md)
+        * [Prepare](reference/cli/prepare.md)
         * [Collect](reference/cli/collect.md)
         * [Info](reference/cli/info.md)
         * [Bidsify](reference/cli/bidsify.md)

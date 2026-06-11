@@ -258,8 +258,8 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_info_command(args)
     elif args.command == "bidsify":
         return _handle_bidsify_command(args)
-    elif args.command == "parcellate":
-        return _handle_parcellate_command(args)
+    elif args.command == "prepare":
+        return _handle_prepare_command(args)
     elif args.command == "tutorial":
         return _handle_tutorial_command(args)
     elif args.command == "check":
@@ -519,27 +519,11 @@ def _show_connectomes_info() -> int:
     return EXIT_SUCCESS
 
 
-def _handle_parcellate_command(args: Namespace) -> int:
-    """Handle `lacuna parcellate` (modality dispatch)."""
-    modality = getattr(args, "modality", None)
-    if modality == "functional":
-        try:
-            from lacuna.prepare.parcellate import run_parcellate_functional_cli
-        except ImportError:
-            print(
-                "Error: 'lacuna parcellate --modality functional' is not yet implemented.",
-                file=sys.stderr,
-            )
-            return EXIT_GENERAL_ERROR
-        return run_parcellate_functional_cli(args)
-    if modality == "structural":
-        print(
-            "Error: 'lacuna parcellate --modality structural' is not yet implemented.",
-            file=sys.stderr,
-        )
-        return EXIT_GENERAL_ERROR
-    print(f"Error: unknown modality {modality!r}", file=sys.stderr)
-    return EXIT_GENERAL_ERROR
+def _handle_prepare_command(args: Namespace) -> int:
+    """Handle the `lacuna prepare` subcommand."""
+    from lacuna.cli.prepare import handle_prepare_command
+
+    return handle_prepare_command(args)
 
 
 def _handle_bidsify_command(args: Namespace) -> int:

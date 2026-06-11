@@ -7,7 +7,7 @@ subcommand-based structure:
 - lacuna fetch: Download and setup connectomes
 - lacuna run <analysis>: Run analyses (fd, fnm, snm, afnm)
 - lacuna bidsify: Convert NIfTI files to BIDS format
-- lacuna parcellate: Reduce a connectome to a parcel-level connectivity matrix
+- lacuna prepare: Precompute connectome-derived data products (e.g. AFNM matrices)
 - lacuna collect: Aggregate results across subjects
 - lacuna info: Display available resources (atlases, connectomes)
 
@@ -57,7 +57,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
         epilog=(
             "Commands:\n"
             "  bidsify    Convert a directory of NIfTI masks into BIDS layout\n"
-            "  parcellate Reduce a connectome to a parcel-level connectivity matrix\n"
+            "  prepare    Precompute connectome-derived data products (e.g. AFNM matrices)\n"
             "  fetch     Download and setup connectomes for analysis\n"
             "  run       Run lesion analyses\n"
             "  collect   Aggregate results across subjects\n"
@@ -95,7 +95,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
     _build_collect_parser(subparsers)
     _build_info_parser(subparsers)
     _build_bidsify_parser(subparsers)
-    _build_parcellate_parser(subparsers)
+    _build_prepare_parser(subparsers)
     _build_tutorial_parser(subparsers)
     _build_check_parser(subparsers)
 
@@ -694,7 +694,7 @@ def _build_afnm_parser(subparsers) -> None:
             "  AFNMAP = M \u00d7 C\n"
             "where M is the lesion-by-parcel weight matrix and C is a precomputed\n"
             "group-average parcel-level functional connectivity matrix (produced by\n"
-            "'lacuna parcellate'). Contrast with voxel-level FNM (`lacuna run fnm`).\n\n"
+            "'lacuna prepare functional'). Contrast with voxel-level FNM (`lacuna run fnm`).\n\n"
             "Examples:\n"
             "  lacuna run afnm /bids /output \\\n"
             "      --matrix-path /data/parcellated/GSP1000_schaefer400.tsv \\\n"
@@ -729,7 +729,7 @@ def _build_afnm_parser(subparsers) -> None:
         metavar="PATH",
         help=(
             "Path to the parcel-level group FC matrix TSV (from "
-            "'lacuna parcellate --modality functional')."
+            "'lacuna prepare functional')."
         ),
     )
     g_afnm.add_argument(
@@ -921,48 +921,15 @@ def _build_bidsify_parser(subparsers) -> None:
     )
 
 
-def _build_parcellate_parser(subparsers) -> None:
-    """Add the top-level `parcellate` subcommand parser."""
-    parcellate_parser = subparsers.add_parser(
-        "parcellate",
-        help="Reduce a connectome to a parcel-level connectivity matrix",
-        description=(
-            "Reduce a connectome to a parcel-level N\u00d7N ConnectivityMatrix.\n\n"
-            "Inputs:\n"
-            "  - A voxelwise functional connectome (HDF5, same format as 'lacuna run fnm'), or\n"
-            "  - A structural tractogram (.tck, same format as 'lacuna run snm').\n"
-            "The --modality flag is required; modality is never inferred from path or extension.\n\n"
-            "Output is a BIDS-style TSV + JSON sidecar ConnectivityMatrix (same format that\n"
-            "'lacuna run snm' uses for disconnectivity matrices) written under the output\n"
-            "directory. Each selected parcellation produces its own output file.\n\n"
-            "Examples:\n"
-            "  lacuna parcellate --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
-            "      --modality functional --parcel-atlases schaefer2018parcels400networks17 \\\n"
-            "      --output /data/parcellated/\n"
-            "  lacuna parcellate --connectome-path /data/dtor985.tck \\\n"
-            "      --modality structural --parcel-atlases schaefer2018parcels400networks17 \\\n"
-            "      --output /data/parcellated/"
-        ),
-        formatter_class=RawDescriptionHelpFormatter,
-    )
-
-    g_io = parcellate_parser.add_argument_group("Inputs / outputs")
+def _add_prepare_functional_args(p) -> None:
+    """Add the inputs/parcellation/options arguments for the functional target."""
+    g_io = p.add_argument_group("Inputs / outputs")
     g_io.add_argument(
         "--connectome-path",
         type=Path,
         required=True,
         metavar="PATH",
-        help=(
-            "Path to the whole-brain connectome: voxelwise HDF5 file or directory "
-            "(for --modality functional), or tractogram .tck (for --modality structural)."
-        ),
-    )
-    g_io.add_argument(
-        "--modality",
-        type=str,
-        required=True,
-        choices=["functional", "structural"],
-        help="Connectome modality. Required; no inference from path or extension.",
+        help="Path to the whole-brain functional connectome (voxelwise HDF5 file or directory).",
     )
     g_io.add_argument(
         "--output",
@@ -973,7 +940,7 @@ def _build_parcellate_parser(subparsers) -> None:
         help="Output directory for the parcellated matrix (TSV + JSON sidecar).",
     )
 
-    g_parc = parcellate_parser.add_argument_group("Parcellation selection")
+    g_parc = p.add_argument_group("Parcellation selection")
     g_parc.add_argument(
         "--parcel-atlases",
         nargs="+",
@@ -993,7 +960,7 @@ def _build_parcellate_parser(subparsers) -> None:
         ),
     )
 
-    g_other = parcellate_parser.add_argument_group("Other options")
+    g_other = p.add_argument_group("Other options")
     g_other.add_argument(
         "--overwrite",
         action="store_true",
@@ -1007,6 +974,64 @@ def _build_parcellate_parser(subparsers) -> None:
         default=0,
         help="Increase verbosity (-v=INFO, -vv=DEBUG).",
     )
+
+
+def _build_prepare_parser(subparsers) -> None:
+    """Add the top-level `prepare` subcommand parser.
+
+    ``lacuna prepare`` precomputes non-subject-specific data products that
+    analyses consume. Each precomputation target is its own sub-subcommand
+    (mirroring ``lacuna fetch``/``lacuna run``).
+    """
+    prepare_parser = subparsers.add_parser(
+        "prepare",
+        help="Precompute connectome-derived data products for analyses",
+        description=(
+            "Precompute non-subject-specific data products that analyses consume.\n\n"
+            "Targets:\n"
+            "  functional - Reduce a functional connectome to a parcel-level N\u00d7N\n"
+            "               ConnectivityMatrix (input to 'lacuna run afnm').\n"
+            "  structural - Reserved (not yet implemented).\n\n"
+            "Examples:\n"
+            "  lacuna prepare functional --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
+            "      --parcel-atlases schaefer2018parcels400networks17 \\\n"
+            "      --output /data/parcellated/"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    prepare_subparsers = prepare_parser.add_subparsers(
+        dest="prepare_target",
+        title="targets",
+        description="Use 'lacuna prepare <target> --help' for more information.",
+        metavar="<target>",
+    )
+
+    prepare_functional = prepare_subparsers.add_parser(
+        "functional",
+        help="Reduce a functional connectome to a parcel-level connectivity matrix",
+        description=(
+            "Reduce a voxelwise functional connectome (HDF5, same format as\n"
+            "'lacuna run fnm') to a parcel-level N\u00d7N ConnectivityMatrix.\n\n"
+            "Output is a BIDS-style TSV + JSON sidecar ConnectivityMatrix (the same\n"
+            "format 'lacuna run snm' uses for disconnectivity matrices) written under\n"
+            "the output directory. Each selected parcellation produces its own file.\n\n"
+            "Example:\n"
+            "  lacuna prepare functional --connectome-path ~/.cache/lacuna/gsp1000/ \\\n"
+            "      --parcel-atlases schaefer2018parcels400networks17 \\\n"
+            "      --output /data/parcellated/"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_prepare_functional_args(prepare_functional)
+
+    prepare_structural = prepare_subparsers.add_parser(
+        "structural",
+        help="Reserved (not yet implemented)",
+        description="Reduce a structural tractogram to a parcel-level matrix. Not yet implemented.",
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    _add_prepare_functional_args(prepare_structural)
 
 
 def _build_tutorial_parser(subparsers) -> None:
