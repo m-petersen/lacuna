@@ -8,7 +8,7 @@ the resulting group-level :class:`~lacuna.core.data_types.ConnectivityMatrix`
 as a BIDS-style TSV + JSON sidecar (mirrors the layout produced by
 ``lacuna run snm`` for its disconnectivity matrix).
 
-The structural target (``lacuna prepare structural``) is wired up separately.
+Exposed via the ``lacuna prepare afnm`` CLI target.
 """
 
 from __future__ import annotations
@@ -276,7 +276,7 @@ def parcellate_functional(
 
 
 def run_parcellate_functional_cli(args) -> int:
-    """Entry point for ``lacuna prepare functional``."""
+    """Entry point for ``lacuna prepare afnm``."""
     try:
         parcellations = resolve_parcellations(
             getattr(args, "parcel_atlases", None),

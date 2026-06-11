@@ -1,15 +1,14 @@
 """Prepare command implementation for the Lacuna CLI.
 
-Handles ``lacuna prepare <target>`` — precomputation of non-subject-specific
-data products that analyses consume. Currently the only target reduces a
-whole-brain functional connectome to a parcel-level connectivity matrix used
-by accelerated functional network mapping (AFNM); structural and further
-targets are reserved for the future.
+Handles ``lacuna prepare <analysis>`` — precomputation of the non-subject-specific
+data product a given analysis consumes. Targets are named after the analysis they
+prepare for (mirroring ``lacuna run``). Currently the only target is ``afnm``,
+which reduces a whole-brain functional connectome to the parcel-level connectivity
+matrix used by accelerated functional network mapping.
 
 Commands:
-    lacuna prepare functional - Reduce a functional connectome to a parcel-level
-                                connectivity matrix (input to ``lacuna run afnm``).
-    lacuna prepare structural - Reserved (not yet implemented).
+    lacuna prepare afnm - Build the parcel-level connectivity matrix that
+                          'lacuna run afnm' consumes via --matrix-path.
 """
 
 from __future__ import annotations
@@ -34,20 +33,13 @@ def handle_prepare_command(args: argparse.Namespace) -> int:
     """
     target = getattr(args, "prepare_target", None)
 
-    if target == "functional":
+    if target == "afnm":
         from lacuna.prepare.parcellate import run_parcellate_functional_cli
 
         return run_parcellate_functional_cli(args)
 
-    if target == "structural":
-        print(
-            "Error: 'lacuna prepare structural' is not yet implemented.",
-            file=sys.stderr,
-        )
-        return 1
-
     print(
-        "Error: 'lacuna prepare' requires a target. Try 'lacuna prepare functional --help'.",
+        "Error: 'lacuna prepare' requires a target. Try 'lacuna prepare afnm --help'.",
         file=sys.stderr,
     )
     return 1

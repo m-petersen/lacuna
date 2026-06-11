@@ -144,13 +144,13 @@ lacuna run fnm /bids /output \
 
 ## `lacuna run afnm` — Accelerated Functional Network Mapping
 
-Parcel-level functional lesion network mapping via matrix multiplication: `AFNMAP = M × C`, where `M` is the lesion-by-parcel weight matrix and `C` is a precomputed group-average parcel-level functional connectivity matrix (produced by `lacuna prepare functional`). Runs in a fraction of the time of voxel-level FNM at the cost of parcel-resolution output.
+Parcel-level functional lesion network mapping via matrix multiplication: `AFNMAP = M × C`, where `M` is the lesion-by-parcel weight matrix and `C` is a precomputed group-average parcel-level functional connectivity matrix (produced by `lacuna prepare afnm`). Runs in a fraction of the time of voxel-level FNM at the cost of parcel-resolution output.
 
 ### AcceleratedFunctionalNetworkMapping options
 
 | Option | Description |
 |--------|-------------|
-| `--matrix-path PATH` | **(required)** Parcel-level group FC matrix TSV (from `lacuna prepare functional`) |
+| `--matrix-path PATH` | **(required)** Parcel-level group FC matrix TSV (from `lacuna prepare afnm`) |
 | `--lesion-weighting {fractional,binary,voxel_count}` | How to build the lesion→parcel row vector `m` (default: `fractional`). `fractional` = `1/n_regions_touched`; `binary` = 0/1; `voxel_count` = fraction of parcel voxels covered. |
 | `--parcel-atlases ATLAS` | Atlas name matching the parcellation used to build `--matrix-path`. Exactly one atlas required. |
 | `--custom-parcellation NAME NIFTI LABELS SPACE` | Custom parcellation matching `--matrix-path`. |

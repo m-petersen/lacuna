@@ -42,7 +42,7 @@ lacuna <command> [options]
 
     ---
 
-    Precompute connectome-derived data products — currently `prepare functional`, which reduces a functional connectome to a parcel-level matrix (input for `run afnm`).
+    Precompute connectome-derived data products — currently `prepare afnm`, which builds the parcel-level connectivity matrix that accelerated FNM consumes.
 
 -   [**Info**](info.md)
 

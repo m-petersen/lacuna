@@ -4,7 +4,7 @@ Implements the matrix-multiplication formulation of functional LNM from van
 den Heuvel et al. (2026, *Nat Neurosci*): ``afnmap = m @ C``, where ``m`` is
 a lesion-to-parcel weight vector and ``C`` is a precomputed group-level
 parcel-level functional connectivity matrix (Fisher r-to-z values, produced
-by ``lacuna prepare functional``).
+by ``lacuna prepare afnm``).
 
 Compared with voxel-level functional LNM this replaces a per-subject
 correlation sweep over a voxelwise connectome with a single (N,) × (N, N)
@@ -42,7 +42,7 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
     ----------
     matrix_path : str or Path
         Path to the group-FC matrix TSV produced by
-        ``lacuna prepare functional``.
+        ``lacuna prepare afnm``.
         Must be a square matrix with region labels as its row/column index.
     parcel_names : list[str]
         Registered parcellation name(s) matching the atlas used to build ``C``.
@@ -133,7 +133,7 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
         if list(df.index) != list(df.columns):
             raise ValueError(
                 "Matrix TSV row/column labels disagree; the file does not look like "
-                "a ConnectivityMatrix produced by 'lacuna prepare functional'."
+                "a ConnectivityMatrix produced by 'lacuna prepare afnm'."
             )
         self._c_matrix = df.values.astype(np.float64)
         self._c_labels = [str(x) for x in df.index]
