@@ -443,10 +443,17 @@ def fetch_gsp1000(
 
 
 def _find_brain_mask(raw_dir: Path) -> Path:
-    """Find brain mask from download or templateflow."""
-    import nibabel as nib
+    """Locate or derive the brain mask used to extract the GSP1000 connectome.
 
-    from ..core.exceptions import ProcessingError
+    Prefers a real 3D mask shipped alongside the download. The GSP1000 release
+    does not include one, so when none is found the mask is *derived from the
+    functional data itself* — the GSP1000 series are skull-stripped (background
+    is exactly zero), so a voxel is in-brain wherever it carries signal. Taking
+    the common (intersection) coverage across a sample of subjects yields the
+    brain mask in the connectome's MNI152NLin6Asym 2mm grid, with no external
+    (TemplateFlow/FSL) mask required.
+    """
+    import nibabel as nib
 
     # NB: GSP1000 subject functionals are named '*_finalmask.nii.gz', which
     # match '*mask*' — exclude those (and any 4D volume) so we don't return a
@@ -469,21 +476,59 @@ def _find_brain_mask(raw_dir: Path) -> Path:
     if candidates:
         return candidates[0]
 
-    # Optional fallback: a brain mask from TemplateFlow, if it happens to be
-    # installed. TemplateFlow is not a Lacuna dependency, so this is best-effort.
-    try:
-        import templateflow.api as tflow
+    return _derive_brain_mask(raw_dir)
 
-        return Path(tflow.get("MNI152NLin6Asym", resolution=2, desc="brain", suffix="mask"))
-    except Exception as e:
+
+def _derive_brain_mask(raw_dir: Path, *, sample: int = 20) -> Path:
+    """Derive a brain mask from the GSP1000 functional series.
+
+    A voxel is in-brain if it carries non-zero signal in every sampled subject
+    (the GSP1000 functionals are skull-stripped, so out-of-brain voxels are
+    exactly zero). The resulting mask is written to a temporary NIfTI and its
+    path returned, matching the ``mask_path`` interface of ``gsp1000_to_hdf5``.
+    """
+    import glob as _glob
+    import tempfile
+
+    import nibabel as nib
+    import numpy as np
+
+    from ..core.exceptions import ProcessingError
+
+    pattern = str(raw_dir / "sub-*" / "func" / "*bld001_rest_*_finalmask.nii.gz")
+    func_files = sorted(_glob.glob(pattern))
+    if not func_files:
         raise ProcessingError(
             operation="locate brain mask",
             reason=(
-                "No brain mask found in the connectome download. Provide a mask "
-                "alongside the data, or `pip install templateflow` to use an "
-                f"automatic MNI152NLin6Asym fallback (unavailable: {e})."
+                "No brain mask found in the connectome download and no functional "
+                f"series to derive one from (looked for {pattern})."
             ),
-        ) from e
+        )
+
+    accum: np.ndarray | None = None
+    affine: np.ndarray | None = None
+    for fp in func_files[:sample]:
+        img = nib.load(fp)
+        if affine is None:
+            affine = img.affine
+        data = np.asanyarray(img.dataobj)
+        has_signal = np.any(data != 0, axis=3) if data.ndim == 4 else (data != 0)
+        accum = has_signal if accum is None else (accum & has_signal)
+        del data
+
+    mask = accum.astype(np.uint8)
+    if int(mask.sum()) == 0:
+        raise ProcessingError(
+            operation="derive brain mask",
+            reason="Derived brain mask is empty; the functional data appear to be all zero.",
+        )
+
+    out = Path(tempfile.mkdtemp(prefix="lacuna_gsp_mask_")) / "derived_brain_mask.nii.gz"
+    mask_img = nib.Nifti1Image(mask, affine)
+    mask_img.set_data_dtype(np.uint8)
+    mask_img.to_filename(str(out))
+    return out
 
 
 def _register_gsp1000(
