@@ -1,6 +1,7 @@
 """Template asset management for Lacuna.
 
-This module provides template registry and loading with TemplateFlow integration.
+This module provides template registry and loading. Reference grids are bundled
+with the package; TemplateFlow is not required at runtime.
 """
 
 from lacuna.assets.templates.loader import is_template_cached, load_template

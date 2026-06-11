@@ -1,4 +1,4 @@
-"""Transform registry with TemplateFlow integration.
+"""Transform registry.
 
 This module provides registry and metadata for spatial transformations
 between coordinate spaces.
@@ -96,7 +96,7 @@ def list_transforms(
     from_space: str | None = None,
     to_space: str | None = None,
 ) -> list[TransformMetadata]:
-    """List available transforms from TemplateFlow.
+    """List available spatial transforms.
 
     Parameters
     ----------

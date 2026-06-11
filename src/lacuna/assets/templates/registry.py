@@ -1,7 +1,8 @@
-"""Template registry with TemplateFlow integration.
+"""Template registry.
 
 This module provides registry and metadata for reference brain templates.
-Templates are automatically downloaded from TemplateFlow on first use.
+Reference grids are bundled with the package (data/templates/); TemplateFlow is
+not required at runtime.
 """
 
 from __future__ import annotations
@@ -83,7 +84,7 @@ def list_templates(
     resolution: float | None = None,
     modality: str | None = None,
 ) -> list[TemplateMetadata]:
-    """List available templates from TemplateFlow.
+    """List available reference templates.
 
     Parameters
     ----------

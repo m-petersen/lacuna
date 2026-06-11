@@ -154,7 +154,7 @@ class Test4DAtlasTransformation:
     """Test volume-by-volume transformation of 4D atlases."""
 
     @pytest.mark.slow
-    @pytest.mark.requires_templateflow
+    @pytest.mark.requires_network
     def test_transform_4d_atlas_real_world_scenario(self, tmp_path):
         """Test transformation with realistic 4D atlas scenario."""
         # This test mimics the actual error scenario:
@@ -300,7 +300,7 @@ class Test4DAtlasTransformation:
             ), f"Volume {vol_idx} has unexpected values: {unique_vals}"
 
     @pytest.mark.slow
-    @pytest.mark.requires_templateflow
+    @pytest.mark.requires_network
     def test_transform_4d_atlas_different_spaces(self, tmp_path):
         """4D atlas transformation should work across different coordinate spaces."""
         # This test will verify that the transformation works when

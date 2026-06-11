@@ -111,7 +111,7 @@ markers = [
     "integration: marks tests as integration tests (multiple components)",
     "contract: marks tests as contract/API tests (interface validation)",
     "requires_mrtrix: requires MRtrix3 to be installed",
-    "requires_templateflow: requires internet access for template downloads",
+    "requires_network: requires internet access (e.g. to download OSF-hosted assets)",
 ]
 filterwarnings = [
     "error",

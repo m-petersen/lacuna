@@ -132,7 +132,7 @@ def test_no_transformation_when_already_in_target_space(lesion_mni152_2mm):
 
 
 @pytest.mark.slow
-@pytest.mark.requires_templateflow
+@pytest.mark.requires_network
 def test_automatic_transformation_to_target_space(lesion_mni152_1mm):
     """Test that lesion is automatically transformed from 1mm to 2mm via resampling."""
     analysis = TestAnalysis2mm()
@@ -153,7 +153,7 @@ def test_automatic_transformation_to_target_space(lesion_mni152_1mm):
 
 
 @pytest.mark.slow
-@pytest.mark.requires_templateflow
+@pytest.mark.requires_network
 def test_automatic_transformation_different_space(lesion_mni152_2mm):
     """Test that lesion is transformed to different coordinate space."""
     analysis = TestAnalysis1mm()

@@ -2,8 +2,8 @@
 
 This module provides centralized management of all neuroimaging assets:
 - Parcellations (bundled and user-registered)
-- Templates (from TemplateFlow)
-- Transforms (from TemplateFlow)
+- Templates (bundled grid references)
+- Transforms (TemplateFlow-generated warps, redistributed via OSF)
 - Connectomes (structural and functional, user-registered)
 
 All asset types follow a consistent registry pattern with register/list/load functions.
