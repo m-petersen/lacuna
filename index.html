@@ -439,10 +439,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#analyses" class="md-nav__link">
+  <a href="#capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Analyses
+        Capabilities
       
     </span>
   </a>
@@ -715,14 +715,14 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/regional-damage/" class="md-nav__link">
+      <a href="tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -944,6 +944,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1005,6 +1009,34 @@
   
   
     <li class="md-nav__item">
+      <a href="explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -1013,6 +1045,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1524,10 +1584,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#analyses" class="md-nav__link">
+  <a href="#capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Analyses
+        Capabilities
       
     </span>
   </a>
@@ -1625,33 +1685,35 @@
 <div style="display: flex; align-items: center; gap: 2rem;">
 <div>
 <h1 id="lacuna">Lacuna<a class="headerlink" href="#lacuna" title="Permanent link">&para;</a></h1>
-<p>A Python package for advanced brain lesion analysis.</p>
-<p>Lacuna bridges the gap between individual lesion masks and normative brain data.
-It provides a reproducible workflow for lesion network mapping
-and regional damage quantification, using BIDS-style naming conventions for input and output organization.</p>
+<p>When a stroke, tumor, or other focal injury damages brain tissue, the resulting symptoms can reflect not only the affected region itself, but also its connections within distributed brain networks. Interpreting a lesion therefore requires considering it in the broader context of brain organization.</p>
+<p>Lacuna is an open-source toolbox for characterizing lesions using normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases. Given a lesion mask, the toolbox generates a range of lesion-derived measures that place the lesion within this broader neuroanatomical and network context.</p>
+<p>The current release focuses on lesion network mapping and related workflows, with a modular architecture designed to support additional approaches to lesion characterization in the future. Reproducibility is emphasized throughout, using BIDS-inspired conventions for inputs and outputs.</p>
 </div>
 <p><img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;"></p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">This project is under active development and has not yet been fully validated. Use with caution.</p>
 </div>
-<h2 id="analyses">Analyses<a class="headerlink" href="#analyses" title="Permanent link">&para;</a></h2>
+<h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>
 <li>
 <p><strong>Functional lesion network mapping</strong></p>
 <hr />
+<p><img alt="Functional lesion network mapping" src="assets/method_figures/flnm.svg" style="display: block; margin: 0.5em auto;" width="180" /></p>
 <p>Map the functional brain circuitry linked to a lesion using resting-state functional connectivity.</p>
 </li>
 <li>
 <p><strong>Structural lesion network mapping</strong></p>
 <hr />
+<p><img alt="Structural lesion network mapping" src="assets/method_figures/slnm.svg" style="display: block; margin: 0.5em auto;" width="220" /></p>
 <p>Map the structural disconnectivity of a lesion using normative tractogram data.</p>
 </li>
 <li>
-<p><strong>Regional damage</strong></p>
+<p><strong>Focal damage</strong></p>
 <hr />
-<p>Quantify regional damage by measuring lesion overlap with standard brain parcellation atlases.</p>
+<p><img alt="Focal damage" src="assets/method_figures/lesion_atlas_overlap.svg" style="display: block; margin: 0.5em auto;" width="180" /></p>
+<p>Quantify focal damage by measuring lesion overlap with standard brain parcellation atlases.</p>
 </li>
 </ul>
 </div>

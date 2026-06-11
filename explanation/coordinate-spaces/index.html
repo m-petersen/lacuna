@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://lacuna-py.readthedocs.io/explanation/coordinate-spaces/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../lesion-network-mapping/">
       
       
-        <link rel="next" href="../../reference/">
+        <link rel="next" href="../requirements-and-faq/">
       
       
         
@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -822,6 +822,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -876,6 +880,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1055,10 +1087,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templateflow-integration" class="md-nav__link">
+  <a href="#templates-and-transforms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        TemplateFlow integration
+        Templates and transforms
       
     </span>
   </a>
@@ -1119,6 +1151,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1731,10 +1791,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templateflow-integration" class="md-nav__link">
+  <a href="#templates-and-transforms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        TemplateFlow integration
+        Templates and transforms
       
     </span>
   </a>
@@ -1812,7 +1872,7 @@
 
 
 <h1 id="coordinate-spaces-in-lacuna">Coordinate spaces in Lacuna<a class="headerlink" href="#coordinate-spaces-in-lacuna" title="Permanent link">&para;</a></h1>
-<p>To combine lesion masks and atlas data, we need to bring them to the same coordinate space. Instead of requiring you to manually align all data to a single space, Lacuna uses <a href="https://www.templateflow.org/">TemplateFlow</a> to handle transformations internally. You only need to provide lesion masks in one of the two supported MNI spaces — Lacuna ensures everything else is brought into alignment automatically.</p>
+<p>To combine lesion masks and atlas data, we need to bring them to the same coordinate space. Instead of requiring you to manually align all data to a single space, Lacuna handles these transformations internally. You only need to provide lesion masks in one of the two supported MNI spaces — Lacuna ensures everything else is brought into alignment automatically.</p>
 <p>For how to get your masks into MNI space, see the <a href="../../how-to/spatial-normalization/">spatial normalization</a> how-to guide.</p>
 <h2 id="what-is-a-coordinate-space">What is a coordinate space?<a class="headerlink" href="#what-is-a-coordinate-space" title="Permanent link">&para;</a></h2>
 <p>A coordinate space defines how 3D voxel indices (i, j, k) map to physical
@@ -1893,7 +1953,7 @@ to a different anatomical location in the connectome.</p>
 <tr>
 <td>NLin6 ↔ 2009c</td>
 <td>Warp</td>
-<td>Nonlinear warp transform from TemplateFlow</td>
+<td>Nonlinear warp transform (from TemplateFlow, fetched on first use)</td>
 </tr>
 <tr>
 <td>NLin6 ↔ 2009b</td>
@@ -1932,12 +1992,12 @@ to a different anatomical location in the connectome.</p>
 </table>
 <h3 id="mni152nlin2009b-internal">MNI152NLin2009b (internal)<a class="headerlink" href="#mni152nlin2009b-internal" title="Permanent link">&para;</a></h3>
 <p>The dTOR985 structural connectome is defined in MNI152NLin2009bAsym space. This space is not accepted as user input — Lacuna converts between 2009c and 2009b internally using affine-aware regridding (no nonlinear warp needed, since the 2009 variants share MNI world coordinates).</p>
-<h2 id="templateflow-integration">TemplateFlow integration<a class="headerlink" href="#templateflow-integration" title="Permanent link">&para;</a></h2>
-<p>Lacuna uses <a href="https://templateflow.org">TemplateFlow</a> to manage templates and spatial transforms. Templates and warp fields are downloaded automatically on first use and cached locally.</p>
+<h2 id="templates-and-transforms">Templates and transforms<a class="headerlink" href="#templates-and-transforms" title="Permanent link">&para;</a></h2>
+<p>Lacuna manages reference grids and spatial transforms for you. The nonlinear warp fields between MNI152NLin6Asym and MNI152NLin2009cAsym — originally generated by <a href="https://templateflow.org">TemplateFlow</a> — are downloaded automatically on first use (with checksum verification) and cached locally. Reference grids are bundled with the package, so Lacuna needs only the geometry of each space, never a full template image.</p>
 <p>When you run an analysis, Lacuna:</p>
 <ol>
 <li>Identifies the required template space from the connectome or atlas</li>
-<li>Downloads the matching template and transform from TemplateFlow (if not cached)</li>
+<li>Fetches the matching warp (if not already cached) and uses the bundled reference grid</li>
 <li>Applies the transform to align your mask with the target data</li>
 </ol>
 <p>No manual template management is required.</p>

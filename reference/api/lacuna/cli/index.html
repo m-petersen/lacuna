@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1682,7 +1742,7 @@ the BIDS-Apps specification for neuroimaging pipelines.</p>
 </span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>            <span class="s2">&quot;  lacuna tutorial ./my_tutorial</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a>            <span class="s2">&quot;  lacuna bidsify /raw /bids --space MNI152NLin6Asym</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a>            <span class="s2">&quot;  lacuna fetch gsp1000 --api-key </span><span class="se">\\</span><span class="s2">$DATAVERSE_API_KEY</span><span class="se">\n</span><span class="s2">&quot;</span>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a>            <span class="s2">&quot;  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7</span><span class="se">\n</span><span class="s2">&quot;</span>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a>            <span class="s2">&quot;  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a>            <span class="s2">&quot;  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>            <span class="s2">&quot;  lacuna collect /output</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>            <span class="s2">&quot;  lacuna info atlases</span><span class="se">\n</span><span class="s2">&quot;</span>

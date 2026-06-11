@@ -16,7 +16,7 @@
         <link rel="prev" href="../functional_network_mapping/">
       
       
-        <link rel="next" href="../regional_damage/">
+        <link rel="next" href="../registry/">
       
       
         
@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../../../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1596,7 +1656,7 @@ from mask images, connectivity maps, or any other spatial maps.</p>
 <p>Computations performed in input data space (atlases transformed to match input).</p>
 <p>Aggregate voxel-level maps to ROI-level statistics using atlases.</p>
 <p>This is a composable analysis that can:
-1. Compute regional damage from lesion masks (percent overlap, volume)
+1. Compute focal damage from lesion masks (percent overlap, volume)
 2. Aggregate connectivity maps from network analyses (mean, sum, etc.)
 3. Extract any voxel-level map to atlas ROI statistics</p>
 <p>The analysis discovers all atlases in the specified directory and computes
@@ -1827,7 +1887,7 @@ Example: ["schaefer2018parcels100networks7", "tian2020parcels16"]</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p>RegionalDamage : Convenience wrapper for lesion overlap analysis
+  <p>FocalDamage : Convenience wrapper for lesion overlap analysis
 BaseAnalysis : Parent class defining analysis interface</p>
 </details>
 
@@ -3228,7 +3288,7 @@ BaseAnalysis : Parent class defining analysis interface</p>
 </span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    Aggregate voxel-level maps to ROI-level statistics using atlases.</span>
 </span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>
 </span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    This is a composable analysis that can:</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    1. Compute regional damage from lesion masks (percent overlap, volume)</span>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    1. Compute focal damage from lesion masks (percent overlap, volume)</span>
 </span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    2. Aggregate connectivity maps from network analyses (mean, sum, etc.)</span>
 </span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">    3. Extract any voxel-level map to atlas ROI statistics</span>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a>
@@ -3342,7 +3402,7 @@ BaseAnalysis : Parent class defining analysis interface</p>
 </span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a>
 </span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">    See Also</span>
 </span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">    --------</span>
-</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">    RegionalDamage : Convenience wrapper for lesion overlap analysis</span>
+</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">    FocalDamage : Convenience wrapper for lesion overlap analysis</span>
 </span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">    BaseAnalysis : Parent class defining analysis interface</span>
 </span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-186"><a id="__codelineno-0-186" name="__codelineno-0-186"></a>

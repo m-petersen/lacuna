@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../../../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1612,7 +1672,9 @@ processing, and registering connectomes.</p>
 <span class="normal"><a href="#__codelineno-0-63">63</a></span>
 <span class="normal"><a href="#__codelineno-0-64">64</a></span>
 <span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">handle_fetch_command</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">handle_fetch_command</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">    Handle the fetch subcommand.</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a>
@@ -1655,11 +1717,13 @@ processing, and registering connectomes.</p>
 </span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>        <span class="k">return</span> <span class="n">_handle_gsp1000</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="k">elif</span> <span class="n">connectome</span> <span class="o">==</span> <span class="s2">&quot;dtor985&quot;</span><span class="p">:</span>
 </span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>        <span class="k">return</span> <span class="n">_handle_dtor985</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="k">elif</span> <span class="n">connectome</span> <span class="o">==</span> <span class="s2">&quot;hcp1065&quot;</span><span class="p">:</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>        <span class="k">return</span> <span class="n">_handle_hcp1065</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Unknown connectome &#39;</span><span class="si">{</span><span class="n">connectome</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>        <span class="k">return</span> <span class="mi">1</span>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="k">elif</span> <span class="n">connectome</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;dtor985_10pct&quot;</span><span class="p">,</span> <span class="s2">&quot;dtor985_25pct&quot;</span><span class="p">):</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>        <span class="k">return</span> <span class="n">_handle_dtor985_subsample</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">connectome</span><span class="p">)</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="k">elif</span> <span class="n">connectome</span> <span class="o">==</span> <span class="s2">&quot;hcp1065&quot;</span><span class="p">:</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>        <span class="k">return</span> <span class="n">_handle_hcp1065</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Unknown connectome &#39;</span><span class="si">{</span><span class="n">connectome</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>        <span class="k">return</span> <span class="mi">1</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

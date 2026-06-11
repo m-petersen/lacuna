@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1239,15 +1299,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lacuna-check-rdfnmafnmsnm-check-output-completeness" class="md-nav__link">
+  <a href="#lacuna-check-fdfnmafnmsnm-check-output-completeness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        lacuna check rd|fnm|afnm|snm — Check output completeness
+        lacuna check fd|fnm|afnm|snm — Check output completeness
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="lacuna check rd|fnm|afnm|snm — Check output completeness">
+    <nav class="md-nav" aria-label="lacuna check fd|fnm|afnm|snm — Check output completeness">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1714,15 +1774,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lacuna-check-rdfnmafnmsnm-check-output-completeness" class="md-nav__link">
+  <a href="#lacuna-check-fdfnmafnmsnm-check-output-completeness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        lacuna check rd|fnm|afnm|snm — Check output completeness
+        lacuna check fd|fnm|afnm|snm — Check output completeness
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="lacuna check rd|fnm|afnm|snm — Check output completeness">
+    <nav class="md-nav" aria-label="lacuna check fd|fnm|afnm|snm — Check output completeness">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1831,13 +1891,13 @@
 <p>The <code>lacuna check</code> command validates input data and checks output completeness.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna check input &lt;bids_dir&gt; [options]
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>lacuna check &lt;rd|fnm|afnm|snm&gt; &lt;bids_dir&gt; &lt;output_dir&gt; [options]
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>lacuna check &lt;fd|fnm|afnm|snm&gt; &lt;bids_dir&gt; &lt;output_dir&gt; [options]
 </span></code></pre></div>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p><code>lacuna check</code> has two modes:</p>
 <ul>
 <li><strong>Input check</strong> (<code>lacuna check input</code>) — Validate mask files <em>before</em> running analyses. Catches common issues (non-binary masks, empty masks, space mismatches) that would otherwise cause mid-batch failures.</li>
-<li><strong>Output check</strong> (<code>lacuna check rd|fnm|afnm|snm</code>) — Check which subjects have complete outputs <em>after</em> a run. Useful for identifying failed subjects and generating rerun commands.</li>
+<li><strong>Output check</strong> (<code>lacuna check fd|fnm|afnm|snm</code>) — Check which subjects have complete outputs <em>after</em> a run. Useful for identifying failed subjects and generating rerun commands.</li>
 </ul>
 <hr />
 <h2 id="lacuna-check-input-validate-input-masks"><code>lacuna check input</code> — Validate input masks<a class="headerlink" href="#lacuna-check-input-validate-input-masks" title="Permanent link">&para;</a></h2>
@@ -1978,7 +2038,7 @@
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>lacuna<span class="w"> </span>check<span class="w"> </span>input<span class="w"> </span>/bids<span class="w"> </span>--output-file<span class="w"> </span>problems.txt
 </span></code></pre></div>
 <hr />
-<h2 id="lacuna-check-rdfnmafnmsnm-check-output-completeness"><code>lacuna check rd|fnm|afnm|snm</code> — Check output completeness<a class="headerlink" href="#lacuna-check-rdfnmafnmsnm-check-output-completeness" title="Permanent link">&para;</a></h2>
+<h2 id="lacuna-check-fdfnmafnmsnm-check-output-completeness"><code>lacuna check fd|fnm|afnm|snm</code> — Check output completeness<a class="headerlink" href="#lacuna-check-fdfnmafnmsnm-check-output-completeness" title="Permanent link">&para;</a></h2>
 <p>Enumerates input subjects and checks whether output files exist in the derivatives directory.</p>
 <h3 id="sentinel-files-checked">Sentinel files checked<a class="headerlink" href="#sentinel-files-checked" title="Permanent link">&para;</a></h3>
 <table>
@@ -1992,8 +2052,8 @@
 <tbody>
 <tr>
 <td><code>rd</code></td>
-<td><code>regionaldamage</code></td>
-<td><code>*method-rd*parcelstats.tsv</code></td>
+<td><code>focaldamage</code></td>
+<td><code>*method-fd*parcelstats.tsv</code></td>
 </tr>
 <tr>
 <td><code>fnm</code></td>
@@ -2102,14 +2162,14 @@
 </table>
 <h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check all subjects for RD outputs</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>lacuna<span class="w"> </span>check<span class="w"> </span>fd<span class="w"> </span>/bids<span class="w"> </span>/output
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Check specific atlas</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels400networks7
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>lacuna<span class="w"> </span>check<span class="w"> </span>fd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels400networks7
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Write missing subjects and use for rerun</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--output-file<span class="w"> </span>missing.txt
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--participant-label<span class="w"> </span><span class="k">$(</span>cat<span class="w"> </span>missing.txt<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="k">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>lacuna<span class="w"> </span>check<span class="w"> </span>fd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--output-file<span class="w"> </span>missing.txt
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>lacuna<span class="w"> </span>run<span class="w"> </span>fd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--participant-label<span class="w"> </span><span class="k">$(</span>cat<span class="w"> </span>missing.txt<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="k">)</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># Quiet mode for scripting</span>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>lacuna<span class="w"> </span>check<span class="w"> </span>fnm<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--quiet

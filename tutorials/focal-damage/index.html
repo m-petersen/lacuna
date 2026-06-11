@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://lacuna-py.readthedocs.io/tutorials/regional-damage/">
+        <link rel="canonical" href="https://lacuna-py.readthedocs.io/tutorials/focal-damage/">
       
       
         <link rel="prev" href="../accelerated-functional-network-mapping/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Regional damage - Lacuna</title>
+        <title>Focal damage - Lacuna</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#regional-damage" class="md-skip">
+        <a href="#focal-damage" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Regional damage
+              Focal damage
             
           </span>
         </div>
@@ -610,7 +610,7 @@
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -628,7 +628,7 @@
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -903,6 +903,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -964,6 +968,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -972,6 +1004,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -2260,15 +2320,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="regional-damage">Regional damage<a class="anchor-link" href="#regional-damage">¶</a></h1><p>In this tutorial, you will learn about how Lacuna can help you measure regional lesion load using the command line interface.</p>
+<h1 id="focal-damage">Focal damage<a class="anchor-link" href="#focal-damage">¶</a></h1><p>In this tutorial, you will learn about how Lacuna can help you measure regional lesion load using the command line interface.</p>
 <p><strong>What you'll learn:</strong></p>
 <ul>
-<li>Run a regional damage analysis on a BIDS dataset</li>
+<li>Run a focal damage analysis on a BIDS dataset</li>
 <li>Interpret parcel-level damage outputs</li>
 <li>Visualize lesion–atlas overlap</li>
 <li>Collect individual outputs into a group-level table</li>
 </ul>
-<p><a href="https://colab.research.google.com/github/m-petersen/lacuna/blob/main/docs/tutorials/regional-damage.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
+<p><a href="https://colab.research.google.com/github/m-petersen/lacuna/blob/main/docs/tutorials/focal-damage.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
 </div>
 </div>
 </div>
@@ -2337,7 +2397,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="analysis">Analysis<a class="anchor-link" href="#analysis">¶</a></h2><p>For the regional damage analysis Lacuna simply measures the overlap of a lesion with an atlas.</p>
+<h2 id="analysis">Analysis<a class="anchor-link" href="#analysis">¶</a></h2><p>For the focal damage analysis Lacuna measures the overlap of a lesion with parcels of an atlas.</p>
+<p align="center"><img alt="Focal damage" src="../assets/method_figures/focal_damage.svg" style="width:100%; max-width:760px;"/><br/>
+<em style="font-size: 0.9em; color: #666;">Focal damage procedure shown with exemplary lesion and the Schaefer100 atlas.</em></p>
 <p>Run the analysis on all tutorial data.</p>
 </div>
 </div>
@@ -2348,7 +2410,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -2361,13 +2423,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-2">!lacuna run fd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd/ \
     --parcel-atlases schaefer2018parcels100networks7 \
@@ -2383,7 +2445,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -2434,7 +2496,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
@@ -2461,7 +2523,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
+<pre>sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
 sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
 sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
 sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
@@ -2477,7 +2543,7 @@ sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
@@ -2492,13 +2558,13 @@ sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="n">output_tsv</span> <span class="o">=</span> <span class="s2">"/tmp/outputs_rd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span>
+<span class="n">output_tsv</span> <span class="o">=</span> <span class="s2">"/tmp/outputs_rd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">output_tsv</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"value"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">import pandas as pd
 
-output_tsv = "/tmp/outputs_rd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"
+output_tsv = "/tmp/outputs_rd/sub-01/ses-01/anat/sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"
 df = pd.read_csv(output_tsv, sep="\t")
 df.sort_values(by="value", ascending=False).head(10)</div>
 </div>
@@ -2510,7 +2576,7 @@ df.sort_values(by="value", ascending=False).head(10)</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[4]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div>
 <style scoped="">
@@ -2610,7 +2676,7 @@ df.sort_values(by="value", ascending=False).head(10)</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
@@ -2702,7 +2768,7 @@ plot.add_overlay(
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
@@ -2737,19 +2803,19 @@ plot.add_overlay(
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>2026-04-15 10:23:14 - lacuna.cli.main - INFO - Running collect (group-level aggregation)
-2026-04-15 10:23:14 - lacuna.cli.main - INFO - Scanning derivatives directory: /tmp/outputs_rd
-2026-04-15 10:23:14 - lacuna.cli.main - INFO - Output directory: /tmp/group_outputs
-2026-04-15 10:23:14 - lacuna.cli.main - INFO - Pattern: *schaefer2018*_parcelstats.tsv
-2026-04-15 10:23:14 - lacuna.cli.main - INFO - Found 6 file(s) across 3 subject(s) and 2 output type(s)
-Collecting output types:   0%|                          | 0/2 [00:00&lt;?, ?type/s]
-  Reading ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networ
+<pre>2026-06-11 15:21:32 - lacuna.cli.main - INFO - Running collect (group-level aggregation)
+2026-06-11 15:21:32 - lacuna.cli.main - INFO - Scanning derivatives directory: /tmp/outputs_rd
+2026-06-11 15:21:32 - lacuna.cli.main - INFO - Output directory: /tmp/group_outputs
+2026-06-11 15:21:32 - lacuna.cli.main - INFO - Pattern: *schaefer2018*_parcelstats.tsv
+2026-06-11 15:21:32 - lacuna.cli.main - INFO - Found 12 file(s) across 3 subject(s) and 4 output type(s)
+Collecting output types:   0%|                          | 0/4 [00:00&lt;?, ?type/s]
+  Reading ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networ
                                                                                 
-  Reading ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networ
-Collecting output types: 100%|██████████████████| 2/2 [00:00&lt;00:00, 23.29type/s]
-2026-04-15 10:23:14 - lacuna.cli.main - INFO - Created 2 group-level TSV file(s):
-2026-04-15 10:23:14 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
-2026-04-15 10:23:14 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
+  Reading ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networ
+Collecting output types: 100%|█████████████████| 4/4 [00:00&lt;00:00, 103.47type/s]
+2026-06-11 15:21:32 - lacuna.cli.main - INFO - Created 2 group-level TSV file(s):
+2026-06-11 15:21:32 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
+2026-06-11 15:21:32 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
 </pre>
 </div>
 </div>
@@ -2762,7 +2828,7 @@ Collecting output types: 100%|████████████████�
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
@@ -2775,10 +2841,10 @@ Collecting output types: 100%|████████████████�
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">parcel_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">parcel_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">parcel_df</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-8">parcel_df = pd.read_csv("/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv", sep="\t", index_col=0)
+<div class="clipboard-copy-txt" id="cell-8">parcel_df = pd.read_csv("/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv", sep="\t", index_col=0)
 parcel_df</div>
 </div>
 </div>
@@ -2789,7 +2855,7 @@ parcel_df</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[8]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div>
 <style scoped="">

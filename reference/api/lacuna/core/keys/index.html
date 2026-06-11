@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../../../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1800,8 +1860,8 @@ None fields are omitted from the string representation.</p>
 </span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a>            <span class="n">export_abbrev</span> <span class="o">=</span> <span class="n">EXPORT_SOURCE_ABBREVIATIONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
 </span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a>            <span class="k">if</span> <span class="n">export_abbrev</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;fnm&quot;</span><span class="p">,</span> <span class="s2">&quot;snm&quot;</span><span class="p">,</span> <span class="s2">&quot;afnm&quot;</span><span class="p">):</span>
 </span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a>                <span class="n">method</span> <span class="o">=</span> <span class="n">export_abbrev</span>
-</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a>            <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;regionaldamage&quot;</span><span class="p">:</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>                <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;rd&quot;</span>
+</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a>            <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;focaldamage&quot;</span><span class="p">:</span>
+</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>                <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;fd&quot;</span>
 </span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a>            <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;parcelaggregation&quot;</span><span class="p">:</span>
 </span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a>                <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;pa&quot;</span>
 </span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a>            <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;inputmask&quot;</span><span class="p">:</span>
@@ -2076,8 +2136,8 @@ when the key has no <code>source-</code> entity.</p>
 </span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a>        <span class="n">export_abbrev</span> <span class="o">=</span> <span class="n">EXPORT_SOURCE_ABBREVIATIONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
 </span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a>        <span class="k">if</span> <span class="n">export_abbrev</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;fnm&quot;</span><span class="p">,</span> <span class="s2">&quot;snm&quot;</span><span class="p">,</span> <span class="s2">&quot;afnm&quot;</span><span class="p">):</span>
 </span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a>            <span class="n">method</span> <span class="o">=</span> <span class="n">export_abbrev</span>
-</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a>        <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;regionaldamage&quot;</span><span class="p">:</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>            <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;rd&quot;</span>
+</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a>        <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;focaldamage&quot;</span><span class="p">:</span>
+</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>            <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;fd&quot;</span>
 </span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a>        <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;parcelaggregation&quot;</span><span class="p">:</span>
 </span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a>            <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;pa&quot;</span>
 </span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a>        <span class="k">elif</span> <span class="n">export_abbrev</span> <span class="o">==</span> <span class="s2">&quot;inputmask&quot;</span><span class="p">:</span>
@@ -2235,8 +2295,8 @@ Ignored for InputMask source (automatically omitted).</p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">build_result_key</span><span class="p">(</span><span class="s2">&quot;tian2020parcels16&quot;</span><span class="p">,</span> <span class="s2">&quot;SubjectData&quot;</span><span class="p">)</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">&#39;atlas-tian2020parcels16_source-InputMask&#39;</span>
 </span></code></pre></div>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">build_result_key</span><span class="p">(</span><span class="s2">&quot;schaefer2018parcels200networks7&quot;</span><span class="p">,</span> <span class="s2">&quot;RegionalDamage&quot;</span><span class="p">,</span> <span class="s2">&quot;damagescore&quot;</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">&#39;atlas-schaefer2018parcels200networks7_source-RegionalDamage_desc-damagescore&#39;</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">build_result_key</span><span class="p">(</span><span class="s2">&quot;schaefer2018parcels200networks7&quot;</span><span class="p">,</span> <span class="s2">&quot;FocalDamage&quot;</span><span class="p">,</span> <span class="s2">&quot;damagescore&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">&#39;atlas-schaefer2018parcels200networks7_source-FocalDamage_desc-damagescore&#39;</span>
 </span></code></pre></div>
 
 
@@ -2330,8 +2390,8 @@ Ignored for InputMask source (automatically omitted).</p>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">    &gt;&gt;&gt; build_result_key(&quot;tian2020parcels16&quot;, &quot;SubjectData&quot;)</span>
 </span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">    &#39;atlas-tian2020parcels16_source-InputMask&#39;</span>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">    &gt;&gt;&gt; build_result_key(&quot;schaefer2018parcels200networks7&quot;, &quot;RegionalDamage&quot;, &quot;damagescore&quot;)</span>
-</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    &#39;atlas-schaefer2018parcels200networks7_source-RegionalDamage_desc-damagescore&#39;</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">    &gt;&gt;&gt; build_result_key(&quot;schaefer2018parcels200networks7&quot;, &quot;FocalDamage&quot;, &quot;damagescore&quot;)</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    &#39;atlas-schaefer2018parcels200networks7_source-FocalDamage_desc-damagescore&#39;</span>
 </span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="c1"># Convert source class name to appropriate abbreviation</span>
 </span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="n">source_abbrev</span> <span class="o">=</span> <span class="n">SOURCE_ABBREVIATIONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>

@@ -818,14 +818,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../regional-damage/" class="md-nav__link">
+      <a href="../focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -1047,6 +1047,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1108,6 +1112,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -1116,6 +1148,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -2671,10 +2731,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 └─fetch       # Download and fetch connectomes for network mapping analyses
 └─parcellate  # Reduce a whole-brain connectome to a parcel-level matrix (for AFNM)
 └─run         # Run analyses
-  └─rd        # Run regional damage analysis
+  └─fd        # Run focal damage analysis
   └─fnm       # Run functional network mapping
   └─snm       # Run structural network mapping
-  └─afnm      # Run accelerated functional network mapping (parcel-level, M @ C)
+  └─afnm      # Run accelerated functional network mapping
 └─check       # Validate inputs and check output completeness
 └─collect     # Collect individual-level outputs into analysis-ready group-level tables
 └─info        # Get info on available resources (e.g., parcellation atlases, citations)
@@ -3215,12 +3275,12 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
 </pre></div>
 <p>Lacuna currently provides four analysis types:</p>
 <ul>
-<li><strong>rd</strong> (regional damage) — Lesion overlap with parcellation atlases. No connectome needed.</li>
+<li><strong>rd</strong> (focal damage) — Lesion overlap with parcellation atlases. No connectome needed.</li>
 <li><strong>fnm</strong> (functional network mapping) — Lesion-derived functional connectivity maps. Requires a functional connectome (GSP1000).</li>
 <li><strong>afnm</strong> (accelerated functional network mapping) — Fast accelerated functional network mapping.</li>
 <li><strong>snm</strong> (structural network mapping) — White matter disconnection maps. Requires a structural connectome (dTOR985 or HCP1065) and MRtrix3.</li>
 </ul>
-<p>To demonstrate the general workflow, we use regional damage as it requires no external connectome and runs quickly. The analysis-specific tutorials cover each analysis type in detail.</p>
+<p>To demonstrate the general workflow, we use focal damage as it requires no external connectome and runs quickly. The analysis-specific tutorials cover each analysis type in detail.</p>
 </div>
 </div>
 </div>
@@ -3243,9 +3303,9 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> <span class="o">--</span><span class="n">help</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> <span class="o">--</span><span class="n">help</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-10">!lacuna run rd --help</div>
+<div class="clipboard-copy-txt" id="cell-10">!lacuna run fd --help</div>
 </div>
 </div>
 </div>
@@ -3257,7 +3317,7 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>usage: lacuna run rd [-h] [--participant-label LABEL [LABEL ...]]
+<pre>usage: lacuna run fd [-h] [--participant-label LABEL [LABEL ...]]
                      [--session-id SESSION [SESSION ...]] [--pattern GLOB]
                      [--mask-space SPACE] [--overwrite]
                      [--on-empty {warn,skip,error}] [--keep-intermediate] [-v]
@@ -3266,7 +3326,7 @@ Fetchable Connectomes (use 'lacuna fetch &lt;name&gt;'):
                      [--custom-parcellation NAME NIFTI LABELS SPACE]
                      bids_dir output_dir
 
-RegionalDamage Analysis
+FocalDamage Analysis
 
 Computes lesion overlap with brain parcellations (atlases).
 For each parcel, calculates the percentage of voxels overlapping
@@ -3275,9 +3335,9 @@ with the lesion mask.
 Use 'lacuna info atlases' to see available atlases.
 
 Examples:
-  lacuna run rd /bids /output
-  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7
-  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
+  lacuna run fd /bids /output
+  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7
+  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
 
 positional arguments:
   bids_dir              Root folder of BIDS dataset (sub-XXXXX folders at top
@@ -3319,7 +3379,7 @@ Performance options:
                         (-1 for all). Lower values produce incremental output
                         and reduce peak memory.
 
-RegionalDamage options:
+FocalDamage options:
   --parcel-atlases ATLAS [ATLAS ...]
                         Atlas names to use. Use 'lacuna info atlases' to list
                         available atlases.
@@ -3363,7 +3423,7 @@ RegionalDamage options:
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Run the regional damage analysis on a single subject.</p>
+<p>Run the focal damage analysis on a single subject.</p>
 </div>
 </div>
 </div>
@@ -3373,7 +3433,7 @@ RegionalDamage options:
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-11">
@@ -3386,16 +3446,16 @@ RegionalDamage options:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> <span class="n">schaefer2018tian2020parcels416networks17</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-11">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-11">!lacuna run fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd/ \
+    /tmp/outputs_fd/ \
     --parcel-atlases schaefer2018parcels100networks7 schaefer2018tian2020parcels416networks17 \
     --participant-label 01 \
     --mask-space MNI152NLin6Asym</div>
@@ -3421,7 +3481,7 @@ RegionalDamage options:
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-12">
@@ -3434,9 +3494,9 @@ RegionalDamage options:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span><span class="n">sub</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">ses</span><span class="o">-</span><span class="mi">01</span><span class="o">/</span><span class="n">anat</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-12">!ls /tmp/outputs_rd/sub-01/ses-01/anat/</div>
+<div class="clipboard-copy-txt" id="cell-12">!ls /tmp/outputs_fd/sub-01/ses-01/anat/</div>
 </div>
 </div>
 </div>
@@ -3449,14 +3509,14 @@ RegionalDamage options:
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>sub-01_ses-01_desc-provenance.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018tian2020parcels416networks17_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018tian2020parcels416networks17_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018tian2020parcels416networks17_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018tian2020parcels416networks17_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels416networks17_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels416networks17_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels416networks17_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels416networks17_desc-damagepct_parcelstats.tsv
 sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 </pre>
 </div>
@@ -3481,7 +3541,7 @@ sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
@@ -3494,16 +3554,16 @@ sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_all</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
     <span class="o">--</span><span class="n">verbose</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-13">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-13">!lacuna run fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd_all/ \
+    /tmp/outputs_fd_all/ \
     --parcel-atlases schaefer2018parcels100networks7 \
     --mask-space MNI152NLin6Asym \
     --verbose</div>
@@ -3522,7 +3582,7 @@ sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - Input: /tmp/tutorial_bids
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - Output directory: /tmp/outputs_rd_all
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - Analysis: rd
-2026-04-01 09:28:58 - lacuna.cli.main - INFO - Running analysis: RegionalDamage
+2026-04-01 09:28:58 - lacuna.cli.main - INFO - Running analysis: FocalDamage
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - 
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - ============================================================
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - DISCOVERY SUMMARY
@@ -3540,14 +3600,14 @@ sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - 
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - Batch processing: 3 masks in batches of 3
 2026-04-01 09:28:58 - lacuna.cli.main - INFO - 
-─── RegionalDamage ───
-RegionalDamage:   0%|                                   | 0/3 [00:00&lt;?, ?mask/s]2026-04-01 09:28:58 - lacuna.analysis - INFO - Aggregating 1 source(s) across 1 atlas(es): schaefer2018parcels100networks7
+─── FocalDamage ───
+FocalDamage:   0%|                                   | 0/3 [00:00&lt;?, ?mask/s]2026-04-01 09:28:58 - lacuna.analysis - INFO - Aggregating 1 source(s) across 1 atlas(es): schaefer2018parcels100networks7
 2026-04-01 09:29:00 - lacuna.analysis - INFO - Aggregation complete (1 results)
-RegionalDamage:  33%|█████████                  | 1/3 [00:01&lt;00:03,  1.73s/mask]2026-04-01 09:29:00 - lacuna.analysis - INFO - Aggregating 1 source(s) across 1 atlas(es): schaefer2018parcels100networks7
+FocalDamage:  33%|█████████                  | 1/3 [00:01&lt;00:03,  1.73s/mask]2026-04-01 09:29:00 - lacuna.analysis - INFO - Aggregating 1 source(s) across 1 atlas(es): schaefer2018parcels100networks7
 2026-04-01 09:29:01 - lacuna.analysis - INFO - Aggregation complete (1 results)
-RegionalDamage:  67%|██████████████████         | 2/3 [00:03&lt;00:01,  1.67s/mask]2026-04-01 09:29:02 - lacuna.analysis - INFO - Aggregating 1 source(s) across 1 atlas(es): schaefer2018parcels100networks7
+FocalDamage:  67%|██████████████████         | 2/3 [00:03&lt;00:01,  1.67s/mask]2026-04-01 09:29:02 - lacuna.analysis - INFO - Aggregating 1 source(s) across 1 atlas(es): schaefer2018parcels100networks7
 2026-04-01 09:29:03 - lacuna.analysis - INFO - Aggregation complete (1 results)
-RegionalDamage: 100%|███████████████████████████| 3/3 [00:05&lt;00:00,  1.68s/mask]
+FocalDamage: 100%|███████████████████████████| 3/3 [00:05&lt;00:00,  1.68s/mask]
 2026-04-01 09:29:03 - lacuna.cli.main - INFO - Successfully processed 3 subject(s)
 2026-04-01 09:29:03 - lacuna.cli.main - INFO - Results saved to: /tmp/outputs_rd_all
 2026-04-01 09:29:03 - lacuna.cli.main - INFO - Lacuna CLI completed successfully
@@ -3563,7 +3623,7 @@ RegionalDamage: 100%|███████████████████�
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-14">
@@ -3576,9 +3636,9 @@ RegionalDamage: 100%|███████████████████�
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_all</span><span class="o">/</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-14">!ls /tmp/outputs_rd_all/</div>
+<div class="clipboard-copy-txt" id="cell-14">!ls /tmp/outputs_fd_all/</div>
 </div>
 </div>
 </div>
@@ -3628,12 +3688,12 @@ RegionalDamage: 100%|███████████████████�
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-15">!lacuna check rd \
+<div class="clipboard-copy-txt" id="cell-15">!lacuna check fd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd/ \
     --mask-space MNI152NLin6Asym</div>
@@ -3654,15 +3714,15 @@ Checking rd outputs in /tmp/outputs_rd for 3 subject(s)...
 Subject  Session     Status
 -------------------------------------------
 sub-01   ses-01      complete
-sub-02   ses-01      MISSING  (*method-rd*parcelstats.tsv)
-sub-03   ses-01      MISSING  (*method-rd*parcelstats.tsv)
+sub-02   ses-01      MISSING  (*method-fd*parcelstats.tsv)
+sub-03   ses-01      MISSING  (*method-fd*parcelstats.tsv)
 
 ===========================================
 Summary: 1 / 3 complete, 2 missing
 ===========================================
 
 Rerun missing subjects:
-  lacuna run rd /tmp/tutorial_bids /tmp/outputs_rd --participant-label 02 03
+  lacuna run fd /tmp/tutorial_bids /tmp/outputs_rd --participant-label 02 03
 
 </pre>
 </div>
@@ -3687,7 +3747,7 @@ Rerun missing subjects:
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-16">
@@ -3700,14 +3760,14 @@ Rerun missing subjects:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_all</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-16">!lacuna check rd \
+<div class="clipboard-copy-txt" id="cell-16">!lacuna check fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd_all/ \
+    /tmp/outputs_fd_all/ \
     --mask-space MNI152NLin6Asym</div>
 </div>
 </div>
@@ -3750,7 +3810,7 @@ All subjects are complete.
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h3 id="zero-valued-outputs">Zero-valued outputs<a class="anchor-link" href="#zero-valued-outputs">¶</a></h3><p>Some subjects may produce all-zero outputs. There are two distinct reasons for this:</p>
 <ul>
-<li><strong>No spatial overlap</strong> — the mask is valid but does not intersect the analysis atlas or connectome. For example, <code>sub-02</code> in the tutorial dataset has a cerebellar lesion — since the Schaefer atlas only covers cortex, all regional damage values are zero. This is expected behaviour and not an error.</li>
+<li><strong>No spatial overlap</strong> — the mask is valid but does not intersect the analysis atlas or connectome. For example, <code>sub-02</code> in the tutorial dataset has a cerebellar lesion — since the Schaefer atlas only covers cortex, all focal damage values are zero. This is expected behaviour and not an error.</li>
 <li><strong>Empty mask</strong> — the mask image contains no non-zero voxels at all (e.g., a failed segmentation). Use <code>--on-empty</code> to control how Lacuna handles these at run time:</li>
 </ul>
 <table>
@@ -3785,7 +3845,7 @@ All subjects are complete.
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-17">
@@ -3799,16 +3859,16 @@ All subjects are complete.
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># --check-content flags subjects with all-zero outputs as EMPTY</span>
-<span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">rd</span> \
+<span class="err">!</span><span class="n">lacuna</span> <span class="n">check</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_all</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
     <span class="o">--</span><span class="n">check</span><span class="o">-</span><span class="n">content</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-17"># --check-content flags subjects with all-zero outputs as EMPTY
-!lacuna check rd \
+!lacuna check fd \
     /tmp/tutorial_bids/ \
-    /tmp/outputs_rd_all/ \
+    /tmp/outputs_fd_all/ \
     --mask-space MNI152NLin6Asym \
     --check-content</div>
 </div>
@@ -3861,7 +3921,7 @@ This typically means the input mask had no overlap with the analysis atlas/netwo
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-18">
@@ -3875,13 +3935,13 @@ This typically means the input mask had no overlap with the analysis atlas/netwo
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">collect</span> \
-    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_all</span><span class="o">/</span> \
+    <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd_all</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">group_outputs</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">pattern</span> <span class="s2">"*schaefer2018*"</span> \
     <span class="o">--</span><span class="n">verbose</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-18">!lacuna collect \
-    /tmp/outputs_rd_all/ \
+    /tmp/outputs_fd_all/ \
     --output-dir /tmp/group_outputs/ \
     --pattern "*schaefer2018*" \
     --verbose</div>
@@ -3902,13 +3962,13 @@ This typically means the input mask had no overlap with the analysis atlas/netwo
 2026-04-01 09:29:53 - lacuna.cli.main - INFO - Pattern: *schaefer2018*_parcelstats.tsv
 2026-04-01 09:29:53 - lacuna.cli.main - INFO - Found 6 file(s) across 3 subject(s) and 2 output type(s)
 Collecting output types:   0%|                          | 0/2 [00:00&lt;?, ?type/s]
-  Reading ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networ
+  Reading ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networ
                                                                                 
-  Reading ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networ
+  Reading ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networ
 Collecting output types: 100%|██████████████████| 2/2 [00:00&lt;00:00, 63.45type/s]
 2026-04-01 09:29:53 - lacuna.cli.main - INFO - Created 2 group-level TSV file(s):
-2026-04-01 09:29:53 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
-2026-04-01 09:29:53 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
+2026-04-01 09:29:53 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
+2026-04-01 09:29:53 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
 </pre>
 </div>
 </div>
@@ -3948,10 +4008,10 @@ Collecting output types: 100%|████████████████�
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
-group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
-group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
-group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
+<pre>group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
+group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
+group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
+group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
 </pre>
 </div>
 </div>
@@ -3979,12 +4039,12 @@ group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="n">parcel_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">parcel_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv"</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">"</span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">parcel_df</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-20">import pandas as pd
 
-parcel_df = pd.read_csv("/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv", sep="\t", index_col=0)
+parcel_df = pd.read_csv("/tmp/group_outputs/group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv", sep="\t", index_col=0)
 parcel_df</div>
 </div>
 </div>
@@ -4155,7 +4215,7 @@ parcel_df</div>
 <ul>
 <li><a href="functional-network-mapping.ipynb">Functional network mapping</a></li>
 <li><a href="structural-network-mapping.ipynb">Structural network mapping</a></li>
-<li><a href="regional-damage.ipynb">Regional damage analysis</a></li>
+<li><a href="focal-damage.ipynb">Focal damage analysis</a></li>
 <li><a href="accelerated-functional-network-mapping.ipynb">Accelerated functional network mapping</a></li>
 </ul>
 </div>

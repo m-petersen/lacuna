@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1512,7 +1572,7 @@
 <li>
 <p><a href="run/"><strong>Run</strong></a></p>
 <hr />
-<p>Run lesion analyses (regional damage, functional, accelerated functional, and structural network mapping).</p>
+<p>Run lesion analyses (focal damage, functional, accelerated functional, and structural network mapping).</p>
 </li>
 <li>
 <p><a href="tutorial/"><strong>Tutorial</strong></a></p>
@@ -1528,8 +1588,8 @@
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Fetch a connectome</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span><span class="nv">$DATAVERSE_API_KEY</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Run regional damage analysis</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>lacuna<span class="w"> </span>run<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels100networks7
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Run focal damage analysis</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>lacuna<span class="w"> </span>run<span class="w"> </span>fd<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels100networks7
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Run functional network mapping</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>lacuna<span class="w"> </span>run<span class="w"> </span>fnm<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--connectome-path<span class="w"> </span>/path/to/gsp1000_batches
@@ -1538,7 +1598,7 @@
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/bids<span class="w"> </span>/output
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Check for missing outputs after a batch run</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>lacuna<span class="w"> </span>check<span class="w"> </span>rd<span class="w"> </span>/bids<span class="w"> </span>/output
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>lacuna<span class="w"> </span>check<span class="w"> </span>fd<span class="w"> </span>/bids<span class="w"> </span>/output
 </span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
 </span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="c1"># List available atlases</span>
 </span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>lacuna<span class="w"> </span>info<span class="w"> </span>atlases

@@ -585,14 +585,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -814,6 +814,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -875,6 +879,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -883,6 +915,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1442,15 +1502,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#regional-damage-with-the-xtract-tract-atlas" class="md-nav__link">
+  <a href="#focal-damage-with-the-xtract-tract-atlas" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Regional Damage with the XTRACT tract atlas
+        Focal Damage with the XTRACT tract atlas
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Regional Damage with the XTRACT tract atlas">
+    <nav class="md-nav" aria-label="Focal Damage with the XTRACT tract atlas">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2343,11 +2403,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="custom-atlases">Custom atlases<a class="anchor-link" href="#custom-atlases">¶</a></h1><p>Lacuna ships with several bundled atlases (<code>lacuna info atlases</code>), but you can bring your own. This guide shows how to use custom parcellation atlases with Regional Damage and Structural Network Mapping.</p>
+<h1 id="custom-atlases">Custom atlases<a class="anchor-link" href="#custom-atlases">¶</a></h1><p>Lacuna ships with several bundled atlases (<code>lacuna info atlases</code>), but you can bring your own. This guide shows how to use custom parcellation atlases with Focal Damage and Structural Network Mapping.</p>
 <p><strong>What you'll learn</strong>:</p>
 <ul>
 <li>Prepare a custom atlas and labels file</li>
-<li>Run Regional Damage with the XTRACT white matter tract atlas</li>
+<li>Run Focal Damage with the XTRACT white matter tract atlas</li>
 <li>Run Structural Network Mapping with the Yeo 2011 functional network atlas</li>
 </ul>
 <p><a href="https://colab.research.google.com/github/m-petersen/lacuna/blob/main/docs/how-to/custom-atlases.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
@@ -2565,7 +2625,7 @@ The tutorial dataset includes:
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <hr/>
-<h2 id="regional-damage-with-the-xtract-tract-atlas">Regional Damage with the XTRACT tract atlas<a class="anchor-link" href="#regional-damage-with-the-xtract-tract-atlas">¶</a></h2><p>The <a href="https://github.com/SPMIC-UoN/XTRACT_atlases">XTRACT</a> atlas provides maps of major white matter tracts. Using it with Regional Damage tells you which tracts overlap with a lesion.</p>
+<h2 id="focal-damage-with-the-xtract-tract-atlas">Focal Damage with the XTRACT tract atlas<a class="anchor-link" href="#focal-damage-with-the-xtract-tract-atlas">¶</a></h2><p>The <a href="https://github.com/SPMIC-UoN/XTRACT_atlases">XTRACT</a> atlas provides maps of major white matter tracts. Using it with Focal Damage tells you which tracts overlap with a lesion.</p>
 </div>
 </div>
 </div>
@@ -2778,7 +2838,7 @@ with open("/tmp/xtract_labels.txt", "w") as f:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_xtract</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
@@ -2789,7 +2849,7 @@ with open("/tmp/xtract_labels.txt", "w") as f:
         <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">xtract_labels</span><span class="o">.</span><span class="n">txt</span> \
         <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-5">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-5">!lacuna run fd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd_xtract/ \
     --participant-label 01 \
@@ -2823,9 +2883,9 @@ with open("/tmp/xtract_labels.txt", "w") as f:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> <span class="o">--</span><span class="n">help</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> <span class="o">--</span><span class="n">help</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-6">!lacuna run rd --help</div>
+<div class="clipboard-copy-txt" id="cell-6">!lacuna run fd --help</div>
 </div>
 </div>
 </div>
@@ -2837,7 +2897,7 @@ with open("/tmp/xtract_labels.txt", "w") as f:
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>usage: lacuna run rd [-h] [--participant-label LABEL [LABEL ...]]
+<pre>usage: lacuna run fd [-h] [--participant-label LABEL [LABEL ...]]
                      [--session-id SESSION [SESSION ...]] [--pattern GLOB]
                      [--mask-space SPACE] [--overwrite]
                      [--on-empty {warn,skip,error}] [--keep-intermediate] [-v]
@@ -2846,7 +2906,7 @@ with open("/tmp/xtract_labels.txt", "w") as f:
                      [--custom-parcellation NAME NIFTI LABELS SPACE]
                      bids_dir output_dir
 
-RegionalDamage Analysis
+FocalDamage Analysis
 
 Computes lesion overlap with brain parcellations (atlases).
 For each parcel, calculates the percentage of voxels overlapping
@@ -2855,9 +2915,9 @@ with the lesion mask.
 Use 'lacuna info atlases' to see available atlases.
 
 Examples:
-  lacuna run rd /bids /output
-  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7
-  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
+  lacuna run fd /bids /output
+  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7
+  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32
 
 positional arguments:
   bids_dir              Root folder of BIDS dataset (sub-XXXXX folders at top
@@ -2899,7 +2959,7 @@ Performance options:
                         (-1 for all). Lower values produce incremental output
                         and reduce peak memory.
 
-RegionalDamage options:
+FocalDamage options:
   --parcel-atlases ATLAS [ATLAS ...]
                         Atlas names to use. Use 'lacuna info atlases' to list
                         available atlases.
@@ -2948,10 +3008,10 @@ RegionalDamage options:
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>sub-01_ses-01_desc-provenance.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagepct_parcelstats.tsv
 sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 </pre>
 </div>
@@ -3226,7 +3286,7 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">rd</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">run</span> <span class="n">fd</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_rd_combined</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
@@ -3238,7 +3298,7 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
         <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">xtract_labels</span><span class="o">.</span><span class="n">txt</span> \
         <span class="n">MNI152NLin6Asym</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-10">!lacuna run rd \
+<div class="clipboard-copy-txt" id="cell-10">!lacuna run fd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_rd_combined/ \
     --participant-label 01 \
@@ -3288,14 +3348,14 @@ plot.add_overlay(lesion_img, cmap='Reds_r', transparency=0.5)</div>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>sub-01_ses-01_desc-provenance.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagebin_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagebin_parcelstats.tsv
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagepct_parcelstats.json
-sub-01_ses-01_label-acuteinfarct_method-rd_atlas-XTRACT_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagebin_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagebin_parcelstats.tsv
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagepct_parcelstats.json
+sub-01_ses-01_label-acuteinfarct_method-fd_atlas-XTRACT_desc-damagepct_parcelstats.tsv
 sub-01_ses-01_label-acuteinfarct_space-MNI152NLin6Asym_mask.nii.gz
 </pre>
 </div>

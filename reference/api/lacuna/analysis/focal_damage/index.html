@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/regional_damage/">
+        <link rel="canonical" href="https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/focal_damage/">
       
       
-        <link rel="prev" href="../parcel_aggregation/">
+        <link rel="prev" href="../base/">
       
       
-        <link rel="next" href="../registry/">
+        <link rel="next" href="../functional_network_mapping/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>regional_damage - Lacuna</title>
+        <title>focal_damage - Lacuna</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#lacuna.analysis.regional_damage" class="md-skip">
+        <a href="#lacuna.analysis.focal_damage" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              regional_damage
+              focal_damage
             
           </span>
         </div>
@@ -591,14 +591,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/regional-damage/" class="md-nav__link">
+      <a href="../../../../../tutorials/focal-damage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Regional damage
+    Focal damage
   
 
     
@@ -820,6 +820,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -881,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../../explanation/lesion-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is lesion network mapping?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../../explanation/coordinate-spaces/" class="md-nav__link">
         
   
@@ -889,6 +921,34 @@
     
   
     Coordinate spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../explanation/requirements-and-faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System requirements & FAQ
   
 
     
@@ -1405,31 +1465,31 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#lacuna.analysis.regional_damage" class="md-nav__link">
+  <a href="#lacuna.analysis.focal_damage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        regional_damage
+        focal_damage
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="regional_damage">
+    <nav class="md-nav" aria-label="focal_damage">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#lacuna.analysis.regional_damage.RegionalDamage" class="md-nav__link">
+  <a href="#lacuna.analysis.focal_damage.FocalDamage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RegionalDamage
+        FocalDamage
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="RegionalDamage">
+    <nav class="md-nav" aria-label="FocalDamage">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#lacuna.analysis.regional_damage.RegionalDamage.__init__" class="md-nav__link">
+  <a href="#lacuna.analysis.focal_damage.FocalDamage.__init__" class="md-nav__link">
     <span class="md-ellipsis">
       
         __init__
@@ -1469,21 +1529,21 @@
   
 
 
-  <h1>regional_damage</h1>
+  <h1>focal_damage</h1>
 
 <div class="doc doc-object doc-module">
 
 
 
-<h2 id="lacuna.analysis.regional_damage" class="doc doc-heading">
-            <code>lacuna.analysis.regional_damage</code>
+<h2 id="lacuna.analysis.focal_damage" class="doc doc-heading">
+            <code>lacuna.analysis.focal_damage</code>
 
 
-<a href="#lacuna.analysis.regional_damage" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#lacuna.analysis.focal_damage" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
 
-        <p>Regional damage analysis module.</p>
+        <p>Focal damage analysis module.</p>
 <p>Provides a convenient interface for computing lesion-atlas overlap.
 This is a thin wrapper around ParcelAggregation configured for regional
 damage analysis.</p>
@@ -1491,17 +1551,17 @@ damage analysis.</p>
 
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lacuna</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubjectData</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lacuna.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegionalDamage</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lacuna.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">FocalDamage</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt;</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load mask data</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">mask</span> <span class="o">=</span> <span class="n">SubjectData</span><span class="o">.</span><span class="n">from_nifti</span><span class="p">(</span><span class="s2">&quot;mask.nii.gz&quot;</span><span class="p">)</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt;</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Compute regional damage</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">RegionalDamage</span><span class="p">(</span><span class="n">atlas_dir</span><span class="o">=</span><span class="s2">&quot;/data/atlases&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Compute focal damage</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">FocalDamage</span><span class="p">(</span><span class="n">atlas_dir</span><span class="o">=</span><span class="s2">&quot;/data/atlases&quot;</span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">analysis</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="gp">&gt;&gt;&gt;</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Access results (percent overlap per region)</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;RegionalDamage&quot;</span><span class="p">])</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;FocalDamage&quot;</span><span class="p">])</span>
 </span></code></pre></div>
 
 
@@ -1527,11 +1587,11 @@ damage analysis.</p>
 
 
 
-<h3 id="lacuna.analysis.regional_damage.RegionalDamage" class="doc doc-heading">
-            <code>RegionalDamage</code>
+<h3 id="lacuna.analysis.focal_damage.FocalDamage" class="doc doc-heading">
+            <code>FocalDamage</code>
 
 
-<a href="#lacuna.analysis.regional_damage.RegionalDamage" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#lacuna.analysis.focal_damage.FocalDamage" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1559,7 +1619,7 @@ how much of each brain region is damaged by a lesion.</p>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code><span title="lacuna.analysis.regional_damage.RegionalDamage.batch_strategy">batch_strategy</span></code></td>
+            <td><code><span title="lacuna.analysis.focal_damage.FocalDamage.batch_strategy">batch_strategy</span></code></td>
             <td>
                   <code><span title="str">str</span></code>
             </td>
@@ -1642,20 +1702,20 @@ Use list_parcellations() to see available atlases.</p>
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Use all registered atlases</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lacuna</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubjectData</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lacuna.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegionalDamage</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lacuna.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">FocalDamage</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt;</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">mask</span> <span class="o">=</span> <span class="n">SubjectData</span><span class="o">.</span><span class="n">from_nifti</span><span class="p">(</span><span class="s2">&quot;mask.nii.gz&quot;</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">RegionalDamage</span><span class="p">()</span>  <span class="c1"># Uses all registered atlases</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">FocalDamage</span><span class="p">()</span>  <span class="c1"># Uses all registered atlases</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">analysis</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">&gt;&gt;&gt;</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Results are in RegionalDamage namespace</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">overlap_pcts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;RegionalDamage&quot;</span><span class="p">]</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Results are in FocalDamage namespace</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">overlap_pcts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;FocalDamage&quot;</span><span class="p">]</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">region</span><span class="p">,</span> <span class="n">pct</span> <span class="ow">in</span> <span class="n">overlap_pcts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="gp">... </span>    <span class="k">if</span> <span class="n">pct</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>  <span class="c1"># Show regions with &gt;10% damage</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">pct</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt;</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Process only specific atlases</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">RegionalDamage</span><span class="p">(</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">analysis</span> <span class="o">=</span> <span class="n">FocalDamage</span><span class="p">(</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="gp">... </span>    <span class="n">parcel_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;schaefer2018parcels100networks7&quot;</span><span class="p">]</span>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="gp">... </span><span class="p">)</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">analysis</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
@@ -1674,7 +1734,7 @@ Use list_parcellations() to see available atlases.</p>
 
 
               <details class="mkdocstrings-source">
-                <summary>Source code in <code>src/lacuna/analysis/regional_damage.py</code></summary>
+                <summary>Source code in <code>src/lacuna/analysis/focal_damage.py</code></summary>
                 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-36"> 36</a></span>
 <span class="normal"><a href="#__codelineno-0-37"> 37</a></span>
 <span class="normal"><a href="#__codelineno-0-38"> 38</a></span>
@@ -1888,7 +1948,7 @@ Use list_parcellations() to see available atlases.</p>
 <span class="normal"><a href="#__codelineno-0-246">246</a></span>
 <span class="normal"><a href="#__codelineno-0-247">247</a></span>
 <span class="normal"><a href="#__codelineno-0-248">248</a></span>
-<span class="normal"><a href="#__codelineno-0-249">249</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="k">class</span><span class="w"> </span><span class="nc">RegionalDamage</span><span class="p">(</span><span class="n">ParcelAggregation</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-249">249</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="k">class</span><span class="w"> </span><span class="nc">FocalDamage</span><span class="p">(</span><span class="n">ParcelAggregation</span><span class="p">):</span>
 </span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">    Compute lesion overlap with atlas regions.</span>
 </span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>
@@ -1927,20 +1987,20 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">    --------</span>
 </span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">    &gt;&gt;&gt; # Use all registered atlases</span>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">    &gt;&gt;&gt; from lacuna import SubjectData</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">    &gt;&gt;&gt; from lacuna.analysis import RegionalDamage</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">    &gt;&gt;&gt; from lacuna.analysis import FocalDamage</span>
 </span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    &gt;&gt;&gt;</span>
 </span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    &gt;&gt;&gt; mask = SubjectData.from_nifti(&quot;mask.nii.gz&quot;)</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    &gt;&gt;&gt; analysis = RegionalDamage()  # Uses all registered atlases</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    &gt;&gt;&gt; analysis = FocalDamage()  # Uses all registered atlases</span>
 </span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">    &gt;&gt;&gt; result = analysis.run(mask)</span>
 </span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">    &gt;&gt;&gt;</span>
-</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">    &gt;&gt;&gt; # Results are in RegionalDamage namespace</span>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">    &gt;&gt;&gt; overlap_pcts = result.results[&quot;RegionalDamage&quot;]</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">    &gt;&gt;&gt; # Results are in FocalDamage namespace</span>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">    &gt;&gt;&gt; overlap_pcts = result.results[&quot;FocalDamage&quot;]</span>
 </span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    &gt;&gt;&gt; for region, pct in overlap_pcts.items():</span>
 </span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">    ...     if pct &gt; 10:  # Show regions with &gt;10% damage</span>
 </span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    ...         print(f&quot;{region}: {pct:.1f}%&quot;)</span>
 </span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">    &gt;&gt;&gt;</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">    &gt;&gt;&gt; # Process only specific atlases</span>
-</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    &gt;&gt;&gt; analysis = RegionalDamage(</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    &gt;&gt;&gt; analysis = FocalDamage(</span>
 </span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    ...     parcel_names=[&quot;schaefer2018parcels100networks7&quot;]</span>
 </span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">    ... )</span>
 </span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    &gt;&gt;&gt; result = analysis.run(mask)</span>
@@ -1960,7 +2020,7 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>        <span class="n">keep_intermediate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>    <span class="p">):</span>
 </span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        Initialize RegionalDamage analysis.</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        Initialize FocalDamage analysis.</span>
 </span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">        This is equivalent to:</span>
 </span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        ParcelAggregation(source=&quot;maskimg&quot;,</span>
@@ -1989,7 +2049,7 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>
 </span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="sd">        Validate inputs for regional damage analysis.</span>
+</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="sd">        Validate inputs for focal damage analysis.</span>
 </span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a>
 </span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">        Extends parent validation to ensure mask is binary.</span>
 </span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a>
@@ -2015,14 +2075,14 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a>        <span class="c1"># Binary mask should only have 0 and 1 (or just 0, or just 1)</span>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">unique_vals</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])):</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a>                <span class="sa">f</span><span class="s2">&quot;RegionalDamage requires binary mask (0 and 1 only).</span><span class="se">\n</span><span class="s2">&quot;</span>
+</span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a>                <span class="sa">f</span><span class="s2">&quot;FocalDamage requires binary mask (0 and 1 only).</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a>                <span class="sa">f</span><span class="s2">&quot;Found values: </span><span class="si">{</span><span class="n">unique_vals</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a>                <span class="sa">f</span><span class="s2">&quot;Use thresholding or binarization to convert continuous maps.&quot;</span>
 </span><span id="__span-0-166"><a id="__codelineno-0-166" name="__codelineno-0-166"></a>            <span class="p">)</span>
 </span><span id="__span-0-167"><a id="__codelineno-0-167" name="__codelineno-0-167"></a>
 </span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_run_analysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_data</span><span class="p">:</span> <span class="n">SubjectData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataContainer</span><span class="p">]:</span>
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">        Compute percentage and binary regional damage for all atlases.</span>
+</span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">        Compute percentage and binary focal damage for all atlases.</span>
 </span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">        Extends parent to add binary damage results (1 if region has any</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">        overlap with the mask, 0 otherwise) alongside percentage results.</span>
@@ -2050,10 +2110,10 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a>                <span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
 </span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a>                <span class="k">continue</span>
 </span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a>
-</span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a>            <span class="c1"># Re-key percentage result: atlas-{atlas}_source-RegionalDamage_desc-damagepct</span>
+</span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a>            <span class="c1"># Re-key percentage result: atlas-{atlas}_source-FocalDamage_desc-damagepct</span>
 </span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a>            <span class="n">pct_key</span> <span class="o">=</span> <span class="n">build_result_key</span><span class="p">(</span>
 </span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a>                <span class="n">atlas</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a>                <span class="n">source</span><span class="o">=</span><span class="s2">&quot;RegionalDamage&quot;</span><span class="p">,</span>
+</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a>                <span class="n">source</span><span class="o">=</span><span class="s2">&quot;FocalDamage&quot;</span><span class="p">,</span>
 </span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a>                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;damagepct&quot;</span><span class="p">,</span>
 </span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a>            <span class="p">)</span>
 </span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>            <span class="n">results</span><span class="p">[</span><span class="n">pct_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
@@ -2077,7 +2137,7 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>
 </span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>            <span class="n">binary_key</span> <span class="o">=</span> <span class="n">build_result_key</span><span class="p">(</span>
 </span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>                <span class="n">atlas</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-</span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a>                <span class="n">source</span><span class="o">=</span><span class="s2">&quot;RegionalDamage&quot;</span><span class="p">,</span>
+</span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a>                <span class="n">source</span><span class="o">=</span><span class="s2">&quot;FocalDamage&quot;</span><span class="p">,</span>
 </span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a>                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;damagebin&quot;</span><span class="p">,</span>
 </span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a>            <span class="p">)</span>
 </span><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a>            <span class="n">results</span><span class="p">[</span><span class="n">binary_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_parcel</span>
@@ -2093,11 +2153,11 @@ Use list_parcellations() to see available atlases.</p>
 </span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">            Dictionary of parameter names and values.</span>
 </span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="n">params</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_parameters</span><span class="p">()</span>
-</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="c1"># RegionalDamage is a specific configuration of ParcelAggregation</span>
+</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="c1"># FocalDamage is a specific configuration of ParcelAggregation</span>
 </span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="c1"># Override the source and aggregation to reflect the simplified API</span>
 </span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
 </span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a>            <span class="p">{</span>
-</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>                <span class="s2">&quot;analysis_type&quot;</span><span class="p">:</span> <span class="s2">&quot;RegionalDamage&quot;</span><span class="p">,</span>
+</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>                <span class="s2">&quot;analysis_type&quot;</span><span class="p">:</span> <span class="s2">&quot;FocalDamage&quot;</span><span class="p">,</span>
 </span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a>                <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;threshold&quot;</span><span class="p">),</span>
 </span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a>            <span class="p">}</span>
 </span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="p">)</span>
@@ -2121,15 +2181,15 @@ Use list_parcellations() to see available atlases.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="lacuna.analysis.regional_damage.RegionalDamage.__init__" class="doc doc-heading">
+<h4 id="lacuna.analysis.focal_damage.FocalDamage.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">parcel_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">keep_intermediate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
-<a href="#lacuna.analysis.regional_damage.RegionalDamage.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
+<a href="#lacuna.analysis.focal_damage.FocalDamage.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
 
-        <p>Initialize RegionalDamage analysis.</p>
+        <p>Initialize FocalDamage analysis.</p>
 <p>This is equivalent to:
 ParcelAggregation(source="maskimg",
                 aggregation="percent",
@@ -2203,7 +2263,7 @@ in the output. Useful for debugging and quality control.</p>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/lacuna/analysis/regional_damage.py</code></summary>
+              <summary>Source code in <code>src/lacuna/analysis/focal_damage.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
 <span class="normal"><a href="#__codelineno-0-103">103</a></span>
@@ -2243,7 +2303,7 @@ in the output. Useful for debugging and quality control.</p>
 </span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="n">keep_intermediate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="p">):</span>
 </span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">    Initialize RegionalDamage analysis.</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">    Initialize FocalDamage analysis.</span>
 </span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    This is equivalent to:</span>
 </span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">    ParcelAggregation(source=&quot;maskimg&quot;,</span>
