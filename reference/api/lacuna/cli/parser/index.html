@@ -16,7 +16,7 @@
         <link rel="prev" href="../main/">
       
       
-        <link rel="next" href="../../core/">
+        <link rel="next" href="../prepare/">
       
       
         
@@ -1212,14 +1212,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../cli/parcellate/" class="md-nav__link">
+      <a href="../../../../cli/prepare/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Parcellate
+    Prepare
   
 
     
@@ -1533,7 +1533,7 @@ subcommand-based structure:</p>
 <li>lacuna fetch: Download and setup connectomes</li>
 <li>lacuna run <analysis>: Run analyses (fd, fnm, snm, afnm)</li>
 <li>lacuna bidsify: Convert NIfTI files to BIDS format</li>
-<li>lacuna parcellate: Reduce a connectome to a parcel-level connectivity matrix</li>
+<li>lacuna prepare: Precompute connectome-derived data products (e.g. AFNM matrices)</li>
 <li>lacuna collect: Aggregate results across subjects</li>
 <li>lacuna info: Display available resources (atlases, connectomes)</li>
 </ul>
@@ -1737,7 +1737,7 @@ subcommand-based structure:</p>
 </span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a>        <span class="n">epilog</span><span class="o">=</span><span class="p">(</span>
 </span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a>            <span class="s2">&quot;Commands:</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>            <span class="s2">&quot;  bidsify    Convert a directory of NIfTI masks into BIDS layout</span><span class="se">\n</span><span class="s2">&quot;</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>            <span class="s2">&quot;  parcellate Reduce a connectome to a parcel-level connectivity matrix</span><span class="se">\n</span><span class="s2">&quot;</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>            <span class="s2">&quot;  prepare    Precompute connectome-derived data products (e.g. AFNM matrices)</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>            <span class="s2">&quot;  fetch     Download and setup connectomes for analysis</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>            <span class="s2">&quot;  run       Run lesion analyses</span><span class="se">\n</span><span class="s2">&quot;</span>
 </span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>            <span class="s2">&quot;  collect   Aggregate results across subjects</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1775,7 +1775,7 @@ subcommand-based structure:</p>
 </span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">_build_collect_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="n">_build_info_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="n">_build_bidsify_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
-</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="n">_build_parcellate_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="n">_build_prepare_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="n">_build_tutorial_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="n">_build_check_parser</span><span class="p">(</span><span class="n">subparsers</span><span class="p">)</span>
 </span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>

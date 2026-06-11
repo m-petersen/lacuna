@@ -193,6 +193,10 @@
          <lastmod>2026-06-11</lastmod>
     </url>
     <url>
+         <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/cli/prepare/</loc>
+         <lastmod>2026-06-11</lastmod>
+    </url>
+    <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/</loc>
          <lastmod>2026-06-11</lastmod>
     </url>
@@ -345,7 +349,7 @@
          <lastmod>2026-06-11</lastmod>
     </url>
     <url>
-         <loc>https://lacuna-py.readthedocs.io/reference/cli/parcellate/</loc>
+         <loc>https://lacuna-py.readthedocs.io/reference/cli/prepare/</loc>
          <lastmod>2026-06-11</lastmod>
     </url>
     <url>
