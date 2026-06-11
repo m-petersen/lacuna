@@ -83,9 +83,9 @@ class TestDetectSpaceRadiological:
         "space,resolution,shape,neuro_origin",
         [
             ("MNI152NLin6Asym", 1, (182, 218, 182), (-91, -126, -72)),
-            ("MNI152NLin6Asym", 2, (91, 109, 91), (-91, -126, -72)),
+            ("MNI152NLin6Asym", 2, (91, 109, 91), (-90, -126, -72)),
             ("MNI152NLin2009cAsym", 1, (193, 229, 193), (-96, -132, -78)),
-            ("MNI152NLin2009cAsym", 2, (97, 115, 97), (-96, -132, -78)),
+            ("MNI152NLin2009cAsym", 2, (97, 115, 97), (-96.5, -132.5, -78.5)),
         ],
     )
     def test_neurological_convention_detected(self, space, resolution, shape, neuro_origin):
@@ -104,9 +104,9 @@ class TestDetectSpaceRadiological:
         "space,resolution,shape,neuro_origin",
         [
             ("MNI152NLin6Asym", 1, (182, 218, 182), (-91, -126, -72)),
-            ("MNI152NLin6Asym", 2, (91, 109, 91), (-91, -126, -72)),
+            ("MNI152NLin6Asym", 2, (91, 109, 91), (-90, -126, -72)),
             ("MNI152NLin2009cAsym", 1, (193, 229, 193), (-96, -132, -78)),
-            ("MNI152NLin2009cAsym", 2, (97, 115, 97), (-96, -132, -78)),
+            ("MNI152NLin2009cAsym", 2, (97, 115, 97), (-96.5, -132.5, -78.5)),
         ],
     )
     def test_radiological_convention_detected(self, space, resolution, shape, neuro_origin):

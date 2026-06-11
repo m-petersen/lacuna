@@ -1,7 +1,9 @@
-"""Template loading with TemplateFlow integration.
+"""Template grid loading.
 
-This module provides functions to load reference brain templates,
-automatically downloading from TemplateFlow as needed.
+Lacuna uses MNI templates only as a resampling grid (affine + shape), never
+their intensity data. This module returns tiny zero-filled "grid-only"
+references bundled with the package (data/templates/), avoiding a TemplateFlow
+runtime dependency and any redistribution of FSL's MNI152NLin6Asym image.
 """
 
 from __future__ import annotations
@@ -16,9 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_template(name: str) -> Path:
-    """Load a reference brain template by name.
+    """Load a reference brain grid by name.
 
-    Downloads from TemplateFlow on first use and caches locally.
+    Returns a bundled zero-filled grid-only reference (affine + shape) for the
+    requested space/resolution — Lacuna never uses template intensity data.
 
     Supports space equivalence: anatomically identical spaces like
     MNI152NLin2009[abc]Asym are automatically normalized to their
@@ -78,40 +81,26 @@ def load_template(name: str) -> Path:
             f"(anatomically identical spaces)"
         )
 
-    try:
-        import templateflow.api as tflow
-    except ImportError as e:
-        raise ImportError(
-            "TemplateFlow is required for template loading. "
-            "Install with: pip install templateflow"
-        ) from e
+    # Lacuna uses templates only as a resampling *grid* (affine + shape), never
+    # their intensity data. We therefore ship tiny zero-filled "grid-only"
+    # references on the canonical grids (see scripts/generate_grid_references.py)
+    # instead of downloading templates from TemplateFlow. This removes the
+    # TemplateFlow runtime dependency and avoids redistributing FSL's
+    # MNI152NLin6Asym intensity image.
+    resolution = int(metadata.resolution) if float(metadata.resolution).is_integer() else metadata.resolution
+    grid_dir = Path(__file__).parent.parent.parent / "data" / "templates"
+    grid_path = grid_dir / f"{space_normalized}_res-{resolution}.nii.gz"
 
-    try:
-        # Get template from TemplateFlow (using normalized space)
-        template_path = tflow.get(
-            space_normalized,
-            resolution=metadata.resolution,
-            desc=None,
-            suffix=metadata.modality,
-            extension=".nii.gz",
+    if not grid_path.exists():
+        available = sorted(p.stem.replace(".nii", "") for p in grid_dir.glob("*.nii.gz"))
+        raise FileNotFoundError(
+            f"No bundled grid reference for template '{name}' "
+            f"(space={space_normalized}, res={resolution}; expected {grid_path.name}). "
+            f"Available grids: {available}. "
+            f"Regenerate with scripts/generate_grid_references.py if this grid should exist."
         )
 
-        if template_path is None or (isinstance(template_path, list) and not template_path):
-            raise ValueError(
-                f"Template not found in TemplateFlow: {metadata.space} at {metadata.resolution}mm"
-            )
-
-        # TemplateFlow can return a list, take first item
-        if isinstance(template_path, list):
-            template_path = template_path[0]
-
-        return Path(template_path)
-
-    except Exception as e:
-        raise FileNotFoundError(
-            f"Failed to load template {name} "
-            f"(space={metadata.space}, res={metadata.resolution}, modality={metadata.modality}): {e}"
-        ) from e
+    return grid_path
 
 
 def is_template_cached(name: str) -> bool:

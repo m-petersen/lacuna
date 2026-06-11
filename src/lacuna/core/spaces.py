@@ -171,9 +171,12 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
+    # 2mm origin is NOT the 1mm origin: TemplateFlow's res-02 grid is
+    # offset (origin -90, not -91). Value taken from the canonical
+    # tpl-MNI152NLin6Asym template_description.json "res" block.
     ("MNI152NLin6Asym", 2): np.array(
         [
-            [2.0, 0.0, 0.0, -91.0],
+            [2.0, 0.0, 0.0, -90.0],
             [0.0, 2.0, 0.0, -126.0],
             [0.0, 0.0, 2.0, -72.0],
             [0.0, 0.0, 0.0, 1.0],
@@ -187,11 +190,14 @@ REFERENCE_AFFINES = {
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
+    # 2mm origin is NOT the 1mm origin: TemplateFlow's res-02 grid is
+    # offset (origin -96.5, not -96). Value taken from the canonical
+    # tpl-MNI152NLin2009cAsym template_description.json "res" block.
     ("MNI152NLin2009cAsym", 2): np.array(
         [
-            [2.0, 0.0, 0.0, -96.0],
-            [0.0, 2.0, 0.0, -132.0],
-            [0.0, 0.0, 2.0, -78.0],
+            [2.0, 0.0, 0.0, -96.5],
+            [0.0, 2.0, 0.0, -132.5],
+            [0.0, 0.0, 2.0, -78.5],
             [0.0, 0.0, 0.0, 1.0],
         ]
     ),
@@ -340,7 +346,11 @@ def detect_space_from_filename(filepath: str | Path) -> tuple[str, int] | None:
     if space_match and res_match:
         space = space_match.group(1)
         try:
-            resolution = int(float(res_match.group(1)))
+            # Preserve sub-millimeter resolutions: int("0.5") path would have
+            # truncated res-0.5 to 0. Collapse to int only when integral so
+            # dict lookups against integer keys (e.g. res 1, 2) still match.
+            res = float(res_match.group(1))
+            resolution = int(res) if res.is_integer() else res
             return (space, resolution)
         except ValueError:
             return None

@@ -228,64 +228,40 @@ def test_is_template_cached_returns_bool(tmp_path, monkeypatch):
             importlib.reload(sys.modules["lacuna.assets.templates.loader"])
 
 
-def test_template_integration_with_templateflow(tmp_path, monkeypatch):
-    """Test that templates integrate correctly with TemplateFlow API."""
-    import importlib
-    import sys
+def test_template_returns_bundled_grid_reference():
+    """load_template returns a bundled grid-only reference, not a TemplateFlow download.
 
-    # Save original modules to restore later
-    saved_modules = {}
-    modules_to_save = ["templateflow", "templateflow.api", "lacuna.assets.templates.loader"]
-    for mod_name in modules_to_save:
-        if mod_name in sys.modules:
-            saved_modules[mod_name] = sys.modules[mod_name]
+    Lacuna uses templates only as a resampling grid, so load_template must return
+    a zero-filled NIfTI bundled with the package, on the correct canonical grid,
+    without requiring TemplateFlow.
+    """
+    import numpy as np
+    import nibabel as nib
 
-    try:
-        # Track TemplateFlow API calls
-        calls = []
+    from lacuna.assets.templates.loader import load_template
+    from lacuna.core.spaces import REFERENCE_AFFINES
 
-        def mock_tflow_get(*args, **kwargs):
-            calls.append({"args": args, "kwargs": kwargs})
-            test_file = tmp_path / "template.nii.gz"
-            test_file.touch()
-            return str(test_file)
+    path = load_template("MNI152NLin2009cAsym_res-1")
 
-        # Create mock templateflow.api module
-        mock_tflow_module = type("MockTemplateFlow", (), {"get": mock_tflow_get})()
+    # Comes from the bundled package data, not a network cache
+    assert path.exists()
+    assert path.parent.name == "templates"
+    assert "data" in path.parts
 
-        # Remove any existing templateflow.api from sys.modules to ensure fresh import
-        if "templateflow.api" in sys.modules:
-            del sys.modules["templateflow.api"]
-        if "templateflow" in sys.modules:
-            del sys.modules["templateflow"]
-        if "lacuna.assets.templates.loader" in sys.modules:
-            del sys.modules["lacuna.assets.templates.loader"]
+    img = nib.load(path)
+    # Grid-only: zero intensity, but correct canonical geometry
+    assert float(np.asarray(img.dataobj).max()) == 0.0
+    np.testing.assert_allclose(
+        img.affine, REFERENCE_AFFINES[("MNI152NLin2009cAsym", 1)], atol=1e-3
+    )
 
-        sys.modules["templateflow.api"] = mock_tflow_module
-        sys.modules["templateflow"] = type("MockTemplateFlow", (), {"api": mock_tflow_module})()
 
-        # Must import after mocking to pick up mock
-        from lacuna.assets.templates.loader import load_template
+def test_template_space_equivalence_maps_2009b_to_2009c():
+    """A 2009b request resolves to the canonical 2009c bundled grid."""
+    from lacuna.assets.templates.loader import load_template
 
-        # Load template
-        load_template("MNI152NLin2009cAsym_res-1")
-
-        # Should have called TemplateFlow API
-        assert len(calls) == 1
-        call = calls[0]
-
-        # Check that space, resolution, and modality were passed
-        assert "MNI152NLin2009cAsym" in str(call)
-    finally:
-        # Restore original modules
-        for mod_name in modules_to_save:
-            if mod_name in saved_modules:
-                sys.modules[mod_name] = saved_modules[mod_name]
-            elif mod_name in sys.modules:
-                del sys.modules[mod_name]
-        # Reload the loader to restore correct state
-        if "lacuna.assets.templates.loader" in sys.modules:
-            importlib.reload(sys.modules["lacuna.assets.templates.loader"])
+    path = load_template("MNI152NLin2009bAsym_res-2")
+    assert path.name == "MNI152NLin2009cAsym_res-2.nii.gz"
 
 
 def test_template_caching_avoids_redownload(tmp_path, monkeypatch):

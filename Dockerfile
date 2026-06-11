@@ -9,39 +9,7 @@ RUN conda install -y -c conda-forge -c mrtrix3 mrtrix3 libstdcxx-ng \
     && conda clean -afy
 
 # =============================================================================
-# Stage 2: Fetch TemplateFlow templates & CLEAN UP
-# =============================================================================
-FROM python:3.11-slim AS templateflow-fetcher
-ENV TEMPLATEFLOW_HOME="/templateflow"
-RUN pip install --no-cache-dir templateflow
-
-# 1. Fetch specific templates
-RUN python3 <<EOF
-import templateflow.api as tf
-# MNI152NLin6Asym
-tf.get('MNI152NLin6Asym', resolution=1, desc=None, suffix='T1w')
-tf.get('MNI152NLin6Asym', resolution=2, desc=None, suffix='T1w')
-tf.get('MNI152NLin6Asym', resolution=1, desc='brain', suffix='mask')
-tf.get('MNI152NLin6Asym', resolution=2, desc='brain', suffix='mask')
-# MNI152NLin2009cAsym
-tf.get('MNI152NLin2009cAsym', resolution=1, desc=None, suffix='T1w')
-tf.get('MNI152NLin2009cAsym', resolution=2, desc=None, suffix='T1w')
-tf.get('MNI152NLin2009cAsym', resolution=1, desc='brain', suffix='mask')
-tf.get('MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')
-# Transforms
-tf.get('MNI152NLin6Asym', suffix='xfm', extension='.h5')
-tf.get('MNI152NLin2009cAsym', suffix='xfm', extension='.h5')
-EOF
-
-# 2. WHITELIST CLEANUP: Delete everything that is NOT the two MNI templates
-# This removes tpl-dhcp, tpl-fsLR, tpl-MouseIn, etc.
-RUN find /templateflow -mindepth 1 -maxdepth 1 -type d -name "tpl-*" \
-    -not -name "tpl-MNI152NLin6Asym" \
-    -not -name "tpl-MNI152NLin2009cAsym" \
-    -exec rm -rf {} +
-
-# =============================================================================
-# Stage 3: Build the Lacuna Wheel
+# Stage 2: Build the Lacuna Wheel
 # =============================================================================
 FROM python:3.11-slim AS lacuna-builder
 WORKDIR /build
@@ -51,7 +19,7 @@ COPY . .
 RUN pip install build && python -m build --wheel
 
 # =============================================================================
-# Stage 4: Final Production Image
+# Stage 3: Final Production Image
 # =============================================================================
 FROM python:3.11-slim AS production
 
@@ -69,9 +37,9 @@ COPY --from=mrtrix-builder /opt/conda /opt/conda
 ENV PATH="/opt/conda/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/conda/lib:${LD_LIBRARY_PATH:-}"
 
-# Copy TemplateFlow (NOW CLEANED)
-COPY --from=templateflow-fetcher /templateflow /templateflow
-ENV TEMPLATEFLOW_HOME="/templateflow"
+# Reference grids ship bundled in the wheel; the nonlinear warps are fetched
+# from OSF at build time into a shared cache so the image is offline-complete.
+ENV LACUNA_CACHE_DIR="/opt/lacuna-cache"
 
 # Create non-root user
 RUN useradd -m -s /bin/bash -u 1000 lacuna \
@@ -86,6 +54,13 @@ WORKDIR /app
 # Install Lacuna from wheel
 COPY --from=lacuna-builder /build/dist/*.whl /tmp/
 RUN pip install --no-cache-dir /tmp/*.whl && rm /tmp/*.whl
+
+# Pre-fetch the 6Asym<->2009c nonlinear warps from OSF (sha256-verified) so the
+# container works without network at runtime. World-readable for the lacuna user.
+RUN python3 -c "from lacuna.assets.transforms import load_transform; \
+    load_transform('MNI152NLin6Asym_to_MNI152NLin2009cAsym'); \
+    load_transform('MNI152NLin2009cAsym_to_MNI152NLin6Asym')" \
+    && chmod -R a+rX "$LACUNA_CACHE_DIR"
 
 USER lacuna
 WORKDIR /home/lacuna

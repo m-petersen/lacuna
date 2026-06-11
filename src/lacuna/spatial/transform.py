@@ -214,24 +214,25 @@ class TransformationStrategy:
         current_zooms = np.array(img.header.get_zooms()[:3])
         target_res = target_space.resolution
 
-        # Build target affine by normalizing and rescaling column vectors
-        # This preserves orientation for oblique/rotated images
-        source_affine = img.affine
-        target_affine = source_affine.copy()
-
-        for i in range(3):
-            # Extract column vector (direction cosine * zoom)
-            col = target_affine[:3, i]
-            # Normalize and rescale to target resolution
-            norm = np.linalg.norm(col)
-            if norm > 0:
-                target_affine[:3, i] = (col / norm) * target_res
-
-        # Calculate target shape based on resolution change
-        # Use geometric mean of current zooms for more accurate scaling
-        mean_current_res = np.mean(current_zooms)
-        scale_factor = mean_current_res / target_res
-        target_shape = tuple(int(round(s * scale_factor)) for s in img.shape[:3])
+        # Prefer the canonical reference grid for the target space/resolution, so
+        # a resolution change lands on the SAME grid as the warp/regrid paths
+        # (deriving the grid from the source affine produced a non-canonical
+        # origin/shape, e.g. 2009c@2mm origin -96 instead of -96.5).
+        ref_key = (target_space.identifier, target_space.resolution)
+        if ref_key in REFERENCE_AFFINES and ref_key in REFERENCE_SHAPES:
+            target_affine = REFERENCE_AFFINES[ref_key]
+            target_shape = REFERENCE_SHAPES[ref_key]
+        else:
+            # Fallback for spaces/resolutions without a canonical grid: rescale
+            # the source affine columns (preserves orientation for oblique data).
+            target_affine = img.affine.copy()
+            for i in range(3):
+                col = target_affine[:3, i]
+                norm = np.linalg.norm(col)
+                if norm > 0:
+                    target_affine[:3, i] = (col / norm) * target_res
+            scale_factor = np.mean(current_zooms) / target_res
+            target_shape = tuple(int(round(s * scale_factor)) for s in img.shape[:3])
 
         logger.debug(
             f"Resampling: {img.shape} @ {current_zooms}mm -> {target_shape} @ {target_res}mm"
@@ -380,23 +381,21 @@ class TransformationStrategy:
             transform.reference = reference_nifti
             logger.debug(f"Using template reference: {reference_img}")
         except (KeyError, FileNotFoundError):
-            # Fallback: create synthetic reference at target resolution
+            # Fallback: build a synthetic reference from the canonical grid.
+            # Only do this when we actually know the canonical grid — never
+            # fabricate a cubic guess, which would resample onto a wrong FOV.
+            ref_key = (target.identifier, target.resolution)
+            if ref_key not in REFERENCE_SHAPES or ref_key not in REFERENCE_AFFINES:
+                raise FileNotFoundError(
+                    f"No reference grid available for {target.identifier}"
+                    f"@{target.resolution}mm; cannot build a transform reference."
+                )
             logger.warning(
                 f"Could not load template for {target.identifier}@{target.resolution}mm, "
-                "using synthetic reference"
+                "using a zero-filled reference on the canonical grid"
             )
-            shape = REFERENCE_SHAPES.get(
-                (target.identifier, target.resolution),
-                # Fallback: estimate from 1mm dimensions and resolution
-                tuple(int(193 // target.resolution) for _ in range(3)),
-            )
-
-            # Create affine at target resolution
-            ref_affine = REFERENCE_AFFINES.get(
-                (target.identifier, target.resolution), target.reference_affine
-            )
-            reference_data = np.zeros(shape, dtype=np.uint8)
-            reference_nifti = nib.Nifti1Image(reference_data, ref_affine)
+            reference_data = np.zeros(REFERENCE_SHAPES[ref_key], dtype=np.uint8)
+            reference_nifti = nib.Nifti1Image(reference_data, REFERENCE_AFFINES[ref_key])
             transform.reference = reference_nifti
 
         # Apply the transform
