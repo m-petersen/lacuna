@@ -1283,15 +1283,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lacuna-prepare-functional" class="md-nav__link">
+  <a href="#lacuna-prepare-afnm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        lacuna prepare functional
+        lacuna prepare afnm
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="lacuna prepare functional">
+    <nav class="md-nav" aria-label="lacuna prepare afnm">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1340,17 +1340,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#lacuna-prepare-structural" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        lacuna prepare structural
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1619,15 +1608,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lacuna-prepare-functional" class="md-nav__link">
+  <a href="#lacuna-prepare-afnm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        lacuna prepare functional
+        lacuna prepare afnm
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="lacuna prepare functional">
+    <nav class="md-nav" aria-label="lacuna prepare afnm">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1680,17 +1669,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lacuna-prepare-structural" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        lacuna prepare structural
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1722,21 +1700,23 @@
 
 
 <h1 id="prepare-command">Prepare command<a class="headerlink" href="#prepare-command" title="Permanent link">&para;</a></h1>
-<p>The <code>lacuna prepare</code> command precomputes non-subject-specific data products that
-analyses consume. Each precomputation target is a sub-subcommand. Currently the
-only target is <code>functional</code>, which reduces a whole-brain functional connectome to
-a parcel-level N×N connectivity matrix — the <code>--matrix-path</code> input for
+<p>The <code>lacuna prepare</code> command precomputes the non-subject-specific data product a
+given analysis consumes. Targets are named after the analysis they prepare for
+(mirroring <code>lacuna run</code>). Currently the only target is <code>afnm</code>, which reduces a
+whole-brain functional connectome to a parcel-level N×N connectivity matrix — the
+<code>--matrix-path</code> input for
 <a href="../run/#lacuna-run-afnm-accelerated-functional-network-mapping"><code>lacuna run afnm</code></a>.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna prepare functional --connectome-path &lt;PATH&gt; \
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                          (--parcel-atlases &lt;ATLAS&gt; [...] | --custom-parcellation ...) \
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                          --output &lt;DIR&gt; [options]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna prepare afnm --connectome-path &lt;PATH&gt; \
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                    (--parcel-atlases &lt;ATLAS&gt; [...] | --custom-parcellation ...) \
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                    --output &lt;DIR&gt; [options]
 </span></code></pre></div>
-<h2 id="lacuna-prepare-functional"><code>lacuna prepare functional</code><a class="headerlink" href="#lacuna-prepare-functional" title="Permanent link">&para;</a></h2>
+<h2 id="lacuna-prepare-afnm"><code>lacuna prepare afnm</code><a class="headerlink" href="#lacuna-prepare-afnm" title="Permanent link">&para;</a></h2>
 <p>Given a voxelwise functional connectome (HDF5, the same format as
-<a href="../run/"><code>lacuna run fnm</code></a>) and a parcellation, <code>lacuna prepare functional</code>
-produces a BIDS-style ConnectivityMatrix — a TSV with parcel labels as row/column
-index plus a JSON sidecar describing provenance.</p>
+<a href="../run/"><code>lacuna run fnm</code></a>) and a parcellation, <code>lacuna prepare afnm</code> produces a
+BIDS-style ConnectivityMatrix — a TSV with parcel labels as row/column index plus
+a JSON sidecar describing provenance. Build it once per parcellation and reuse it
+for all subjects in <code>lacuna run afnm</code>.</p>
 <h3 id="required-arguments">Required arguments<a class="headerlink" href="#required-arguments" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1777,7 +1757,7 @@ index plus a JSON sidecar describing provenance.</p>
 </tbody>
 </table>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>lacuna<span class="w"> </span>prepare<span class="w"> </span>functional<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>lacuna<span class="w"> </span>prepare<span class="w"> </span>afnm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--connectome-path<span class="w"> </span>~/.cache/lacuna/connectomes/gsp1000/<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels400networks17<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>--output<span class="w"> </span>/data/parcellated/
@@ -1789,12 +1769,9 @@ index plus a JSON sidecar describing provenance.</p>
 </span></code></pre></div>
 <p>The TSV uses parcel labels as both row index and column headers; the JSON sidecar
 records the source connectome, atlas, and shape.</p>
-<h2 id="lacuna-prepare-structural"><code>lacuna prepare structural</code><a class="headerlink" href="#lacuna-prepare-structural" title="Permanent link">&para;</a></h2>
-<p>Reserved for reducing a structural tractogram to a parcel-level matrix. <strong>Not yet
-implemented.</strong></p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../run/#lacuna-run-afnm-accelerated-functional-network-mapping"><code>lacuna run afnm</code></a> — consumes the functional matrix</li>
+<li><a href="../run/#lacuna-run-afnm-accelerated-functional-network-mapping"><code>lacuna run afnm</code></a> — consumes the matrix via <code>--matrix-path</code></li>
 <li><a href="../fetch/"><code>lacuna fetch</code></a> — download connectomes before preparing</li>
 <li><a href="../info/"><code>lacuna info atlases</code></a> — list available atlases</li>
 </ul>

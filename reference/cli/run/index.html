@@ -2424,7 +2424,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="lacuna-run-afnm-accelerated-functional-network-mapping"><code>lacuna run afnm</code> — Accelerated Functional Network Mapping<a class="headerlink" href="#lacuna-run-afnm-accelerated-functional-network-mapping" title="Permanent link">&para;</a></h2>
-<p>Parcel-level functional lesion network mapping via matrix multiplication: <code>AFNMAP = M × C</code>, where <code>M</code> is the lesion-by-parcel weight matrix and <code>C</code> is a precomputed group-average parcel-level functional connectivity matrix (produced by <code>lacuna prepare functional</code>). Runs in a fraction of the time of voxel-level FNM at the cost of parcel-resolution output.</p>
+<p>Parcel-level functional lesion network mapping via matrix multiplication: <code>AFNMAP = M × C</code>, where <code>M</code> is the lesion-by-parcel weight matrix and <code>C</code> is a precomputed group-average parcel-level functional connectivity matrix (produced by <code>lacuna prepare afnm</code>). Runs in a fraction of the time of voxel-level FNM at the cost of parcel-resolution output.</p>
 <h3 id="acceleratedfunctionalnetworkmapping-options">AcceleratedFunctionalNetworkMapping options<a class="headerlink" href="#acceleratedfunctionalnetworkmapping-options" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -2436,7 +2436,7 @@
 <tbody>
 <tr>
 <td><code>--matrix-path PATH</code></td>
-<td><strong>(required)</strong> Parcel-level group FC matrix TSV (from <code>lacuna prepare functional</code>)</td>
+<td><strong>(required)</strong> Parcel-level group FC matrix TSV (from <code>lacuna prepare afnm</code>)</td>
 </tr>
 <tr>
 <td><code>--lesion-weighting {fractional,binary,voxel_count}</code></td>

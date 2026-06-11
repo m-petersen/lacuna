@@ -1567,7 +1567,7 @@ Pearson correlation matrix, average across subjects via Fisher z, and write
 the resulting group-level :class:<code>~lacuna.core.data_types.ConnectivityMatrix</code>
 as a BIDS-style TSV + JSON sidecar (mirrors the layout produced by
 <code>lacuna run snm</code> for its disconnectivity matrix).</p>
-<p>The structural target (<code>lacuna prepare structural</code>) is wired up separately.</p>
+<p>Exposed via the <code>lacuna prepare afnm</code> CLI target.</p>
 
 
 
@@ -2067,7 +2067,7 @@ Returns the list of TSV paths.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Entry point for <code>lacuna prepare functional</code>.</p>
+        <p>Entry point for <code>lacuna prepare afnm</code>.</p>
 
 
             <details class="mkdocstrings-source">
@@ -2095,7 +2095,7 @@ Returns the list of TSV paths.</p>
 <span class="normal"><a href="#__codelineno-0-298">298</a></span>
 <span class="normal"><a href="#__codelineno-0-299">299</a></span>
 <span class="normal"><a href="#__codelineno-0-300">300</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_parcellate_functional_cli</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Entry point for ``lacuna prepare functional``.&quot;&quot;&quot;</span>
+</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Entry point for ``lacuna prepare afnm``.&quot;&quot;&quot;</span>
 </span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="k">try</span><span class="p">:</span>
 </span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a>        <span class="n">parcellations</span> <span class="o">=</span> <span class="n">resolve_parcellations</span><span class="p">(</span>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a>            <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;parcel_atlases&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>

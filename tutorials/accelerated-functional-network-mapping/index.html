@@ -2706,7 +2706,7 @@ The tutorial dataset includes:
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="prepare-the-parcellated-fc-matrix">Prepare the parcellated FC matrix<a class="anchor-link" href="#prepare-the-parcellated-fc-matrix">¶</a></h2><p>Before running AFNM, we need to reduce the voxelwise connectome into a parcellated group-average connectivity matrix. This is done once per parcellation atlas and can be reused for all subjects.</p>
-<p><code>lacuna prepare functional</code> reads the HDF5 connectome batches, extracts parcel-mean timeseries per subject, computes Pearson correlations, applies Fisher z-transform averaging across subjects, and back-transforms to produce a single N x N FC matrix.</p>
+<p><code>lacuna prepare afnm</code> reads the HDF5 connectome batches, extracts parcel-mean timeseries per subject, computes Pearson correlations, applies Fisher z-transform averaging across subjects, and back-transforms to produce a single N x N FC matrix.</p>
 </div>
 </div>
 </div>
@@ -2729,13 +2729,13 @@ The tutorial dataset includes:
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">prepare</span> <span class="n">functional</span> \
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="err">!</span><span class="n">lacuna</span> <span class="n">prepare</span> <span class="n">afnm</span> \
     <span class="o">--</span><span class="n">connectome</span><span class="o">-</span><span class="n">path</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">gsp1000_data</span><span class="o">/</span><span class="n">processed</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018tian2020parcels1054networks7</span> \
     <span class="o">--</span><span class="n">output</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">parcellated</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">overwrite</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">!lacuna prepare functional \
+<div class="clipboard-copy-txt" id="cell-3">!lacuna prepare afnm \
     --connectome-path /tmp/gsp1000_data/processed/ \
     --parcel-atlases schaefer2018tian2020parcels1054networks7 \
     --output /tmp/parcellated/ \
