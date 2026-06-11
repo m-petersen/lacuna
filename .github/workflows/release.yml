@@ -39,8 +39,10 @@ jobs:
           files: dist/*
           generate_release_notes: true
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        # Uncomment when ready to publish to PyPI
-        # with:
-        #   password: ${{ secrets.PYPI_API_TOKEN }}
+      # Publishing to PyPI is disabled while Lacuna is git-install only.
+      # To enable: configure a PyPI trusted publisher (or set PYPI_API_TOKEN)
+      # and uncomment the step below.
+      # - name: Publish to PyPI
+      #   uses: pypa/gh-action-pypi-publish@release/v1
+      #   # with:
+      #   #   password: ${{ secrets.PYPI_API_TOKEN }}

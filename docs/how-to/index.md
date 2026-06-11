@@ -32,6 +32,6 @@ Practical guides for specific tasks when working with Lacuna.
 
     ---
 
-    Use your own parcellation atlases with Regional Damage, SNM, or FNM.
+    Use your own parcellation atlases with Focal Damage, SNM, or FNM.
 
 </div>

@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: "Lacuna: reproducible brain lesion network mapping"
+message: "If you use this software, please cite it using these metadata."
+type: software
+authors:
+  - family-names: Petersen
+    given-names: Marvin
+    orcid: "https://orcid.org/0000-0001-6426-7167"
+    affiliation: "University Medical Center Utrecht"
+  - family-names: Biessels
+    given-names: Geert Jan
+    orcid: "https://orcid.org/0000-0001-6862-2496"
+    affiliation: "University Medical Center Utrecht"
+repository-code: "https://github.com/m-petersen/lacuna"
+url: "https://lacuna-py.readthedocs.io"
+license: MIT
+version: 0.1.0
+date-released: "2026-06-10"
+keywords:
+  - neuroimaging
+  - lesion analysis
+  - lesion network mapping
+  - brain mapping
+  - BIDS
+# TODO: once a preprint or paper is available, add a `preferred-citation`
+# block here so `cff` tooling points users at the article rather than the
+# software entry.

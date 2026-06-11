@@ -5,6 +5,11 @@ repo_url: https://github.com/m-petersen/lacuna
 repo_name: m-petersen/lacuna
 edit_uri: edit/main/docs/
 
+# Internal development notes and scratch notebooks — never published.
+exclude_docs: |
+  superpowers/
+  tutorials/tmp/
+
 theme:
   name: material
   features:

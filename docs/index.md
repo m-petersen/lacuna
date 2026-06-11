@@ -8,11 +8,11 @@ hide:
 
 # Lacuna
 
-A Python package for advanced brain lesion analysis.
+When a stroke, tumor, or other focal injury damages brain tissue, the resulting symptoms can reflect not only the affected region itself, but also its connections within distributed brain networks. Interpreting a lesion therefore requires considering it in the broader context of brain organization.
 
-Lacuna bridges the gap between individual lesion masks and normative brain data.
-It provides a reproducible workflow for lesion network mapping
-and regional damage quantification, using BIDS-style naming conventions for input and output organization.
+Lacuna is an open-source toolbox for characterizing lesions using normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases. Given a lesion mask, the toolbox generates a range of lesion-derived measures that place the lesion within this broader neuroanatomical and network context.
+
+The current release focuses on lesion network mapping and related workflows, with a modular architecture designed to support additional approaches to lesion characterization in the future. Reproducibility is emphasized throughout, using BIDS-inspired conventions for inputs and outputs.
 
 </div>
 <img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;">
@@ -20,7 +20,7 @@ and regional damage quantification, using BIDS-style naming conventions for inpu
 
 !!! warning "This project is under active development and has not yet been fully validated. Use with caution."
 
-## Analyses
+## Capabilities
 
 <div class="grid cards" markdown>
 
@@ -28,19 +28,25 @@ and regional damage quantification, using BIDS-style naming conventions for inpu
 
     ---
 
+    ![Functional lesion network mapping](assets/method_figures/flnm.svg){ width="180" style="display: block; margin: 0.5em auto;" }
+
     Map the functional brain circuitry linked to a lesion using resting-state functional connectivity.
 
 -   **Structural lesion network mapping**
 
     ---
 
+    ![Structural lesion network mapping](assets/method_figures/slnm.svg){ width="220" style="display: block; margin: 0.5em auto;" }
+
     Map the structural disconnectivity of a lesion using normative tractogram data.
 
--   **Regional damage**
+-   **Focal damage**
 
     ---
 
-    Quantify regional damage by measuring lesion overlap with standard brain parcellation atlases.
+    ![Focal damage](assets/method_figures/lesion_atlas_overlap.svg){ width="180" style="display: block; margin: 0.5em auto;" }
+
+    Quantify focal damage by measuring lesion overlap with standard brain parcellation atlases.
 
 </div>
 
