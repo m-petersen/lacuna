@@ -444,13 +444,33 @@ def fetch_gsp1000(
 
 def _find_brain_mask(raw_dir: Path) -> Path:
     """Find brain mask from download or templateflow."""
+    import nibabel as nib
+
     from ..core.exceptions import ProcessingError
 
-    mask_candidates = list(raw_dir.glob("*mask*.nii.gz")) + list(raw_dir.glob("*MNI152*.nii.gz"))
-    if mask_candidates:
-        return mask_candidates[0]
+    # NB: GSP1000 subject functionals are named '*_finalmask.nii.gz', which
+    # match '*mask*' — exclude those (and any 4D volume) so we don't return a
+    # subject's functional series as the "brain mask".
+    def _looks_functional(p: Path) -> bool:
+        n = p.name.lower()
+        return "finalmask" in n or "bld" in n or "_rest" in n
 
-    # Use templateflow mask as fallback
+    candidates = [
+        p
+        for p in (list(raw_dir.glob("*mask*.nii.gz")) + list(raw_dir.glob("*MNI152*.nii.gz")))
+        if not _looks_functional(p)
+    ]
+    for p in candidates:
+        try:
+            if nib.load(str(p)).ndim == 3:  # a real (3D) mask, not a 4D series
+                return p
+        except Exception:
+            continue
+    if candidates:
+        return candidates[0]
+
+    # Optional fallback: a brain mask from TemplateFlow, if it happens to be
+    # installed. TemplateFlow is not a Lacuna dependency, so this is best-effort.
     try:
         import templateflow.api as tflow
 
@@ -458,7 +478,11 @@ def _find_brain_mask(raw_dir: Path) -> Path:
     except Exception as e:
         raise ProcessingError(
             operation="locate brain mask",
-            reason=f"No brain mask found in download and templateflow failed: {e}",
+            reason=(
+                "No brain mask found in the connectome download. Provide a mask "
+                "alongside the data, or `pip install templateflow` to use an "
+                f"automatic MNI152NLin6Asym fallback (unavailable: {e})."
+            ),
         ) from e
 
 
@@ -720,6 +744,118 @@ def _register_dtor985(
     except Exception as e:
         warn_list.append(f"Registration failed: {e}")
         return False
+
+
+def fetch_dtor985_subsample(
+    variant: str,
+    output_dir: str | Path,
+    *,
+    register: bool = True,
+    register_name: str | None = None,
+    force: bool = False,
+    progress_callback: Callable[[FetchProgress], None] | None = None,
+    verbose: bool = False,
+) -> FetchResult:
+    """Download a pre-made dTOR985 subsample tractogram from OSF and register it.
+
+    The subsamples ('10pct', '25pct') are already in MRtrix ``.tck`` format on
+    OSF (CC0), so no ``.trk`` -> ``.tck`` conversion is needed — unlike the full
+    dTOR985 from Figshare. They register as distinct structural connectomes
+    (``dTOR985_10pct`` / ``dTOR985_25pct``) so analyses can select a size.
+
+    Parameters
+    ----------
+    variant : str
+        Subsample to fetch: '10pct' or '25pct'.
+    output_dir : str or Path
+        Directory for the downloaded ``.tck`` file.
+    register, register_name, force, progress_callback, verbose
+        As in :func:`fetch_dtor985`.
+    """
+    from ..core.exceptions import DownloadError
+    from .downloaders import CONNECTOME_SOURCES
+
+    source_name = f"dtor985_{variant}"
+    if source_name not in CONNECTOME_SOURCES:
+        raise DownloadError(
+            url="", reason=f"Unknown dTOR985 variant '{variant}'. Use '10pct' or '25pct'."
+        )
+    source = CONNECTOME_SOURCES[source_name]
+    if register_name is None:
+        register_name = f"dTOR985_{variant}"
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tck_path = output_dir / f"{source.name}.tck"
+    warn_list: list[str] = []
+    start_time = time.time()
+    download_time = 0.0
+
+    if tck_path.exists() and not force:
+        if verbose:
+            print(f"Using existing .tck file: {tck_path}")
+        warn_list.append(f"Using existing .tck file: {tck_path}")
+    else:
+        try:
+            import pooch
+        except ImportError as e:  # pragma: no cover - pooch is a hard dependency
+            raise DownloadError(
+                url=source.download_url or "", reason="pooch is required for OSF downloads"
+            ) from e
+
+        if progress_callback:
+            progress_callback(
+                FetchProgress(
+                    phase="download",
+                    current_file="",
+                    files_completed=0,
+                    files_total=1,
+                    message=f"Downloading {source.display_name}...",
+                )
+            )
+        known_hash = f"sha256:{source.sha256}" if source.sha256 else None
+        # When a file isn't checksum-pinned yet, pooch prints a notice telling
+        # you to use the computed hash as known_hash. Silence that nag; verified
+        # downloads (known_hash set) are unaffected.
+        import logging as _logging
+
+        pooch_logger = pooch.get_logger()
+        prev_level = pooch_logger.level
+        if known_hash is None:
+            pooch_logger.setLevel(_logging.ERROR)
+
+        dl_start = time.time()
+        try:
+            path = pooch.retrieve(
+                url=source.download_url,
+                known_hash=known_hash,
+                fname=tck_path.name,
+                path=output_dir,
+                progressbar=True,
+            )
+        except Exception as e:
+            raise DownloadError(url=source.download_url or "", reason=str(e)) from e
+        finally:
+            pooch_logger.setLevel(prev_level)
+        tck_path = Path(path)
+        download_time = time.time() - dl_start
+
+    registered = _register_dtor985(
+        register, register_name, source, tck_path, progress_callback, warn_list
+    )
+
+    return FetchResult(
+        success=True,
+        connectome_name=source.name,
+        output_dir=output_dir,
+        output_files=[tck_path],
+        registered=registered,
+        register_name=register_name if registered else None,
+        duration_seconds=time.time() - start_time,
+        download_time_seconds=download_time,
+        processing_time_seconds=0.0,
+        warnings=warn_list,
+    )
 
 
 def fetch_hcp1065(
@@ -1081,7 +1217,29 @@ def get_fetch_status(name: str) -> dict:
     return {
         "downloaded": downloaded,
         "processed": processed,
-        "registered": False,  # TODO: Check actual registry
+        "registered": _is_connectome_registered(name),
         "location": location,
         "size_bytes": size_bytes,
     }
+
+
+def _is_connectome_registered(name: str) -> bool:
+    """Return True if a connectome is registered in the asset registry.
+
+    Checks both the functional and structural connectome registries by name
+    (case-insensitive). Failures are treated as "not registered" so that
+    status reporting never raises.
+    """
+    from ..assets.connectomes import (
+        list_functional_connectomes,
+        list_structural_connectomes,
+    )
+
+    try:
+        registered = [
+            c.name.lower()
+            for c in (*list_functional_connectomes(), *list_structural_connectomes())
+        ]
+    except Exception:
+        return False
+    return name.lower() in registered

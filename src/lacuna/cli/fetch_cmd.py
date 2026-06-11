@@ -59,6 +59,8 @@ def handle_fetch_command(args: argparse.Namespace) -> int:
         return _handle_gsp1000(args)
     elif connectome == "dtor985":
         return _handle_dtor985(args)
+    elif connectome in ("dtor985_10pct", "dtor985_25pct"):
+        return _handle_dtor985_subsample(args, connectome)
     elif connectome == "hcp1065":
         return _handle_hcp1065(args)
     else:
@@ -177,6 +179,46 @@ def _handle_dtor985(args: argparse.Namespace) -> int:
     except DownloadError as e:
         print(f"\n✗ Download error: {e}")
         print("  Set FIGSHARE_API_KEY environment variable or use --api-key")
+        return 1
+    except ProcessingError as e:
+        print(f"\n✗ Processing error: {e}")
+        return 1
+
+
+def _handle_dtor985_subsample(args: argparse.Namespace, connectome: str) -> int:
+    """Handle dTOR985 subsample (10pct / 25pct) fetch from OSF."""
+    from lacuna.core.exceptions import DownloadError, ProcessingError
+    from lacuna.io import fetch_dtor985_subsample
+
+    variant = connectome.split("_", 1)[1]  # 'dtor985_10pct' -> '10pct'
+
+    output_dir = getattr(args, "output_dir", None)
+    if output_dir is None:
+        from lacuna.io.fetch import get_data_dir
+
+        output_dir = get_data_dir() / "connectomes" / connectome
+
+    force = getattr(args, "force", False)
+
+    print(f"Fetching dTOR985 {variant} subsample (structural tractogram)...")
+    print(f"  Output: {output_dir}")
+    print()
+
+    try:
+        result = fetch_dtor985_subsample(
+            variant=variant,
+            output_dir=output_dir,
+            register=False,  # Registration handled by analysis steps
+            force=force,
+        )
+        print(f"\n✓ dTOR985 {variant} fetch complete!")
+        print(f"  Files: {len(result.output_files)}")
+        print(f"  Duration: {result.duration_seconds:.1f}s")
+        print(f"  Output: {result.output_dir}")
+        return 0
+
+    except DownloadError as e:
+        print(f"\n✗ Download error: {e}")
         return 1
     except ProcessingError as e:
         print(f"\n✗ Processing error: {e}")

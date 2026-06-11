@@ -39,7 +39,7 @@ class ConnectomeSource:
     description: str
     """User-facing description of the connectome."""
 
-    source_type: Literal["dataverse", "figshare", "github"]
+    source_type: Literal["dataverse", "figshare", "github", "osf"]
     """Download source requiring specific authentication/handling."""
 
     # Dataverse-specific
@@ -78,6 +78,9 @@ class ConnectomeSource:
 
     citation: str = ""
     """Citation text for this connectome dataset."""
+
+    sha256: str | None = None
+    """Expected SHA-256 of the downloaded file (verified for direct downloads)."""
 
 
 @dataclass
@@ -354,6 +357,38 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         n_subjects=985,
         space="MNI152NLin2009bAsym",
         estimated_size_gb=11.0,
+        citation="Elias et al, 2024. https://doi.org/10.1038/s41597-024-03197-0",
+    ),
+    "dtor985_10pct": ConnectomeSource(
+        name="dtor985_10pct",
+        display_name="dTOR985 Structural Connectome (10% subsample)",
+        type="structural",
+        description=(
+            "10% random subsample (~1.2M streamlines) of the dTOR985 tractogram. "
+            "Smaller/faster for prototyping; lower streamline density than the full set."
+        ),
+        source_type="osf",
+        download_url="https://osf.io/9njdy/download",
+        sha256="073fbb823e5a834edfabffc52b0219e425bebbd49f20aef3a16efabef670f603",
+        n_subjects=985,
+        space="MNI152NLin2009bAsym",
+        estimated_size_gb=1.25,
+        citation="Elias et al, 2024. https://doi.org/10.1038/s41597-024-03197-0",
+    ),
+    "dtor985_25pct": ConnectomeSource(
+        name="dtor985_25pct",
+        display_name="dTOR985 Structural Connectome (25% subsample)",
+        type="structural",
+        description=(
+            "25% random subsample (~3M streamlines) of the dTOR985 tractogram. "
+            "Lighter than the full set with higher density than the 10% subsample."
+        ),
+        source_type="osf",
+        download_url="https://osf.io/5yztw/download",
+        sha256="5498deb93ae303b7b9cd59d1972b198171b11c565a70e92ea12e24446c64f29f",
+        n_subjects=985,
+        space="MNI152NLin2009bAsym",
+        estimated_size_gb=3.1,
         citation="Elias et al, 2024. https://doi.org/10.1038/s41597-024-03197-0",
     ),
     "hcp1065": ConnectomeSource(

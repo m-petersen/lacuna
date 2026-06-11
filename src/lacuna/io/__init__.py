@@ -38,6 +38,7 @@ from .export import (
 from .fetch import (
     fetch_connectome,
     fetch_dtor985,
+    fetch_dtor985_subsample,
     fetch_gsp1000,
     fetch_hcp1065,
     get_connectome_path,
@@ -66,6 +67,7 @@ __all__ = [
     # Fetch - connectomes
     "fetch_gsp1000",
     "fetch_dtor985",
+    "fetch_dtor985_subsample",
     "fetch_hcp1065",
     "fetch_connectome",
     "list_fetchable_connectomes",

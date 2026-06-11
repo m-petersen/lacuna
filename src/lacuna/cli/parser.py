@@ -5,7 +5,7 @@ This module provides the argument parser for the Lacuna CLI with a clean
 subcommand-based structure:
 
 - lacuna fetch: Download and setup connectomes
-- lacuna run <analysis>: Run analyses (rd, fnm, snm, afnm)
+- lacuna run <analysis>: Run analyses (fd, fnm, snm, afnm)
 - lacuna bidsify: Convert NIfTI files to BIDS format
 - lacuna parcellate: Reduce a connectome to a parcel-level connectivity matrix
 - lacuna collect: Aggregate results across subjects
@@ -68,7 +68,7 @@ def build_parser(prog: str | None = None) -> ArgumentParser:
             "  lacuna tutorial ./my_tutorial\n"
             "  lacuna bidsify /raw /bids --space MNI152NLin6Asym\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches\n"
             "  lacuna collect /output\n"
             "  lacuna info atlases\n"
@@ -117,12 +117,15 @@ def _build_fetch_parser(subparsers) -> None:
         description=(
             "Download, process, and register connectomes for lesion network mapping.\n\n"
             "Available connectomes:\n"
-            "  gsp1000  - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
-            "  dtor985  - dTOR985 structural tractogram (~10GB, requires Figshare API key)\n"
-            "  hcp1065  - HCP1065 structural tractogram (~1.5GB, no API key required)\n\n"
+            "  gsp1000        - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
+            "  dtor985        - dTOR985 structural tractogram, full (~11GB, requires Figshare API key)\n"
+            "  dtor985_10pct  - dTOR985 10% subsample, ~1.2M streamlines (~1.3GB, no API key)\n"
+            "  dtor985_25pct  - dTOR985 25% subsample, ~3M streamlines (~3.1GB, no API key)\n"
+            "  hcp1065        - HCP1065 structural tractogram (~1.5GB, no API key required)\n\n"
             "Examples:\n"
             "  lacuna fetch gsp1000 --api-key \\$DATAVERSE_API_KEY --batches 50\n"
             "  lacuna fetch dtor985 --api-key \\$FIGSHARE_API_KEY --output-dir /data/connectomes\n"
+            "  lacuna fetch dtor985_10pct          # smaller, no API key, ready-to-use .tck\n"
             "  lacuna fetch --list"
         ),
         formatter_class=RawDescriptionHelpFormatter,
@@ -132,8 +135,11 @@ def _build_fetch_parser(subparsers) -> None:
     fetch_parser.add_argument(
         "connectome",
         nargs="?",
-        choices=["gsp1000", "dtor985", "hcp1065"],
-        help="Connectome to fetch (gsp1000 or dtor985)",
+        choices=["gsp1000", "dtor985", "dtor985_10pct", "dtor985_25pct", "hcp1065"],
+        help=(
+            "Connectome to fetch: gsp1000 (functional); dtor985 (structural, full) "
+            "or its smaller subsamples dtor985_10pct / dtor985_25pct; hcp1065 (structural)"
+        ),
     )
 
     # List flag
@@ -219,12 +225,18 @@ def _build_fetch_parser(subparsers) -> None:
         help="Remove original files after HDF5 conversion to save disk space",
     )
 
-    # dTOR985-specific options
-    g_dtor = fetch_parser.add_argument_group("dTOR985 options")
+    # dTOR985-specific options (full version only)
+    g_dtor = fetch_parser.add_argument_group(
+        "dTOR985 (full) options",
+        description="Only applies to the full 'dtor985'; the 10pct/25pct subsamples are already .tck.",
+    )
     g_dtor.add_argument(
         "--no-keep-original-trk",
         action="store_true",
-        help="Remove original .trk file after conversion to .tck to save disk space",
+        help=(
+            "Remove the original .trk file after conversion to .tck to save disk "
+            "space. Full dtor985 only (subsamples download as .tck, nothing to remove)."
+        ),
     )
 
     # HCP1065-specific options
@@ -251,12 +263,12 @@ def _build_run_parser(subparsers) -> None:
         description=(
             "Run lesion network mapping analyses on BIDS datasets.\n\n"
             "Available analyses:\n"
-            "  rd   (regionaldamage)                      - Lesion overlap with parcellations\n"
+            "  fd   (focaldamage)                      - Lesion overlap with parcellations\n"
             "  fnm  (functionalnetworkmapping)            - Functional lesion connectivity maps\n"
             "  snm  (structuralnetworkmapping)            - White matter disconnection\n"
             "  afnm (acceleratedfunctionalnetworkmapping)      - Accelerated functional LNM (M @ C)\n\n"
             "Examples:\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
             "  lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches --method boes\n"
             "  lacuna run snm /bids /output --connectome-path /path/to/tractogram.tck --nprocs 4\n"
             "  lacuna run afnm /bids /output --matrix-path /path/to/gsp1000_schaefer400.tsv \\\n"
@@ -370,21 +382,21 @@ def _add_shared_run_arguments(parser: ArgumentParser) -> None:
 
 
 def _build_rd_parser(subparsers) -> None:
-    """Add the RegionalDamage (rd) analysis parser."""
+    """Add the FocalDamage (rd) analysis parser."""
     rd_parser = subparsers.add_parser(
-        "rd",
-        aliases=["regionaldamage"],
+        "fd",
+        aliases=["focaldamage"],
         help="Compute lesion overlap with brain parcellations",
         description=(
-            "RegionalDamage Analysis\n\n"
+            "FocalDamage Analysis\n\n"
             "Computes lesion overlap with brain parcellations (atlases).\n"
             "For each parcel, calculates the percentage of voxels overlapping\n"
             "with the lesion mask.\n\n"
             "Use 'lacuna info atlases' to see available atlases.\n\n"
             "Examples:\n"
-            "  lacuna run rd /bids /output\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
-            "  lacuna run rd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32"
+            "  lacuna run fd /bids /output\n"
+            "  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7\n"
+            "  lacuna run fd /bids /output --parcel-atlases schaefer2018parcels400networks17 tian2020parcels32"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -412,8 +424,8 @@ def _build_rd_parser(subparsers) -> None:
         ),
     )
 
-    # RegionalDamage-specific options
-    g_rd = rd_parser.add_argument_group("RegionalDamage options")
+    # FocalDamage-specific options
+    g_rd = rd_parser.add_argument_group("FocalDamage options")
     g_rd.add_argument(
         "--parcel-atlases",
         nargs="+",
@@ -1136,18 +1148,18 @@ def _build_check_parser(subparsers) -> None:
             "Validate input masks before a run, or check output completeness after.\n\n"
             "Use 'lacuna check input' to catch common mask issues (non-binary,\n"
             "empty, missing space) before committing to a long batch run.\n"
-            "Use 'lacuna check rd|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
+            "Use 'lacuna check fd|fnm|snm|afnm' to identify subjects with missing outputs.\n\n"
             "Available checks:\n"
             "  input - Validate input masks (binary, non-empty, space)\n"
-            "  rd    - Check for parcelstats TSV files (RegionalDamage)\n"
+            "  fd    - Check for parcelstats TSV files (FocalDamage)\n"
             "  fnm   - Check for functional rmap NIfTI files\n"
             "  snm   - Check for disconnection NIfTI files\n"
             "  afnm  - Check for accelerated functional LNM parcel outputs\n\n"
             "Examples:\n"
             "  lacuna check input /bids\n"
-            "  lacuna check rd /bids /output\n"
-            "  lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
-            "  lacuna check rd /bids /output --output-file missing.txt\n"
+            "  lacuna check fd /bids /output\n"
+            "  lacuna check fd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
+            "  lacuna check fd /bids /output --output-file missing.txt\n"
             "  lacuna check fnm /bids /output --quiet\n"
             "  lacuna check snm /bids /output --participant-label 001 002"
         ),
@@ -1169,26 +1181,26 @@ def _build_check_parser(subparsers) -> None:
 
 
 def _build_check_rd_parser(subparsers) -> None:
-    """Add the check rd subcommand parser."""
+    """Add the check fd subcommand parser."""
     rd_parser = subparsers.add_parser(
-        "rd",
-        aliases=["regionaldamage"],
-        help="Check for RegionalDamage parcelstats outputs",
+        "fd",
+        aliases=["focaldamage"],
+        help="Check for FocalDamage parcelstats outputs",
         description=(
-            "Check which subjects have RegionalDamage parcelstats TSV outputs.\n\n"
-            "By default, any '*method-rd*parcelstats.tsv' file in a\n"
+            "Check which subjects have FocalDamage parcelstats TSV outputs.\n\n"
+            "By default, any '*method-fd*parcelstats.tsv' file in a\n"
             "subject's output directory counts as complete. If --parcel-atlases is\n"
             "given, each named atlas is checked individually.\n\n"
             "Examples:\n"
-            "  lacuna check rd /bids /output\n"
-            "  lacuna check rd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
-            "  lacuna check rd /bids /output --output-file missing.txt"
+            "  lacuna check fd /bids /output\n"
+            "  lacuna check fd /bids /output --parcel-atlases schaefer2018parcels400networks7\n"
+            "  lacuna check fd /bids /output --output-file missing.txt"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
     _add_shared_check_arguments(rd_parser)
 
-    g_rd = rd_parser.add_argument_group("RegionalDamage options")
+    g_rd = rd_parser.add_argument_group("FocalDamage options")
     g_rd.add_argument(
         "--parcel-atlases",
         nargs="+",
