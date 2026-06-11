@@ -81,7 +81,7 @@ Enumerates input subjects and checks whether output files exist in the derivativ
 
 | Analysis | Alias | Sentinel file |
 |----------|-------|---------------|
-| `rd` | `focaldamage` | `*method-fd*parcelstats.tsv` |
+| `fd` | `focaldamage` | `*method-fd*parcelstats.tsv` |
 | `fnm` | `functionalnetworkmapping` | `*method-fnm*desc-rmap*.nii.gz` |
 | `afnm` | `acceleratedfunctionalnetworkmapping` | `*method-afnm*parcelstats.tsv` |
 | `snm` | `structuralnetworkmapping` | `*method-snm*desc-disconnectionpct*.nii.gz` |
@@ -104,7 +104,7 @@ Enumerates input subjects and checks whether output files exist in the derivativ
 | `--output-file PATH` | Write missing subject IDs to a file (one per line) |
 | `--quiet`, `-q` | Print only missing subject IDs (one per line) |
 
-### `lacuna check rd` options
+### `lacuna check fd` options
 
 | Option | Description |
 |--------|-------------|
@@ -120,7 +120,7 @@ Enumerates input subjects and checks whether output files exist in the derivativ
 ### Examples
 
 ```bash
-# Check all subjects for RD outputs
+# Check all subjects for FD outputs
 lacuna check fd /bids /output
 
 # Check specific atlas

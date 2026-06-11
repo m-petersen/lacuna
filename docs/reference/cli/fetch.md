@@ -16,10 +16,15 @@ The fetch command downloads, processes, and registers normative connectomes requ
 
 ## Available Connectomes
 
-| Name | Type | Description | Size | Source |
+| Name | Type | Description | Size | API key |
 |------|------|-------------|------|--------|
-| `gsp1000` | Functional | GSP1000 functional connectome | ~100GB | Dataverse |
-| `dtor985` | Structural | dTOR985 structural tractogram | ~10GB | Figshare |
+| `gsp1000` | Functional | GSP1000 functional connectome | ~200GB | Dataverse |
+| `dtor985` | Structural | dTOR985 structural tractogram (full) | ~11GB | Figshare |
+| `dtor985_10pct` | Structural | dTOR985 10% subsample, ~1.2M streamlines | ~1.3GB | None |
+| `dtor985_25pct` | Structural | dTOR985 25% subsample, ~3M streamlines | ~3.1GB | None |
+| `hcp1065` | Structural | HCP1065 structural tractogram | ~1.5GB | None |
+
+The `dtor985_10pct` / `dtor985_25pct` subsamples (CC0) and `hcp1065` download as ready-to-use `.tck` files and need no API key — a good starting point for structural network mapping.
 
 ## Options
 
@@ -27,7 +32,7 @@ The fetch command downloads, processes, and registers normative connectomes requ
 
 | Argument | Description |
 |----------|-------------|
-| `connectome` | Connectome to fetch: `gsp1000` or `dtor985` |
+| `connectome` | Connectome to fetch: `gsp1000`, `dtor985`, `dtor985_10pct`, `dtor985_25pct`, or `hcp1065` |
 
 ### Display options
 
@@ -95,6 +100,17 @@ lacuna fetch dtor985
 
 # Or pass key directly
 lacuna fetch dtor985 --api-key YOUR_FIGSHARE_KEY
+```
+
+### Download a dTOR985 subsample or HCP1065 (no API key)
+
+```bash
+# Smaller dTOR985 subsamples — ready-to-use .tck, no key required
+lacuna fetch dtor985_10pct
+lacuna fetch dtor985_25pct
+
+# HCP1065 structural tractogram
+lacuna fetch hcp1065
 ```
 
 ### Download to custom directory

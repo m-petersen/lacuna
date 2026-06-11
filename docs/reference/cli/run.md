@@ -12,7 +12,7 @@ lacuna run <analysis> <bids_dir> <output_dir> [options]
 
 | Analysis | Alias | Description |
 |----------|-------|-------------|
-| `rd` | `focaldamage` | Lesion overlap with brain parcellations |
+| `fd` | `focaldamage` | Lesion overlap with brain parcellations |
 | `fnm` | `functionalnetworkmapping` | Voxel-level functional connectivity mapping |
 | `afnm` | `acceleratedfunctionalnetworkmapping` | Accelerated parcel-level functional network mapping (M @ C) |
 | `snm` | `structuralnetworkmapping` | White matter disconnection mapping |
@@ -60,7 +60,7 @@ All `lacuna run` subcommands share these options:
 
 ---
 
-## `lacuna run rd` — Focal Damage
+## `lacuna run fd` — Focal Damage
 
 Computes lesion overlap with brain parcellations (atlases). For each parcel, calculates the percentage of voxels overlapping with the lesion mask.
 
