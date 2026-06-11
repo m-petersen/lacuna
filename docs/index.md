@@ -8,11 +8,11 @@ hide:
 
 # Lacuna
 
-When a stroke, tumor, or other focal injury damages brain tissue, the resulting symptoms can reflect not only the affected region itself, but also its connections within distributed brain networks. Interpreting a lesion therefore requires considering it in the broader context of brain organization.
+When a stroke, tumor, or other focal injury damages brain tissue, understanding its consequences requires placing the lesion in the broader context of brain organization.
 
-Lacuna is an open-source toolbox for characterizing lesions using normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases. Given a lesion mask, the toolbox generates a range of lesion-derived measures that place the lesion within this broader neuroanatomical and network context.
+Lacuna is an open-source toolbox designed to facilitate this process. Given a lesion mask, it uses normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases, to generate a range of measures that characterize a lesion beyond its anatomical location alone.
 
-The current release focuses on lesion network mapping and related workflows, with a modular architecture designed to support additional approaches to lesion characterization in the future. Reproducibility is emphasized throughout, using BIDS-inspired conventions for inputs and outputs.
+Lacuna is designed to be easy to adopt: you provide lesion masks in MNI space, and it takes care of the rest — fetching the normative reference data, aligning coordinate spaces, and writing BIDS-organized outputs — through both a clean Python API and a BIDS-App-style command line. Built for multicenter research, it standardizes inputs and outputs, scales from a single mask to entire cohorts with batch processing, and records traceable provenance for every result, all within a modular architecture designed to grow toward further lesion-characterization methods.
 
 </div>
 <img src="assets/logo.svg" alt="Lacuna" width="400" style="flex-shrink: 0;">
