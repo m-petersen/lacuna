@@ -25,7 +25,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from lacuna import SubjectData, batch_process
-from lacuna.analysis import RegionalDamage
+from lacuna.analysis import FocalDamage
 from lacuna.batch.strategies import ParallelStrategy
 from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
 
@@ -86,8 +86,8 @@ def test_atlas_dir(tmp_path):
 
 
 @pytest.fixture
-def regional_damage_analysis(test_atlas_dir):
-    """Create RegionalDamage analysis instance with minimal test atlas."""
+def focal_damage_analysis(test_atlas_dir):
+    """Create FocalDamage analysis instance with minimal test atlas."""
     from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
     atlas_dir, atlas_name = test_atlas_dir
@@ -97,7 +97,7 @@ def regional_damage_analysis(test_atlas_dir):
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=1)
 
     # Create analysis with explicit parcel_names to avoid bundled atlases that require TemplateFlow
-    return RegionalDamage(parcel_names=[atlas_name])
+    return FocalDamage(parcel_names=[atlas_name])
 
 
 # ==== Loky-specific fixtures ====
@@ -138,24 +138,24 @@ def tutorial_lesions():
 
 @pytest.fixture
 def bundled_atlas_analysis():
-    """Create RegionalDamage analysis using bundled atlas.
+    """Create FocalDamage analysis using bundled atlas.
 
     Uses schaefer2018parcels100networks7 which is bundled with the package
     and can be loaded by loky worker processes.
     """
-    return RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
+    return FocalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
 
 class TestThreadingBackend:
     """Test threading backend for Jupyter compatibility."""
 
     def test_threading_backend_processes_all_subjects(
-        self, synthetic_lesions, regional_damage_analysis
+        self, synthetic_lesions, focal_damage_analysis
     ):
         """Threading backend should process all subjects successfully."""
         results = batch_process(
             inputs=synthetic_lesions,
-            analysis=regional_damage_analysis,
+            analysis=focal_damage_analysis,
             n_jobs=2,
             show_progress=False,
             backend="threading",
@@ -165,12 +165,12 @@ class TestThreadingBackend:
         assert all(isinstance(r, SubjectData) for r in results)
 
     def test_threading_backend_with_single_worker(
-        self, synthetic_lesions, regional_damage_analysis
+        self, synthetic_lesions, focal_damage_analysis
     ):
         """Threading backend should work with n_jobs=1."""
         results = batch_process(
             inputs=synthetic_lesions,
-            analysis=regional_damage_analysis,
+            analysis=focal_damage_analysis,
             n_jobs=1,
             show_progress=False,
             backend="threading",
@@ -178,11 +178,11 @@ class TestThreadingBackend:
 
         assert len(results) == len(synthetic_lesions)
 
-    def test_threading_backend_with_all_cores(self, synthetic_lesions, regional_damage_analysis):
+    def test_threading_backend_with_all_cores(self, synthetic_lesions, focal_damage_analysis):
         """Threading backend should work with n_jobs=-1."""
         results = batch_process(
             inputs=synthetic_lesions,
-            analysis=regional_damage_analysis,
+            analysis=focal_damage_analysis,
             n_jobs=-1,
             show_progress=False,
             backend="threading",
@@ -224,7 +224,7 @@ class TestLokyBackend:
 
         for result in results:
             assert len(result.results) > 0
-            assert "RegionalDamage" in result.results
+            assert "FocalDamage" in result.results
 
     def test_loky_backend_is_default(self, tutorial_lesions, bundled_atlas_analysis):
         """Loky should be the default backend."""
@@ -242,11 +242,11 @@ class TestLokyBackend:
 class TestMultiprocessingBackend:
     """Test multiprocessing backend."""
 
-    def test_multiprocessing_backend_works(self, synthetic_lesions, regional_damage_analysis):
+    def test_multiprocessing_backend_works(self, synthetic_lesions, focal_damage_analysis):
         """Multiprocessing backend should work for batch processing."""
         results = batch_process(
             inputs=synthetic_lesions,
-            analysis=regional_damage_analysis,
+            analysis=focal_damage_analysis,
             n_jobs=2,
             show_progress=False,
             backend="multiprocessing",
@@ -294,7 +294,7 @@ class TestBackendComparison:
 class TestParallelStrategyBackend:
     """Test ParallelStrategy directly with different backends."""
 
-    def test_parallel_strategy_threading_backend(self, synthetic_lesions, regional_damage_analysis):
+    def test_parallel_strategy_threading_backend(self, synthetic_lesions, focal_damage_analysis):
         """ParallelStrategy should work with threading backend.
 
         Note: threading with nilearn resampling can be racy, so we allow
@@ -306,7 +306,7 @@ class TestParallelStrategyBackend:
         strategy = ParallelStrategy(n_jobs=2, backend="threading")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            results = strategy.execute(inputs=synthetic_lesions, analysis=regional_damage_analysis)
+            results = strategy.execute(inputs=synthetic_lesions, analysis=focal_damage_analysis)
 
         assert len(results) >= 1  # At least some subjects should succeed
         assert strategy.backend == "threading"

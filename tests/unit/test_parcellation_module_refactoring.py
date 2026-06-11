@@ -230,29 +230,29 @@ class TestParcellationClassFunctionality:
         assert parc.metadata.region_labels == ["R1", "R2"]
 
 
-class TestRegionalDamageLogLevel:
-    """Test RegionalDamage accepts log_level parameter (T164)."""
+class TestFocalDamageLogLevel:
+    """Test FocalDamage accepts log_level parameter (T164)."""
 
-    def test_regional_damage_accepts_verbose(self):
-        """Test RegionalDamage __init__ accepts verbose parameter."""
-        from lacuna.analysis import RegionalDamage
+    def test_focal_damage_accepts_verbose(self):
+        """Test FocalDamage __init__ accepts verbose parameter."""
+        from lacuna.analysis import FocalDamage
 
         # Should not raise
-        analysis = RegionalDamage(verbose=False)
+        analysis = FocalDamage(verbose=False)
         assert analysis.verbose is False
 
-    def test_regional_damage_verbose_defaults_to_false(self):
-        """Test RegionalDamage verbose defaults to False."""
-        from lacuna.analysis import RegionalDamage
+    def test_focal_damage_verbose_defaults_to_false(self):
+        """Test FocalDamage verbose defaults to False."""
+        from lacuna.analysis import FocalDamage
 
-        analysis = RegionalDamage()
+        analysis = FocalDamage()
         assert analysis.verbose is False
 
-    def test_regional_damage_passes_verbose_to_parent(self):
-        """Test RegionalDamage passes verbose to ParcelAggregation."""
-        from lacuna.analysis import RegionalDamage
+    def test_focal_damage_passes_verbose_to_parent(self):
+        """Test FocalDamage passes verbose to ParcelAggregation."""
+        from lacuna.analysis import FocalDamage
 
-        analysis = RegionalDamage(verbose=False)
+        analysis = FocalDamage(verbose=False)
         # Verify it's accessible (ParcelAggregation inherits from BaseAnalysis)
         assert hasattr(analysis, "verbose")
         assert analysis.verbose is False

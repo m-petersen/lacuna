@@ -109,7 +109,7 @@ class TestGetResultErrorSuggestionsContract:
             resolution=2,
         )
         # Add some mock results
-        mask_data._results["RegionalDamage"] = {"volume": 100}
+        mask_data._results["FocalDamage"] = {"volume": 100}
         mask_data._results["FunctionalNetworkMapping"] = {"rmap": None}
         return mask_data
 
@@ -119,4 +119,4 @@ class TestGetResultErrorSuggestionsContract:
             mask_data_with_results.get_result("RegionalDmage")  # Typo
 
         error_msg = str(exc_info.value)
-        assert "RegionalDamage" in error_msg
+        assert "FocalDamage" in error_msg

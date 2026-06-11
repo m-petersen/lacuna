@@ -303,7 +303,7 @@ class TestFNMRangeValidation:
 class TestCLIAtlasNameValidation:
     """Test that CLI validates atlas names for all analysis types."""
 
-    def test_rd_invalid_atlas_raises(self, tmp_path):
+    def test_fd_invalid_atlas_raises(self, tmp_path):
         from lacuna.cli.main import RunConfig
 
         bids_dir = tmp_path / "bids"
@@ -313,7 +313,7 @@ class TestCLIAtlasNameValidation:
         config = RunConfig(
             bids_dir=bids_dir,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="fd",
             analysis_options={"parcel_names": ["NonexistentAtlas"]},
         )
         with pytest.raises(ValueError, match="not found"):
@@ -335,7 +335,7 @@ class TestCLIAtlasNameValidation:
         with pytest.raises(ValueError, match="not found"):
             config.validate()
 
-    def test_rd_valid_atlas_passes(self, tmp_path):
+    def test_fd_valid_atlas_passes(self, tmp_path):
         from lacuna.assets.parcellations import list_parcellations
         from lacuna.cli.main import RunConfig
 
@@ -351,7 +351,7 @@ class TestCLIAtlasNameValidation:
         config = RunConfig(
             bids_dir=bids_dir,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="fd",
             analysis_options={"parcel_names": [slug]},
         )
         # Should not raise — slug is a valid registry name

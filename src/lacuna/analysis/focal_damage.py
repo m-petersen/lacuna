@@ -1,5 +1,5 @@
 """
-Regional damage analysis module.
+Focal damage analysis module.
 
 Provides a convenient interface for computing lesion-atlas overlap.
 This is a thin wrapper around ParcelAggregation configured for regional
@@ -8,17 +8,17 @@ damage analysis.
 Examples
 --------
 >>> from lacuna import SubjectData
->>> from lacuna.analysis import RegionalDamage
+>>> from lacuna.analysis import FocalDamage
 >>>
 >>> # Load mask data
 >>> mask = SubjectData.from_nifti("mask.nii.gz")
 >>>
->>> # Compute regional damage
->>> analysis = RegionalDamage(atlas_dir="/data/atlases")
+>>> # Compute focal damage
+>>> analysis = FocalDamage(atlas_dir="/data/atlases")
 >>> result = analysis.run(mask)
 >>>
 >>> # Access results (percent overlap per region)
->>> print(result.results["RegionalDamage"])
+>>> print(result.results["FocalDamage"])
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from lacuna.core.subject_data import SubjectData
 
 
-class RegionalDamage(ParcelAggregation):
+class FocalDamage(ParcelAggregation):
     """
     Compute lesion overlap with atlas regions.
 
@@ -72,20 +72,20 @@ class RegionalDamage(ParcelAggregation):
     --------
     >>> # Use all registered atlases
     >>> from lacuna import SubjectData
-    >>> from lacuna.analysis import RegionalDamage
+    >>> from lacuna.analysis import FocalDamage
     >>>
     >>> mask = SubjectData.from_nifti("mask.nii.gz")
-    >>> analysis = RegionalDamage()  # Uses all registered atlases
+    >>> analysis = FocalDamage()  # Uses all registered atlases
     >>> result = analysis.run(mask)
     >>>
-    >>> # Results are in RegionalDamage namespace
-    >>> overlap_pcts = result.results["RegionalDamage"]
+    >>> # Results are in FocalDamage namespace
+    >>> overlap_pcts = result.results["FocalDamage"]
     >>> for region, pct in overlap_pcts.items():
     ...     if pct > 10:  # Show regions with >10% damage
     ...         print(f"{region}: {pct:.1f}%")
     >>>
     >>> # Process only specific atlases
-    >>> analysis = RegionalDamage(
+    >>> analysis = FocalDamage(
     ...     parcel_names=["schaefer2018parcels100networks7"]
     ... )
     >>> result = analysis.run(mask)
@@ -105,7 +105,7 @@ class RegionalDamage(ParcelAggregation):
         keep_intermediate: bool = False,
     ):
         """
-        Initialize RegionalDamage analysis.
+        Initialize FocalDamage analysis.
 
         This is equivalent to:
         ParcelAggregation(source="maskimg",
@@ -134,7 +134,7 @@ class RegionalDamage(ParcelAggregation):
 
     def _validate_inputs(self, mask_data) -> None:
         """
-        Validate inputs for regional damage analysis.
+        Validate inputs for focal damage analysis.
 
         Extends parent validation to ensure mask is binary.
 
@@ -160,14 +160,14 @@ class RegionalDamage(ParcelAggregation):
         # Binary mask should only have 0 and 1 (or just 0, or just 1)
         if not np.all(np.isin(unique_vals, [0, 1])):
             raise ValueError(
-                f"RegionalDamage requires binary mask (0 and 1 only).\n"
+                f"FocalDamage requires binary mask (0 and 1 only).\n"
                 f"Found values: {unique_vals}\n"
                 f"Use thresholding or binarization to convert continuous maps."
             )
 
     def _run_analysis(self, mask_data: SubjectData) -> dict[str, DataContainer]:
         """
-        Compute percentage and binary regional damage for all atlases.
+        Compute percentage and binary focal damage for all atlases.
 
         Extends parent to add binary damage results (1 if region has any
         overlap with the mask, 0 otherwise) alongside percentage results.
@@ -195,10 +195,10 @@ class RegionalDamage(ParcelAggregation):
                 results[key] = result
                 continue
 
-            # Re-key percentage result: atlas-{atlas}_source-RegionalDamage_desc-damagepct
+            # Re-key percentage result: atlas-{atlas}_source-FocalDamage_desc-damagepct
             pct_key = build_result_key(
                 atlas=result.name,
-                source="RegionalDamage",
+                source="FocalDamage",
                 desc="damagepct",
             )
             results[pct_key] = result
@@ -222,7 +222,7 @@ class RegionalDamage(ParcelAggregation):
 
             binary_key = build_result_key(
                 atlas=result.name,
-                source="RegionalDamage",
+                source="FocalDamage",
                 desc="damagebin",
             )
             results[binary_key] = binary_parcel
@@ -238,11 +238,11 @@ class RegionalDamage(ParcelAggregation):
             Dictionary of parameter names and values.
         """
         params = super()._get_parameters()
-        # RegionalDamage is a specific configuration of ParcelAggregation
+        # FocalDamage is a specific configuration of ParcelAggregation
         # Override the source and aggregation to reflect the simplified API
         params.update(
             {
-                "analysis_type": "RegionalDamage",
+                "analysis_type": "FocalDamage",
                 "threshold": params.get("threshold"),
             }
         )

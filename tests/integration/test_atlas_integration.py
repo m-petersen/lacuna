@@ -11,7 +11,7 @@ import nibabel as nib
 import pytest
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, FocalDamage
 from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import list_parcellations
 from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects
@@ -38,19 +38,19 @@ def tutorial_mask_data():
 class TestMultiAtlasAnalysisWorkflow:
     """Test multi-atlas analysis workflow."""
 
-    def test_regional_damage_with_single_atlas(self, tutorial_mask_data):
-        """RegionalDamage can use a single named atlas."""
+    def test_focal_damage_with_single_atlas(self, tutorial_mask_data):
+        """FocalDamage can use a single named atlas."""
         # Use specific parcellation by name
-        analysis = RegionalDamage(parcel_names=["schaefer2018parcels100networks7"])
+        analysis = FocalDamage(parcel_names=["schaefer2018parcels100networks7"])
 
         # Validate it was configured correctly
         assert analysis.parcel_names == ["schaefer2018parcels100networks7"]
         assert analysis.aggregation == "percent"
 
-    def test_regional_damage_with_multiple_atlases(self, tutorial_mask_data):
-        """RegionalDamage can use multiple named atlases."""
+    def test_focal_damage_with_multiple_atlases(self, tutorial_mask_data):
+        """FocalDamage can use multiple named atlases."""
         # Use multiple parcellations by name
-        analysis = RegionalDamage(
+        analysis = FocalDamage(
             parcel_names=[
                 "schaefer2018parcels100networks7",
                 "schaefer2018parcels200networks7",
@@ -75,9 +75,9 @@ class TestMultiAtlasAnalysisWorkflow:
         assert analysis.parcel_names == ["tian2020parcels32"]
         assert analysis.aggregation == "mean"
 
-    def test_regional_damage_default_parcellations(self, tutorial_mask_data):
-        """RegionalDamage with None uses all available parcellations."""
-        analysis = RegionalDamage(parcel_names=None)
+    def test_focal_damage_default_parcellations(self, tutorial_mask_data):
+        """FocalDamage with None uses all available parcellations."""
+        analysis = FocalDamage(parcel_names=None)
         assert analysis.parcel_names is None
 
 

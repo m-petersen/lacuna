@@ -149,7 +149,7 @@ class ParallelStrategy(BatchStrategy):
     """
     Parallel batch processing using joblib multiprocessing.
 
-    Best for independent per-subject analyses (RegionalDamage, ParcelAggregation)
+    Best for independent per-subject analyses (FocalDamage, ParcelAggregation)
     Speedup on multi-core systems (proportional to available cores)
     Low memory overhead
 
@@ -175,15 +175,15 @@ class ParallelStrategy(BatchStrategy):
     Examples
     --------
     >>> from lacuna.batch.strategies import ParallelStrategy
-    >>> from lacuna.analysis import RegionalDamage
+    >>> from lacuna.analysis import FocalDamage
     >>>
     >>> # For standalone scripts (default)
     >>> strategy = ParallelStrategy(n_jobs=4)
-    >>> results = strategy.execute(lesions, RegionalDamage())
+    >>> results = strategy.execute(lesions, FocalDamage())
     >>>
     >>> # For Jupyter notebooks
     >>> strategy = ParallelStrategy(n_jobs=4, backend='threading')
-    >>> results = strategy.execute(lesions, RegionalDamage())
+    >>> results = strategy.execute(lesions, FocalDamage())
     """
 
     def __init__(self, n_jobs: int = -1, backend: str = "loky"):

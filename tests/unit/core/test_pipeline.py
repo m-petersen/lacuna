@@ -43,32 +43,32 @@ class TestPipeline:
 
     def test_pipeline_add_returns_self(self, simple_subject):
         """Test Pipeline.add returns self for method chaining."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline()
-        result = pipeline.add(RegionalDamage())
+        result = pipeline.add(FocalDamage())
 
         assert result is pipeline
 
     def test_pipeline_chaining(self):
         """Test Pipeline supports method chaining."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
-        pipeline = Pipeline(name="Chained").add(RegionalDamage()).add(RegionalDamage())
+        pipeline = Pipeline(name="Chained").add(FocalDamage()).add(FocalDamage())
 
         assert len(pipeline) == 2
 
     @pytest.mark.slow
     def test_pipeline_run_single_subject(self, simple_subject):
         """Test Pipeline.run with single subject."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
         from lacuna.core.subject_data import SubjectData
 
         pipeline = Pipeline()
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         result = pipeline.run(simple_subject)
 
@@ -86,25 +86,25 @@ class TestPipeline:
 
     def test_pipeline_describe(self):
         """Test Pipeline.describe returns string."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline(name="Test")
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         description = pipeline.describe()
 
         assert isinstance(description, str)
         assert "Test" in description
-        assert "RegionalDamage" in description
+        assert "FocalDamage" in description
 
     def test_pipeline_repr(self):
         """Test Pipeline __repr__."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline(name="Test")
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         repr_str = repr(pipeline)
 
@@ -133,14 +133,14 @@ class TestAnalyzeFunction:
             metadata={"subject_id": "sub-001"},
         )
 
-    def test_analyze_with_regional_damage(self, simple_subject):
-        """Test that analyze runs RegionalDamage."""
+    def test_analyze_with_focal_damage(self, simple_subject):
+        """Test that analyze runs FocalDamage."""
         from lacuna import analyze
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
+        result = analyze(simple_subject, steps={"FocalDamage": None}, verbose=False)
 
-        # Should have RegionalDamage results
-        assert "RegionalDamage" in result.results
+        # Should have FocalDamage results
+        assert "FocalDamage" in result.results
 
     @pytest.mark.slow
     def test_analyze_single_returns_single(self, simple_subject):
@@ -148,7 +148,7 @@ class TestAnalyzeFunction:
         from lacuna import analyze
         from lacuna.core.subject_data import SubjectData
 
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
+        result = analyze(simple_subject, steps={"FocalDamage": None}, verbose=False)
 
         assert isinstance(result, SubjectData)
         assert not isinstance(result, list)
@@ -158,7 +158,7 @@ class TestAnalyzeFunction:
         """Test that list input returns list output."""
         from lacuna import analyze
 
-        results = analyze([simple_subject], steps={"RegionalDamage": None}, verbose=False)
+        results = analyze([simple_subject], steps={"FocalDamage": None}, verbose=False)
 
         assert isinstance(results, list)
         assert len(results) == 1
@@ -171,7 +171,7 @@ class TestAnalyzeFunction:
         subjects = [simple_subject, simple_subject]
         results = analyze(
             subjects,
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=1,
             verbose=False,
             show_progress=False,
@@ -179,7 +179,7 @@ class TestAnalyzeFunction:
 
         assert len(results) == 2
         for r in results:
-            assert "RegionalDamage" in r.results
+            assert "FocalDamage" in r.results
 
     def test_analyze_requires_steps(self, simple_subject):
         """Test that analyze raises TypeError when steps not provided."""
@@ -240,11 +240,11 @@ class TestAnalyzeStepsParameter:
 
         result = analyze(
             simple_subject,
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             verbose=False,
         )
 
-        assert "RegionalDamage" in result.results
+        assert "FocalDamage" in result.results
 
     @pytest.mark.slow
     def test_analyze_steps_with_custom_params(self, simple_subject):
@@ -253,26 +253,26 @@ class TestAnalyzeStepsParameter:
 
         result = analyze(
             simple_subject,
-            steps={"RegionalDamage": {"verbose": False}},
+            steps={"FocalDamage": {"verbose": False}},
             verbose=False,
         )
 
-        assert "RegionalDamage" in result.results
+        assert "FocalDamage" in result.results
 
     @pytest.mark.slow
     def test_analyze_multiple_steps(self, simple_subject):
         """Test analyze with multiple analysis steps."""
         from lacuna import analyze
 
-        # Both RegionalDamage steps should run (even if same analysis)
+        # Both FocalDamage steps should run (even if same analysis)
         # but practically we'd use different analyses
         result = analyze(
             simple_subject,
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             verbose=False,
         )
 
-        assert "RegionalDamage" in result.results
+        assert "FocalDamage" in result.results
 
 
 class TestAnalyzeBatchProcessing:
@@ -303,7 +303,7 @@ class TestAnalyzeBatchProcessing:
 
         results = analyze(
             [simple_subject, simple_subject],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=1,
             show_progress=False,
             verbose=False,
@@ -319,7 +319,7 @@ class TestAnalyzeBatchProcessing:
         # Should not raise even with progress disabled
         results = analyze(
             [simple_subject],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             show_progress=False,
             verbose=False,
         )
@@ -333,7 +333,7 @@ class TestAnalyzeBatchProcessing:
 
         results = analyze(
             [simple_subject, simple_subject, simple_subject],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=2,
             show_progress=False,
             verbose=False,
@@ -341,7 +341,7 @@ class TestAnalyzeBatchProcessing:
 
         assert len(results) == 3
         for r in results:
-            assert "RegionalDamage" in r.results
+            assert "FocalDamage" in r.results
 
 
 class TestAnalyzeLogLevel:
@@ -370,7 +370,7 @@ class TestAnalyzeLogLevel:
         """Test analyze with verbose=False (silent)."""
         from lacuna import analyze
 
-        analyze(simple_subject, steps={"RegionalDamage": None}, verbose=False)
+        analyze(simple_subject, steps={"FocalDamage": None}, verbose=False)
 
         _ = capsys.readouterr()
         # Silent mode should have minimal output
@@ -382,7 +382,7 @@ class TestAnalyzeLogLevel:
         from lacuna import analyze
 
         # Should complete without error
-        result = analyze(simple_subject, steps={"RegionalDamage": None}, verbose=True)
+        result = analyze(simple_subject, steps={"FocalDamage": None}, verbose=True)
         assert result is not None
 
     @pytest.mark.slow
@@ -391,7 +391,7 @@ class TestAnalyzeLogLevel:
         from lacuna import analyze
 
         # Should complete without error
-        result = analyze(simple_subject, steps={"RegionalDamage": None})
+        result = analyze(simple_subject, steps={"FocalDamage": None})
         assert result is not None
 
 
@@ -425,11 +425,11 @@ class TestPipelineBatchProcessing:
     @pytest.mark.slow
     def test_run_batch_sequential(self, simple_subjects):
         """Test Pipeline.run_batch with sequential processing."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline()
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         results = pipeline.run_batch(
             simple_subjects,
@@ -439,17 +439,17 @@ class TestPipelineBatchProcessing:
 
         assert len(results) == 3
         for r in results:
-            assert "RegionalDamage" in r.results
+            assert "FocalDamage" in r.results
 
     @pytest.mark.slow
     def test_run_batch_returns_list(self, simple_subjects):
         """Test Pipeline.run_batch returns list."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
         from lacuna.core.subject_data import SubjectData
 
         pipeline = Pipeline()
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         results = pipeline.run_batch(
             simple_subjects,

@@ -41,8 +41,8 @@ class TestBuildResultKey:
 
     def test_desc_with_underscore(self):
         """Build key when description contains underscore."""
-        key = build_result_key("Schaefer100", "RegionalDamage", "damagescore")
-        assert key == "atlas-Schaefer100_source-RegionalDamage_desc-damagescore"
+        key = build_result_key("Schaefer100", "FocalDamage", "damagescore")
+        assert key == "atlas-Schaefer100_source-FocalDamage_desc-damagescore"
 
     def test_all_source_names(self):
         """Build keys with all standard source names."""
@@ -50,7 +50,7 @@ class TestBuildResultKey:
             ("SubjectData", "InputMask"),  # Maps to InputMask
             ("FunctionalNetworkMapping", "FunctionalNetworkMapping"),
             ("StructuralNetworkMapping", "StructuralNetworkMapping"),
-            ("RegionalDamage", "RegionalDamage"),
+            ("FocalDamage", "FocalDamage"),
             ("ParcelAggregation", "ParcelAggregation"),
         ]
         for source, expected_source in sources:
@@ -84,10 +84,10 @@ class TestParseResultKey:
 
     def test_parse_desc_with_underscore(self):
         """Parse key when description contains underscore."""
-        result = parse_result_key("atlas-TianSubcortex_source-RegionalDamage_desc-damagescore")
+        result = parse_result_key("atlas-TianSubcortex_source-FocalDamage_desc-damagescore")
         assert result == {
             "atlas": "TianSubcortex",
-            "source": "RegionalDamage",
+            "source": "FocalDamage",
             "desc": "damagescore",
         }
 
@@ -156,9 +156,9 @@ class TestSourceAbbreviations:
         """StructuralNetworkMapping maps to itself."""
         assert SOURCE_ABBREVIATIONS["StructuralNetworkMapping"] == "StructuralNetworkMapping"
 
-    def test_rd_maps_to_self(self):
-        """RegionalDamage maps to itself."""
-        assert SOURCE_ABBREVIATIONS["RegionalDamage"] == "RegionalDamage"
+    def test_fd_maps_to_self(self):
+        """FocalDamage maps to itself."""
+        assert SOURCE_ABBREVIATIONS["FocalDamage"] == "FocalDamage"
 
     def test_pa_maps_to_self(self):
         """ParcelAggregation maps to itself."""
@@ -259,17 +259,17 @@ class TestBidsFilenameStr:
         result = str(bf)
         assert result == "method-fnm_space-MNI152NLin6Asym_desc-rmap"
 
-    def test_rd_parcelstats(self):
+    def test_fd_parcelstats(self):
         """RD parcelstats output."""
         bf = BidsFilename(
-            method="rd",
+            method="fd",
             atlas="schaefer2018parcels100networks7",
             desc="damagepct",
             suffix="parcelstats",
         )
         result = str(bf)
         assert (
-            result == "method-rd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats"
+            result == "method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats"
         )
 
     def test_input_mask_no_method(self):
@@ -347,11 +347,11 @@ class TestBidsFilenameFromResultKey:
         assert bf.desc == "disconnectionpct"
         assert bf.suffix == "connmatrix"
 
-    def test_bids_key_rd(self):
-        """BIDS key with RegionalDamage source."""
-        key = "atlas-schaefer2018parcels100networks7_source-RegionalDamage_desc-damagepct"
+    def test_bids_key_fd(self):
+        """BIDS key with FocalDamage source."""
+        key = "atlas-schaefer2018parcels100networks7_source-FocalDamage_desc-damagepct"
         bf = BidsFilename.from_result_key(key, suffix="values")
-        assert bf.method == "rd"
+        assert bf.method == "fd"
         assert bf.atlas == "schaefer2018parcels100networks7"
         assert bf.desc == "damagepct"
         assert bf.suffix == "parcelstats"

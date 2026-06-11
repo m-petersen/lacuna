@@ -373,7 +373,9 @@ class SubjectData:
 
             # Check if approximately isotropic (within 0.1mm tolerance)
             if np.allclose(voxel_dims, voxel_dims[0], atol=0.1):
-                return float(round(voxel_dims[0]))
+                # Round to 1 decimal so sub-millimeter resolutions survive
+                # (round(0.5) would collapse to 0) while absorbing fp noise.
+                return round(float(voxel_dims[0]), 1)
         except Exception:
             pass
         return None
@@ -767,7 +769,7 @@ class SubjectData:
         --------
         >>> from lacuna.core.provenance import create_provenance_record
         >>> prov = create_provenance_record(
-        ...     function="lacuna.analysis.RegionalDamage",
+        ...     function="lacuna.analysis.FocalDamage",
         ...     version="0.1.0"
         ... )
         >>> result = mask_data.add_provenance(prov)
@@ -909,7 +911,7 @@ class SubjectData:
         Parameters
         ----------
         name : str
-            Analysis namespace (e.g., "ParcelAggregation", "RegionalDamage")
+            Analysis namespace (e.g., "ParcelAggregation", "FocalDamage")
 
         Returns
         -------
@@ -934,9 +936,13 @@ class SubjectData:
         if name.startswith("_"):
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
-        # Check if name exists in results
+        # Check if name exists in results. Return a deep copy so callers cannot
+        # mutate internal state through attribute access (the `results` property
+        # makes the same immutability guarantee).
         if name in self._results:
-            return self._results[name]  # Return reference, not copy
+            import copy as _copy
+
+            return _copy.deepcopy(self._results[name])
 
         # Not found - raise AttributeError with helpful message
         available = ", ".join(self._results.keys()) if self._results else "none"

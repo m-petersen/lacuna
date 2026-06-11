@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from lacuna import Pipeline, SubjectData
-from lacuna.analysis import RegionalDamage
+from lacuna.analysis import FocalDamage
 
 
 class TestPipelineContract:
@@ -40,41 +40,41 @@ class TestPipelineContract:
     def test_pipeline_add_returns_self(self):
         """Contract: add() returns self for method chaining."""
         pipeline = Pipeline()
-        result = pipeline.add(RegionalDamage())
+        result = pipeline.add(FocalDamage())
         assert result is pipeline
 
     def test_pipeline_fluent_chaining(self):
         """Contract: Multiple add() calls can be chained."""
         pipeline = (
             Pipeline(name="Test Pipeline")
-            .add(RegionalDamage())
-            .add(RegionalDamage())  # Same analysis twice for testing
+            .add(FocalDamage())
+            .add(FocalDamage())  # Same analysis twice for testing
         )
         assert len(pipeline) == 2
 
     def test_pipeline_run_returns_mask_data(self, sample_mask_data):
         """Contract: run() returns SubjectData with results."""
         # Use parcel_names to avoid bundled atlases that require TemplateFlow
-        pipeline = Pipeline().add(RegionalDamage(parcel_names=["test_pipeline"]))
+        pipeline = Pipeline().add(FocalDamage(parcel_names=["test_pipeline"]))
         result = pipeline.run(sample_mask_data)
         assert isinstance(result, SubjectData)
-        assert "RegionalDamage" in result.results
+        assert "FocalDamage" in result.results
 
     def test_pipeline_describe_returns_string(self):
         """Contract: describe() returns human-readable string."""
-        pipeline = Pipeline(name="My Analysis").add(RegionalDamage())
+        pipeline = Pipeline(name="My Analysis").add(FocalDamage())
         description = pipeline.describe()
         assert isinstance(description, str)
         assert "My Analysis" in description
-        assert "RegionalDamage" in description
+        assert "FocalDamage" in description
 
     def test_pipeline_len_returns_step_count(self):
         """Contract: len(pipeline) returns number of steps."""
         pipeline = Pipeline()
         assert len(pipeline) == 0
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
         assert len(pipeline) == 1
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
         assert len(pipeline) == 2
 
 
@@ -99,7 +99,7 @@ class TestAnalyzeFunctionContract:
         # Clear registry to avoid loading bundled atlases that need TemplateFlow
         PARCELLATION_REGISTRY.clear()
 
-        # Create test atlas - analyze() uses RegionalDamage without parcel_names,
+        # Create test atlas - analyze() uses FocalDamage without parcel_names,
         # so it needs atlases registered
         atlas_dir = tmp_path / "atlases"
         atlas_dir.mkdir()
@@ -131,7 +131,7 @@ class TestAnalyzeFunctionContract:
         """Contract: analyze(single) returns SubjectData."""
         from lacuna import analyze
 
-        result = analyze(sample_mask_data, steps={"RegionalDamage": None})
+        result = analyze(sample_mask_data, steps={"FocalDamage": None})
         assert isinstance(result, SubjectData)
 
     def test_analyze_list_returns_list(self, sample_mask_data):
@@ -141,11 +141,11 @@ class TestAnalyzeFunctionContract:
         analyze() because parallel workers don't inherit the modified registry.
         This still tests the contract that list input returns list output.
         """
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.batch.api import batch_process
 
         # Use the registered local atlas explicitly
-        analysis = RegionalDamage(parcel_names=["test_analyze"])
+        analysis = FocalDamage(parcel_names=["test_analyze"])
 
         results = batch_process(
             inputs=[sample_mask_data, sample_mask_data],

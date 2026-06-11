@@ -3,7 +3,7 @@ Unit tests for empty mask handling across analyses.
 
 Verifies that:
 - Empty masks (all-zero voxels) are accepted by SubjectData.
-- RegionalDamage produces valid zero-valued outputs for empty masks.
+- FocalDamage produces valid zero-valued outputs for empty masks.
 - FunctionalNetworkMapping raises EmptyMaskError for empty masks
   (zero-injection is not meaningful for correlation-based analyses).
 - StructuralNetworkMapping produces zero-valued disconnection maps.
@@ -81,23 +81,23 @@ class TestEmptyMaskSubjectData:
         assert subject.get_volume_mm3() == 0.0
 
 
-class TestEmptyMaskRegionalDamage:
-    """Tests for RegionalDamage with empty masks.
+class TestEmptyMaskFocalDamage:
+    """Tests for FocalDamage with empty masks.
 
     RD wraps ParcelAggregation with source=maskimg, aggregation=percent.
     An all-zero mask should produce 0% damage for every region.
     """
 
     @pytest.mark.fast
-    def test_rd_empty_mask_produces_zero_parcelstats(self):
+    def test_fd_empty_mask_produces_zero_parcelstats(self):
         """RD on an empty mask should produce all-zero parcel stats."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
 
         subject = _make_subject(empty=True)
-        analysis = RegionalDamage()
+        analysis = FocalDamage()
         result = analysis.run(subject)
 
-        rd_results = result.results.get("RegionalDamage", {})
+        rd_results = result.results.get("FocalDamage", {})
         # Should have results (one per atlas)
         assert len(rd_results) > 0, "Expected at least one RD result"
 
@@ -112,12 +112,12 @@ class TestEmptyMaskRegionalDamage:
                     ), f"Expected 0% damage for region '{region}' in '{key}', got {value}"
 
     @pytest.mark.fast
-    def test_rd_empty_mask_keeps_subject_in_pipeline(self):
+    def test_fd_empty_mask_keeps_subject_in_pipeline(self):
         """RD result for an empty mask should still carry through SubjectData."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
 
         subject = _make_subject(empty=True)
-        analysis = RegionalDamage()
+        analysis = FocalDamage()
         result = analysis.run(subject)
 
         assert isinstance(result, SubjectData)
@@ -260,7 +260,7 @@ class TestSkipEmptyMasksFlag:
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
-        args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out", "--on-empty", "skip"])
+        args = parser.parse_args(["run", "fd", "/tmp/in", "/tmp/out", "--on-empty", "skip"])
         assert args.on_empty == "skip"
 
     @pytest.mark.fast
@@ -269,7 +269,7 @@ class TestSkipEmptyMasksFlag:
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
-        args = parser.parse_args(["run", "rd", "/tmp/in", "/tmp/out"])
+        args = parser.parse_args(["run", "fd", "/tmp/in", "/tmp/out"])
         assert args.on_empty == "warn"
 
     @pytest.mark.fast
@@ -282,7 +282,7 @@ class TestSkipEmptyMasksFlag:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "fd",
                 "/tmp/in",
                 "/tmp/out",
                 "--on-empty",
@@ -326,7 +326,7 @@ class TestSkipEmptyMasksFlag:
         config = RunConfig(
             bids_dir=dataset_root,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="fd",
             on_empty="skip",
             space="MNI152NLin6Asym",
             verbose_count=1,
@@ -365,7 +365,7 @@ class TestSkipEmptyMasksFlag:
         config = RunConfig(
             bids_dir=dataset_root,
             output_dir=output_dir,
-            analysis="rd",
+            analysis="fd",
             on_empty="warn",
             space="MNI152NLin6Asym",
             verbose_count=1,

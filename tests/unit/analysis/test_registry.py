@@ -32,7 +32,7 @@ class TestAnalysisRegistry:
         expected_analyses = [
             "FunctionalNetworkMapping",
             "ParcelAggregation",
-            "RegionalDamage",
+            "FocalDamage",
             "StructuralNetworkMapping",
         ]
 
@@ -115,9 +115,9 @@ class TestModuleLevelFunctions:
 
     def test_get_analysis_function(self):
         """Test the module-level get_analysis() function."""
-        cls = get_analysis("RegionalDamage")
+        cls = get_analysis("FocalDamage")
 
-        assert cls.__name__ == "RegionalDamage"
+        assert cls.__name__ == "FocalDamage"
         assert issubclass(cls, BaseAnalysis)
 
     def test_get_analysis_raises_keyerror(self):

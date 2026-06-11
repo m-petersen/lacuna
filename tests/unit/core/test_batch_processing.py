@@ -58,7 +58,7 @@ class TestAnalyzeBatchNJobs:
 
         results = analyze(
             batch_subjects,
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=1,
             show_progress=False,
             verbose=False,
@@ -66,7 +66,7 @@ class TestAnalyzeBatchNJobs:
 
         assert len(results) == len(batch_subjects)
         for r in results:
-            assert "RegionalDamage" in r.results
+            assert "FocalDamage" in r.results
 
     @pytest.mark.slow
     def test_n_jobs_two_processes_in_parallel(self, batch_subjects):
@@ -75,7 +75,7 @@ class TestAnalyzeBatchNJobs:
 
         results = analyze(
             batch_subjects,
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=2,
             show_progress=False,
             verbose=False,
@@ -83,7 +83,7 @@ class TestAnalyzeBatchNJobs:
 
         assert len(results) == len(batch_subjects)
         for r in results:
-            assert "RegionalDamage" in r.results
+            assert "FocalDamage" in r.results
 
     @pytest.mark.slow
     def test_n_jobs_negative_one_uses_all_cpus(self, batch_subjects):
@@ -93,7 +93,7 @@ class TestAnalyzeBatchNJobs:
         # Should not raise
         results = analyze(
             batch_subjects[:2],  # Use fewer subjects for speed
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=-1,
             show_progress=False,
             verbose=False,
@@ -121,7 +121,7 @@ class TestAnalyzeBatchShowProgress:
 
         results = analyze(
             batch_subjects[:2],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             show_progress=False,
             verbose=False,
         )
@@ -135,7 +135,7 @@ class TestAnalyzeBatchShowProgress:
 
         results = analyze(
             batch_subjects[:2],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             show_progress=True,
             verbose=False,
         )
@@ -153,7 +153,7 @@ class TestBatchOutputConsistency:
 
         results = analyze(
             batch_subjects,
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=1,
             show_progress=False,
             verbose=False,
@@ -171,13 +171,13 @@ class TestBatchOutputConsistency:
 
         # Process sequentially
         sequential_results = [
-            analyze(s, steps={"RegionalDamage": None}, verbose=False) for s in batch_subjects[:2]
+            analyze(s, steps={"FocalDamage": None}, verbose=False) for s in batch_subjects[:2]
         ]
 
         # Process as batch
         batch_results = analyze(
             batch_subjects[:2],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             n_jobs=1,
             show_progress=False,
             verbose=False,
@@ -192,7 +192,7 @@ class TestBatchOutputConsistency:
         """Test that empty batch returns empty list."""
         from lacuna import analyze
 
-        results = analyze([], steps={"RegionalDamage": None}, verbose=False)
+        results = analyze([], steps={"FocalDamage": None}, verbose=False)
 
         assert results == []
 
@@ -208,7 +208,7 @@ class TestBatchErrorHandling:
         mixed = [batch_subjects[0], "invalid"]
 
         with pytest.raises(TypeError):
-            analyze(mixed, steps={"RegionalDamage": None}, verbose=False)
+            analyze(mixed, steps={"FocalDamage": None}, verbose=False)
 
 
 class TestPipelineRunBatch:
@@ -217,11 +217,11 @@ class TestPipelineRunBatch:
     @pytest.mark.slow
     def test_run_batch_parallel_true(self, batch_subjects):
         """Test Pipeline.run_batch with parallel=True."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline()
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         results = pipeline.run_batch(
             batch_subjects[:2],
@@ -235,11 +235,11 @@ class TestPipelineRunBatch:
     @pytest.mark.slow
     def test_run_batch_parallel_false(self, batch_subjects):
         """Test Pipeline.run_batch with parallel=False."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline()
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         results = pipeline.run_batch(
             batch_subjects[:2],
@@ -252,11 +252,11 @@ class TestPipelineRunBatch:
     @pytest.mark.slow
     def test_run_batch_with_progress(self, batch_subjects):
         """Test Pipeline.run_batch with progress enabled."""
-        from lacuna.analysis import RegionalDamage
+        from lacuna.analysis import FocalDamage
         from lacuna.core.pipeline import Pipeline
 
         pipeline = Pipeline()
-        pipeline.add(RegionalDamage())
+        pipeline.add(FocalDamage())
 
         # Should not raise
         results = pipeline.run_batch(
@@ -285,7 +285,7 @@ class TestTqdmIntegration:
         # Run with progress
         results = analyze(
             batch_subjects[:2],
-            steps={"RegionalDamage": None},
+            steps={"FocalDamage": None},
             show_progress=True,
             n_jobs=1,
             verbose=False,

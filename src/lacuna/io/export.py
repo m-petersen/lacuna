@@ -34,7 +34,7 @@ def export_results_to_csv(
         Output CSV file path
     analysis_name : str, optional
         Specific analysis to export. If None, exports all results.
-        Example: "RegionalDamage", "ParcelAggregation"
+        Example: "FocalDamage", "ParcelAggregation"
     include_metadata : bool, default=True
         Include subject metadata (subject_id, session_id, etc.) as columns
 
@@ -51,18 +51,18 @@ def export_results_to_csv(
     Examples
     --------
     >>> from lacuna import SubjectData
-    >>> from lacuna.analysis import RegionalDamage
+    >>> from lacuna.analysis import FocalDamage
     >>> from lacuna.io import export_results_to_csv
     >>>
     >>> lesion = SubjectData.from_nifti("lesion.nii.gz")
-    >>> analysis = RegionalDamage()
+    >>> analysis = FocalDamage()
     >>> result = analysis.run(lesion)
     >>>
     >>> # Export all results
     >>> export_results_to_csv(result, "results.csv")
     >>>
     >>> # Export specific analysis
-    >>> export_results_to_csv(result, "damage.csv", analysis_name="RegionalDamage")
+    >>> export_results_to_csv(result, "damage.csv", analysis_name="FocalDamage")
 
     Notes
     -----
@@ -333,7 +333,7 @@ def export_results_to_json(
     >>> export_results_to_json(
     ...     result,
     ...     "damage_full.json",
-    ...     analysis_name="RegionalDamage",
+    ...     analysis_name="FocalDamage",
     ...     include_provenance=True
     ... )
     >>>
@@ -423,11 +423,11 @@ def batch_export_to_csv(
     Examples
     --------
     >>> from lacuna.io import load_bids_dataset, batch_export_to_csv
-    >>> from lacuna.analysis import RegionalDamage
+    >>> from lacuna.analysis import FocalDamage
     >>>
     >>> # Load multiple subjects
     >>> dataset = load_bids_dataset("bids_dir")
-    >>> analysis = RegionalDamage()
+    >>> analysis = FocalDamage()
     >>>
     >>> # Run analysis on all subjects
     >>> results = [analysis.run(lesion) for lesion in dataset.values()]

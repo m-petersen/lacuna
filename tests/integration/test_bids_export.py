@@ -53,11 +53,11 @@ def test_export_with_analysis_results(tmp_path, synthetic_mask_img):
         "n_voxels": 312,
         "regions_affected": ["Frontal_Sup_L", "Frontal_Mid_L"],
     }
-    lesion_with_results = mask_data.add_result("RegionalDamage", results)
+    lesion_with_results = mask_data.add_result("FocalDamage", results)
 
     # Add provenance
     prov = create_provenance_record(
-        function="compute_regional_damage",
+        function="compute_focal_damage",
         parameters={"atlas": "schaefer2018parcels100networks7"},
         version="0.1.0",
     )

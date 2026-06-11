@@ -56,12 +56,12 @@ class Pipeline:
 
     Examples
     --------
-    >>> from lacuna.analysis import RegionalDamage, FunctionalNetworkMapping, ParcelAggregation
+    >>> from lacuna.analysis import FocalDamage, FunctionalNetworkMapping, ParcelAggregation
     >>> from lacuna import Pipeline
 
     >>> # Define pipeline
     >>> pipeline = Pipeline(name="Standard Lesion Analysis")
-    >>> pipeline.add(RegionalDamage())
+    >>> pipeline.add(FocalDamage())
     >>> pipeline.add(FunctionalNetworkMapping())
     >>> pipeline.add(ParcelAggregation(parc_names=["Schaefer100"]))
 
@@ -75,7 +75,7 @@ class Pipeline:
     >>> print(pipeline.describe())
     Pipeline: Standard Lesion Analysis
     Steps:
-      1. RegionalDamage
+      1. FocalDamage
       2. FunctionalNetworkMapping (atlas=schaefer100)
       3. ParcelAggregation (parc_names=['Schaefer100'])
     """
@@ -282,7 +282,7 @@ def analyze(
         for defaults.
 
         Available analyses (use `list_analyses()` to see all):
-        - "RegionalDamage": Parcel-based lesion quantification
+        - "FocalDamage": Parcel-based lesion quantification
         - "FunctionalNetworkMapping": Functional lesion network mapping
         - "StructuralNetworkMapping": Structural lesion network mapping
         - "ParcelAggregation": Aggregate voxel maps to parcels
@@ -315,17 +315,17 @@ def analyze(
 
     Examples
     --------
-    Basic usage with RegionalDamage defaults:
+    Basic usage with FocalDamage defaults:
 
     >>> from lacuna import analyze, SubjectData
-    >>> result = analyze(mask_data, steps={"RegionalDamage": None})
+    >>> result = analyze(mask_data, steps={"FocalDamage": None})
 
     With functional network mapping (connectome_name is required):
 
     >>> result = analyze(
     ...     mask_data,
     ...     steps={
-    ...         "RegionalDamage": None,
+    ...         "FocalDamage": None,
     ...         "FunctionalNetworkMapping": {"connectome_name": "GSP1000"},
     ...     }
     ... )
@@ -335,7 +335,7 @@ def analyze(
     >>> result = analyze(
     ...     mask_data,
     ...     steps={
-    ...         "RegionalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]},
+    ...         "FocalDamage": {"parcel_names": ["schaefer2018parcels100networks7"]},
     ...         "FunctionalNetworkMapping": {
     ...             "connectome_name": "GSP1000",
     ...             "method": "boes",
@@ -358,7 +358,7 @@ def analyze(
     if not steps:
         raise ValueError(
             "steps cannot be empty. Provide at least one analysis, e.g., "
-            '{"RegionalDamage": None}'
+            '{"FocalDamage": None}'
         )
 
     # Get available analysis names for validation

@@ -98,7 +98,7 @@ class TestCLIWorkflow:
 
         assert exc_info.value.code == 0
 
-    def test_cli_run_rd_invalid_bids_returns_error(self, tmp_path, output_dir):
+    def test_cli_run_fd_invalid_bids_returns_error(self, tmp_path, output_dir):
         """Test that invalid BIDS directory returns error code."""
         from lacuna.cli import main
 
@@ -106,7 +106,7 @@ class TestCLIWorkflow:
         result = main(
             [
                 "run",
-                "rd",
+                "fd",
                 str(tmp_path / "nonexistent"),
                 str(output_dir),
                 "--parcel-atlases",
@@ -116,7 +116,7 @@ class TestCLIWorkflow:
 
         assert result == 2  # EXIT_INVALID_ARGS
 
-    def test_cli_run_rd_missing_dataset_description_returns_error(self, tmp_path, output_dir):
+    def test_cli_run_fd_missing_dataset_description_returns_error(self, tmp_path, output_dir):
         """Test that BIDS without dataset_description.json returns error."""
         from lacuna.cli import main
 
@@ -125,7 +125,7 @@ class TestCLIWorkflow:
         bids_dir.mkdir()
 
         result = main(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            ["run", "fd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
         )
 
         # Should return BIDS error
@@ -163,7 +163,7 @@ class TestCLIModuleEntry:
 class TestCLIWithMockedAnalysis:
     """Tests for CLI with mocked analysis to avoid heavy computation."""
 
-    def test_cli_run_rd_creates_output_directory(self, minimal_bids_dataset, output_dir):
+    def test_cli_run_fd_creates_output_directory(self, minimal_bids_dataset, output_dir):
         """Test that CLI run creates output directory."""
         from lacuna.cli import main
 
@@ -171,7 +171,7 @@ class TestCLIWithMockedAnalysis:
         main(
             [
                 "run",
-                "rd",
+                "fd",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -182,7 +182,7 @@ class TestCLIWithMockedAnalysis:
         # Even if analysis fails, output dir should be created
         assert output_dir.exists()
 
-    def test_cli_run_rd_respects_participant_label(self, minimal_bids_dataset, output_dir):
+    def test_cli_run_fd_respects_participant_label(self, minimal_bids_dataset, output_dir):
         """Test that CLI respects --participant-label filtering."""
         from lacuna.cli import main
 
@@ -190,7 +190,7 @@ class TestCLIWithMockedAnalysis:
         main(
             [
                 "run",
-                "rd",
+                "fd",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -210,7 +210,7 @@ class TestCLIWithMockedAnalysis:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "fd",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -267,7 +267,7 @@ class TestCollectCommand:
 class TestRunCommandAliases:
     """Tests for analysis command aliases."""
 
-    def test_run_rd_alias_works(self, minimal_bids_dataset, output_dir):
+    def test_run_fd_alias_works(self, minimal_bids_dataset, output_dir):
         """Test that 'run rd' alias works."""
         from lacuna.cli.parser import build_parser
 
@@ -276,24 +276,24 @@ class TestRunCommandAliases:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "fd",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
                 "Schaefer100",
             ]
         )
-        assert args.analysis == "rd"
+        assert args.analysis == "fd"
 
-    def test_run_regionaldamage_alias_works(self, minimal_bids_dataset, output_dir):
-        """Test that 'run regionaldamage' alias works."""
+    def test_run_focaldamage_alias_works(self, minimal_bids_dataset, output_dir):
+        """Test that 'run focaldamage' alias works."""
         from lacuna.cli.parser import build_parser
 
         parser = build_parser()
         args = parser.parse_args(
             [
                 "run",
-                "regionaldamage",
+                "focaldamage",
                 str(minimal_bids_dataset),
                 str(output_dir),
                 "--parcel-atlases",
@@ -301,7 +301,7 @@ class TestRunCommandAliases:
             ]
         )
         # Alias keeps the name used (argparse behavior)
-        assert args.analysis == "regionaldamage"
+        assert args.analysis == "focaldamage"
 
     def test_run_fnm_alias_works(self, minimal_bids_dataset, output_dir, tmp_path):
         """Test that 'run fnm' alias works (requires --connectome-path)."""

@@ -66,7 +66,7 @@ class ParcelAggregation(BaseAnalysis):
     Aggregate voxel-level maps to ROI-level statistics using atlases.
 
     This is a composable analysis that can:
-    1. Compute regional damage from lesion masks (percent overlap, volume)
+    1. Compute focal damage from lesion masks (percent overlap, volume)
     2. Aggregate connectivity maps from network analyses (mean, sum, etc.)
     3. Extract any voxel-level map to atlas ROI statistics
 
@@ -180,7 +180,7 @@ class ParcelAggregation(BaseAnalysis):
 
     See Also
     --------
-    RegionalDamage : Convenience wrapper for lesion overlap analysis
+    FocalDamage : Convenience wrapper for lesion overlap analysis
     BaseAnalysis : Parent class defining analysis interface
     """
 

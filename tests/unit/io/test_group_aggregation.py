@@ -329,7 +329,7 @@ class TestAggregateGroupingBehavior:
 
             tsv_path = (
                 sub_dir
-                / f"sub-{sub_id}_ses-01_label-lesion_method-rd_atlas-jhu_desc-damagepct_parcelstats.tsv"
+                / f"sub-{sub_id}_ses-01_label-lesion_method-fd_atlas-jhu_desc-damagepct_parcelstats.tsv"
             )
             df = pd.DataFrame({"region": ["A", "B"], "value": [0.1, 0.2]})
             df.to_csv(tsv_path, sep="\t", index=False)
@@ -351,7 +351,7 @@ class TestAggregateGroupingBehavior:
             sub_dir.mkdir(parents=True)
 
             tsv_path = (
-                sub_dir / f"sub-{sub_id}_ses-01_label-{label}_method-rd_atlas-jhu_parcelstats.tsv"
+                sub_dir / f"sub-{sub_id}_ses-01_label-{label}_method-fd_atlas-jhu_parcelstats.tsv"
             )
             df = pd.DataFrame({"region": ["A"], "value": [0.5]})
             df.to_csv(tsv_path, sep="\t", index=False)
@@ -374,7 +374,7 @@ class TestAggregateGroupingBehavior:
 
             tsv_path = (
                 sub_dir
-                / f"sub-{sub_id}_ses-{ses_id}_label-lesion_method-rd_atlas-jhu_parcelstats.tsv"
+                / f"sub-{sub_id}_ses-{ses_id}_label-lesion_method-fd_atlas-jhu_parcelstats.tsv"
             )
             df = pd.DataFrame({"region": ["A"], "value": [0.5]})
             df.to_csv(tsv_path, sep="\t", index=False)
@@ -393,7 +393,7 @@ class TestAggregateGroupingBehavior:
         sub_dir = derivatives_dir / "sub-001" / "ses-01" / "anat"
         sub_dir.mkdir(parents=True)
 
-        tsv_path = sub_dir / "sub-001_ses-01_label-acuteinfarct_method-rd_atlas-jhu_parcelstats.tsv"
+        tsv_path = sub_dir / "sub-001_ses-01_label-acuteinfarct_method-fd_atlas-jhu_parcelstats.tsv"
         df = pd.DataFrame({"region": ["A"], "value": [0.5]})
         df.to_csv(tsv_path, sep="\t", index=False)
 
@@ -411,7 +411,7 @@ class TestAggregateGroupingBehavior:
 
         sub_dir = derivatives_dir / "sub-001" / "ses-01" / "anat"
         sub_dir.mkdir(parents=True)
-        tsv_path = sub_dir / "sub-001_ses-01_label-lesion_method-rd_parcelstats.tsv"
+        tsv_path = sub_dir / "sub-001_ses-01_label-lesion_method-fd_parcelstats.tsv"
         df = pd.DataFrame({"region": ["A"], "value": [0.1]})
         df.to_csv(tsv_path, sep="\t", index=False)
 

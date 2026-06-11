@@ -26,8 +26,8 @@ Examples
 >>> atlas_dir = get_bundled_atlas_dir()
 >>>
 >>> # Use bundled atlases in analysis (default behavior)
->>> from lacuna.analysis import RegionalDamage
->>> analysis = RegionalDamage()  # Automatically uses bundled atlases!
+>>> from lacuna.analysis import FocalDamage
+>>> analysis = FocalDamage()  # Automatically uses bundled atlases!
 >>>
 >>> # Get specific atlas files
 >>> schaefer = 'tpl-MNI152NLin6Asym_res-01_atlas-Schaefer2018_desc-100Parcels7Networks_dseg'

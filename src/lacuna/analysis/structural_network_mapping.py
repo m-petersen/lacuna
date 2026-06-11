@@ -169,7 +169,7 @@ class StructuralNetworkMapping(BaseAnalysis):
     See Also
     --------
     FunctionalNetworkMapping : Functional connectivity-based lesion network mapping
-    RegionalDamage : Atlas-based regional overlap quantification
+    FocalDamage : Atlas-based regional overlap quantification
     """
 
     #: Preferred batch processing strategy - sequential because MRtrix3's tckedit
@@ -1066,7 +1066,11 @@ class StructuralNetworkMapping(BaseAnalysis):
                             "max_disconnection_percent": 0.0,
                             "mean_degree_reduction": 0.0,
                             "max_degree_reduction": 0.0,
-                            "most_affected_parcel": atlas_labels[0] if atlas_labels else "N/A",
+                            # Empty lesion -> no affected parcel. Use None rather
+                            # than an arbitrary label so the field type stays
+                            # consistent with the int parcel index reported on
+                            # the normal path (int | None, never a stray string).
+                            "most_affected_parcel": None,
                         },
                         metadata={
                             "atlas": parc_name,

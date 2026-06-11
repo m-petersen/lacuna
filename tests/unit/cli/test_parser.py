@@ -74,18 +74,18 @@ class TestSubcommandParsing:
 class TestRunSubcommandParsing:
     """Tests for 'lacuna run' subcommand parsing."""
 
-    def test_run_rd_subcommand_parsing(self, tmp_path):
+    def test_run_fd_subcommand_parsing(self, tmp_path):
         """Test parsing 'run rd' subcommand."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            ["run", "fd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
         )
 
         assert args.command == "run"
-        assert args.analysis == "rd"
+        assert args.analysis == "fd"
         assert args.bids_dir == bids_dir
         assert args.output_dir == output_dir
         assert args.parcel_atlases == ["Schaefer100"]
@@ -153,7 +153,7 @@ class TestRunSubcommandParsing:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "fd",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -175,7 +175,7 @@ class TestRunSubcommandParsing:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "fd",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -195,7 +195,7 @@ class TestRunSubcommandParsing:
         args = parser.parse_args(
             [
                 "run",
-                "rd",
+                "fd",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -237,7 +237,7 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-v"]
+            ["run", "fd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-v"]
         )
 
         assert args.verbose_count == 1
@@ -249,7 +249,7 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-vv"]
+            ["run", "fd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100", "-vv"]
         )
 
         assert args.verbose_count == 2
@@ -261,7 +261,7 @@ class TestRunSubcommandParsing:
         output_dir = tmp_path / "output"
 
         args = parser.parse_args(
-            ["run", "rd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
+            ["run", "fd", str(bids_dir), str(output_dir), "--parcel-atlases", "Schaefer100"]
         )
 
         assert args.participant_label is None
@@ -272,8 +272,8 @@ class TestRunSubcommandParsing:
 class TestRunAliases:
     """Tests for analysis type aliases."""
 
-    def test_regionaldamage_alias(self, tmp_path):
-        """Test that 'regionaldamage' alias works."""
+    def test_focaldamage_alias(self, tmp_path):
+        """Test that 'focaldamage' alias works."""
         parser = build_parser()
         bids_dir = tmp_path / "bids"
         output_dir = tmp_path / "output"
@@ -281,7 +281,7 @@ class TestRunAliases:
         args = parser.parse_args(
             [
                 "run",
-                "regionaldamage",
+                "focaldamage",
                 str(bids_dir),
                 str(output_dir),
                 "--parcel-atlases",
@@ -290,7 +290,7 @@ class TestRunAliases:
         )
 
         # Argparse uses the subcommand name as-is, alias maps to full name
-        assert args.analysis == "regionaldamage"
+        assert args.analysis == "focaldamage"
 
     def test_functionalnetworkmapping_alias(self, tmp_path):
         """Test that 'functionalnetworkmapping' alias works."""

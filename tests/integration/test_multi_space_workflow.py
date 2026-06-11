@@ -199,7 +199,7 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
 
     Requirements: FR-004, FR-005, FR-007
     """
-    from lacuna.analysis import RegionalDamage
+    from lacuna.analysis import FocalDamage
 
     # Create atlas directory with the NLin2009c atlas
     atlas_dir = tmp_path / "atlases"
@@ -220,16 +220,16 @@ def test_cross_space_analysis_with_transformation(lesion_nlin6_2mm, atlas_nlin20
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
 
     # Run analysis - should automatically detect and handle space mismatch
-    analyzer = RegionalDamage()
+    analyzer = FocalDamage()
 
     # This should succeed despite space mismatch
     result = analyzer.run(lesion_nlin6_2mm)
 
     # Verify results are present
-    assert "RegionalDamage" in result.results or "ParcelAggregation" in result.results
+    assert "FocalDamage" in result.results or "ParcelAggregation" in result.results
 
-    # Check that we got regional damage values
-    results_list = result.results.get("RegionalDamage") or result.results.get("ParcelAggregation")
+    # Check that we got focal damage values
+    results_list = result.results.get("FocalDamage") or result.results.get("ParcelAggregation")
     assert len(results_list) > 0
     results_dict = results_list[0].get_data()
 
@@ -252,7 +252,7 @@ def test_transformation_provenance_tracking(lesion_nlin6_2mm, atlas_nlin2009c_2m
 
     Requirements: FR-006, FR-013
     """
-    from lacuna.analysis import RegionalDamage
+    from lacuna.analysis import FocalDamage
 
     # Setup atlas directory
     atlas_dir = tmp_path / "atlases"
@@ -271,7 +271,7 @@ def test_transformation_provenance_tracking(lesion_nlin6_2mm, atlas_nlin2009c_2m
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin2009cAsym", resolution=2)
 
     # Run analysis
-    analyzer = RegionalDamage()
+    analyzer = FocalDamage()
     result = analyzer.run(lesion_nlin6_2mm)
 
     # Check provenance chain
@@ -311,7 +311,7 @@ def test_matched_spaces_no_transformation_overhead(
 
     Requirements: FR-007, FR-011
     """
-    from lacuna.analysis import RegionalDamage
+    from lacuna.analysis import FocalDamage
 
     # Setup atlas directory
     atlas_dir = tmp_path / "atlases"
@@ -331,14 +331,14 @@ def test_matched_spaces_no_transformation_overhead(
 
     # Time the analysis - use explicit parcel_names to avoid loading bundled atlases
     # that may be in different spaces and require TemplateFlow transforms
-    analyzer = RegionalDamage(parcel_names=["test_atlas"])
+    analyzer = FocalDamage(parcel_names=["test_atlas"])
 
     start_time = time.time()
     result = analyzer.run(lesion_nlin2009c_2mm)
     elapsed_time = time.time() - start_time
 
     # Verify analysis completed
-    assert "RegionalDamage" in result.results or "ParcelAggregation" in result.results
+    assert "FocalDamage" in result.results or "ParcelAggregation" in result.results
 
     # Check that analysis completed in reasonable time
     # Note: Atlas loading and processing adds overhead beyond just transformation

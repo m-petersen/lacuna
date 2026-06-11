@@ -208,7 +208,14 @@ def setup_tutorial_data(
         shutil.rmtree(target)
 
     source = get_tutorial_bids_dir()
-    shutil.copytree(source, target)
+    # The tutorial data lives inside a Python package directory, so exclude the
+    # package machinery — the copied dataset must be clean BIDS, not contain
+    # __init__.py / compiled bytecode.
+    shutil.copytree(
+        source,
+        target,
+        ignore=shutil.ignore_patterns("__init__.py", "__pycache__", "*.pyc"),
+    )
 
     return target
 

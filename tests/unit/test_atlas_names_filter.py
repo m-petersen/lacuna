@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, RegionalDamage
+from lacuna.analysis import ParcelAggregation, FocalDamage
 from lacuna.core.keys import build_result_key
 
 
@@ -56,37 +56,37 @@ class TestAtlasNamesFilter:
             register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Test 1: Process only atlas_B
-            analysis = RegionalDamage(parcel_names=["atlas_B"])
+            analysis = FocalDamage(parcel_names=["atlas_B"])
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["RegionalDamage"]
+            atlas_results = result.results["FocalDamage"]
 
             # Should only have atlas_B results
-            # Keys use BIDS-style format: atlas-{atlas}_source-RegionalDamage_desc-damagepct
-            assert build_result_key("atlas_B", "RegionalDamage", "damagepct") in atlas_results
-            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") not in atlas_results
-            assert build_result_key("atlas_C", "RegionalDamage", "damagepct") not in atlas_results
+            # Keys use BIDS-style format: atlas-{atlas}_source-FocalDamage_desc-damagepct
+            assert build_result_key("atlas_B", "FocalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_A", "FocalDamage", "damagepct") not in atlas_results
+            assert build_result_key("atlas_C", "FocalDamage", "damagepct") not in atlas_results
 
             # Test 2: Process atlas_A and atlas_C
-            analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_C"])
+            analysis = FocalDamage(parcel_names=["atlas_A", "atlas_C"])
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["RegionalDamage"]
+            atlas_results = result.results["FocalDamage"]
 
             # Should have atlas_A and atlas_C, but not atlas_B
-            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") in atlas_results
-            assert build_result_key("atlas_B", "RegionalDamage", "damagepct") not in atlas_results
-            assert build_result_key("atlas_C", "RegionalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_A", "FocalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_B", "FocalDamage", "damagepct") not in atlas_results
+            assert build_result_key("atlas_C", "FocalDamage", "damagepct") in atlas_results
 
             # Test 3: Explicitly use all local test atlases (avoid bundled atlases that require TemplateFlow)
             # Note: parcel_names=None would process all registered atlases including bundled ones,
             # which would require TemplateFlow downloads. We test the filtering logic here instead.
-            analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_B", "atlas_C"])
+            analysis = FocalDamage(parcel_names=["atlas_A", "atlas_B", "atlas_C"])
             result = analysis.run(mask_data_obj)
-            atlas_results = result.results["RegionalDamage"]
+            atlas_results = result.results["FocalDamage"]
 
             # Should have all three local atlases
-            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") in atlas_results
-            assert build_result_key("atlas_B", "RegionalDamage", "damagepct") in atlas_results
-            assert build_result_key("atlas_C", "RegionalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_A", "FocalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_B", "FocalDamage", "damagepct") in atlas_results
+            assert build_result_key("atlas_C", "FocalDamage", "damagepct") in atlas_results
 
     def test_atlas_names_warns_if_not_found(self):
         """Test that warning is issued if requested atlas not found."""
@@ -123,14 +123,14 @@ class TestAtlasNamesFilter:
             register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request atlas_A and atlas_B (atlas_B doesn't exist)
-            analysis = RegionalDamage(parcel_names=["atlas_A", "atlas_B"])
+            analysis = FocalDamage(parcel_names=["atlas_A", "atlas_B"])
 
             # The logger will output a warning (captured by capsys), but we just run it
             result = analysis.run(mask_data_obj)
 
             # Should still process atlas_A successfully
-            atlas_results = result.results["RegionalDamage"]
-            assert build_result_key("atlas_A", "RegionalDamage", "damagepct") in atlas_results
+            atlas_results = result.results["FocalDamage"]
+            assert build_result_key("atlas_A", "FocalDamage", "damagepct") in atlas_results
 
     def test_atlas_names_raises_if_none_found(self):
         """Test that error is raised if no matching atlases found."""
@@ -167,7 +167,7 @@ class TestAtlasNamesFilter:
             register_parcellations_from_directory(tmpdir, space="MNI152NLin6Asym", resolution=2)
 
             # Request only atlas_B (doesn't exist)
-            analysis = RegionalDamage(parcel_names=["atlas_B"])
+            analysis = FocalDamage(parcel_names=["atlas_B"])
 
             with pytest.raises(
                 ValueError, match="No matching parcellations found for specified names"
@@ -189,7 +189,7 @@ class TestAtlasNamesFilter:
             ParcelAggregation(parcel_names=[])
 
     def test_atlas_names_works_with_atlas_aggregation(self):
-        """Test that parcel_names works with ParcelAggregation (not just RegionalDamage)."""
+        """Test that parcel_names works with ParcelAggregation (not just FocalDamage)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
