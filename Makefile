@@ -8,19 +8,19 @@ help:  ## Show this help message
 setup:  ## Install dependencies
 	pip install -e ".[dev]"
 
-test:  ## Run all tests (~2min with -n auto)
+test:  ## Run all tests INCLUDING slow/marked (~10min with -n auto)
 	pytest -v -n auto
 
-test-unit:  ## Run only unit tests (fast, ~30s)
-	pytest tests/unit/ -v -n auto
+test-unit:  ## Run unit tests, excluding slow (~3min)
+	pytest tests/unit/ -v -n auto -m "not slow"
 
-test-contract:  ## Run only contract tests (fast, ~30s)
-	pytest tests/contract/ -v -n auto
+test-contract:  ## Run contract tests, excluding slow (~30s)
+	pytest tests/contract/ -v -n auto -m "not slow"
 
-test-integration:  ## Run only integration tests (slower, ~1min)
+test-integration:  ## Run only integration tests (slower)
 	pytest tests/integration/ -v -n auto
 
-test-fast:  ## Run fast tests only (unit + contract, ~1min)
+test-fast:  ## Run fast tests only (unit + contract, not slow; ~3-4min)
 	pytest tests/unit/ tests/contract/ -v -n auto -x -m "not slow"
 
 test-slow:  ## Run slow tests only (integration + marked slow)

@@ -111,3 +111,14 @@ site/
 
 # Claude Code
 .claude/
+
+# Plot directory (figure generation; contains patient data + notebook outputs)
+methods_plots/
+
+# Superpowers
+superpowers/
+# Agent worktrees (Claude Code isolation)
+.worktrees/
+
+# Notebook scratch output
+docs/tutorials/tmp/
