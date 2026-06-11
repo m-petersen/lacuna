@@ -168,6 +168,64 @@ class TestExportBidsDerivatives:
         with pytest.raises(FileExistsError):
             export_bids_derivatives(mock_subject_data, output_dir, overwrite=False)
 
+    def test_rerun_writes_new_outputs_keeps_existing(self, mock_subject_data, tmp_path):
+        """A re-run that adds NEW results must write them even when other outputs
+        already exist (overwrite=False), instead of aborting on the first
+        pre-existing file. Regression: FNM voxel maps present from an earlier run
+        used to make a follow-up parcel-aggregation run discard all parcel TSVs.
+        """
+        import nibabel as nib
+
+        from lacuna.core.data_types import VoxelMap
+        from lacuna.io.bids import export_bids_derivatives
+
+        output_dir = tmp_path / "derivatives"
+
+        # First run: a voxel map result is written.
+        vmap = VoxelMap(
+            name="rmap",
+            data=mock_subject_data.mask_img,
+            space="MNI152NLin6Asym",
+            resolution=2.0,
+        )
+        first = mock_subject_data.add_result("FunctionalNetworkMapping", {"rmap": vmap})
+        export_bids_derivatives(first, output_dir, export_lesion_mask=False)
+
+        rmap_files = list(output_dir.rglob("*desc-rmap*.nii.gz"))
+        assert len(rmap_files) == 1
+
+        # Second run: the same voxel map PLUS a new parcel-data result. The
+        # pre-existing voxel map must be left in place while the new TSV is
+        # written; the call must not raise.
+        from lacuna.core.data_types import ParcelData
+
+        parcels = ParcelData(
+            name="rmap",
+            data={"region-1": 0.1, "region-2": 0.2},
+            parcel_names=["dummyatlas"],
+        )
+        second = first.add_result(
+            "ParcelAggregation",
+            {"atlas-dummyatlas_source-FunctionalNetworkMapping_desc-rmap": parcels},
+        )
+
+        with pytest.warns(UserWarning, match="existing file"):
+            export_bids_derivatives(second, output_dir, export_lesion_mask=False)
+
+        tsv_files = list(output_dir.rglob("*parcelstats.tsv"))
+        assert len(tsv_files) == 1, "new parcel TSV should be written on re-run"
+
+    def test_rerun_identical_outputs_still_raises(self, mock_subject_data, tmp_path):
+        """If a re-run would produce nothing new (all outputs already exist),
+        export still refuses without overwrite, preserving the safety guard."""
+        from lacuna.io.bids import export_bids_derivatives
+
+        output_dir = tmp_path / "derivatives"
+        export_bids_derivatives(mock_subject_data, output_dir)
+
+        with pytest.raises(FileExistsError):
+            export_bids_derivatives(mock_subject_data, output_dir, overwrite=False)
+
     def test_overwrites_with_overwrite_true(self, mock_subject_data, tmp_path):
         """Test that export overwrites when overwrite=True."""
         from lacuna.io.bids import export_bids_derivatives
@@ -287,7 +345,7 @@ class TestExportWithResults:
 
         # Add mock ParcelData result (uses 'data' not 'values')
         parcel_data = ParcelData(
-            name="regional_damage",
+            name="focal_damage",
             data={"region_1": 0.5, "region_2": 0.3},
         )
 

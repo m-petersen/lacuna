@@ -882,6 +882,13 @@ def export_bids_derivatives(
     anat_dir = subject_dir / "anat"
     anat_dir.mkdir(parents=True, exist_ok=True)
 
+    # Track writes so a re-run that ADDS new outputs (e.g. parcel tables next to
+    # already-present voxel maps) still writes them instead of aborting on the
+    # first pre-existing file. With overwrite=False we skip files that already
+    # exist and only raise if there is nothing new to write at all.
+    written_files: list[Path] = []
+    skipped_files: list[Path] = []
+
     # Save lesion mask - use label entity per BIDS spec
     # Preserve original label from metadata if available (e.g., WMH, acuteinfarct, lacune)
     label = subject_data.metadata.get("label", "lesion")
@@ -892,11 +899,10 @@ def export_bids_derivatives(
         lesion_path = anat_dir / lesion_filename
 
         if lesion_path.exists() and not overwrite:
-            raise FileExistsError(
-                f"Lesion mask already exists: {lesion_path}. Use overwrite=True to replace."
-            )
-
-        nib.save(subject_data.mask_img, lesion_path)
+            skipped_files.append(lesion_path)
+        else:
+            nib.save(subject_data.mask_img, lesion_path)
+            written_files.append(lesion_path)
 
     # Save analysis results
     if subject_data.results:
@@ -911,43 +917,58 @@ def export_bids_derivatives(
                     if value.space:
                         bf.space = value.space
                     bids_key = str(bf)
-                    export_voxelmap(
-                        value,
-                        anat_dir,
-                        subject_id=subject_id,
-                        session_id=session_id,
-                        desc=bids_key,
-                        label=label,
-                        overwrite=overwrite,
-                    )
+                    try:
+                        written_files.append(
+                            export_voxelmap(
+                                value,
+                                anat_dir,
+                                subject_id=subject_id,
+                                session_id=session_id,
+                                desc=bids_key,
+                                label=label,
+                                overwrite=overwrite,
+                            )
+                        )
+                    except FileExistsError:
+                        skipped_files.append(anat_dir / f"{bids_key} (voxelmap)")
 
                 # ParcelData -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ParcelDataType) and export_parcel_data:
                     bf = BidsFilename.from_result_key(key, "values", namespace=_namespace)
                     bids_key = str(bf)
-                    _export_parcel_data(
-                        value,
-                        anat_dir,
-                        subject_id=subject_id,
-                        session_id=session_id,
-                        desc=bids_key,
-                        label=label,
-                        overwrite=overwrite,
-                    )
+                    try:
+                        written_files.append(
+                            _export_parcel_data(
+                                value,
+                                anat_dir,
+                                subject_id=subject_id,
+                                session_id=session_id,
+                                desc=bids_key,
+                                label=label,
+                                overwrite=overwrite,
+                            )
+                        )
+                    except FileExistsError:
+                        skipped_files.append(anat_dir / f"{bids_key} (parcelstats)")
 
                 # ConnectivityMatrix -> TSV (goes to anat/ for BIDS compliance)
                 elif isinstance(value, ConnectivityMatrix) and export_connectivity:
                     bf = BidsFilename.from_result_key(key, "connmatrix", namespace=_namespace)
                     bids_key = str(bf)
-                    export_connectivity_matrix(
-                        value,
-                        anat_dir,
-                        subject_id=subject_id,
-                        session_id=session_id,
-                        desc=bids_key,
-                        label=label,
-                        overwrite=overwrite,
-                    )
+                    try:
+                        written_files.append(
+                            export_connectivity_matrix(
+                                value,
+                                anat_dir,
+                                subject_id=subject_id,
+                                session_id=session_id,
+                                desc=bids_key,
+                                label=label,
+                                overwrite=overwrite,
+                            )
+                        )
+                    except FileExistsError:
+                        skipped_files.append(anat_dir / f"{bids_key} (connmatrix)")
 
                 # Tractogram -> .tck file (goes to anat/ for BIDS compliance)
                 elif isinstance(value, Tractogram):
@@ -961,8 +982,11 @@ def export_bids_derivatives(
                     if not tck_path.exists() or overwrite:
                         try:
                             value.save(tck_path)
+                            written_files.append(tck_path)
                         except FileNotFoundError:
                             pass  # Source file no longer exists and no in-memory data
+                    else:
+                        skipped_files.append(tck_path)
 
                 # ScalarMetric or other serializable -> JSON (goes to anat/ for BIDS compliance)
                 elif export_scalars:
@@ -979,10 +1003,12 @@ def export_bids_derivatives(
                         results_path = anat_dir / results_filename
 
                         if results_path.exists() and not overwrite:
+                            skipped_files.append(results_path)
                             continue
 
                         with open(results_path, "w") as f:
                             json.dump(data_to_save, f, indent=2, default=str)
+                        written_files.append(results_path)
                     except (TypeError, ValueError):
                         # Skip non-serializable results
                         pass
@@ -993,22 +1019,39 @@ def export_bids_derivatives(
         prov_path = anat_dir / prov_filename
 
         if prov_path.exists() and not overwrite:
-            raise FileExistsError(
-                f"Provenance file already exists: {prov_path}. Use overwrite=True to replace."
-            )
+            skipped_files.append(prov_path)
+        else:
+            # Convert provenance to serializable format
+            prov_data = []
+            for step in subject_data.provenance:
+                if hasattr(step, "to_dict"):
+                    prov_data.append(step.to_dict())
+                elif isinstance(step, dict):
+                    prov_data.append(step)
+                else:
+                    prov_data.append(str(step))
 
-        # Convert provenance to serializable format
-        prov_data = []
-        for step in subject_data.provenance:
-            if hasattr(step, "to_dict"):
-                prov_data.append(step.to_dict())
-            elif isinstance(step, dict):
-                prov_data.append(step)
-            else:
-                prov_data.append(str(step))
+            with open(prov_path, "w") as f:
+                json.dump(prov_data, f, indent=2, default=str)
+            written_files.append(prov_path)
 
-        with open(prov_path, "w") as f:
-            json.dump(prov_data, f, indent=2, default=str)
+    # If nothing new was written but outputs already exist, the caller almost
+    # certainly re-ran the same analysis into a populated directory. Preserve the
+    # safety guard and refuse rather than silently doing nothing. When at least
+    # one new file was written (e.g. adding parcel tables to existing voxel maps),
+    # keep the new outputs and just note the untouched pre-existing files.
+    if skipped_files and not written_files and not overwrite:
+        raise FileExistsError(
+            f"Output for {base_name} already exists (e.g. {skipped_files[0]}); "
+            f"nothing new to write. Use overwrite=True to regenerate."
+        )
+    if skipped_files and written_files:
+        warnings.warn(
+            f"{base_name}: wrote {len(written_files)} new output file(s); left "
+            f"{len(skipped_files)} existing file(s) unchanged. Use overwrite=True "
+            f"to regenerate them.",
+            stacklevel=2,
+        )
 
     return subject_dir
 
@@ -1275,7 +1318,7 @@ def aggregate_parcelstats(
     label_filter : str, optional
         Filter by mask label (e.g., 'lesion', 'WMH').
     analysis_filter : str, optional
-        Filter by analysis type (e.g., 'RegionalDamage', 'FunctionalNetworkMapping').
+        Filter by analysis type (e.g., 'FocalDamage', 'FunctionalNetworkMapping').
 
     Returns
     -------
@@ -1339,8 +1382,8 @@ def aggregate_parcelstats(
         # - method_kw: exact match against method / source BIDS entities
         # - desc_kw:   substring match against the desc entity
         _analysis_patterns: dict[str, tuple[list[str], list[str]]] = {
-            "regionaldamage": (["rd", "regionaldamage"], []),
-            "rd": (["rd", "regionaldamage"], []),
+            "focaldamage": (["fd", "focaldamage"], []),
+            "fd": (["fd", "focaldamage"], []),
             "functionalnetworkmapping": (
                 ["fnm", "functionalnetworkmapping"],
                 ["rmap", "tmap", "zmap"],

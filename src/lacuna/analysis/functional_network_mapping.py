@@ -1,6 +1,4 @@
 """Functional lesion network mapping (fLNM) analysis.
-from __future__ import annotations
-
 
 This module implements functional connectivity-based lesion network mapping
 using normative connectome data. It supports two timeseries extraction methods:
@@ -15,6 +13,8 @@ Memory-efficient processing:
 - Processes connectome batches sequentially to minimize memory footprint
 - Accumulates statistics across batches for final aggregation
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -41,6 +41,33 @@ from lacuna.utils.logging import ConsoleLogger
 
 if TYPE_CHECKING:
     from lacuna.core.data_types import AnalysisResult
+
+
+def _combine_moments(
+    mean_a: np.ndarray,
+    M2_a: np.ndarray,
+    n_a: int,
+    mean_b: np.ndarray,
+    M2_b: np.ndarray,
+    n_b: int,
+) -> tuple[np.ndarray, np.ndarray, int]:
+    """Combine two sets of (mean, M2, n) using Chan et al.'s parallel variance.
+
+    This is the numerically stable streaming alternative to accumulating
+    ``sum_z`` / ``sum_z2`` (which suffers catastrophic cancellation when the
+    mean is large relative to the spread). The combined M2 satisfies
+    ``var_sample = M2 / (n - 1)``, exactly matching a two-pass
+    ``np.std(..., ddof=1)`` over the concatenated data.
+    """
+    if n_a == 0:
+        return mean_b, M2_b, n_b
+    if n_b == 0:
+        return mean_a, M2_a, n_a
+    delta = mean_b - mean_a
+    n_ab = n_a + n_b
+    mean_ab = mean_a + delta * (n_b / n_ab)
+    M2_ab = M2_a + M2_b + delta**2 * (n_a * n_b / n_ab)
+    return mean_ab, M2_ab, n_ab
 
 
 class FunctionalNetworkMapping(BaseAnalysis):
@@ -457,9 +484,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             self.logger.debug("Applying Fisher z-transform", indent_level=1)
 
-            # Fisher z-transform
-            batch_z_maps = np.arctanh(batch_r_maps)
-            batch_z_maps = np.nan_to_num(batch_z_maps, nan=0, posinf=10, neginf=-10)
+            # Fisher z-transform (r=+/-1 -> +/-inf is expected and clamped below;
+            # guard the warning, matching the vectorized streaming path).
+            with np.errstate(divide="ignore", invalid="ignore"):
+                batch_z_maps = np.arctanh(batch_r_maps)
+                batch_z_maps = np.nan_to_num(batch_z_maps, nan=0, posinf=10, neginf=-10)
 
             # Accumulate
             all_z_maps.append(batch_z_maps)
@@ -580,14 +609,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
         p_map_nifti = None
         p_fdr_map_nifti = None
         if self.compute_p_map and p_map_flat is not None:
-            p_map_3d = np.zeros(mask_shape, dtype=np.float32)
+            # Background (out-of-brain) must be p=1.0 (not significant), not 0.0
+            # which would read as maximally significant under a p<alpha threshold.
+            p_map_3d = np.ones(mask_shape, dtype=np.float32)
             p_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = p_map_flat
-            # Set background to 1.0 (not significant) for clarity
             p_map_nifti = nib.Nifti1Image(p_map_3d, mask_affine)
 
             # Create FDR-corrected p-value map if computed
             if p_fdr_map_flat is not None:
-                p_fdr_map_3d = np.zeros(mask_shape, dtype=np.float32)
+                p_fdr_map_3d = np.ones(mask_shape, dtype=np.float32)
                 p_fdr_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = p_fdr_map_flat
                 p_fdr_map_nifti = nib.Nifti1Image(p_fdr_map_3d, mask_affine)
 
@@ -1084,8 +1114,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
         with np.errstate(divide="ignore", invalid="ignore"):
             r_maps = cov / (lesion_std[:, np.newaxis] * brain_std)
 
-        # Clean up NaN and inf values
-        r_maps = np.nan_to_num(r_maps, nan=0, posinf=1, neginf=-1)
+        # Clean up undefined correlations (e.g. zero-variance connectome voxels
+        # produce a 0/0 or x/0 division). These are undefined, not perfect
+        # correlations, so map them to 0 rather than +/-1.
+        r_maps = np.nan_to_num(r_maps, nan=0, posinf=0, neginf=0)
 
         return r_maps.astype(np.float32)
 
@@ -1192,12 +1224,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Initialize streaming aggregators for each mask (MEMORY OPTIMIZED)
         # Instead of storing all correlation maps, we accumulate statistics
+        # Welford/Chan streaming moments (numerically stable; matches the
+        # non-batch np.std(ddof=1) path so run() and batch_process agree).
         aggregators = []
         for _ in range(len(mask_batch)):
             aggregators.append(
                 {
-                    "sum_z": np.zeros(n_voxels, dtype=np.float64),  # Need higher precision for sums
-                    "sum_z2": np.zeros(n_voxels, dtype=np.float64),
+                    "mean": np.zeros(n_voxels, dtype=np.float64),
+                    "M2": np.zeros(n_voxels, dtype=np.float64),
                     "n": 0,
                 }
             )
@@ -1224,14 +1258,25 @@ class FunctionalNetworkMapping(BaseAnalysis):
             # This is the KEY optimization: we don't store full maps!
             with np.errstate(divide="ignore", invalid="ignore"):
                 batch_z_maps = np.arctanh(batch_r_maps)
-                batch_z_maps = np.nan_to_num(batch_z_maps, nan=0.0, posinf=3.0, neginf=-3.0)
+                # Clamp matches the non-batch path (+/-10) so both modes agree.
+                batch_z_maps = np.nan_to_num(batch_z_maps, nan=0.0, posinf=10, neginf=-10)
 
-            # Update aggregators with streaming statistics
+            # Combine this batch's moments into the running moments using the
+            # parallel (Chan et al.) form of Welford's algorithm — stable and
+            # exactly equivalent to a two-pass mean/var over all subjects.
             for i in range(len(mask_batch)):
-                # Sum across subjects in this batch
-                aggregators[i]["sum_z"] += np.sum(batch_z_maps[i], axis=0)
-                aggregators[i]["sum_z2"] += np.sum(batch_z_maps[i] ** 2, axis=0)
-                aggregators[i]["n"] += n_subjects
+                block = batch_z_maps[i]  # (n_subjects, n_voxels)
+                n_b = block.shape[0]
+                if n_b == 0:
+                    continue
+                mean_b = block.mean(axis=0)
+                # M2 of the block: sum of squared deviations from the block mean
+                M2_b = np.sum((block - mean_b) ** 2, axis=0)
+
+                agg = aggregators[i]
+                agg["mean"], agg["M2"], agg["n"] = _combine_moments(
+                    agg["mean"], agg["M2"], agg["n"], mean_b, M2_b, n_b
+                )
 
             # Memory cleanup - immediately free large arrays
             del timeseries_data, batch_r_maps, batch_z_maps
@@ -1275,13 +1320,15 @@ class FunctionalNetworkMapping(BaseAnalysis):
         def _aggregate_one(i, mask_info):
             """Aggregate results for a single mask (thread-safe)."""
             n = aggregators[i]["n"]
-            mean_z = aggregators[i]["sum_z"] / n
+            mean_z = aggregators[i]["mean"]
             mean_r = np.tanh(mean_z).astype(np.float32)
 
-            # Sample standard deviation with Bessel's correction
-            var_z_population = (aggregators[i]["sum_z2"] / n) - (mean_z**2)
-            var_z_sample = (n / (n - 1)) * var_z_population
-            std_z = np.sqrt(np.maximum(var_z_sample, 0))
+            # Sample standard deviation with Bessel's correction, from the
+            # stable streaming M2 (== np.std(z, ddof=1) over all subjects).
+            if n > 1:
+                std_z = np.sqrt(aggregators[i]["M2"] / (n - 1))
+            else:
+                std_z = np.zeros_like(mean_z)
 
             mask_copy = mask_info["mask_data"].copy()
 
@@ -1410,8 +1457,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
         with np.errstate(divide="ignore", invalid="ignore"):
             all_r_maps = cov / (mask_std[:, :, np.newaxis] * brain_std[np.newaxis, :, :])
 
-        # Clean up NaN and inf values
-        all_r_maps = np.nan_to_num(all_r_maps, nan=0, posinf=1, neginf=-1)
+        # Clean up undefined correlations (zero-variance connectome voxels ->
+        # 0/0 or x/0). Undefined, not perfect, so map to 0 rather than +/-1.
+        all_r_maps = np.nan_to_num(all_r_maps, nan=0, posinf=0, neginf=0)
 
         return all_r_maps.astype(np.float32)
 
@@ -1657,7 +1705,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Add p-value map if computed
         if p_map_flat is not None:
-            p_map_3d = np.zeros(mask_shape, dtype=np.float32)
+            # Background = p=1.0 (not significant), not 0.0 (would read as
+            # maximally significant out of brain).
+            p_map_3d = np.ones(mask_shape, dtype=np.float32)
             p_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = p_map_flat
             p_map_nifti = nib.Nifti1Image(p_map_3d, mask_affine)
 
@@ -1678,7 +1728,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Add FDR-corrected p-value map if computed
         if p_fdr_map_flat is not None:
-            p_fdr_map_3d = np.zeros(mask_shape, dtype=np.float32)
+            p_fdr_map_3d = np.ones(mask_shape, dtype=np.float32)
             p_fdr_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = p_fdr_map_flat
             p_fdr_map_nifti = nib.Nifti1Image(p_fdr_map_3d, mask_affine)
 
@@ -1740,171 +1790,6 @@ class FunctionalNetworkMapping(BaseAnalysis):
             batch_results["pfdrmap"] = results["pfdrmap"]
         if "pfdrthresholdmap" in results:
             batch_results["pfdrthresholdmap"] = results["pfdrthresholdmap"]
-
-        mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
-
-        return mask_data_with_results
-
-    def _aggregate_results(
-        self,
-        mask_data: SubjectData,
-        all_r_maps: np.ndarray,
-        mask_indices: tuple,
-        mask_affine: np.ndarray,
-        mask_shape: tuple,
-        total_subjects: int,
-    ) -> SubjectData:
-        """Aggregate correlation maps across all subjects into final results.
-
-        This method is reused by both single and batch processing.
-
-        Parameters
-        ----------
-        mask_data : SubjectData
-            Original lesion data to add results to
-        all_r_maps : np.ndarray
-            Shape (n_subjects, n_voxels). All correlation maps.
-        mask_indices : tuple
-            Brain mask voxel indices
-        mask_affine : np.ndarray
-            Affine transformation matrix
-        mask_shape : tuple
-            3D mask shape
-        total_subjects : int
-            Total number of subjects processed
-
-        Returns
-        -------
-        SubjectData
-            Lesion data with analysis results added
-        """
-        # Fisher z-transform
-        all_z_maps = np.arctanh(all_r_maps)
-        all_z_maps = np.nan_to_num(all_z_maps, nan=0, posinf=10, neginf=-10)
-
-        # Compute statistics
-        mean_z_map = np.mean(all_z_maps, axis=0)
-        mean_r_map = np.tanh(mean_z_map)
-
-        # Compute t-statistics (always computed)
-        std_z_map = np.std(all_z_maps, axis=0, ddof=1)
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            std_error_map = std_z_map / np.sqrt(total_subjects)
-            t_map_flat = np.zeros_like(mean_z_map)
-            np.divide(
-                mean_z_map,
-                std_error_map,
-                out=t_map_flat,
-                where=(std_error_map != 0),
-            )
-
-        # Create 3D volumes
-        correlation_map_3d = np.zeros(mask_shape, dtype=np.float32)
-        correlation_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = mean_r_map
-        correlation_map_nifti = nib.Nifti1Image(correlation_map_3d, mask_affine)
-
-        z_map_3d = np.zeros(mask_shape, dtype=np.float32)
-        z_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = mean_z_map
-        z_map_nifti = nib.Nifti1Image(z_map_3d, mask_affine)
-
-        # Build results dictionary
-        # Wrap NIfTI images in VoxelMap for consistent unwrap behavior
-        results = {
-            "rmap": VoxelMap(
-                name="rmap",
-                data=correlation_map_nifti,
-                space=self.output_space,
-                resolution=self.output_resolution,
-                metadata={
-                    "method": self.method,
-                    "n_subjects": total_subjects,
-                    "statistic": "pearson_correlation_coefficient",
-                },
-            ),
-            "network_map": correlation_map_nifti,  # Alias for backward compat (raw nifti)
-            "zmap": VoxelMap(
-                name="zmap",
-                data=z_map_nifti,
-                space=self.output_space,
-                resolution=self.output_resolution,
-                metadata={
-                    "method": self.method,
-                    "n_subjects": total_subjects,
-                    "statistic": "fisher_z",
-                },
-            ),
-            "mean_correlation": float(np.mean(mean_r_map)),
-            "summarystatistics": ScalarMetric(
-                name="summarystatistics",
-                data={
-                    "mean": float(np.mean(mean_r_map)),
-                    "std": float(np.std(mean_r_map)),
-                    "max": float(np.max(mean_r_map)),
-                    "min": float(np.min(mean_r_map)),
-                    "n_subjects": total_subjects,
-                    "n_batches": len(self._get_connectome_files()),
-                },
-                metadata={"method": self.method},
-            ),
-        }
-
-        # Add t-map results if computed
-        if t_map_flat is not None:
-            t_map_3d = np.zeros(mask_shape, dtype=np.float32)
-            t_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = t_map_flat
-            t_map_nifti = nib.Nifti1Image(t_map_3d, mask_affine)
-
-            results["tmap"] = VoxelMap(
-                name="tmap",
-                data=t_map_nifti,
-                space=self.output_space,
-                resolution=self.output_resolution,
-                metadata={
-                    "method": self.method,
-                    "n_subjects": total_subjects,
-                    "statistic": "t_statistic",
-                },
-            )
-            results["summarystatistics"].data["t_min"] = float(np.min(t_map_flat))
-            results["summarystatistics"].data["t_max"] = float(np.max(t_map_flat))
-
-            # Create thresholded t-map if threshold provided
-            if self.t_threshold is not None:
-                t_threshold_mask = np.abs(t_map_flat) > self.t_threshold
-                threshold_map_3d = np.zeros(mask_shape, dtype=np.uint8)
-                threshold_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = (
-                    t_threshold_mask.astype(np.uint8)
-                )
-                t_threshold_map_nifti = nib.Nifti1Image(threshold_map_3d, mask_affine)
-                results["tthresholdmap"] = VoxelMap(
-                    name="tthresholdmap",
-                    data=t_threshold_map_nifti,
-                    space=self.output_space,
-                    resolution=self.output_resolution,
-                    metadata={
-                        "method": self.method,
-                        "threshold": self.t_threshold,
-                        "statistic": "thresholded_t",
-                    },
-                )
-                results["summarystatistics"].data["t_threshold"] = self.t_threshold
-                results["summarystatistics"].data["n_significant_voxels"] = int(
-                    np.sum(t_threshold_mask)
-                )
-
-        # Add results to lesion data (returns new instance with results)
-        # Note: Using individual keys to match _run_analysis() structure
-        batch_results = {
-            "rmap": results["rmap"],
-            "zmap": results["zmap"],
-            "summarystatistics": results["summarystatistics"],
-        }
-        # Add optional results if present
-        if "tmap" in results:
-            batch_results["tmap"] = results["tmap"]
-        if "tthresholdmap" in results:
-            batch_results["tthresholdmap"] = results["tthresholdmap"]
 
         mask_data_with_results = mask_data.add_result(self.__class__.__name__, batch_results)
 

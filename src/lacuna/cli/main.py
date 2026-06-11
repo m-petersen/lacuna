@@ -6,7 +6,7 @@ the workflow from argument parsing through analysis execution to output writing.
 
 Commands:
     lacuna fetch     - Download and setup connectomes
-    lacuna run       - Run analyses (rd, fnm, snm)
+    lacuna run       - Run analyses (fd, fnm, snm)
     lacuna collect   - Aggregate results across subjects
     lacuna info      - Display available resources
 
@@ -888,7 +888,7 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
     filepath : Path
         Path to the output file to check.
     analysis_type : str
-        Analysis type: 'rd', 'regionaldamage', 'fnm', 'functionalnetworkmapping',
+        Analysis type: 'fd', 'focaldamage', 'fnm', 'functionalnetworkmapping',
         'snm', or 'structuralnetworkmapping'.
 
     Returns
@@ -900,7 +900,7 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
 
     norm = analysis_type.lower()
 
-    if norm in ("rd", "regionaldamage"):
+    if norm in ("fd", "focaldamage"):
         # Read TSV and check if all numeric columns are zero
         try:
             import pandas as pd
@@ -952,7 +952,7 @@ def _check_subject_complete(
     anat_dir : Path
         Anatomy directory for the subject/session.
     analysis : str
-        Analysis type: 'rd', 'fnm', 'snm', etc.
+        Analysis type: 'fd', 'fnm', 'snm', etc.
     parcel_atlases : list[str] | None
         For RD: list of expected atlas names. If None, any parcelstats file counts as complete.
     check_content : bool
@@ -971,8 +971,8 @@ def _check_subject_complete(
     label_glob = f"*label-{label}_*" if label else "*"
 
     if not anat_dir.exists():
-        if norm in ("rd", "regionaldamage"):
-            sentinel = f"{label_glob}method-rd*parcelstats.tsv"
+        if norm in ("fd", "focaldamage"):
+            sentinel = f"{label_glob}method-fd*parcelstats.tsv"
         elif norm in ("fnm", "functionalnetworkmapping"):
             sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
         elif norm in ("snm", "structuralnetworkmapping"):
@@ -983,8 +983,8 @@ def _check_subject_complete(
             sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
 
-    if norm in ("rd", "regionaldamage"):
-        all_matches = list(anat_dir.glob(f"{label_glob}method-rd*parcelstats.tsv"))
+    if norm in ("fd", "focaldamage"):
+        all_matches = list(anat_dir.glob(f"{label_glob}method-fd*parcelstats.tsv"))
         if parcel_atlases:
             missing = []
             for atlas in parcel_atlases:
@@ -1000,7 +1000,7 @@ def _check_subject_complete(
             return "complete", []
         else:
             if not all_matches:
-                return "missing", [f"{label_glob}method-rd*parcelstats.tsv"]
+                return "missing", [f"{label_glob}method-fd*parcelstats.tsv"]
             # Files exist -- check content if requested
             if check_content and all(_is_output_empty(f, norm) for f in all_matches):
                 return "empty", []
@@ -1296,7 +1296,7 @@ def _register_connectome_from_path(
     # Get the path from --connectome-path
     connectome_path_str = analysis_options.pop("_connectome_path", None)
     if not connectome_path_str:
-        # No connectome needed for this analysis (e.g., RegionalDamage)
+        # No connectome needed for this analysis (e.g., FocalDamage)
         return
 
     connectome_path = Path(connectome_path_str)
@@ -1444,7 +1444,7 @@ def _register_custom_parcellations(
             existing = [existing]
         analysis_options["parcellation_name"] = existing + registered_names
     else:
-        # RegionalDamage and FNM post-processing both use parcel_names
+        # FocalDamage and FNM post-processing both use parcel_names
         existing = analysis_options.get("parcel_names") or []
         analysis_options["parcel_names"] = existing + registered_names
 
@@ -1462,8 +1462,8 @@ def _run_analysis_workflow(config: RunConfig) -> int:
 
     # Map analysis names to class names
     analysis_name_map = {
-        "rd": "RegionalDamage",
-        "regionaldamage": "RegionalDamage",
+        "fd": "FocalDamage",
+        "focaldamage": "FocalDamage",
         "fnm": "FunctionalNetworkMapping",
         "functionalnetworkmapping": "FunctionalNetworkMapping",
         "snm": "StructuralNetworkMapping",
@@ -1542,6 +1542,16 @@ def _run_analysis_workflow(config: RunConfig) -> int:
                 return EXIT_BIDS_ERROR
 
             subjects_list = list(subjects_dict.values())
+
+            # A glob can only encode one session; apply multi-session selection
+            # here so e.g. --session-id 01 02 is honored (not silently ignored).
+            if config.session_id:
+                subjects_list = _filter_by_sessions(subjects_list, config.session_id)
+                if not subjects_list:
+                    logger.error(
+                        f"No subjects match the requested session(s): {config.session_id}"
+                    )
+                    return EXIT_BIDS_ERROR
 
             _log_discovery_summary(subjects_list, config)
 
@@ -1635,7 +1645,7 @@ def _process_single_subject(
                 output_dir=config.output_dir,
                 export_lesion_mask=False,
                 export_provenance=False,
-                overwrite=True,
+                overwrite=config.overwrite,
             )
 
         return EXIT_SUCCESS
@@ -1738,7 +1748,7 @@ def _process_batch(
                         output_dir=config.output_dir,
                         export_lesion_mask=False,
                         export_provenance=False,
-                        overwrite=True,
+                        overwrite=config.overwrite,
                     )
                     processed_count += 1
                 except Exception as e:
@@ -1816,6 +1826,31 @@ def _filter_by_participants(
         if subject_id in normalized_labels:
             filtered.append(subject_data)
 
+    return filtered
+
+
+def _filter_by_sessions(subjects_list: list, sessions: list[str]) -> list:
+    """Filter subjects to the requested sessions.
+
+    A single glob pattern cannot express multiple sessions (ses-01 OR ses-02),
+    so multi-session selection is applied here on the loaded subjects' metadata.
+    Accepts session labels with or without the 'ses-' prefix.
+    """
+    normalized: set[str] = set()
+    for s in sessions:
+        s = str(s)
+        if s.startswith("ses-"):
+            normalized.add(s)
+            normalized.add(s[4:])
+        else:
+            normalized.add(s)
+            normalized.add(f"ses-{s}")
+
+    filtered = []
+    for subject_data in subjects_list:
+        session = str(subject_data.metadata.get("session_id", ""))
+        if session in normalized:
+            filtered.append(subject_data)
     return filtered
 
 
