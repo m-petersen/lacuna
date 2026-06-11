@@ -1,6 +1,6 @@
 """Tests for atlas-by-name functionality in analysis modules."""
 
-from lacuna.analysis import ParcelAggregation, FocalDamage
+from lacuna.analysis import FocalDamage, ParcelAggregation
 
 
 class TestParcelAggregationAtlasParameter:

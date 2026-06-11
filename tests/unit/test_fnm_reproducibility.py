@@ -13,7 +13,6 @@ These cover three bugs found in review:
 import h5py
 import nibabel as nib
 import numpy as np
-import pytest
 
 from lacuna import SubjectData
 from lacuna.analysis import FunctionalNetworkMapping

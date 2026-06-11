@@ -11,7 +11,7 @@ import nibabel as nib
 import pytest
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, FocalDamage
+from lacuna.analysis import FocalDamage, ParcelAggregation
 from lacuna.assets.parcellations.loader import load_parcellation
 from lacuna.assets.parcellations.registry import list_parcellations
 from lacuna.data.tutorials import get_subject_mask_path, get_tutorial_subjects

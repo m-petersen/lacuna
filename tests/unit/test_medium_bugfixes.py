@@ -6,7 +6,6 @@
 
 import nibabel as nib
 import numpy as np
-import pytest
 
 from lacuna.core.spaces import (
     REFERENCE_AFFINES,
@@ -15,7 +14,6 @@ from lacuna.core.spaces import (
     detect_space_from_filename,
 )
 from lacuna.core.subject_data import SubjectData
-
 
 # --- resolution detection preserves 0.5mm -----------------------------------
 

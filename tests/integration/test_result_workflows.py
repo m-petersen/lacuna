@@ -44,8 +44,8 @@ def test_end_to_end_result_access_workflow(synthetic_mask_img):
 def test_multiple_analyses_result_access(synthetic_mask_img):
     """Test accessing results from multiple sequential analyses."""
     from lacuna import SubjectData
-    from lacuna.analysis.parcel_aggregation import ParcelAggregation
     from lacuna.analysis.focal_damage import FocalDamage
+    from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
     mask_data = SubjectData(
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}

@@ -174,7 +174,6 @@ class TestExportBidsDerivatives:
         pre-existing file. Regression: FNM voxel maps present from an earlier run
         used to make a follow-up parcel-aggregation run discard all parcel TSVs.
         """
-        import nibabel as nib
 
         from lacuna.core.data_types import VoxelMap
         from lacuna.io.bids import export_bids_derivatives

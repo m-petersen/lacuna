@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, FocalDamage
+from lacuna.analysis import FocalDamage, ParcelAggregation
 from lacuna.core.keys import build_result_key
 
 

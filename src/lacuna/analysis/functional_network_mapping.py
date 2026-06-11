@@ -375,7 +375,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
             )
             raise ValidationError(msg)
 
-    def _run_analysis(self, mask_data: SubjectData) -> dict[str, "AnalysisResult"]:
+    def _run_analysis(self, mask_data: SubjectData) -> dict[str, AnalysisResult]:
         """Execute functional network mapping analysis.
 
         Processes connectome batches sequentially to minimize memory usage.
@@ -817,7 +817,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         self.logger.success(f"Analysis complete ({len(results)} results)")
         return results
 
-    def _build_empty_mask_results(self) -> dict[str, "AnalysisResult"]:
+    def _build_empty_mask_results(self) -> dict[str, AnalysisResult]:
         """Build zero-valued results for an empty mask.
 
         Returns the same structure as a normal analysis run (rmap, zmap,

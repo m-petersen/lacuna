@@ -188,8 +188,8 @@ class TestAnalysisProvenance:
     def test_all_analyses_use_package_version(self, synthetic_mask_img, local_test_atlas):
         """All analysis classes should use package version in provenance."""
         from lacuna import SubjectData, __version__
-        from lacuna.analysis.parcel_aggregation import ParcelAggregation
         from lacuna.analysis.focal_damage import FocalDamage
+        from lacuna.analysis.parcel_aggregation import ParcelAggregation
 
         mask_data = SubjectData(
             mask_img=synthetic_mask_img,

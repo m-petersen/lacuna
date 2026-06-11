@@ -193,9 +193,9 @@ def test_no_transformation_when_target_not_specified_1mm(lesion_mni152_1mm):
 def test_target_space_class_attributes_exist():
     """Test that TARGET_SPACE attributes are properly defined on analysis classes."""
     from lacuna.analysis import (
+        FocalDamage,
         FunctionalNetworkMapping,
         ParcelAggregation,
-        FocalDamage,
         StructuralNetworkMapping,
     )
 

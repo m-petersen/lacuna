@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 
 from lacuna import SubjectData
-from lacuna.analysis import ParcelAggregation, FocalDamage
+from lacuna.analysis import FocalDamage, ParcelAggregation
 
 
 class TestBIDSStyleResultKeys:

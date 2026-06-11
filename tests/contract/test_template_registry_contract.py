@@ -235,8 +235,8 @@ def test_template_returns_bundled_grid_reference():
     a zero-filled NIfTI bundled with the package, on the correct canonical grid,
     without requiring TemplateFlow.
     """
-    import numpy as np
     import nibabel as nib
+    import numpy as np
 
     from lacuna.assets.templates.loader import load_template
     from lacuna.core.spaces import REFERENCE_AFFINES

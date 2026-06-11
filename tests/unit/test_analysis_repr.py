@@ -4,9 +4,9 @@ import tempfile
 from pathlib import Path
 
 from lacuna.analysis import (
+    FocalDamage,
     FunctionalNetworkMapping,
     ParcelAggregation,
-    FocalDamage,
     StructuralNetworkMapping,
 )
 from lacuna.assets.connectomes import (
