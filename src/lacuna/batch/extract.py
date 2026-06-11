@@ -117,7 +117,7 @@ def extract(
         - dict[SubjectData, dict]: BatchResults format with {subject: results}
     analysis : str or None
         Filter by analysis namespace (e.g., "FunctionalNetworkMapping",
-        "RegionalDamage"). This filters by the top-level namespace in results.
+        "FocalDamage"). This filters by the top-level namespace in results.
     pattern : str or None
         Glob pattern to match result keys (e.g., "*rmap*",
         "parc-Schaefer*_desc-*"). Supports fnmatch-style wildcards:
@@ -204,7 +204,24 @@ def extract(
                         subject_results[key] = value
 
         if subject_results:
-            extracted[identifier] = subject_results
+            # Two subjects can map to the same identifier (e.g. multiple lesions
+            # for one subject/session). Disambiguate rather than silently
+            # overwriting, so no subject's results are lost.
+            unique_id = identifier
+            if unique_id in extracted:
+                import warnings
+
+                suffix = 2
+                while f"{identifier}#{suffix}" in extracted:
+                    suffix += 1
+                unique_id = f"{identifier}#{suffix}"
+                warnings.warn(
+                    f"Duplicate result identifier '{identifier}'; storing as "
+                    f"'{unique_id}' to avoid overwriting. Provide distinct "
+                    "subject/session metadata to control these keys.",
+                    stacklevel=2,
+                )
+            extracted[unique_id] = subject_results
 
     if not extracted:
         filter_parts = []
