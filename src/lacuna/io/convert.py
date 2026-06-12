@@ -165,7 +165,7 @@ def gsp1000_to_hdf5(
             hf.attrs["n_timepoints"] = n_timepoints
             hf.attrs["n_voxels"] = n_voxels
             hf.attrs["mask_shape"] = mask_data.shape
-            hf.attrs["space"] = "MNI152_2mm"
+            hf.attrs["space"] = "MNI152NLin6Asym"
             hf.attrs["description"] = f"GSP1000 functional connectome chunk {chunk_idx}"
             hf.attrs["source"] = "Harvard Dataverse doi:10.7910/DVN/ILXIKS"
 

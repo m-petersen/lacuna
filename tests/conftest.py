@@ -351,9 +351,6 @@ def synthetic_mask_data(synthetic_mask_img):
 
     For tests needing real MNI-space data, use tutorial_mask_data instead.
     """
-    import sys
-
-    sys.path.insert(0, "/home/marvin/projects/lacuna/src")
     from lacuna.core.subject_data import SubjectData
 
     return SubjectData(
@@ -376,9 +373,6 @@ def batch_mask_data_list(synthetic_mask_img):
 
     For tests needing real MNI-space data, use tutorial_mask_data_list instead.
     """
-    import sys
-
-    sys.path.insert(0, "/home/marvin/projects/lacuna/src")
     from lacuna.core.subject_data import SubjectData
 
     lesion_list = []
