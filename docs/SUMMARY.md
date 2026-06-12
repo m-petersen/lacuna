@@ -25,4 +25,5 @@
         * [Check](reference/cli/06-check.md)
         * [Collect](reference/cli/07-collect.md)
         * [Info](reference/cli/08-info.md)
+    * [API Reference](reference/api/)
 * [Changelog](changelog.md)

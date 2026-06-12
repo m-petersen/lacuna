@@ -19,8 +19,8 @@ examples:
 
 ## Python API
 
-Lacuna also exposes a Python API (`SubjectData`, `analyze`, `batch_process`, the
-analysis classes, and the asset registries) used in the tutorials. Its usage is
-shown throughout the [tutorials](../tutorials/index.md) and
-[how-to guides](../how-to/index.md); run `help(...)` on any object for its
-docstring.
+The command-line interface is built on a Python API (`SubjectData`, `Pipeline`,
+`analyze`, `batch_process`, the analysis classes, and the asset registries) that
+Lacuna uses under the hood. The tutorials and how-to guides drive Lacuna through
+the CLI, not this API. If you want to call Lacuna programmatically, run
+`help(...)` on any object for its docstring.
