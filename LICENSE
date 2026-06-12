@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+NOTE ON THIRD-PARTY DATA: The MIT license above covers the Lacuna source code
+only. Lacuna downloads and operates on neuroimaging templates, atlases, and
+connectome datasets that are NOT covered by this license and carry their own
+terms — some of which are restricted to non-commercial use. See the NOTICE file 
+for the full list of third-party data sources and their respective licenses.

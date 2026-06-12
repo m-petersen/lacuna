@@ -13,6 +13,12 @@ authors:
     affiliation: "University Medical Center Utrecht"
 repository-code: "https://github.com/m-petersen/lacuna"
 url: "https://lacuna-py.readthedocs.io"
+abstract: >-
+  Lacuna is a scientific Python package and BIDS-App for reproducible brain
+  lesion network mapping. It implements functional and structural network
+  mapping, accelerated functional network mapping, focal damage, and parcel
+  aggregation analyses on standardized MNI reference spaces, fetching the
+  required normative connectomes, templates, and atlases on demand.
 license: MIT
 version: 0.1.0
 date-released: "2026-06-10"
