@@ -7,8 +7,9 @@ This guide walks you through setting up and running Lacuna analyses on a high-pe
 The typical HPC workflow is:
 
 1. Pull the Lacuna container image once
-2. Prepare a batch script for the analysis you want to run
-3. Submit it as a SLURM job array that distributes subjects across nodes
+2. Fetch needed data like connectomes
+3. Prepare a batch script for the analysis you want to run
+4. Submit it as a SLURM job array that distributes subjects across nodes
 
 Ready-to-use scripts for FNM and SNM are provided in the [`hpc_scripts/`](https://github.com/m-petersen/lacuna/tree/main/docs/how-to/hpc_scripts) directory.
 

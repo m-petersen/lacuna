@@ -7,7 +7,7 @@
 | **Python** | 3.10 or newer |
 | **Operating system** | Linux and macOS are supported and tested. On Windows, use [WSL2](https://learn.microsoft.com/windows/wsl/) — MRtrix3 and some dependencies are awkward to install natively. |
 | **Structural network mapping** | [MRtrix3](https://www.mrtrix.org/) on your `PATH` |
-| **Native-space masks** | Register to MNI first — see the [spatial normalization guide](../how-to/spatial-normalization.ipynb) (uses ANTsPy, installed separately) |
+| **Native-space masks** | Register to MNI first — see the [spatial normalization guide](../how-to/01-spatial-normalization.ipynb) (uses ANTsPy, installed separately) |
 | **Disk space** | Depends on the normative connectome you fetch (see below) |
 
 ### Disk space for normative connectomes
@@ -26,7 +26,7 @@
 
 Lacuna requires masks in `MNI152NLin6Asym` or `MNI152NLin2009cAsym`. If yours are
 in native space, register them first — see the
-[spatial normalization guide](../how-to/spatial-normalization.ipynb). Lacuna
+[spatial normalization guide](../how-to/01-spatial-normalization.ipynb). Lacuna
 handles alignment between supported MNI spaces automatically, but it will not
 guess the space of a mask that carries no spatial information.
 
@@ -48,12 +48,12 @@ It depends on the source:
 
 Provide keys via the `--api-key` flag, an environment variable
 (`DATAVERSE_API_KEY` / `FIGSHARE_API_KEY`), or `~/.config/lacuna/config.yaml`.
-See the [fetch CLI reference](../reference/cli/fetch.md) for details.
+See the [fetch CLI reference](../reference/cli/03-fetch.md) for details.
 
 ### Should I use FNM or AFNM?
 
 Both compute the functional network of a lesion. Use the standard
-[functional network mapping](lesion-network-mapping.md) when you need a
+[functional network mapping](01-lesion-network-mapping.md) when you need a
 voxel-resolution map; use the accelerated version when you are processing many
 subjects and a parcel-resolution result is sufficient.
 

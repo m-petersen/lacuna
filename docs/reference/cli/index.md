@@ -14,53 +14,53 @@ lacuna <command> [options]
 
 <div class="grid cards" markdown>
 
--   [**Check**](check.md)
+-   [**Tutorial**](01-tutorial.md)
 
     ---
 
-    Validate input masks and check output completeness.
+    Set up the bundled tutorial data for learning Lacuna.
 
--   [**Bidsify**](bidsify.md)
+-   [**Bidsify**](02-bidsify.md)
 
     ---
 
     Convert a directory of NIfTI mask files to BIDS format.
 
--   [**Collect**](collect.md)
-
-    ---
-
-    Aggregate subject-level parcelstats into group-level tables.
-
--   [**Fetch**](fetch.md)
+-   [**Fetch**](03-fetch.md)
 
     ---
 
     Download normative connectomes and other assets to the local cache.
 
--   [**Prepare**](prepare.md)
+-   [**Prepare**](04-prepare.md)
 
     ---
 
     Precompute connectome-derived data products — currently `prepare afnm`, which builds the parcel-level connectivity matrix that accelerated FNM consumes.
 
--   [**Info**](info.md)
-
-    ---
-
-    Display available resources (atlases, connectomes).
-
--   [**Run**](run.md)
+-   [**Run**](05-run.md)
 
     ---
 
     Run lesion analyses (focal damage, functional, accelerated functional, and structural network mapping).
 
--   [**Tutorial**](tutorial.md)
+-   [**Check**](06-check.md)
 
     ---
 
-    Setup tutorial data for learning Lacuna.
+    Validate input masks and check output completeness.
+
+-   [**Collect**](07-collect.md)
+
+    ---
+
+    Aggregate subject-level parcelstats into group-level tables.
+
+-   [**Info**](08-info.md)
+
+    ---
+
+    Display available resources (atlases, connectomes).
 
 </div>
 

@@ -4,19 +4,19 @@ Background concepts and design decisions behind Lacuna.
 
 <div class="grid cards" markdown>
 
--   [**What is lesion network mapping?**](lesion-network-mapping.md)
+-   [**What is lesion network mapping?**](01-lesion-network-mapping.md)
 
     ---
 
     The idea behind the method and how to choose between Lacuna's analyses.
 
--   [**Coordinate spaces**](coordinate-spaces.md)
+-   [**Coordinate spaces**](02-coordinate-spaces.md)
 
     ---
 
     How Lacuna handles MNI spaces, automatic transformations, and reference grids.
 
--   [**System requirements & FAQ**](requirements-and-faq.md)
+-   [**System requirements & FAQ**](03-requirements-and-faq.md)
 
     ---
 

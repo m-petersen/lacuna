@@ -2,7 +2,7 @@
 
 To combine lesion masks and atlas data, we need to bring them to the same coordinate space. Instead of requiring you to manually align all data to a single space, Lacuna handles these transformations internally. You only need to provide lesion masks in one of the two supported MNI spaces — Lacuna ensures everything else is brought into alignment automatically.
 
-For how to get your masks into MNI space, see the [spatial normalization](../how-to/spatial-normalization.ipynb) how-to guide.
+For how to get your masks into MNI space, see the [spatial normalization](../how-to/01-spatial-normalization.ipynb) how-to guide.
 
 ## What is a coordinate space?
 
@@ -138,4 +138,4 @@ plotting.show()
 
 ## See also
 
-- [Spatial normalization](../how-to/spatial-normalization.ipynb) — How to get your masks into MNI space
+- [Spatial normalization](../how-to/01-spatial-normalization.ipynb) — How to get your masks into MNI space

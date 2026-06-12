@@ -5,7 +5,7 @@ given analysis consumes. Targets are named after the analysis they prepare for
 (mirroring `lacuna run`). Currently the only target is `afnm`, which reduces a
 whole-brain functional connectome to a parcel-level N×N connectivity matrix — the
 `--matrix-path` input for
-[`lacuna run afnm`](run.md#lacuna-run-afnm-accelerated-functional-network-mapping).
+[`lacuna run afnm`](05-run.md#lacuna-run-afnm-accelerated-functional-network-mapping).
 
 ## Synopsis
 
@@ -18,7 +18,7 @@ lacuna prepare afnm --connectome-path <PATH> \
 ## `lacuna prepare afnm`
 
 Given a voxelwise functional connectome (HDF5, the same format as
-[`lacuna run fnm`](run.md)) and a parcellation, `lacuna prepare afnm` produces a
+[`lacuna run fnm`](05-run.md)) and a parcellation, `lacuna prepare afnm` produces a
 connectivity matrix — a TSV with parcel labels as row/column index plus
 a JSON sidecar describing provenance. Build it once per parcellation and reuse it
 for all subjects in `lacuna run afnm`.
@@ -64,4 +64,4 @@ records the source connectome, atlas, and shape. `lacuna run afnm` consumes the
 
 ## See also
 
-- [`lacuna run afnm`](run.md#lacuna-run-afnm-accelerated-functional-network-mapping) — consumes the matrix via `--matrix-path`
+- [`lacuna run afnm`](05-run.md#lacuna-run-afnm-accelerated-functional-network-mapping) — consumes the matrix via `--matrix-path`
