@@ -117,7 +117,7 @@ def _build_fetch_parser(subparsers) -> None:
         description=(
             "Download, process, and register connectomes for lesion network mapping.\n\n"
             "Available connectomes:\n"
-            "  gsp1000        - GSP1000 functional connectome (~100GB, requires Dataverse API key)\n"
+            "  gsp1000        - GSP1000 functional connectome (~200GB, requires Dataverse API key)\n"
             "  dtor985        - dTOR985 structural tractogram, full (~11GB, requires Figshare API key)\n"
             "  dtor985_10pct  - dTOR985 10% subsample, ~1.2M streamlines (~1.3GB, no API key)\n"
             "  dtor985_25pct  - dTOR985 25% subsample, ~3M streamlines (~3.1GB, no API key)\n"
