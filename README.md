@@ -73,9 +73,11 @@ Documentation — tutorials, how-to guides, conceptual background, and API refer
 
 If you use Lacuna in your research, please cite it. A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add DOI / preprint reference once available -->
 
+Lacuna is developed following the [FAIR-BioRS guidelines](https://fair-biors.org/docs/guidelines) for research software; machine-readable metadata is also provided in [`codemeta.json`](codemeta.json).
+
 ## Contributing
 
-Bug reports, feature requests, and pull requests are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) and the [issue tracker](https://github.com/m-petersen/lacuna/issues).
+Bug reports, feature requests, and pull requests are welcome via the [issue tracker](https://github.com/m-petersen/lacuna/issues).
 
 ## Acknowledgements
 
