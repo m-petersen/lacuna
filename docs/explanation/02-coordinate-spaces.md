@@ -10,7 +10,7 @@ A coordinate space defines how 3D voxel indices (i, j, k) map to physical
 locations in the brain (x, y, z in millimeters).
 
 ```
-Voxel (45, 54, 45) → Physical coordinates (0, 0, 0) mm
+Voxel (45, 63, 36) → Physical coordinates (0, 0, 0) mm
 ```
 
 This mapping is defined by the **affine transformation matrix** stored in the NIfTI header:
@@ -35,7 +35,7 @@ healthy subjects. For this comparison to be meaningful:
 2. Voxel grids must match
 3. Left-right, anterior-posterior must agree
 
-If spaces don't match, a lesion at voxel (45, 54, 45) in your mask would correspond
+If spaces don't match, a lesion at voxel (45, 63, 36) in your mask would correspond
 to a different anatomical location in the connectome.
 
 ## Supported MNI spaces
