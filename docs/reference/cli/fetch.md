@@ -163,36 +163,28 @@ export FIGSHARE_API_KEY="your-token-here"
 
 ## Cache Location
 
-Downloaded and processed files are stored in:
+Downloaded and processed files are stored under `~/.cache/lacuna/connectomes/`. The
+functional GSP1000 is converted into chunked HDF5 files under a `processed/`
+subdirectory; the structural tractograms are stored as `.tck` files. For example:
 
 ```
 ~/.cache/lacuna/connectomes/
 ├── gsp1000/
-│   ├── GSP1000_batch_0.h5
-│   ├── GSP1000_batch_1.h5
-│   └── ...
-└── dtor985/
-    └── dtor985.tck
+│   └── processed/
+│       ├── gsp1000_chunk_000.h5
+│       ├── gsp1000_chunk_001.h5
+│       └── ...
+└── hcp1065/
+    └── hcp1065.tck
 ```
 
-Override the base cache directory with the `LACUNA_CACHE` environment variable:
+When running an analysis, point `--connectome-path` at the directory that contains
+the `.h5` files (e.g. `~/.cache/lacuna/connectomes/gsp1000/processed/`) or at a
+`.tck` file directly.
+
+Override the base cache directory with the `LACUNA_CACHE_DIR` environment variable:
 
 ```bash
-export LACUNA_CACHE=/path/to/custom/cache
+export LACUNA_CACHE_DIR=/path/to/custom/cache
 lacuna fetch gsp1000 --api-key YOUR_KEY
 ```
-
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Invalid arguments |
-| 3 | Network error |
-| 4 | Verification failed |
-| 5 | Disk space insufficient |
-
-## See also
-
-- [Docker Guide](../../how-to/docker.ipynb)

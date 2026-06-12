@@ -2,42 +2,25 @@
 
 Technical reference documentation for Lacuna.
 
-## Documentation Sections
+## Command-line interface
 
-<div class="grid cards" markdown>
+Lacuna is driven through its command-line interface. See the
+[**CLI reference**](cli/index.md) for the full list of commands, options, and
+examples:
 
--   [**Command-line interface**](cli/index.md)
+- `lacuna tutorial` — set up the bundled tutorial dataset
+- `lacuna bidsify` — convert a directory of masks into a BIDS layout
+- `lacuna fetch` — download normative connectomes
+- `lacuna prepare` — precompute analysis inputs (e.g. the AFNM matrix)
+- `lacuna run` — run analyses (`fd`, `fnm`, `snm`, `afnm`)
+- `lacuna check` — validate inputs and check output completeness
+- `lacuna collect` — aggregate results across subjects
+- `lacuna info` — list available atlases and connectomes
 
-    ---
+## Python API
 
-    Complete CLI documentation with commands, options, and examples.
-
--   [**Python API**](api/lacuna/index.md)
-
-    ---
-
-    Auto-generated API reference from source code docstrings.
-
-</div>
-
-## Quick Links
-
-### Core Modules
-
-- `lacuna.core` — Core data structures (`SubjectData`, `MaskData`)
-- `lacuna.analysis` — Analysis modules (fLNM, sLNM, FocalDamage)
-- `lacuna.spatial` — Spatial operations and transformations
-
-### Assets
-
-- `lacuna.assets.connectomes` — Connectome management and registration
-- `lacuna.assets.parcellations` — Brain parcellation atlases
-
-### I/O & Processing
-
-- `lacuna.io` — Dataset loading and export (BIDS-style naming)
-- `lacuna.batch` — Parallel batch processing
-
-## About This Reference
-
-This Python API reference documentation is auto-generated using [mkdocstrings](https://mkdocstrings.github.io/).
+Lacuna also exposes a Python API (`SubjectData`, `analyze`, `batch_process`, the
+analysis classes, and the asset registries) used in the tutorials. Its usage is
+shown throughout the [tutorials](../tutorials/index.md) and
+[how-to guides](../how-to/index.md); run `help(...)` on any object for its
+docstring.

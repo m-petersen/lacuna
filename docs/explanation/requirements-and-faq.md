@@ -12,16 +12,13 @@
 
 ### Disk space for normative connectomes
 
-Network mapping downloads large normative datasets on demand. Plan storage
-accordingly:
-
 | Connectome | Used by | Approx. size |
 |---|---|---|
-| HCP1065 | Structural network mapping | ~1.5 GB |
-| dTOR985 | Structural network mapping | ~11 GB |
 | GSP1000 | Functional network mapping | ~200 GB |
-
-Focal damage uses bundled atlases and downloads nothing.
+| HCP1065 | Structural network mapping | ~1.5 GB |
+| dTOR985 full | Structural network mapping | ~11 GB |
+| dTOR985 10% | Structural network mapping | ~1 GB |
+| dTOR985 25% | Structural network mapping | ~3 GB |
 
 ## Frequently asked questions
 
@@ -30,7 +27,7 @@ Focal damage uses bundled atlases and downloads nothing.
 Lacuna requires masks in `MNI152NLin6Asym` or `MNI152NLin2009cAsym`. If yours are
 in native space, register them first — see the
 [spatial normalization guide](../how-to/spatial-normalization.ipynb). Lacuna
-handles alignment *between* supported MNI spaces automatically, but it will not
+handles alignment between supported MNI spaces automatically, but it will not
 guess the space of a mask that carries no spatial information.
 
 ### Do I need to download a connectome to try Lacuna?
@@ -43,10 +40,11 @@ to experiment with.
 
 It depends on the source:
 
-- **HCP1065** (structural) — no key required.
-- **dTOR985** (structural) — a Figshare API key is optional but improves
-  reliability.
 - **GSP1000** (functional) — requires a free Harvard Dataverse API key.
+- **HCP1065** (structural) — no key required.
+- **dTOR985 full** (structural) — requires a Figshare API key.
+- **dTOR985 10%** (structural) — no key required.
+- **dTOR985 25%** (structural) — no key required.
 
 Provide keys via the `--api-key` flag, an environment variable
 (`DATAVERSE_API_KEY` / `FIGSHARE_API_KEY`), or `~/.config/lacuna/config.yaml`.
@@ -63,7 +61,7 @@ subjects and a parcel-resolution result is sufficient.
 
 Point `lacuna run` at a BIDS dataset root rather than a single mask, or use
 `batch_process` from the Python API. See the
-[getting started tutorial](../tutorials/getting-started.ipynb).
+[getting started tutorial](../tutorials/01-getting-started.ipynb).
 
 ### How do I cite Lacuna?
 

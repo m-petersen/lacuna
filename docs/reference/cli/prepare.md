@@ -43,25 +43,25 @@ At least one of these must be supplied. Each atlas produces its own output file.
 
 ```bash
 lacuna prepare afnm \
-    --connectome-path ~/.cache/lacuna/connectomes/gsp1000/ \
+    --connectome-path ~/.cache/lacuna/connectomes/gsp1000/processed/ \
     --parcel-atlases schaefer2018parcels400networks17 \
     --output /data/parcellated/
 ```
 
 ### Output
 
-A connectivity matrix per atlas, e.g.
+Two connectivity matrices per atlas — the group-average Pearson r (`desc-fcgroupr`)
+and its Fisher-z transform (`desc-fcgroupz`) — each a TSV plus a JSON sidecar:
 
 ```
-method-parcellate_atlas-schaefer2018parcels400networks17_desc-groupconnectivity_connmatrix.tsv
-method-parcellate_atlas-schaefer2018parcels400networks17_desc-groupconnectivity_connmatrix.json
+method-parcellate_atlas-schaefer2018parcels400networks17_desc-fcgroupr_connmatrix.tsv
+method-parcellate_atlas-schaefer2018parcels400networks17_desc-fcgroupz_connmatrix.tsv
 ```
 
 The TSV uses parcel labels as both row index and column headers; the JSON sidecar
-records the source connectome, atlas, and shape.
+records the source connectome, atlas, and shape. `lacuna run afnm` consumes the
+`fcgroupz` matrix via `--matrix-path`.
 
 ## See also
 
 - [`lacuna run afnm`](run.md#lacuna-run-afnm-accelerated-functional-network-mapping) — consumes the matrix via `--matrix-path`
-- [`lacuna fetch`](fetch.md) — download connectomes before preparing
-- [`lacuna info atlases`](info.md) — list available atlases

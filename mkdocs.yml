@@ -45,19 +45,6 @@ theme:
 
 plugins:
   - search
-  - autorefs:
-      resolve_closest: true
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [src]
-          options:
-            docstring_style: numpy
-            show_source: true
-            show_root_heading: true
-  - gen-files:
-      scripts:
-        - docs/gen_ref_pages.py
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index

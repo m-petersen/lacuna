@@ -9,11 +9,11 @@
 [![Documentation](https://readthedocs.org/projects/lacuna-py/badge/?version=latest)](https://lacuna-py.readthedocs.io/en/latest/)
 [![status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/m-petersen/lacuna)
 
-**Lacuna characterizes brain lesions in depth — not just *where* a lesion is, but *what* it disrupts.**
+When a stroke, tumor, or other focal injury damages brain tissue, understanding its consequences requires placing the lesion in the broader context of brain organization.
 
-A lesion's consequences depend on the networks and regions it affects. Lacuna builds a rich, quantitative profile of an individual lesion by contextualizing it against normative reference data — functional and structural brain networks, and anatomical brain atlases. *Lesion network mapping*, the mapping of circuits connected to a lesion, is one family of methods within this broader characterization. You provide lesion masks in MNI space; Lacuna handles the normative data, spatial alignment, and BIDS-organized outputs, exposing a clean Python API and a BIDS-App-style command line.
+Lacuna is an open-source toolbox designed to facilitate this process. Using normative reference data from healthy individuals, including functional and structural connectivity datasets and anatomical atlases, it generates a range of measures that characterize a lesion beyond its anatomical location alone.
 
-It is built for the realities of multicenter lesion research: standardized inputs and outputs, batch processing across cohorts, and provenance you can trace.
+Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, and it takes care of the rest — fetching the normative reference data, aligning coordinate spaces, and writing BIDS-organized outputs through a command line interface. Developed for multicenter research, it standardizes inputs and outputs, scales from a single mask to entire cohorts with batch processing, supports deployment on high-performance computing (HPC) systems through containerized environments and records traceable provenance for every result, all within a modular architecture designed to grow toward further lesion-characterization methods.
 
 <p align="center">
   <img src="docs/assets/method_figures/pipeline.svg" alt="Lacuna analysis pipeline" width="820">
@@ -51,7 +51,7 @@ Requires Python ≥ 3.10. We recommend a fresh virtual environment (`venv` or `c
 # 1. Create a tutorial dataset with synthetic lesion masks (BIDS-organized)
 lacuna tutorial my_dataset
 
-# 2. Fetch the HCP1065 structural tractogram (~1.5 GB)
+# 2. Fetch the HCP1065 tractogram (~1.5 GB)
 lacuna fetch hcp1065 --output-dir connectomes
 
 # 3. Run structural network mapping

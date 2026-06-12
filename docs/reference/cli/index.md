@@ -80,7 +80,7 @@ lacuna run fd /bids /output --parcel-atlases schaefer2018parcels100networks7
 lacuna run fnm /bids /output --connectome-path /path/to/gsp1000_batches
 
 # Aggregate results across subjects
-lacuna collect /bids /output
+lacuna collect /output
 
 # Check for missing outputs after a batch run
 lacuna check fd /bids /output

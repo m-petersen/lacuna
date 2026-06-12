@@ -47,7 +47,3 @@ lacuna bidsify /raw /bids --space MNI152NLin6Asym --session 01 --label lesion
 # Different MNI space
 lacuna bidsify ./masks ./bids_masks --space MNI152NLin2009cAsym
 ```
-
-## See Also
-
-- [How-to Guides](../../how-to/index.md)

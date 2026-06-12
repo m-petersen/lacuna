@@ -136,8 +136,3 @@ lacuna check fnm /bids /output --quiet
 # Check SNM for specific subjects
 lacuna check snm /bids /output --participant-label 001 002 003
 ```
-
-## See Also
-
-- [`lacuna run`](run.md) — Run analyses
-- [`lacuna collect`](collect.md) — Aggregate results across subjects

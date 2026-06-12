@@ -71,7 +71,7 @@ lacuna run snm my_dataset output \
     --mask-space MNI152NLin6Asym
 ```
 
-For the full walkthrough, see the [Getting started](tutorials/getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
+For the full walkthrough, see the [Getting started](tutorials/01-getting-started.ipynb) tutorial. Note that Lacuna expects lesion masks to be in MNI space.
 
 ## Documentation
 

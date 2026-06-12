@@ -27,7 +27,3 @@ lacuna info atlases
 # List registered connectomes
 lacuna info connectomes
 ```
-
-## See Also
-
-- [How-to Guides](../../how-to/index.md)

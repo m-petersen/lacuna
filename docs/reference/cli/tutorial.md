@@ -43,4 +43,4 @@ lacuna tutorial ./my_tutorial --force
 
 ## See Also
 
-- [Getting Started](../../tutorials/getting-started.ipynb) — Tutorial notebook
+- [Getting Started](../../tutorials/01-getting-started.ipynb) — Tutorial notebook

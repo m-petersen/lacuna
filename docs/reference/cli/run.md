@@ -48,13 +48,14 @@ All `lacuna run` subcommands share these options:
 |--------|-------------|
 | `--nprocs N` | Number of parallel processes (-1 for all CPUs, default: -1). Also used for MRtrix3 thread count in SNM. |
 | `--batch-size N` | Number of masks to process together per batch. Use -1 for all masks at once (fastest). Lower values reduce peak memory. |
-| `-w PATH`, `--tmp-dir PATH` | Temporary directory for intermediate files (default: `$LACUNA_TMP_DIR` or `./tmp`) |
+| `-w PATH`, `--tmp-dir PATH` | Temporary directory for intermediate files (**SNM only**; default: `$LACUNA_TMP_DIR` or `./tmp`) |
 
 ### Other options
 
 | Option | Description |
 |--------|-------------|
 | `--overwrite` | Overwrite existing output files |
+| `--on-empty {warn,skip,error}` | Handle empty / no-overlap masks: `warn` (default, zero-valued outputs), `skip`, or `error` |
 | `--keep-intermediate` | Keep intermediate results in output |
 | `-v`, `--verbose` | Increase verbosity (`-v`=INFO, `-vv`=DEBUG) |
 
@@ -125,7 +126,7 @@ Computes functional connectivity disruption using a normative functional connect
 ```bash
 # Basic functional network mapping
 lacuna run fnm /bids /output \
-    --connectome-path ~/.cache/lacuna/connectomes/gsp1000/
+    --connectome-path ~/.cache/lacuna/connectomes/gsp1000/processed/
 
 # With PINI method and atlas aggregation
 lacuna run fnm /bids /output \
@@ -184,7 +185,7 @@ Computes white matter disconnection using tractography. Generates disconnection 
 | Option | Description |
 |--------|-------------|
 | `--connectome-path PATH` | **(required)** Path to `.tck` tractogram file (from `lacuna fetch dtor985`) |
-| `--parcel-atlas NAME` | Atlas for connectivity matrices. Use `lacuna info atlases` to list. |
+| `--parcel-atlases NAME [...]` | Atlas(es) for disconnectivity/ROI outputs. Use `lacuna info atlases` to list. |
 | `--custom-parcellation NAME NIFTI LABELS SPACE` | Custom parcellation: a short name for output labelling, NIfTI file path, labels file path, and coordinate space. Can be specified multiple times. |
 | `--compute-disconnectivity-matrix` | Compute disconnectivity matrices (requires `--parcel-atlases` or `--custom-parcellation`) |
 | `--compute-roi-disconnection` | Compute per-ROI disconnection values (requires `--parcel-atlases` or `--custom-parcellation`) |
@@ -203,7 +204,7 @@ lacuna run snm /bids /output \
 # With ROI disconnection and 4 threads
 lacuna run snm /bids /output \
     --connectome-path /data/dtor985.tck \
-    --parcel-atlas schaefer2018parcels100networks7 \
+    --parcel-atlases schaefer2018parcels100networks7 \
     --compute-roi-disconnection \
     --nprocs 4
 ```
@@ -237,5 +238,4 @@ my_study/
 | Variable | Description |
 |----------|-------------|
 | `LACUNA_TMP_DIR` | Custom temporary directory (default: `./tmp`) |
-| `TEMPLATEFLOW_HOME` | TemplateFlow cache directory |
 
