@@ -286,18 +286,21 @@ class TestGithubReleaseDownloader:
         assert filename == "hcp1065_avg_tracts_trk.zip"
 
     def test_github_download_with_mock(self, tmp_path):
-        """GithubReleaseDownloader should download file via HTTP GET."""
+        """GithubReleaseDownloader should download a file and pass integrity checks."""
+        import hashlib
+        from dataclasses import replace
+
         import requests
 
         from lacuna.io.downloaders import CONNECTOME_SOURCES
         from lacuna.io.downloaders.github import GithubReleaseDownloader
 
-        source = CONNECTOME_SOURCES["hcp1065"]
+        # Mock body; pin the source sha256 to its digest so the verification passes.
+        body = b"fake zip data"
+        source = replace(CONNECTOME_SOURCES["hcp1065"], sha256=hashlib.sha256(body).hexdigest())
         downloader = GithubReleaseDownloader(source)
 
-        # Mock download response. Content-Length must match the body length so
-        # the downloader's truncation guard accepts the (complete) transfer.
-        body = b"fake zip data"
+        # Content-Length must match the body length so the truncation guard accepts it.
         mock_response = MagicMock()
         mock_response.headers = {
             "content-length": str(len(body)),
@@ -311,6 +314,31 @@ class TestGithubReleaseDownloader:
             assert len(files) == 1
             assert files[0].exists()
             assert files[0].name == "hcp1065_avg_tracts_trk.zip"
+
+    def test_github_download_detects_checksum_mismatch(self, tmp_path):
+        """A body whose sha256 differs from the pinned hash must raise."""
+        from dataclasses import replace
+
+        import pytest
+        import requests
+
+        from lacuna.core.exceptions import DownloadError
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        body = b"tampered content"
+        source = replace(CONNECTOME_SOURCES["hcp1065"], sha256="0" * 64)
+        downloader = GithubReleaseDownloader(source)
+        mock_response = MagicMock()
+        mock_response.headers = {
+            "content-length": str(len(body)),
+            "content-type": "application/zip",
+        }
+        mock_response.iter_content.return_value = [body]
+
+        with patch.object(requests, "get", return_value=mock_response):
+            with pytest.raises(DownloadError, match="Checksum mismatch"):
+                downloader.download(tmp_path)
 
     def test_github_download_detects_truncation(self, tmp_path):
         """A short read (bytes received != Content-Length) must raise rather than

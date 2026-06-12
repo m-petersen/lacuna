@@ -404,6 +404,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         n_subjects=1065,
         space="MNI152NLin2009cAsym",
         estimated_size_gb=1.5,
+        sha256="344aad4394f18b8926ed5e1bda911ad56e328c6cf75faa45e1302512ad779c67",
         citation="Yeh et al, 2022. https://doi.org/10.1038/s41467-022-32595-4",
     ),
 }

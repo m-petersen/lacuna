@@ -6,6 +6,7 @@ Handles downloads from GitHub Releases via direct HTTP GET (no authentication re
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -160,6 +161,8 @@ class GithubReleaseDownloader(BaseDownloader):
 
         # Use temp file for atomic write
         temp_file = output_file.with_suffix(output_file.suffix + ".tmp")
+        expected_sha256 = getattr(self.source, "sha256", None)
+        hasher = hashlib.sha256()
 
         try:
             with open(temp_file, "wb") as f:
@@ -174,6 +177,7 @@ class GithubReleaseDownloader(BaseDownloader):
                     for chunk in response.iter_content(chunk_size=1024 * 1024):
                         if chunk:
                             f.write(chunk)
+                            hasher.update(chunk)
                             bytes_downloaded += len(chunk)
                             pbar.update(len(chunk))
 
@@ -191,8 +195,7 @@ class GithubReleaseDownloader(BaseDownloader):
                                 )
 
             # Detect a truncated/incomplete transfer (the server advertised a
-            # size but we received fewer bytes). No sha256 is published for this
-            # asset, so this length check is the available integrity guard.
+            # size but we received fewer bytes).
             if total_size > 0 and bytes_downloaded != total_size:
                 raise DownloadError(
                     url=url,
@@ -201,6 +204,18 @@ class GithubReleaseDownloader(BaseDownloader):
                         f"{total_size} bytes. The file may be truncated; retry."
                     ),
                 )
+
+            # Verify integrity against the pinned sha256 if one is registered.
+            if expected_sha256:
+                actual = hasher.hexdigest()
+                if actual != expected_sha256:
+                    raise DownloadError(
+                        url=url,
+                        reason=(
+                            f"Checksum mismatch: expected sha256 {expected_sha256}, "
+                            f"got {actual}. The file may be corrupted or changed."
+                        ),
+                    )
 
             # Move to final location
             temp_file.rename(output_file)
