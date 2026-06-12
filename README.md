@@ -65,14 +65,14 @@ Lacuna expects lesion masks in MNI space (`MNI152NLin6Asym` or `MNI152NLin2009cA
 
 ## Documentation
 
-Documentation — tutorials, how-to guides, conceptual background, and API reference — is at **[lacuna-py.readthedocs.io](https://lacuna-py.readthedocs.io)**.
+Documentation including tutorials, how-to guides, and conceptual background is at **[lacuna-py.readthedocs.io](https://lacuna-py.readthedocs.io)**.
 
 > **Note**
 > Lacuna is under active development and has not yet been fully validated. APIs may change without notice. Use in research at your own discretion.
 
 ## Citation
 
-If you use Lacuna in your research, please cite it via its archived release, DOI [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add preprint reference once available -->
+If you use Lacuna in your research, please cite it via [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add preprint reference once available -->
 
 ## Contributing
 
