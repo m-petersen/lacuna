@@ -18,7 +18,7 @@ Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, and 
 <img src="assets/logo.svg" alt="Lacuna" width="800" style="flex-shrink: 0;">
 </div>
 
-!!! warning "This project is under active development and has not yet been fully validated. Use with caution."
+!!! warning "This project is in alpha release and under active development. Interfaces may change between versions."
 
 ## Capabilities
 

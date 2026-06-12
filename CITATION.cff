@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Lacuna: characterizing brain lesions through normative data"
+title: "Lacuna: A Python package for characterizing brain lesions using normative neuroimaging data"
 message: "If you use this software, please cite it using these metadata."
 type: software
 authors:
