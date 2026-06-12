@@ -23,7 +23,7 @@ from lacuna.core.data_types import ParcelData, VoxelMap
 def local_test_atlas(tmp_path):
     """Create and register a local test atlas for batch VoxelMap tests.
 
-    This avoids TemplateFlow downloads for CI.
+    This uses a small local atlas instead of the full bundled atlases.
     """
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()

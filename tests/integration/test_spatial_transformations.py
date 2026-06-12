@@ -1,14 +1,11 @@
 """Integration tests for spatial transformations.
 
 Tests the complete transformation pipeline including:
-- Transform loading and caching
-- TemplateFlow integrity checking
+- Transform loading and caching (OSF-hosted warps)
 - 3D/4D image handling
 - Asyncio compatibility in Jupyter environments
-- TemplateFlow space variant canonicalization (bAsym → cAsym for file lookup)
+- Space variant canonicalization (bAsym → cAsym for file lookup)
 """
-
-from pathlib import Path
 
 import nibabel as nib
 import numpy as np
@@ -24,15 +21,14 @@ from lacuna.spatial.transform import (
 
 
 class TestTransformLoading:
-    """Test transform loading and TemplateFlow integration."""
+    """Test transform loading from the OSF-hosted warp assets."""
 
     @pytest.mark.slow
     @pytest.mark.requires_network
-    def test_load_transform_from_templateflow(self):
-        """Transform should be downloaded from TemplateFlow if not cached."""
+    def test_load_transform_downloads_from_osf(self):
+        """The warp should be downloaded (from OSF) and cached if not present."""
         from lacuna.assets.transforms.loader import load_transform
 
-        # This should trigger TemplateFlow download
         transform_name = "MNI152NLin6Asym_to_MNI152NLin2009cAsym"
         path = load_transform(transform_name)
 
@@ -40,28 +36,9 @@ class TestTransformLoading:
         assert path.suffix == ".h5"
         assert path.stat().st_size > 1024  # At least 1KB
 
-    @pytest.mark.slow
-    @pytest.mark.requires_network
-    def test_corrupted_file_detection_and_retry(self, tmp_path, monkeypatch):
-        """Corrupted transform files should be detected and re-downloaded."""
-
-        # Create a fake corrupted file
-        cache_dir = tmp_path / "templateflow" / "tpl-MNI152NLin6Asym"
-        cache_dir.mkdir(parents=True)
-        corrupted_file = (
-            cache_dir / "tpl-MNI152NLin6Asym_from-MNI152NLin2009cAsym_mode-image_xfm.h5"
-        )
-        corrupted_file.write_bytes(b"corrupted")  # Only 9 bytes
-
-        # Monkeypatch to use our tmp cache
-        def mock_home():
-            return tmp_path
-
-        monkeypatch.setattr(Path, "home", mock_home)
-
-        # Should detect corruption and re-download
-        # Note: This test requires actual TemplateFlow access
-        # In practice, you'd mock the tflow.get() call
+    # Corruption is now guarded by pooch's pinned sha256 (a hash mismatch
+    # triggers a re-download); the failure path is covered network-free by
+    # test_load_transform_wraps_download_failure in test_transform_registry_contract.py.
 
 
 class TestImageDimensionHandling:

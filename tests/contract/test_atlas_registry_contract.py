@@ -135,7 +135,7 @@ class TestAtlasLoaderContract:
     def local_test_atlas(self, tmp_path):
         """Create and register a local test atlas for testing load_parcellation.
 
-        This avoids TemplateFlow downloads for CI.
+        This uses a small local atlas instead of the full bundled atlases.
         """
         from lacuna.assets.parcellations.registry import (
             register_parcellations_from_directory,

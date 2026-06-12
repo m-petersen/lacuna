@@ -76,9 +76,9 @@ class TestAtlasNamesFilter:
             assert build_result_key("atlas_B", "FocalDamage", "damagepct") not in atlas_results
             assert build_result_key("atlas_C", "FocalDamage", "damagepct") in atlas_results
 
-            # Test 3: Explicitly use all local test atlases (avoid bundled atlases that require TemplateFlow)
-            # Note: parcel_names=None would process all registered atlases including bundled ones,
-            # which would require TemplateFlow downloads. We test the filtering logic here instead.
+            # Test 3: Explicitly use all local test atlases (avoid loading the full bundled atlases)
+            # Note: parcel_names=None would process all registered atlases including the
+            # large bundled ones; we test the filtering logic on small local atlases instead.
             analysis = FocalDamage(parcel_names=["atlas_A", "atlas_B", "atlas_C"])
             result = analysis.run(mask_data_obj)
             atlas_results = result.results["FocalDamage"]

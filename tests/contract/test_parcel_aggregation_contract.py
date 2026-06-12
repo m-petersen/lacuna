@@ -19,7 +19,7 @@ from lacuna.assets.parcellations.registry import (
 def local_test_atlas(tmp_path):
     """Create and register a local test atlas for ParcelAggregation tests.
 
-    This avoids TemplateFlow downloads for CI.
+    This uses a small local atlas instead of the full bundled atlases.
     """
     atlas_dir = tmp_path / "atlases"
     atlas_dir.mkdir()
@@ -61,7 +61,7 @@ def local_test_atlas(tmp_path):
 def local_test_atlas_pair(tmp_path):
     """Create two local test atlases for multi-atlas tests.
 
-    This avoids TemplateFlow downloads for CI.
+    This uses a small local atlas instead of the full bundled atlases.
     """
     atlas_dir = tmp_path / "atlases_pair"
     atlas_dir.mkdir()

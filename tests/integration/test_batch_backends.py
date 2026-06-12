@@ -96,7 +96,7 @@ def focal_damage_analysis(test_atlas_dir):
     # (synthetic lesions use np.eye(4) affine = 1mm isotropic)
     register_parcellations_from_directory(atlas_dir, space="MNI152NLin6Asym", resolution=1)
 
-    # Create analysis with explicit parcel_names to avoid bundled atlases that require TemplateFlow
+    # Create analysis with explicit parcel_names to avoid loading the full bundled atlases
     return FocalDamage(parcel_names=[atlas_name])
 
 

@@ -145,7 +145,7 @@ def test_focal_damage_returns_mask_data(synthetic_mask_img, tmp_path):
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    # Explicitly specify parcel_names to avoid loading the full bundled atlases
     analysis = FocalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
@@ -180,7 +180,7 @@ def test_focal_damage_result_structure(synthetic_mask_img, tmp_path):
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    # Explicitly specify parcel_names to avoid loading the full bundled atlases
     analysis = FocalDamage(parcel_names=["test_atlas"])
     result = analysis.run(mask_data)
 
@@ -242,7 +242,7 @@ def test_focal_damage_handles_3d_and_4d_atlases(synthetic_mask_img, tmp_path):
         mask_img=synthetic_mask_img, metadata={"space": "MNI152NLin6Asym", "resolution": 2}
     )
 
-    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    # Explicitly specify parcel_names to avoid loading the full bundled atlases
     analysis = FocalDamage(parcel_names=["atlas_3d", "atlas_4d"])
     result = analysis.run(mask_data)
 
@@ -284,7 +284,7 @@ def test_focal_damage_preserves_input_immutability(synthetic_mask_img, tmp_path)
     )
     original_results = mask_data.results.copy()
 
-    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    # Explicitly specify parcel_names to avoid loading the full bundled atlases
     analysis = FocalDamage(parcel_names=["test_immut"])
     result = analysis.run(mask_data)
 
@@ -319,7 +319,7 @@ def test_focal_damage_adds_provenance(synthetic_mask_img, tmp_path):
     )
     original_prov_len = len(mask_data.provenance)
 
-    # Explicitly specify parcel_names to avoid bundled atlases that require TemplateFlow
+    # Explicitly specify parcel_names to avoid loading the full bundled atlases
     analysis = FocalDamage(parcel_names=["test_prov"])
     result = analysis.run(mask_data)
 

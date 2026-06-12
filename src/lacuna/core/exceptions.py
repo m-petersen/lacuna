@@ -142,7 +142,7 @@ class TransformDownloadError(LacunaError):
         self.reason = reason
         message = (
             f"Failed to download transform from '{source_space}' to '{target_space}': {reason}. "
-            f"Check network connection or download manually from TemplateFlow."
+            f"Check your network connection and try again."
         )
         super().__init__(message)
 

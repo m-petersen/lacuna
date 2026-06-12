@@ -16,7 +16,7 @@ class TestPipelineContract:
         """Create a minimal SubjectData for testing with a registered local atlas."""
         from lacuna.assets.parcellations.registry import register_parcellations_from_directory
 
-        # Create test atlas to avoid TemplateFlow
+        # Create a small test atlas instead of the bundled ones
         atlas_dir = tmp_path / "atlases"
         atlas_dir.mkdir()
         atlas_data = np.zeros((10, 10, 10), dtype=np.uint8)
@@ -54,7 +54,7 @@ class TestPipelineContract:
 
     def test_pipeline_run_returns_mask_data(self, sample_mask_data):
         """Contract: run() returns SubjectData with results."""
-        # Use parcel_names to avoid bundled atlases that require TemplateFlow
+        # Use parcel_names to avoid loading the full bundled atlases
         pipeline = Pipeline().add(FocalDamage(parcel_names=["test_pipeline"]))
         result = pipeline.run(sample_mask_data)
         assert isinstance(result, SubjectData)
@@ -86,7 +86,7 @@ class TestAnalyzeFunctionContract:
         """Create a minimal SubjectData for testing with a registered local atlas.
 
         This fixture temporarily replaces the parcellation registry with only
-        a local test atlas to avoid TemplateFlow dependencies in CI.
+        a local test atlas instead of the full bundled atlases.
         """
         from lacuna.assets.parcellations.registry import (
             PARCELLATION_REGISTRY,
@@ -96,7 +96,7 @@ class TestAnalyzeFunctionContract:
         # Save original registry
         saved_registry = PARCELLATION_REGISTRY.copy()
 
-        # Clear registry to avoid loading bundled atlases that need TemplateFlow
+        # Clear registry to avoid loading the full bundled atlases
         PARCELLATION_REGISTRY.clear()
 
         # Create test atlas - analyze() uses FocalDamage without parcel_names,

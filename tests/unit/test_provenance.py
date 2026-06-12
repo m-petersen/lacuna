@@ -115,7 +115,7 @@ class TestAnalysisProvenance:
     def local_test_atlas(self, tmp_path):
         """Create and register a local test atlas for provenance tests.
 
-        This avoids TemplateFlow downloads for CI.
+        This uses a small local atlas instead of the full bundled atlases.
         """
         atlas_dir = tmp_path / "atlases"
         atlas_dir.mkdir()
