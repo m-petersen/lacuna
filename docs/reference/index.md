@@ -12,4 +12,4 @@ examples.
 
 The command-line interface is built on a Python API (`SubjectData`, `Pipeline`,
 `analyze`, `batch_process`, the analysis classes, and the asset registries) that
-Lacuna uses under the hood. For details, see the [**API reference**](api/lacuna/).
+Lacuna uses under the hood. For details, see the [**API reference**](api/lacuna/index.md).
