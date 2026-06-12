@@ -108,9 +108,11 @@ def gsp1000_to_hdf5(
     n_total_subjects = len(all_subject_files)
     print(f"Found {n_total_subjects} subject files")
 
-    # Load brain mask metadata once
+    # Load brain mask metadata once. Reorient to canonical RAS+ so subjects
+    # stored in a different orientation (e.g. FSL's radiological MNI152) can be
+    # aligned to the mask grid by an axis flip rather than resampling.
     print(f"Loading brain mask from: {mask_path}")
-    mask_img = nib.load(mask_path)
+    mask_img = nib.as_closest_canonical(nib.load(mask_path))
     mask_data = mask_img.get_fdata().astype(bool)
     mask_affine = mask_img.affine
     in_mask_indices = np.where(mask_data)
@@ -177,8 +179,12 @@ def gsp1000_to_hdf5(
                     leave=False,
                 )
             ):
-                # Load 4D functional data
-                func_img = nib.load(file_path)
+                # Load 4D functional data, reorienting to canonical RAS+ to
+                # match the mask grid. GSP1000 is distributed in FSL's
+                # radiological orientation, which differs from the templateflow
+                # mask only by an axis flip; canonicalizing both makes the voxel
+                # grids identical without resampling (and without an L/R swap).
+                func_img = nib.as_closest_canonical(nib.load(file_path))
 
                 # Validate this subject is on the mask's grid before indexing —
                 # otherwise the mask voxel indices extract the wrong anatomical
@@ -193,7 +199,10 @@ def gsp1000_to_hdf5(
                 if not np.allclose(func_img.affine, mask_affine, atol=1e-3):
                     raise ValueError(
                         f"Functional image '{file_path}' affine does not match the brain "
-                        "mask affine; the data are on different grids."
+                        "mask affine; the data are on different grids (even after "
+                        "reorienting to canonical RAS+).\n"
+                        f"  image affine (RAS+):\n{func_img.affine}\n"
+                        f"  mask affine (RAS+):\n{mask_affine}"
                     )
                 if func_img.shape[3] != n_timepoints:
                     raise ValueError(
