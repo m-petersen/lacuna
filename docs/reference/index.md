@@ -22,5 +22,6 @@ examples:
 The command-line interface is built on a Python API (`SubjectData`, `Pipeline`,
 `analyze`, `batch_process`, the analysis classes, and the asset registries) that
 Lacuna uses under the hood. The tutorials and how-to guides drive Lacuna through
-the CLI, not this API. If you want to call Lacuna programmatically, run
-`help(...)` on any object for its docstring.
+the CLI, not this API. If you want to call Lacuna programmatically, see the
+[**API reference**](api/), generated from the source docstrings, or run
+`help(...)` on any object for the same information at the interpreter.
