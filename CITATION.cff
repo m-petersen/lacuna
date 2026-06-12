@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Lacuna: reproducible brain lesion network mapping"
+title: "Lacuna: reproducible brain lesion analysis"
 message: "If you use this software, please cite it using these metadata."
 type: software
 authors:
@@ -14,11 +14,12 @@ authors:
 repository-code: "https://github.com/m-petersen/lacuna"
 url: "https://lacuna-py.readthedocs.io"
 abstract: >-
-  Lacuna is a scientific Python package and BIDS-App for reproducible brain
-  lesion network mapping. It implements functional and structural network
-  mapping, accelerated functional network mapping, focal damage, and parcel
-  aggregation analyses on standardized MNI reference spaces, fetching the
-  required normative connectomes, templates, and atlases on demand.
+  Lacuna is a scientific Python package and BIDS-App for reproducible analysis
+  of brain lesions. It quantifies the impact of focal lesions on brain networks
+  and regions — including functional and structural lesion network mapping,
+  accelerated functional network mapping, focal damage scoring, and parcel-wise
+  aggregation — on standardized MNI reference spaces, fetching the required
+  normative connectomes, templates, and atlases on demand.
 license: MIT
 version: 0.1.0
 date-released: "2026-06-10"
@@ -28,6 +29,6 @@ keywords:
   - lesion network mapping
   - brain mapping
   - BIDS
-# TODO: once a preprint or paper is available, add a `preferred-citation`
+# TODO: once a preprint is available, add a `preferred-citation`
 # block here so `cff` tooling points users at the article rather than the
 # software entry.

@@ -424,6 +424,8 @@ def _handle_info_command(args: Namespace) -> int:
         return _show_atlases_info()
     elif topic == "connectomes":
         return _show_connectomes_info()
+    elif topic == "licenses":
+        return _show_licenses_info()
 
     return EXIT_SUCCESS
 
@@ -526,6 +528,57 @@ def _show_connectomes_info() -> int:
                 print(f"               {line}")
     print()
 
+    return EXIT_SUCCESS
+
+
+def _show_licenses_info() -> int:
+    """Display licenses of the datasets Lacuna bundles or downloads.
+
+    The Lacuna source code is MIT-licensed, but the templates, atlases, and
+    connectomes it operates on carry their own terms — some non-commercial.
+    This mirrors the repository NOTICE file, which holds the full text.
+    """
+    print("\nDataset Licenses")
+    print("=" * 70)
+    print(
+        "\nLacuna's source code is MIT-licensed, but the datasets it downloads are\n"
+        "NOT. Each carries its own license, listed below. Review these before any\n"
+        "commercial use — the MIT code license does not grant rights to the data."
+    )
+
+    print("\n" + "-" * 70)
+    print("Reference templates")
+    print("-" * 70)
+    print(
+        "  MNI152NLin6Asym       FSL/FMRIB license — NON-COMMERCIAL use only.\n"
+        "                        Commercial use needs a separate FSL license.\n"
+        "  MNI152NLin2009cAsym   MNI/ICBM license — permissive (attribution).\n"
+        "  6Asym<->2009c warps   TemplateFlow-generated; the FSL non-commercial\n"
+        "                        and MNI notices both apply."
+    )
+
+    print("\n" + "-" * 70)
+    print("Parcellations / atlases")
+    print("-" * 70)
+    print(
+        "  Schaefer 2018         MIT license (attribution).\n"
+        "  Tian 2020 (Melbourne) Permissive; cite Tian et al. (2020)."
+    )
+
+    print("\n" + "-" * 70)
+    print("Connectomes (via 'lacuna fetch')")
+    print("-" * 70)
+    print(
+        "  gsp1000               See dataset terms on Harvard Dataverse.\n"
+        "  dtor985 (+subsamples) CC0 1.0 (public domain dedication).\n"
+        "  hcp1065               WU-Minn HCP Open Access Data Use Terms (clause 4)."
+    )
+
+    print("\n" + "=" * 70)
+    print(
+        "Full details and citations: see the NOTICE file in the Lacuna repository\n"
+        "(https://github.com/m-petersen/lacuna/blob/main/NOTICE).\n"
+    )
     return EXIT_SUCCESS
 
 

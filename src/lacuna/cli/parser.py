@@ -841,17 +841,19 @@ def _build_info_parser(subparsers) -> None:
             "Display detailed information about available resources.\n\n"
             "Topics:\n"
             "  atlases     - Available brain parcellations (atlases)\n"
-            "  connectomes - Registered connectomes (functional and structural)\n\n"
+            "  connectomes - Registered connectomes (functional and structural)\n"
+            "  licenses    - Licenses of the bundled and downloaded datasets\n\n"
             "Examples:\n"
             "  lacuna info atlases\n"
-            "  lacuna info connectomes"
+            "  lacuna info connectomes\n"
+            "  lacuna info licenses"
         ),
         formatter_class=RawDescriptionHelpFormatter,
     )
 
     info_parser.add_argument(
         "topic",
-        choices=["atlases", "connectomes"],
+        choices=["atlases", "connectomes", "licenses"],
         help="Topic to display information about",
     )
 
