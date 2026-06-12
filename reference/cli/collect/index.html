@@ -53,8 +53,6 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
-    
       <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -479,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/getting-started/" class="md-nav__link">
+      <a href="../../../tutorials/01-getting-started/" class="md-nav__link">
         
   
   
@@ -507,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/functional-network-mapping/" class="md-nav__link">
+      <a href="../../../tutorials/02-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -535,35 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/structural-network-mapping/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Structural lesion network mapping
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../tutorials/accelerated-functional-network-mapping/" class="md-nav__link">
+      <a href="../../../tutorials/03-accelerated-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -591,7 +561,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/focal-damage/" class="md-nav__link">
+      <a href="../../../tutorials/04-structural-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structural lesion network mapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/05-focal-damage/" class="md-nav__link">
         
   
   
@@ -982,8 +980,6 @@
       
         
       
-        
-      
     
     
     
@@ -1334,10 +1330,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#required-arguments" class="md-nav__link">
+  <a href="#required-argument" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Required arguments
+        Required argument
       
     </span>
   </a>
@@ -1376,17 +1372,6 @@
     <span class="md-ellipsis">
       
         Examples
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
       
     </span>
   </a>
@@ -1494,86 +1479,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../api/lacuna/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    API Reference
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1642,10 +1547,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#required-arguments" class="md-nav__link">
+  <a href="#required-argument" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Required arguments
+        Required argument
       
     </span>
   </a>
@@ -1690,17 +1595,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1724,12 +1618,14 @@
 <h1 id="collect-command">Collect command<a class="headerlink" href="#collect-command" title="Permanent link">&para;</a></h1>
 <p>The <code>lacuna collect</code> command aggregates subject-level parcelstats into group-level tables.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna collect &lt;bids_dir&gt; &lt;output_dir&gt; [options]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna collect &lt;derivatives_dir&gt; [options]
 </span></code></pre></div>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>Scans the output directory for <code>*_parcelstats.tsv</code> files and combines them into group-level TSV files. Run this after participant-level analyses to create summary tables across subjects.</p>
+<p>Scans a derivatives directory (the output directory of a <code>lacuna run</code>) for
+<code>*_parcelstats.tsv</code> files and combines them into group-level TSV files. Run this
+after participant-level analyses to create summary tables across subjects.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
-<h3 id="required-arguments">Required arguments<a class="headerlink" href="#required-arguments" title="Permanent link">&para;</a></h3>
+<h3 id="required-argument">Required argument<a class="headerlink" href="#required-argument" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -1739,12 +1635,8 @@
 </thead>
 <tbody>
 <tr>
-<td><code>bids_dir</code></td>
-<td>Root folder of BIDS dataset (for metadata)</td>
-</tr>
-<tr>
-<td><code>output_dir</code></td>
-<td>Output directory containing derivatives to aggregate</td>
+<td><code>derivatives_dir</code></td>
+<td>Directory of per-subject derivatives to aggregate (a <code>lacuna run</code> output dir)</td>
 </tr>
 </tbody>
 </table>
@@ -1759,7 +1651,7 @@
 <tbody>
 <tr>
 <td><code>--pattern GLOB</code></td>
-<td>Glob pattern to filter parcelstats files (e.g., <code>*acuteinfarct*</code>, <code>*lesion*</code>)</td>
+<td>Glob pattern to filter parcelstats files (e.g., <code>*acuteinfarct*</code>, <code>*schaefer2018*</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -1773,6 +1665,10 @@
 </thead>
 <tbody>
 <tr>
+<td><code>--output-dir DIR</code></td>
+<td>Where to write the group-level tables (default: the derivatives directory)</td>
+</tr>
+<tr>
 <td><code>--overwrite</code></td>
 <td>Overwrite existing group files</td>
 </tr>
@@ -1783,19 +1679,15 @@
 </tbody>
 </table>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Aggregate all results</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/bids<span class="w"> </span>/output
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Aggregate all results in place</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/output
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Filter by pattern</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--pattern<span class="w"> </span><span class="s1">&#39;*acuteinfarct*&#39;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Write group tables elsewhere, filtering by pattern</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/output<span class="w"> </span>--output-dir<span class="w"> </span>/group<span class="w"> </span>--pattern<span class="w"> </span><span class="s1">&#39;*schaefer2018*&#39;</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Overwrite existing group files</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span>--overwrite
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>lacuna<span class="w"> </span>collect<span class="w"> </span>/output<span class="w"> </span>--overwrite
 </span></code></pre></div>
-<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../../how-to/">How-to Guides</a></li>
-</ul>
 
 
 

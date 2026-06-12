@@ -53,8 +53,6 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
-    
       <link rel="stylesheet" href="../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -479,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/getting-started/" class="md-nav__link">
+      <a href="../../tutorials/01-getting-started/" class="md-nav__link">
         
   
   
@@ -507,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/functional-network-mapping/" class="md-nav__link">
+      <a href="../../tutorials/02-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -535,35 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/structural-network-mapping/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Structural lesion network mapping
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/accelerated-functional-network-mapping/" class="md-nav__link">
+      <a href="../../tutorials/03-accelerated-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -591,7 +561,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/focal-damage/" class="md-nav__link">
+      <a href="../../tutorials/04-structural-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structural lesion network mapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/05-focal-damage/" class="md-nav__link">
         
   
   
@@ -1141,8 +1139,6 @@
       
         
       
-        
-      
     
     
     
@@ -1508,83 +1504,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/lacuna/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    API Reference
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1782,8 +1701,6 @@
 </tbody>
 </table>
 <h3 id="disk-space-for-normative-connectomes">Disk space for normative connectomes<a class="headerlink" href="#disk-space-for-normative-connectomes" title="Permanent link">&para;</a></h3>
-<p>Network mapping downloads large normative datasets on demand. Plan storage
-accordingly:</p>
 <table>
 <thead>
 <tr>
@@ -1794,29 +1711,38 @@ accordingly:</p>
 </thead>
 <tbody>
 <tr>
+<td>GSP1000</td>
+<td>Functional network mapping</td>
+<td>~200 GB</td>
+</tr>
+<tr>
 <td>HCP1065</td>
 <td>Structural network mapping</td>
 <td>~1.5 GB</td>
 </tr>
 <tr>
-<td>dTOR985</td>
+<td>dTOR985 full</td>
 <td>Structural network mapping</td>
 <td>~11 GB</td>
 </tr>
 <tr>
-<td>GSP1000</td>
-<td>Functional network mapping</td>
-<td>~200 GB</td>
+<td>dTOR985 10%</td>
+<td>Structural network mapping</td>
+<td>~1 GB</td>
+</tr>
+<tr>
+<td>dTOR985 25%</td>
+<td>Structural network mapping</td>
+<td>~3 GB</td>
 </tr>
 </tbody>
 </table>
-<p>Focal damage uses bundled atlases and downloads nothing.</p>
 <h2 id="frequently-asked-questions">Frequently asked questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h2>
 <h3 id="my-lesion-masks-arent-in-mni-space-what-do-i-do">My lesion masks aren't in MNI space. What do I do?<a class="headerlink" href="#my-lesion-masks-arent-in-mni-space-what-do-i-do" title="Permanent link">&para;</a></h3>
 <p>Lacuna requires masks in <code>MNI152NLin6Asym</code> or <code>MNI152NLin2009cAsym</code>. If yours are
 in native space, register them first — see the
 <a href="../../how-to/spatial-normalization/">spatial normalization guide</a>. Lacuna
-handles alignment <em>between</em> supported MNI spaces automatically, but it will not
+handles alignment between supported MNI spaces automatically, but it will not
 guess the space of a mask that carries no spatial information.</p>
 <h3 id="do-i-need-to-download-a-connectome-to-try-lacuna">Do I need to download a connectome to try Lacuna?<a class="headerlink" href="#do-i-need-to-download-a-connectome-to-try-lacuna" title="Permanent link">&para;</a></h3>
 <p>No. Run <strong>focal damage</strong> first — it uses the bundled atlases and needs no
@@ -1825,10 +1751,11 @@ to experiment with.</p>
 <h3 id="does-fetching-a-connectome-require-an-account-or-api-key">Does fetching a connectome require an account or API key?<a class="headerlink" href="#does-fetching-a-connectome-require-an-account-or-api-key" title="Permanent link">&para;</a></h3>
 <p>It depends on the source:</p>
 <ul>
-<li><strong>HCP1065</strong> (structural) — no key required.</li>
-<li><strong>dTOR985</strong> (structural) — a Figshare API key is optional but improves
-  reliability.</li>
 <li><strong>GSP1000</strong> (functional) — requires a free Harvard Dataverse API key.</li>
+<li><strong>HCP1065</strong> (structural) — no key required.</li>
+<li><strong>dTOR985 full</strong> (structural) — requires a Figshare API key.</li>
+<li><strong>dTOR985 10%</strong> (structural) — no key required.</li>
+<li><strong>dTOR985 25%</strong> (structural) — no key required.</li>
 </ul>
 <p>Provide keys via the <code>--api-key</code> flag, an environment variable
 (<code>DATAVERSE_API_KEY</code> / <code>FIGSHARE_API_KEY</code>), or <code>~/.config/lacuna/config.yaml</code>.
@@ -1841,7 +1768,7 @@ subjects and a parcel-resolution result is sufficient.</p>
 <h3 id="how-do-i-process-a-whole-cohort">How do I process a whole cohort?<a class="headerlink" href="#how-do-i-process-a-whole-cohort" title="Permanent link">&para;</a></h3>
 <p>Point <code>lacuna run</code> at a BIDS dataset root rather than a single mask, or use
 <code>batch_process</code> from the Python API. See the
-<a href="../../tutorials/getting-started/">getting started tutorial</a>.</p>
+<a href="../../tutorials/01-getting-started/">getting started tutorial</a>.</p>
 <h3 id="how-do-i-cite-lacuna">How do I cite Lacuna?<a class="headerlink" href="#how-do-i-cite-lacuna" title="Permanent link">&para;</a></h3>
 <p>See <a href="https://github.com/m-petersen/lacuna/blob/main/CITATION.cff"><code>CITATION.cff</code></a>
 in the repository.</p>

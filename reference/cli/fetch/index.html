@@ -53,8 +53,6 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
-    
       <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -479,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/getting-started/" class="md-nav__link">
+      <a href="../../../tutorials/01-getting-started/" class="md-nav__link">
         
   
   
@@ -507,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/functional-network-mapping/" class="md-nav__link">
+      <a href="../../../tutorials/02-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -535,35 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/structural-network-mapping/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Structural lesion network mapping
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../tutorials/accelerated-functional-network-mapping/" class="md-nav__link">
+      <a href="../../../tutorials/03-accelerated-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -591,7 +561,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/focal-damage/" class="md-nav__link">
+      <a href="../../../tutorials/04-structural-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structural lesion network mapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/05-focal-damage/" class="md-nav__link">
         
   
   
@@ -979,8 +977,6 @@
   
     
     
-      
-        
       
         
       
@@ -1514,28 +1510,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#exit-codes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exit Codes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1683,86 +1657,6 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../api/lacuna/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    API Reference
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
               
             
           </ul>
@@ -2077,28 +1971,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#exit-codes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Exit Codes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2330,58 +2202,25 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FIGSHARE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-token-here&quot;</span>
 </span></code></pre></div>
 <h2 id="cache-location">Cache Location<a class="headerlink" href="#cache-location" title="Permanent link">&para;</a></h2>
-<p>Downloaded and processed files are stored in:</p>
+<p>Downloaded and processed files are stored under <code>~/.cache/lacuna/connectomes/</code>. The
+functional GSP1000 is converted into chunked HDF5 files under a <code>processed/</code>
+subdirectory; the structural tractograms are stored as <code>.tck</code> files. For example:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>~/.cache/lacuna/connectomes/
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>├── gsp1000/
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>│   ├── GSP1000_batch_0.h5
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>│   ├── GSP1000_batch_1.h5
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>│   └── ...
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>└── dtor985/
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    └── dtor985.tck
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>│   └── processed/
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>│       ├── gsp1000_chunk_000.h5
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>│       ├── gsp1000_chunk_001.h5
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>│       └── ...
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>└── hcp1065/
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    └── hcp1065.tck
 </span></code></pre></div>
-<p>Override the base cache directory with the <code>LACUNA_CACHE</code> environment variable:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LACUNA_CACHE</span><span class="o">=</span>/path/to/custom/cache
+<p>When running an analysis, point <code>--connectome-path</code> at the directory that contains
+the <code>.h5</code> files (e.g. <code>~/.cache/lacuna/connectomes/gsp1000/processed/</code>) or at a
+<code>.tck</code> file directly.</p>
+<p>Override the base cache directory with the <code>LACUNA_CACHE_DIR</code> environment variable:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">LACUNA_CACHE_DIR</span><span class="o">=</span>/path/to/custom/cache
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>lacuna<span class="w"> </span>fetch<span class="w"> </span>gsp1000<span class="w"> </span>--api-key<span class="w"> </span>YOUR_KEY
 </span></code></pre></div>
-<h2 id="exit-codes">Exit Codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Code</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0</td>
-<td>Success</td>
-</tr>
-<tr>
-<td>1</td>
-<td>General error</td>
-</tr>
-<tr>
-<td>2</td>
-<td>Invalid arguments</td>
-</tr>
-<tr>
-<td>3</td>
-<td>Network error</td>
-</tr>
-<tr>
-<td>4</td>
-<td>Verification failed</td>
-</tr>
-<tr>
-<td>5</td>
-<td>Disk space insufficient</td>
-</tr>
-</tbody>
-</table>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../../how-to/docker/">Docker Guide</a></li>
-</ul>
 
 
 

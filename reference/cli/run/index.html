@@ -53,8 +53,6 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
-    
       <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -479,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/getting-started/" class="md-nav__link">
+      <a href="../../../tutorials/01-getting-started/" class="md-nav__link">
         
   
   
@@ -507,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/functional-network-mapping/" class="md-nav__link">
+      <a href="../../../tutorials/02-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -535,35 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/structural-network-mapping/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Structural lesion network mapping
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../tutorials/accelerated-functional-network-mapping/" class="md-nav__link">
+      <a href="../../../tutorials/03-accelerated-functional-network-mapping/" class="md-nav__link">
         
   
   
@@ -591,7 +561,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/focal-damage/" class="md-nav__link">
+      <a href="../../../tutorials/04-structural-network-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structural lesion network mapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/05-focal-damage/" class="md-nav__link">
         
   
   
@@ -979,8 +977,6 @@
   
     
     
-      
-        
       
         
       
@@ -1711,86 +1707,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../api/lacuna/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    API Reference
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -2270,7 +2186,7 @@
 </tr>
 <tr>
 <td><code>-w PATH</code>, <code>--tmp-dir PATH</code></td>
-<td>Temporary directory for intermediate files (default: <code>$LACUNA_TMP_DIR</code> or <code>./tmp</code>)</td>
+<td>Temporary directory for intermediate files (<strong>SNM only</strong>; default: <code>$LACUNA_TMP_DIR</code> or <code>./tmp</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -2286,6 +2202,10 @@
 <tr>
 <td><code>--overwrite</code></td>
 <td>Overwrite existing output files</td>
+</tr>
+<tr>
+<td><code>--on-empty {warn,skip,error}</code></td>
+<td>Handle empty / no-overlap masks: <code>warn</code> (default, zero-valued outputs), <code>skip</code>, or <code>error</code></td>
 </tr>
 <tr>
 <td><code>--keep-intermediate</code></td>
@@ -2408,7 +2328,7 @@
 <h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Basic functional network mapping</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>lacuna<span class="w"> </span>run<span class="w"> </span>fnm<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--connectome-path<span class="w"> </span>~/.cache/lacuna/connectomes/gsp1000/
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--connectome-path<span class="w"> </span>~/.cache/lacuna/connectomes/gsp1000/processed/
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># With PINI method and atlas aggregation</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>lacuna<span class="w"> </span>run<span class="w"> </span>fnm<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
@@ -2485,8 +2405,8 @@
 <td><strong>(required)</strong> Path to <code>.tck</code> tractogram file (from <code>lacuna fetch dtor985</code>)</td>
 </tr>
 <tr>
-<td><code>--parcel-atlas NAME</code></td>
-<td>Atlas for connectivity matrices. Use <code>lacuna info atlases</code> to list.</td>
+<td><code>--parcel-atlases NAME [...]</code></td>
+<td>Atlas(es) for disconnectivity/ROI outputs. Use <code>lacuna info atlases</code> to list.</td>
 </tr>
 <tr>
 <td><code>--custom-parcellation NAME NIFTI LABELS SPACE</code></td>
@@ -2526,7 +2446,7 @@
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># With ROI disconnection and 4 threads</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>lacuna<span class="w"> </span>run<span class="w"> </span>snm<span class="w"> </span>/bids<span class="w"> </span>/output<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span>--connectome-path<span class="w"> </span>/data/dtor985.tck<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span>--parcel-atlas<span class="w"> </span>schaefer2018parcels100networks7<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span>--parcel-atlases<span class="w"> </span>schaefer2018parcels100networks7<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span>--compute-roi-disconnection<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span>--nprocs<span class="w"> </span><span class="m">4</span>
 </span></code></pre></div>
@@ -2574,10 +2494,6 @@
 <tr>
 <td><code>LACUNA_TMP_DIR</code></td>
 <td>Custom temporary directory (default: <code>./tmp</code>)</td>
-</tr>
-<tr>
-<td><code>TEMPLATEFLOW_HOME</code></td>
-<td>TemplateFlow cache directory</td>
 </tr>
 </tbody>
 </table>
