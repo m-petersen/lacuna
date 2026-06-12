@@ -16,7 +16,7 @@ Lacuna is an open-source toolbox designed to facilitate this process. Using norm
 Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, and it takes care of the rest — fetching the normative reference data, aligning coordinate spaces, and writing BIDS-organized outputs through a command line interface. Developed for multicenter research, it standardizes inputs and outputs, scales from a single mask to entire cohorts with batch processing, supports deployment on high-performance computing (HPC) systems through containerized environments and records traceable provenance for every result, all within a modular architecture designed to grow toward further lesion-characterization methods.
 
 <p align="center">
-  <img src="docs/assets/method_figures/pipeline.svg" alt="Lacuna analysis pipeline" width="820">
+  <img src="docs/assets/method_figures/pipeline.png" alt="Lacuna analysis pipeline" width="820">
 </p>
 
 ## What Lacuna does
