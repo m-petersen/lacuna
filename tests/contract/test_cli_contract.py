@@ -206,7 +206,7 @@ class TestInfoSubcommandContract:
         )
         assert result.returncode == 0
 
-    @pytest.mark.parametrize("resource", ["atlases", "connectomes"])
+    @pytest.mark.parametrize("resource", ["atlases", "connectomes", "licenses"])
     def test_info_resource_commands_exist(self, resource):
         """Test that info subcommands for resources exist."""
         result = subprocess.run(
@@ -215,6 +215,18 @@ class TestInfoSubcommandContract:
             text=True,
         )
         assert result.returncode == 0
+
+    def test_info_licenses_surfaces_notice(self):
+        """'lacuna info licenses' prints the NOTICE, flagging non-commercial data."""
+        result = subprocess.run(
+            [sys.executable, "-m", "lacuna", "info", "licenses"],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        # The NOTICE must surface the non-commercial restriction on FSL data.
+        assert "NON-COMMERCIAL" in result.stdout
+        assert "MNI152NLin6Asym" in result.stdout
 
     def test_info_atlases_runs_successfully(self):
         """Test that 'lacuna info atlases' runs and shows output."""

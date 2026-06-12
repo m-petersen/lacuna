@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Lacuna: reproducible brain lesion analysis"
+title: "Lacuna: characterizing brain lesions through normative brain networks and atlases"
 message: "If you use this software, please cite it using these metadata."
 type: software
 authors:
@@ -14,12 +14,22 @@ authors:
 repository-code: "https://github.com/m-petersen/lacuna"
 url: "https://lacuna-py.readthedocs.io"
 abstract: >-
-  Lacuna is a scientific Python package and BIDS-App for reproducible analysis
-  of brain lesions. It quantifies the impact of focal lesions on brain networks
-  and regions — including functional and structural lesion network mapping,
-  accelerated functional network mapping, focal damage scoring, and parcel-wise
-  aggregation — on standardized MNI reference spaces, fetching the required
-  normative connectomes, templates, and atlases on demand.
+  Understanding the consequences of a focal brain injury — stroke, tumor, or
+  other lesion — requires placing it in the context of brain organization. 
+  Lacuna is an open-source toolbox designed to facilitate this process. Using 
+  normative reference data from healthy individuals, including functional and 
+  structural connectivity datasets and anatomical atlases, it generates a range 
+  of measures that characterize a lesion beyond its anatomical location alone.
+
+  Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, 
+  and it takes care of the rest — fetching the normative reference data, 
+  aligning coordinate spaces, and writing BIDS-organized outputs through a 
+  command line interface. Developed for multicenter research, it standardizes 
+  inputs and outputs, scales from a single mask to entire cohorts with batch 
+  processing, supports deployment on high-performance computing (HPC) systems 
+  through containerized environments and records traceable provenance for every 
+  result, all within a modular architecture designed to grow toward further 
+  lesion-characterization methods.
 license: MIT
 version: 0.1.0
 date-released: "2026-06-10"

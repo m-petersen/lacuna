@@ -531,53 +531,54 @@ def _show_connectomes_info() -> int:
     return EXIT_SUCCESS
 
 
+def _read_notice() -> str | None:
+    """Locate and read the NOTICE file (single source of truth for data licenses).
+
+    Looks first in the repository checkout (editable/source installs), then in
+    the installed distribution's license files (wheel installs). Returns None if
+    the NOTICE cannot be located.
+    """
+    from pathlib import Path
+
+    # Source checkout or editable install: repo-root NOTICE.
+    repo_notice = Path(__file__).resolve().parents[3] / "NOTICE"
+    if repo_notice.is_file():
+        return repo_notice.read_text(encoding="utf-8")
+
+    # Installed wheel: NOTICE is shipped via [tool.setuptools] license-files.
+    try:
+        from importlib.metadata import distribution
+
+        files = distribution("lacuna").files or []
+        for entry in files:
+            if entry.name == "NOTICE":
+                return entry.read_text(encoding="utf-8")
+    except Exception:
+        pass
+    return None
+
+
 def _show_licenses_info() -> int:
     """Display licenses of the datasets Lacuna bundles or downloads.
 
     The Lacuna source code is MIT-licensed, but the templates, atlases, and
     connectomes it operates on carry their own terms — some non-commercial.
-    This mirrors the repository NOTICE file, which holds the full text.
+    The text is read from the NOTICE file so the CLI and NOTICE never diverge.
     """
+    notice = _read_notice()
+    if notice is not None:
+        print("\n" + notice.rstrip() + "\n")
+        return EXIT_SUCCESS
+
+    # Fallback if the NOTICE file cannot be located in this install.
     print("\nDataset Licenses")
     print("=" * 70)
     print(
         "\nLacuna's source code is MIT-licensed, but the datasets it downloads are\n"
-        "NOT. Each carries its own license, listed below. Review these before any\n"
-        "commercial use — the MIT code license does not grant rights to the data."
-    )
-
-    print("\n" + "-" * 70)
-    print("Reference templates")
-    print("-" * 70)
-    print(
-        "  MNI152NLin6Asym       FSL/FMRIB license — NON-COMMERCIAL use only.\n"
-        "                        Commercial use needs a separate FSL license.\n"
-        "  MNI152NLin2009cAsym   MNI/ICBM license — permissive (attribution).\n"
-        "  6Asym<->2009c warps   TemplateFlow-generated; the FSL non-commercial\n"
-        "                        and MNI notices both apply."
-    )
-
-    print("\n" + "-" * 70)
-    print("Parcellations / atlases")
-    print("-" * 70)
-    print(
-        "  Schaefer 2018         MIT license (attribution).\n"
-        "  Tian 2020 (Melbourne) Permissive; cite Tian et al. (2020)."
-    )
-
-    print("\n" + "-" * 70)
-    print("Connectomes (via 'lacuna fetch')")
-    print("-" * 70)
-    print(
-        "  gsp1000               See dataset terms on Harvard Dataverse.\n"
-        "  dtor985 (+subsamples) CC0 1.0 (public domain dedication).\n"
-        "  hcp1065               WU-Minn HCP Open Access Data Use Terms (clause 4)."
-    )
-
-    print("\n" + "=" * 70)
-    print(
-        "Full details and citations: see the NOTICE file in the Lacuna repository\n"
-        "(https://github.com/m-petersen/lacuna/blob/main/NOTICE).\n"
+        "NOT — each carries its own license, and some (the FSL-derived\n"
+        "MNI152NLin6Asym template data) are restricted to non-commercial use.\n"
+        "\nThe NOTICE file could not be located in this installation. See it online:\n"
+        "https://github.com/m-petersen/lacuna/blob/main/NOTICE\n"
     )
     return EXIT_SUCCESS
 

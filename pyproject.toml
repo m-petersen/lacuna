@@ -70,6 +70,11 @@ Documentation = "https://lacuna-py.readthedocs.io"
 Repository = "https://github.com/m-petersen/lacuna"
 "Bug Tracker" = "https://github.com/m-petersen/lacuna/issues"
 
+[tool.setuptools]
+# Ship LICENSE and NOTICE inside the distribution so `lacuna info licenses`
+# can read the NOTICE at runtime (single source of truth for data licenses).
+license-files = ["LICENSE", "NOTICE"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
