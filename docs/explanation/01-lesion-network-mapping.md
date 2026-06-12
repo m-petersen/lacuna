@@ -27,8 +27,10 @@ The result is a whole-brain map of the functional network linked to the lesion.
 This functional variant is what the unqualified term *lesion network mapping* most
 often refers to in the literature.
 
-<p align="center"><img src="assets/method_figures/flnm_method.svg" alt="Functional network mapping method" style="width:100%; max-width:760px;"><br>
-  <em style="font-size: 0.9em; color: #666;">Functional network mapping procedure shown with exemplary lesion.</em></p>
+<figure markdown="span">
+  ![Functional network mapping method](../assets/method_figures/flnm_method.svg){ width="760" }
+  <figcaption>Functional network mapping procedure shown with exemplary lesion.</figcaption>
+</figure>
 
 For further reading, see [Fox et al., 2018](https://doi.org/10.1056/NEJMra1706158), [Boes et al., 2015](https://doi.org/10.1093/brain/awv228), and [Siddiqi et al. 2021](https://doi.org/10.1038/s41562-021-01161-1).
 
@@ -41,10 +43,12 @@ disconnection. SNM additionally requires [MRtrix3](https://www.mrtrix.org/). Thi
 structural variant is also known as *disconnectome mapping* or *disconnectivity
 mapping*.
 
-<p align="center"><img src="assets/method_figures/slnm_method.svg" alt="Structural network mapping method" style="width:100%; max-width:760px;"><br>
-  <em style="font-size: 0.9em; color: #666;">Functional network mapping procedure shown with exemplary lesion.</em></p>
+<figure markdown="span">
+  ![Structural network mapping method](../assets/method_figures/slnm_method.svg){ width="760" }
+  <figcaption>Structural network mapping procedure shown with exemplary lesion.</figcaption>
+</figure>
 
-For further reading, see [Thiebaut de Schotten et al., 2020](https:doi.org/10.1038/s41467-020-18920-9); [Salvalaggio et al., 2020](https:doi.org/10.1093/brain/awaa156) and [Talozzi et al., 2023](https://doi.org/10.1093/brain/awad013).
+For further reading, see [Thiebaut de Schotten et al., 2020](https://doi.org/10.1038/s41467-020-18920-9); [Salvalaggio et al., 2020](https://doi.org/10.1093/brain/awaa156) and [Talozzi et al., 2023](https://doi.org/10.1093/brain/awad013).
 
 ### Accelerated functional network mapping (AFNM)
 
