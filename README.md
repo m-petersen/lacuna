@@ -73,8 +73,6 @@ Documentation — tutorials, how-to guides, conceptual background, and API refer
 
 If you use Lacuna in your research, please cite it. A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add DOI / preprint reference once available -->
 
-Lacuna is developed following the [FAIR-BioRS guidelines](https://fair-biors.org/docs/guidelines) for research software; machine-readable metadata is also provided in [`codemeta.json`](codemeta.json).
-
 ## Contributing
 
 Bug reports, feature requests, and pull requests are welcome via the [issue tracker](https://github.com/m-petersen/lacuna/issues).
@@ -82,6 +80,8 @@ Bug reports, feature requests, and pull requests are welcome via the [issue trac
 ## Acknowledgements
 
 Lacuna is developed as part of the [Meta VCI Map Consortium](https://metavcimap.org/), an international collaboration advancing multicenter lesion analysis in vascular cognitive impairment.
+
+Lacuna is built following the [FAIR-BioRS guidelines](https://fair-biors.org/docs/guidelines).
 
 ## License
 

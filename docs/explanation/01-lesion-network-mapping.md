@@ -48,7 +48,7 @@ mapping*.
   <figcaption>Structural network mapping procedure shown with exemplary lesion.</figcaption>
 </figure>
 
-For further reading, see [Thiebaut de Schotten et al., 2020](https://doi.org/10.1038/s41467-020-18920-9); [Salvalaggio et al., 2020](https://doi.org/10.1093/brain/awaa156) and [Talozzi et al., 2023](https://doi.org/10.1093/brain/awad013).
+For further reading, see [Thiebaut de Schotten et al., 2020](https://doi.org/10.1038/s41467-020-18920-9), [Salvalaggio et al., 2020](https://doi.org/10.1093/brain/awaa156) and [Talozzi et al., 2023](https://doi.org/10.1093/brain/awad013).
 
 ### Accelerated functional network mapping (AFNM)
 
@@ -59,4 +59,4 @@ full voxel-resolution map for substantially lower compute and memory cost.
 Use it when you are processing many subjects and a parcel-resolution functional
 map is sufficient; use the standard FNM when you need voxel-level detail.
 
-For further reading see [van den Heuvel et al., 2026](https://doi.org/10.1038/s41593-025-02196-7).
+For further reading, see [van den Heuvel et al., 2026](https://doi.org/10.1038/s41593-025-02196-7).
