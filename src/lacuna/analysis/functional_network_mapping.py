@@ -442,8 +442,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # This is stored as an instance variable to be added to results at the end
         self._resampled_mask_img = resampled_mask_img
 
-        # Initialize accumulators for batch processing
-        all_z_maps = []
+        # Stream per-subject z-maps into running (mean, M2, n) moments rather
+        # than holding every connectome subject in memory (Chan's parallel
+        # variance, via _combine_moments). This caps memory at ~2 maps instead
+        # of (n_subjects x n_voxels).
+        run_mean = None  # running mean of z across connectome subjects
+        run_M2 = None  # running sum of squared deviations
         total_subjects = 0
 
         # Process each connectome batch sequentially
@@ -490,25 +494,30 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 batch_z_maps = np.arctanh(batch_r_maps)
                 batch_z_maps = np.nan_to_num(batch_z_maps, nan=0, posinf=10, neginf=-10)
 
-            # Accumulate
-            all_z_maps.append(batch_z_maps)
-            total_subjects += batch_timeseries.shape[0]
+            # Fold this batch's per-subject z-maps into the running moments.
+            batch_n = batch_z_maps.shape[0]
+            batch_mean = batch_z_maps.mean(axis=0)
+            batch_M2 = ((batch_z_maps - batch_mean) ** 2).sum(axis=0)
+            if run_mean is None:
+                run_mean, run_M2, total_subjects = batch_mean, batch_M2, batch_n
+            else:
+                run_mean, run_M2, total_subjects = _combine_moments(
+                    run_mean, run_M2, total_subjects, batch_mean, batch_M2, batch_n
+                )
 
             # Explicitly free memory
             del batch_timeseries, mask_ts, batch_r_maps, batch_z_maps
 
         self.logger.info(f"Aggregating results across {total_subjects} subjects...")
 
-        # Concatenate all z-maps
-        all_z_maps_array = np.vstack(all_z_maps)
-
-        # Aggregate across all subjects
-        mean_z_map = np.mean(all_z_maps_array, axis=0)
+        # Aggregate across all subjects from the streamed moments.
+        mean_z_map = run_mean
         mean_r_map = np.tanh(mean_z_map)
 
         # Compute t-statistics (always computed)
         self.logger.info("Computing t-statistics...")
-        std_z_map = np.std(all_z_maps_array, axis=0, ddof=1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            std_z_map = np.sqrt(run_M2 / (total_subjects - 1))  # sample std (ddof=1)
         with np.errstate(divide="ignore", invalid="ignore"):
             std_error_map_flat = std_z_map / np.sqrt(total_subjects)
             t_map_flat = np.zeros_like(mean_z_map)
@@ -560,7 +569,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 )
 
         # Free memory
-        del all_z_maps, all_z_maps_array
+        del run_mean, run_M2
 
         self.logger.info("Creating 3D output volumes...")
 

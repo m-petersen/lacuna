@@ -443,6 +443,28 @@ def _extract_space_from_filename(filename: str) -> str | None:
     return None
 
 
+def _bids_basename(
+    subject_id: str,
+    session_id: str | None = None,
+    label: str | None = None,
+    desc: str | None = None,
+) -> str:
+    """Assemble a BIDS-style base filename from its entities.
+
+    ``subject_id``/``session_id`` already include their ``sub-``/``ses-`` prefixes;
+    ``label`` is the bare value (rendered as ``label-<value>``); ``desc`` is the
+    pre-formatted remainder (e.g. ``method-fnm_space-..._desc-rmap_map``).
+    """
+    parts = [subject_id]
+    if session_id:
+        parts.append(session_id)
+    if label:
+        parts.append(f"label-{label}")
+    if desc:
+        parts.append(desc)
+    return "_".join(parts)
+
+
 def export_voxelmap(
     voxelmap: VoxelMap,
     output_dir: str | Path,
@@ -487,11 +509,7 @@ def export_voxelmap(
     # Build BIDS filename - desc already contains full formatted key with suffix
     # including space entity from BidsFilename
     space = voxelmap.space
-    label_part = f"_label-{label}" if label else ""
-    if session_id:
-        base_name = f"{subject_id}_{session_id}{label_part}_{desc}"
-    else:
-        base_name = f"{subject_id}{label_part}_{desc}"
+    base_name = _bids_basename(subject_id, session_id, label, desc)
 
     nifti_path = output_dir / f"{base_name}.nii.gz"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -558,11 +576,7 @@ def export_parcel_data(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build BIDS filename - desc already contains full formatted key with suffix
-    label_part = f"_label-{label}" if label else ""
-    if session_id:
-        base_name = f"{subject_id}_{session_id}{label_part}_{desc}"
-    else:
-        base_name = f"{subject_id}{label_part}_{desc}"
+    base_name = _bids_basename(subject_id, session_id, label, desc)
 
     tsv_path = output_dir / f"{base_name}.tsv"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -633,11 +647,7 @@ def export_connectivity_matrix(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build BIDS filename - desc already contains full formatted key with suffix
-    label_part = f"_label-{label}" if label else ""
-    if session_id:
-        base_name = f"{subject_id}_{session_id}{label_part}_{desc}"
-    else:
-        base_name = f"{subject_id}{label_part}_{desc}"
+    base_name = _bids_basename(subject_id, session_id, label, desc)
 
     tsv_path = output_dir / f"{base_name}.tsv"
     sidecar_path = output_dir / f"{base_name}.json"
@@ -847,10 +857,7 @@ def export_bids_derivatives(
     session_id = subject_data.metadata.get("session_id")
 
     # Determine base filename
-    if session_id:
-        base_name = f"{subject_id}_{session_id}"
-    else:
-        base_name = subject_id
+    base_name = _bids_basename(subject_id, session_id)
 
     # Create subject directory
     subject_dir = output_dir / subject_id

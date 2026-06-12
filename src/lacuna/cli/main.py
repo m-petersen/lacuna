@@ -922,6 +922,21 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
             return False  # If we can't read it, assume non-empty
 
 
+# The sentinel output glob (relative to the per-subject anat/ dir, minus the
+# leading label glob) that marks each analysis as having produced results.
+# Keyed by every accepted spelling of the analysis name.
+_ANALYSIS_OUTPUT_GLOBS = {
+    "fd": "method-fd*parcelstats.tsv",
+    "focaldamage": "method-fd*parcelstats.tsv",
+    "fnm": "method-fnm*desc-rmap*.nii.gz",
+    "functionalnetworkmapping": "method-fnm*desc-rmap*.nii.gz",
+    "snm": "method-snm*desc-disconnectionpct*.nii.gz",
+    "structuralnetworkmapping": "method-snm*desc-disconnectionpct*.nii.gz",
+    "afnm": "method-afnm*parcelstats.tsv",
+    "acceleratedfunctionalnetworkmapping": "method-afnm*parcelstats.tsv",
+}
+
+
 def _check_subject_complete(
     anat_dir: Path,
     analysis: str,
@@ -952,71 +967,36 @@ def _check_subject_complete(
         missing : list of descriptions of what was not found
     """
     norm = analysis.lower()
+    pattern = _ANALYSIS_OUTPUT_GLOBS.get(norm)
+    if pattern is None:
+        return "missing", [f"unknown analysis '{analysis}'"]
+
     label_glob = f"*label-{label}_*" if label else "*"
+    sentinel = f"{label_glob}{pattern}"
 
     if not anat_dir.exists():
-        if norm in ("fd", "focaldamage"):
-            sentinel = f"{label_glob}method-fd*parcelstats.tsv"
-        elif norm in ("fnm", "functionalnetworkmapping"):
-            sentinel = f"{label_glob}method-fnm*desc-rmap*.nii.gz"
-        elif norm in ("snm", "structuralnetworkmapping"):
-            sentinel = f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"
-        elif norm in ("afnm", "acceleratedfunctionalnetworkmapping"):
-            sentinel = f"{label_glob}method-afnm*parcelstats.tsv"
-        else:
-            sentinel = f"<unknown analysis '{analysis}'>"
         return "missing", [sentinel]
 
-    if norm in ("fd", "focaldamage"):
-        all_matches = list(anat_dir.glob(f"{label_glob}method-fd*parcelstats.tsv"))
-        if parcel_atlases:
-            missing = []
-            for atlas in parcel_atlases:
-                atlas_fragment = atlas.replace("_", "").lower()
-                hits = [f for f in all_matches if atlas_fragment in f.name.lower()]
-                if not hits:
-                    missing.append(atlas)
-            if missing:
-                return "missing", missing
-            # All atlases found -- check content if requested
-            if check_content and all(_is_output_empty(f, norm) for f in all_matches):
-                return "empty", []
-            return "complete", []
-        else:
-            if not all_matches:
-                return "missing", [f"{label_glob}method-fd*parcelstats.tsv"]
-            # Files exist -- check content if requested
-            if check_content and all(_is_output_empty(f, norm) for f in all_matches):
-                return "empty", []
-            return "complete", []
+    all_matches = list(anat_dir.glob(sentinel))
 
-    elif norm in ("fnm", "functionalnetworkmapping"):
-        hits = list(anat_dir.glob(f"{label_glob}method-fnm*desc-rmap*.nii.gz"))
-        if not hits:
-            return "missing", [f"{label_glob}method-fnm*desc-rmap*.nii.gz"]
-        # Files exist -- check content if requested
-        if check_content and all(_is_output_empty(f, norm) for f in hits):
+    # Focal damage can verify per-atlas completeness when specific atlases are named.
+    if norm in ("fd", "focaldamage") and parcel_atlases:
+        missing = [
+            atlas
+            for atlas in parcel_atlases
+            if not any(atlas.replace("_", "").lower() in f.name.lower() for f in all_matches)
+        ]
+        if missing:
+            return "missing", missing
+        if check_content and all(_is_output_empty(f, norm) for f in all_matches):
             return "empty", []
         return "complete", []
 
-    elif norm in ("snm", "structuralnetworkmapping"):
-        hits = list(anat_dir.glob(f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"))
-        if not hits:
-            return "missing", [f"{label_glob}method-snm*desc-disconnectionpct*.nii.gz"]
-        # Files exist -- check content if requested
-        if check_content and all(_is_output_empty(f, norm) for f in hits):
-            return "empty", []
-        return "complete", []
-
-    elif norm in ("afnm", "acceleratedfunctionalnetworkmapping"):
-        hits = list(anat_dir.glob(f"{label_glob}method-afnm*parcelstats.tsv"))
-        if not hits:
-            return "missing", [f"{label_glob}method-afnm*parcelstats.tsv"]
-        if check_content and all(_is_output_empty(f, norm) for f in hits):
-            return "empty", []
-        return "complete", []
-
-    return "missing", [f"unknown analysis '{analysis}'"]
+    if not all_matches:
+        return "missing", [sentinel]
+    if check_content and all(_is_output_empty(f, norm) for f in all_matches):
+        return "empty", []
+    return "complete", []
 
 
 def _discover_bids_subjects(
