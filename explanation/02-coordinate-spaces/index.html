@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
       <link rel="stylesheet" href="../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -320,6 +322,25 @@
     
   
   Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
 
       </a>
     </li>
@@ -1230,6 +1251,8 @@
       
         
       
+        
+      
     
     
     
@@ -1595,9 +1618,113 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/api/lacuna/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1826,7 +1953,7 @@
 <h2 id="what-is-a-coordinate-space">What is a coordinate space?<a class="headerlink" href="#what-is-a-coordinate-space" title="Permanent link">&para;</a></h2>
 <p>A coordinate space defines how 3D voxel indices (i, j, k) map to physical
 locations in the brain (x, y, z in millimeters).</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Voxel (45, 54, 45) → Physical coordinates (0, 0, 0) mm
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Voxel (45, 63, 36) → Physical coordinates (0, 0, 0) mm
 </span></code></pre></div>
 <p>This mapping is defined by the <strong>affine transformation matrix</strong> stored in the NIfTI header:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">nibabel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nib</span>
@@ -1846,7 +1973,7 @@ healthy subjects. For this comparison to be meaningful:</p>
 <li>Voxel grids must match</li>
 <li>Left-right, anterior-posterior must agree</li>
 </ol>
-<p>If spaces don't match, a lesion at voxel (45, 54, 45) in your mask would correspond
+<p>If spaces don't match, a lesion at voxel (45, 63, 36) in your mask would correspond
 to a different anatomical location in the connectome.</p>
 <h2 id="supported-mni-spaces">Supported MNI spaces<a class="headerlink" href="#supported-mni-spaces" title="Permanent link">&para;</a></h2>
 <p>The Montreal Neurological Institute (MNI) template is the standard space in neuroimaging. There are multiple MNI variants — Lacuna supports two as user input:</p>

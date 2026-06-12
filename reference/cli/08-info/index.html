@@ -16,6 +16,8 @@
         <link rel="prev" href="../07-collect/">
       
       
+        <link rel="next" href="../../api/lacuna/">
+      
       
         
       
@@ -50,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
       <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
@@ -318,6 +322,25 @@
     
   
   Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
 
       </a>
     </li>
@@ -1008,6 +1031,8 @@
       
         
       
+        
+      
     
     
     
@@ -1468,9 +1493,116 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lacuna/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1571,7 +1703,7 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lacuna info &lt;topic&gt;
 </span></code></pre></div>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>Displays detailed information about available resources such as brain parcellation atlases and registered connectomes.</p>
+<p>Displays detailed information about available resources such as brain parcellation atlases, registered connectomes, and the licenses of the datasets Lacuna downloads.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1584,17 +1716,21 @@
 <tbody>
 <tr>
 <td><code>topic</code></td>
-<td><code>atlases</code>, <code>connectomes</code></td>
+<td><code>atlases</code>, <code>connectomes</code>, <code>licenses</code></td>
 <td>Topic to display information about</td>
 </tr>
 </tbody>
 </table>
+<p>The <code>licenses</code> topic prints the project <code>NOTICE</code>, which lists every bundled and downloaded dataset together with its license and citation. Some datasets — notably the FSL-derived <code>MNI152NLin6Asym</code> template data — are restricted to non-commercial use; Lacuna's MIT code license does not grant rights to the data.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># List available brain parcellation atlases</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>lacuna<span class="w"> </span>info<span class="w"> </span>atlases
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># List registered connectomes</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>lacuna<span class="w"> </span>info<span class="w"> </span>connectomes
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Show the licenses of the bundled and downloaded datasets</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>lacuna<span class="w"> </span>info<span class="w"> </span>licenses
 </span></code></pre></div>
 
 

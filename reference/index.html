@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
       <link rel="stylesheet" href="../stylesheets/extra.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -320,6 +322,25 @@
     
   
   Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
 
       </a>
     </li>
@@ -1010,6 +1031,8 @@
       
         
       
+        
+      
     
     
     
@@ -1379,9 +1402,116 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="api/lacuna/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1471,11 +1601,12 @@ examples:</p>
 <li><code>lacuna info</code> — list available atlases and connectomes</li>
 </ul>
 <h2 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h2>
-<p>Lacuna also exposes a Python API (<code>SubjectData</code>, <code>analyze</code>, <code>batch_process</code>, the
-analysis classes, and the asset registries) used in the tutorials. Its usage is
-shown throughout the <a href="../tutorials/">tutorials</a> and
-<a href="../how-to/">how-to guides</a>; run <code>help(...)</code> on any object for its
-docstring.</p>
+<p>The command-line interface is built on a Python API (<code>SubjectData</code>, <code>Pipeline</code>,
+<code>analyze</code>, <code>batch_process</code>, the analysis classes, and the asset registries) that
+Lacuna uses under the hood. The tutorials and how-to guides drive Lacuna through
+the CLI, not this API. If you want to call Lacuna programmatically, see the
+<a href="api/"><strong>API reference</strong></a>, generated from the source docstrings, or run
+<code>help(...)</code> on any object for the same information at the interpreter.</p>
 
 
 
