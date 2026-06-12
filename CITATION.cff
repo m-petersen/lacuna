@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Lacuna: characterizing brain lesions through normative brain networks and atlases"
+title: "Lacuna: characterizing brain lesions through normative data"
 message: "If you use this software, please cite it using these metadata."
 type: software
 authors:
@@ -32,7 +32,7 @@ abstract: >-
   lesion-characterization methods.
 license: MIT
 version: 0.1.0
-date-released: "2026-06-10"
+date-released: "2026-06-12"
 keywords:
   - neuroimaging
   - lesion analysis

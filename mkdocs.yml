@@ -67,7 +67,12 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      # Allow docs pages to include repo-root files (e.g. CHANGELOG.md) so the
+      # changelog has a single source of truth. check_paths fails the build if
+      # an included path goes missing.
+      base_path: [".", "docs"]
+      check_paths: true
   - pymdownx.tabbed:
       alternate_style: true
   - toc:
