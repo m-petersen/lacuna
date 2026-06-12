@@ -1,4 +1,4 @@
-.PHONY: help setup test test-unit test-contract test-integration test-fast test-coverage lint format typecheck clean ci-native ci-act
+.PHONY: help setup test test-unit test-contract test-integration test-fast test-coverage lint format typecheck codemeta codemeta-check clean ci-native ci-act
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -43,6 +43,12 @@ format:  ## Format code (fast, native)
 
 typecheck:  ## Run type checking (fast, native)
 	mypy src --ignore-missing-imports
+
+codemeta:  ## Regenerate codemeta.json from CITATION.cff
+	python tools/gen_codemeta.py
+
+codemeta-check:  ## Verify codemeta.json is in sync with CITATION.cff
+	python tools/gen_codemeta.py --check
 
 clean:  ## Clean build artifacts and cache
 	@rm -rf build/ dist/ *.egg-info

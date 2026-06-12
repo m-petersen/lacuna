@@ -18,10 +18,13 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install ruff black mypy
+        run: pip install ruff black mypy pyyaml
 
       - name: Run linting
         run: make lint
+
+      - name: Check codemeta.json is in sync with CITATION.cff
+        run: make codemeta-check
 
       - name: Run type checking
         run: make typecheck
