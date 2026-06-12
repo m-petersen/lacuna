@@ -13,6 +13,10 @@ authors:
     affiliation: "University Medical Center Utrecht"
 repository-code: "https://github.com/m-petersen/lacuna"
 url: "https://lacuna-py.readthedocs.io"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.20668457
+    description: "Concept DOI — always resolves to the latest version."
 abstract: >-
   Understanding the consequences of a focal brain injury — stroke, tumor, or
   other lesion — requires placing it in the context of brain organization. 
