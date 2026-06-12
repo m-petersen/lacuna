@@ -72,7 +72,7 @@ Documentation including tutorials, how-to guides, and conceptual background is a
 
 ## Citation
 
-If you use Lacuna in your research, please cite it via [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add preprint reference once available -->
+If you use Lacuna in your research, please cite it via [![DOI](https://zenodo.org/badge/1093379161.svg)](https://doi.org/10.5281/zenodo.20668457). A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add preprint reference once available -->
 
 ## Contributing
 
