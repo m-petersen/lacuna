@@ -201,6 +201,16 @@ class RunConfig:
                     names = [names]
                 opts["parcellation_name"] = [self._validate_atlas_name(n) for n in names]
 
+        # AFNM needs a parcellation up front; catch it here for a clean message
+        # rather than letting the analysis constructor raise deep in the run.
+        if self.analysis in ("afnm", "acceleratedfunctionalnetworkmapping"):
+            opts = self.analysis_options
+            if not opts.get("parcel_names") and not opts.get("custom_parcellation"):
+                raise ValueError(
+                    "afnm requires a parcellation: pass --parcel-atlases <atlas> "
+                    "(or --custom-parcellation), together with --matrix-path."
+                )
+
         # Validate atlas names for RD and FNM (parcel_names list)
         if "parcel_names" in self.analysis_options:
             self.analysis_options["parcel_names"] = [
@@ -755,6 +765,13 @@ def _handle_check_input(args: Namespace) -> int:
     bids_pattern = _build_pattern(session_id, pattern)
     mask_files = _discover_mask_files(bids_dir, bids_pattern, participant_label)
 
+    # A glob encodes at most one session; apply multi-session selection here.
+    if session_id:
+        ses_tokens = {t for t in _normalize_session_set(session_id) if t.startswith("ses-")}
+        mask_files = [
+            f for f in mask_files if any(t in f.name.split("_") or t in f.parts for t in ses_tokens)
+        ]
+
     if not mask_files:
         print("No mask files found in BIDS dataset.", file=sys.stderr)
         return EXIT_BIDS_ERROR
@@ -884,7 +901,8 @@ def _is_output_empty(filepath: Path, analysis_type: str) -> bool:
 
     norm = analysis_type.lower()
 
-    if norm in ("fd", "focaldamage"):
+    # FocalDamage and AcceleratedFNM both write parcel-level TSVs.
+    if norm in ("fd", "focaldamage", "afnm", "acceleratedfunctionalnetworkmapping"):
         # Read TSV and check if all numeric columns are zero
         try:
             import pandas as pd
@@ -1086,6 +1104,11 @@ def _handle_check_command(args: Namespace) -> int:
 
     bids_pattern = _build_pattern(session_id, pattern)
     subject_metas = _discover_bids_subjects(bids_dir, bids_pattern, participant_label)
+
+    # A glob encodes at most one session; apply multi-session selection here.
+    if session_id:
+        normalized = _normalize_session_set(session_id)
+        subject_metas = [m for m in subject_metas if str(m.get("session_id") or "") in normalized]
 
     if not subject_metas:
         print("No subjects found in BIDS dataset.", file=sys.stderr)
@@ -1753,50 +1776,12 @@ def _build_pattern(
     return "".join(pattern_parts) if pattern_parts else "*"
 
 
-def _filter_by_participants(
-    subjects_list: list,
-    participant_labels: list[str],
-) -> list:
-    """Filter subjects list to only include specified participants.
-
-    Parameters
-    ----------
-    subjects_list : list
-        List of SubjectData objects.
-    participant_labels : list of str
-        Participant labels to keep (without 'sub-' prefix).
-
-    Returns
-    -------
-    list
-        Filtered list of SubjectData objects.
-    """
-    # Normalize labels: allow with or without 'sub-' prefix
-    normalized_labels = set()
-    for label in participant_labels:
-        if label.startswith("sub-"):
-            normalized_labels.add(label)
-            normalized_labels.add(label[4:])  # without prefix
-        else:
-            normalized_labels.add(label)
-            normalized_labels.add(f"sub-{label}")  # with prefix
-
-    filtered = []
-    for subject_data in subjects_list:
-        subject_id = subject_data.metadata.get("subject_id", "")
-        # Check if subject_id matches any label (with or without prefix)
-        if subject_id in normalized_labels:
-            filtered.append(subject_data)
-
-    return filtered
-
-
-def _filter_by_sessions(subjects_list: list, sessions: list[str]) -> list:
-    """Filter subjects to the requested sessions.
+def _normalize_session_set(sessions: list[str]) -> set[str]:
+    """Expand requested session labels to all acceptable match forms.
 
     A single glob pattern cannot express multiple sessions (ses-01 OR ses-02),
-    so multi-session selection is applied here on the loaded subjects' metadata.
-    Accepts session labels with or without the 'ses-' prefix.
+    so multi-session selection is applied in Python. Accepts labels with or
+    without the 'ses-' prefix and returns both forms for matching.
     """
     normalized: set[str] = set()
     for s in sessions:
@@ -1807,13 +1792,13 @@ def _filter_by_sessions(subjects_list: list, sessions: list[str]) -> list:
         else:
             normalized.add(s)
             normalized.add(f"ses-{s}")
+    return normalized
 
-    filtered = []
-    for subject_data in subjects_list:
-        session = str(subject_data.metadata.get("session_id", ""))
-        if session in normalized:
-            filtered.append(subject_data)
-    return filtered
+
+def _filter_by_sessions(subjects_list: list, sessions: list[str]) -> list:
+    """Filter loaded subjects to the requested sessions (multi-session safe)."""
+    normalized = _normalize_session_set(sessions)
+    return [sd for sd in subjects_list if str(sd.metadata.get("session_id", "")) in normalized]
 
 
 def _format_subject_id(subject_data) -> str:

@@ -862,3 +862,30 @@ class TestBatchModePValueMaps:
 
         finally:
             unregister_functional_connectome("test_batch_fdr_summary")
+
+
+def test_empty_mask_results_include_tmap(valid_connectome):
+    """Empty-mask FNM must emit rmap, zmap AND tmap.
+
+    Regression: `run fnm --parcel-atlases` injects a ParcelAggregation step
+    sourcing rmap/zmap/tmap. The empty-mask path previously omitted tmap, so an
+    empty mask made that step raise 'Source data not found' and the subject was
+    silently dropped instead of producing zero-valued outputs.
+    """
+    connectome_path, mask_shape, affine = valid_connectome
+    register_functional_connectome(
+        name="test_empty_tmap",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=connectome_path,
+        n_subjects=20,
+    )
+    try:
+        fnm = FunctionalNetworkMapping(connectome_name="test_empty_tmap", verbose=False)
+        fnm._mask_info = {"mask_shape": mask_shape, "mask_affine": affine}
+        results = fnm._build_empty_mask_results()
+        assert {"rmap", "zmap", "tmap"} <= set(results)
+        tmap_data = np.asanyarray(results["tmap"].data.dataobj)
+        assert not np.any(tmap_data)  # all-zero
+    finally:
+        unregister_functional_connectome("test_empty_tmap")

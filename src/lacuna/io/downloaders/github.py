@@ -190,6 +190,18 @@ class GithubReleaseDownloader(BaseDownloader):
                                     )
                                 )
 
+            # Detect a truncated/incomplete transfer (the server advertised a
+            # size but we received fewer bytes). No sha256 is published for this
+            # asset, so this length check is the available integrity guard.
+            if total_size > 0 and bytes_downloaded != total_size:
+                raise DownloadError(
+                    url=url,
+                    reason=(
+                        f"Incomplete download: got {bytes_downloaded} of "
+                        f"{total_size} bytes. The file may be truncated; retry."
+                    ),
+                )
+
             # Move to final location
             temp_file.rename(output_file)
 

@@ -829,7 +829,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
     def _build_empty_mask_results(self) -> dict[str, AnalysisResult]:
         """Build zero-valued results for an empty mask.
 
-        Returns the same structure as a normal analysis run (rmap, zmap,
+        Returns the same structure as a normal analysis run (rmap, zmap, tmap,
         summarystatistics) but with all-zero NIfTI maps.
         """
         # Use connectome mask info for output shape/affine
@@ -853,6 +853,17 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         results["zmap"] = VoxelMap(
             name="zmap",
+            data=nib.Nifti1Image(zero_vol.copy(), mask_affine),
+            space=self.output_space,
+            resolution=self.output_resolution,
+            metadata={"method": self.method, "empty_mask": True},
+        )
+
+        # A normal run always produces a t-map; emit a zero one here too so the
+        # output structure matches and downstream steps that consume FNM maps
+        # (e.g. an injected ParcelAggregation for --parcel-atlases) don't fail.
+        results["tmap"] = VoxelMap(
+            name="tmap",
             data=nib.Nifti1Image(zero_vol.copy(), mask_affine),
             space=self.output_space,
             resolution=self.output_resolution,

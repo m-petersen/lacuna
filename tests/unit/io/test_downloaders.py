@@ -295,13 +295,15 @@ class TestGithubReleaseDownloader:
         source = CONNECTOME_SOURCES["hcp1065"]
         downloader = GithubReleaseDownloader(source)
 
-        # Mock download response
+        # Mock download response. Content-Length must match the body length so
+        # the downloader's truncation guard accepts the (complete) transfer.
+        body = b"fake zip data"
         mock_response = MagicMock()
         mock_response.headers = {
-            "content-length": "1000",
+            "content-length": str(len(body)),
             "content-type": "application/zip",
         }
-        mock_response.iter_content.return_value = [b"fake zip data"]
+        mock_response.iter_content.return_value = [body]
 
         with patch.object(requests, "get", return_value=mock_response):
             files = downloader.download(tmp_path)
@@ -309,6 +311,25 @@ class TestGithubReleaseDownloader:
             assert len(files) == 1
             assert files[0].exists()
             assert files[0].name == "hcp1065_avg_tracts_trk.zip"
+
+    def test_github_download_detects_truncation(self, tmp_path):
+        """A short read (bytes received != Content-Length) must raise rather than
+        silently accept a truncated download (no sha256 is published for this asset)."""
+        import pytest
+        import requests
+
+        from lacuna.core.exceptions import DownloadError
+        from lacuna.io.downloaders import CONNECTOME_SOURCES
+        from lacuna.io.downloaders.github import GithubReleaseDownloader
+
+        downloader = GithubReleaseDownloader(CONNECTOME_SOURCES["hcp1065"])
+        mock_response = MagicMock()
+        mock_response.headers = {"content-length": "1000", "content-type": "application/zip"}
+        mock_response.iter_content.return_value = [b"short"]  # 5 bytes, not 1000
+
+        with patch.object(requests, "get", return_value=mock_response):
+            with pytest.raises(DownloadError, match="Incomplete download"):
+                downloader.download(tmp_path)
 
     def test_github_download_skips_existing(self, tmp_path):
         """GithubReleaseDownloader should skip already downloaded files."""

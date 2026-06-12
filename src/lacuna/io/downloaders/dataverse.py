@@ -22,6 +22,19 @@ if TYPE_CHECKING:
     pass
 
 
+def _make_hasher(checksum_type: str | None):
+    """Return a hashlib object for a Dataverse checksum type.
+
+    Dataverse reports the algorithm (e.g. 'MD5', 'SHA-1', 'SHA-256') per file;
+    older datasets use MD5, newer ones SHA-1/256. Fall back to MD5 if unknown.
+    """
+    name = (checksum_type or "md5").lower().replace("-", "")
+    try:
+        return hashlib.new(name)
+    except (ValueError, TypeError):
+        return hashlib.md5()
+
+
 class DataverseDownloader(BaseDownloader):
     """
     Downloader for Harvard Dataverse datasets.
@@ -124,6 +137,7 @@ class DataverseDownloader(BaseDownloader):
             file_id = file_info["id"]
             filename = file_info["filename"]
             checksum = file_info.get("checksum")
+            checksum_type = file_info.get("checksum_type", "md5")
             file_size = file_info.get("size", 0)
 
             output_file = output_path / filename
@@ -143,7 +157,9 @@ class DataverseDownloader(BaseDownloader):
 
             # Skip if already downloaded and checksum matches (unless skipping)
             if output_file.exists():
-                if skip_checksum or (checksum and self._verify_checksum(output_file, checksum)):
+                if skip_checksum or (
+                    checksum and self._verify_checksum(output_file, checksum, checksum_type)
+                ):
                     downloaded_files.append(output_file)
                     continue
 
@@ -152,6 +168,7 @@ class DataverseDownloader(BaseDownloader):
                 file_id=file_id,
                 output_file=output_file,
                 expected_checksum=None if skip_checksum else checksum,
+                checksum_type=checksum_type,
                 progress_callback=progress_callback,
                 file_index=i,
                 total_files=len(files_info),
@@ -231,6 +248,7 @@ class DataverseDownloader(BaseDownloader):
         file_id: int,
         output_file: Path,
         expected_checksum: str | None = None,
+        checksum_type: str = "md5",
         progress_callback: Callable[[FetchProgress], None] | None = None,
         file_index: int = 0,
         total_files: int = 1,
@@ -279,7 +297,7 @@ class DataverseDownloader(BaseDownloader):
             raise DownloadError(url=url, reason=str(e)) from e
 
         total_size = int(response.headers.get("content-length", 0))
-        hasher = hashlib.md5()
+        hasher = _make_hasher(checksum_type)
 
         # Use temp file for atomic write
         temp_file = output_file.with_suffix(output_file.suffix + ".tmp")
@@ -333,9 +351,9 @@ class DataverseDownloader(BaseDownloader):
                 temp_file.unlink()
             raise
 
-    def _verify_checksum(self, filepath: Path, expected: str) -> bool:
-        """Verify file MD5 checksum."""
-        hasher = hashlib.md5()
+    def _verify_checksum(self, filepath: Path, expected: str, checksum_type: str = "md5") -> bool:
+        """Verify a file against its reported checksum (MD5/SHA-1/SHA-256/...)."""
+        hasher = _make_hasher(checksum_type)
         with open(filepath, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
                 hasher.update(chunk)

@@ -1189,16 +1189,26 @@ class ParcelAggregation(BaseAnalysis):
             # Convert count to volume (mm³)
             region_values = region_values * voxel_volume_mm3
 
-        # Build results dict
-        # Note: region_values length might not match label_names if regions are lost during resampling
-        # We zip without strict=True and handle the mismatch
+        # Map values to labels. Normally region_values aligns 1:1 with the
+        # sorted atlas labels. If nilearn dropped an empty region during
+        # resampling (keep_masked_labels=False), the positional mapping would
+        # mis-assign every subsequent label — so recover the surviving labels,
+        # in output-column order, from the fitted masker instead.
+        surviving_labels = label_names
+        if len(region_values) != len(label_names):
+            region_names = getattr(masker, "region_names_", None)
+            if isinstance(region_names, dict):
+                surviving_labels = [region_names[k] for k in sorted(region_names)]
+            elif region_names is not None:
+                surviving_labels = list(region_names)
+            self.logger.warning(
+                f"{len(label_names) - len(region_values)} atlas region(s) were dropped "
+                "during resampling to the data grid; mapping values to surviving regions."
+            )
+
         results = {}
         for i, value in enumerate(region_values):
-            if i < len(label_names):
-                label_name = label_names[i]
-            else:
-                # Fallback if we get more regions than expected
-                label_name = f"Region{i}"
+            label_name = surviving_labels[i] if i < len(surviving_labels) else f"Region{i}"
             results[label_name] = float(value)
 
         return results
