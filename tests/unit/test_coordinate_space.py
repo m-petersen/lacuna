@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.unit
 def test_coordinate_space_creation():
     """T037: Test that CoordinateSpace can be created with required fields."""
     import numpy as np
@@ -26,7 +25,6 @@ def test_coordinate_space_creation():
     assert space.resolution == 2.0
 
 
-@pytest.mark.unit
 def test_coordinate_space_equality():
     """Test that CoordinateSpace objects with same values are considered equal."""
     import numpy as np
@@ -45,7 +43,6 @@ def test_coordinate_space_equality():
     assert space1.resolution == space2.resolution
 
 
-@pytest.mark.unit
 def test_coordinate_space_in_result_objects():
     """Test that result objects use consistent space representation."""
     import nibabel as nib
