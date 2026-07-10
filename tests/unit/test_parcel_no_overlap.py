@@ -42,9 +42,7 @@ def test_no_label_left_returns_zero_for_all_regions(monkeypatch):
     agg = ParcelAggregation(aggregation="percent")
     source_img, atlas_img, labels = _atlas_and_source()
 
-    result = agg._aggregate_3d_atlas(
-        source_img, atlas_img, labels, voxel_volume_mm3=8.0
-    )
+    result = agg._aggregate_3d_atlas(source_img, atlas_img, labels, voxel_volume_mm3=8.0)
 
     assert result == {"RegionA": 0.0, "RegionB": 0.0}
 
