@@ -1159,7 +1159,8 @@ class ParcelAggregation(BaseAnalysis):
             background_label=0,
             strategy=strategy,
             resampling_target="data",  # Resample atlas to match source data
-            standardize=False,  # Don't normalize for static maps
+            standardize=None,  # Don't normalize for static maps (None, not False:
+            # nilearn deprecates boolean `standardize` in 0.15)
             detrend=False,  # No detrending for static maps
             memory=None,  # No caching for now
             verbose=0,
@@ -1175,7 +1176,21 @@ class ParcelAggregation(BaseAnalysis):
             source_img_4d = source_img
 
         # Transform: returns (n_timepoints, n_regions) array
-        region_values = masker.fit_transform(source_img_4d)
+        try:
+            region_values = masker.fit_transform(source_img_4d)
+        except ValueError as exc:
+            # nilearn >= 0.14 raises "No label left after resampling the labels
+            # image" when the atlas, resampled to the data grid, retains no
+            # regions — i.e. the data grid overlaps none of the atlas regions.
+            # That is a valid degenerate case (every region has zero overlap),
+            # not an error, so report zero for all regions instead of crashing.
+            if "No label left after resampling" not in str(exc):
+                raise
+            self.logger.warning(
+                "No atlas region overlaps the data grid after resampling; "
+                "reporting zero for all regions."
+            )
+            return dict.fromkeys(label_names, 0.0)
 
         # Squeeze to get (n_regions,) for single timepoint
         if region_values.shape[0] == 1:
