@@ -204,7 +204,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
             procedure at the specified alpha level. Set to None to disable FDR correction.
             Requires compute_p_map=True.
         t_threshold : float, optional
-            If provided, create binary mask of voxels with |t| > threshold.
+            If provided, create binary mask of voxels with t > threshold
+            (positive t-values only).
         return_in_input_space : bool, default=True
             If True, transform VoxelMap outputs back to the original input mask space.
             If False, outputs remain in the connectome space (e.g., MNI152NLin6Asym).
@@ -598,8 +599,8 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Create thresholded binary map if threshold provided
         t_threshold_map_nifti = None
         if self.t_threshold is not None:
-            self.logger.info(f"Creating thresholded map (|t| > {self.t_threshold})")
-            t_threshold_mask = np.abs(t_map_flat) > self.t_threshold
+            self.logger.info(f"Creating thresholded map (t > {self.t_threshold})")
+            t_threshold_mask = t_map_flat > self.t_threshold
             n_significant = np.sum(t_threshold_mask)
             pct_significant = (n_significant / len(t_map_flat)) * 100
 
@@ -1701,7 +1702,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             # Create thresholded t-map if threshold provided
             if self.t_threshold is not None:
-                t_threshold_mask = np.abs(t_map_flat) > self.t_threshold
+                t_threshold_mask = t_map_flat > self.t_threshold
                 threshold_map_3d = np.zeros(mask_shape, dtype=np.uint8)
                 threshold_map_3d[mask_indices[0], mask_indices[1], mask_indices[2]] = (
                     t_threshold_mask.astype(np.uint8)
