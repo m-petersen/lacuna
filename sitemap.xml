@@ -2,398 +2,398 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://lacuna-py.readthedocs.io/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/SUMMARY/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/changelog/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/explanation/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/explanation/01-lesion-network-mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/explanation/02-coordinate-spaces/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/explanation/03-requirements-and-faq/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/how-to/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/how-to/01-spatial-normalization/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/how-to/02-custom-atlases/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/how-to/03-docker/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/how-to/04-apptainer/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/how-to/05-hpc/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/SUMMARY/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/accelerated_functional_network_mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/base/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/focal_damage/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/functional_network_mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/parcel_aggregation/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/registry/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/analysis/structural_network_mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/base/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/connectomes/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/connectomes/functional/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/connectomes/functional_io/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/connectomes/registry/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/connectomes/structural/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/masks/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/masks/loader/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/masks/registry/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/parcellations/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/parcellations/loader/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/parcellations/registry/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/templates/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/templates/loader/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/templates/registry/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/transforms/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/transforms/loader/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/assets/transforms/registry/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/batch/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/batch/api/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/batch/extract/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/batch/selection/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/batch/strategies/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/cli/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/cli/fetch_cmd/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/cli/main/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/cli/parser/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/cli/prepare/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/data_types/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/exceptions/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/keys/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/pipeline/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/provenance/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/spaces/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/subject_data/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/core/validation/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/data/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/data/tutorials/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/bids/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/bidsify/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/convert/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/export/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/fetch/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/downloaders/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/downloaders/base/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/downloaders/dataverse/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/downloaders/figshare/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/io/downloaders/github/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/prepare/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/prepare/parcellate/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/spatial/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/spatial/transform/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/utils/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/utils/cache/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/utils/logging/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/utils/mrtrix/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/api/lacuna/utils/suggestions/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/01-tutorial/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/02-bidsify/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/03-fetch/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/04-prepare/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/05-run/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/06-check/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/07-collect/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/reference/cli/08-info/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/tutorials/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/tutorials/01-getting-started/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/tutorials/02-functional-network-mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/tutorials/03-accelerated-functional-network-mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/tutorials/04-structural-network-mapping/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
     <url>
          <loc>https://lacuna-py.readthedocs.io/tutorials/05-focal-damage/</loc>
-         <lastmod>2026-07-10</lastmod>
+         <lastmod>2026-07-31</lastmod>
     </url>
 </urlset>
