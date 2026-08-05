@@ -38,6 +38,7 @@ from .subject_data import SubjectData
 from .validation import (
     check_spatial_match,
     ensure_ras_plus,
+    reorient_to_affine_orientation,
     validate_affine,
     validate_nifti_image,
 )
@@ -69,6 +70,7 @@ __all__ = [
     # Validation
     "validate_nifti_image",
     "ensure_ras_plus",
+    "reorient_to_affine_orientation",
     "check_spatial_match",
     "validate_affine",
     # Provenance

@@ -143,6 +143,74 @@ def test_streaming_variance_is_stable():
     assert np.max(np.abs(old_std - allz.std(axis=0, ddof=1))) > 1e-13
 
 
+def _independent_pearson(seed_st, brain_stv):
+    """Reference Pearson r per (subject, voxel), computed in float64 the obvious
+    way. seed_st: (S, T); brain_stv: (S, T, V) -> (S, V)."""
+    S, T, V = brain_stv.shape
+    out = np.empty((S, V), dtype=np.float64)
+    for s in range(S):
+        sd = seed_st[s].astype(np.float64)
+        sd = sd - sd.mean()
+        sd_ss = np.sqrt((sd**2).sum())
+        for v in range(V):
+            b = brain_stv[s, :, v].astype(np.float64)
+            b = b - b.mean()
+            den = sd_ss * np.sqrt((b**2).sum())
+            out[s, v] = (sd * b).sum() / den if den > 0 else 0.0
+    return out
+
+
+def _bare_fnm(tmp_path):
+    rng = np.random.default_rng(0)
+    _write_connectome(tmp_path / "c.h5", rng.standard_normal((3, 40, N_VOX)))
+    register_functional_connectome(
+        name="numref",
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=tmp_path / "c.h5",
+        n_subjects=3,
+        description="test",
+    )
+    return FunctionalNetworkMapping(connectome_name="numref", method="boes", verbose=False)
+
+
+def test_single_path_correlation_matches_independent_float64(tmp_path):
+    """The (now float32/BLAS) single-path correlation must match an independent
+    float64 Pearson reference — i.e. dropping dtype=float64 changed speed, not
+    the numbers."""
+    a = _bare_fnm(tmp_path)
+    try:
+        rng = np.random.default_rng(1)
+        S, T, V = 5, 80, 40
+        brain = rng.standard_normal((S, T, V)).astype(np.float32)
+        seed = rng.standard_normal((S, T)).astype(np.float32)
+
+        got = a._compute_correlation_maps_batch(seed, brain.copy())
+        ref = _independent_pearson(seed, brain)
+        np.testing.assert_allclose(got, ref, atol=1e-5)
+    finally:
+        unregister_functional_connectome("numref")
+
+
+def test_vectorized_correlation_matches_independent_float64(tmp_path):
+    """The (now matmul/in-place) vectorized correlation must match an independent
+    float64 Pearson reference for every mask."""
+    a = _bare_fnm(tmp_path)
+    try:
+        rng = np.random.default_rng(2)
+        S, T, V = 5, 80, 40
+        brain = rng.standard_normal((S, T, V)).astype(np.float32)
+        mask_batch = [{"voxel_indices": np.sort(rng.choice(V, 6, replace=False))} for _ in range(4)]
+
+        got = a._compute_batch_correlations_vectorized(mask_batch, brain.copy())  # (L,S,V)
+        for li, mi in enumerate(mask_batch):
+            seed = brain[:, :, mi["voxel_indices"]].mean(axis=2)  # (S,T)
+            ref = _independent_pearson(seed, brain)
+            np.testing.assert_allclose(got[li], ref, atol=1e-5, err_msg=f"mask {li}")
+    finally:
+        unregister_functional_connectome("numref")
+
+
 def test_undefined_correlation_maps_to_zero(tmp_path):
     """A zero-variance connectome voxel yields r=0 (undefined), not r=+/-1."""
     rng = np.random.default_rng(3)

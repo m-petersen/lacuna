@@ -489,11 +489,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             self.logger.debug("Applying Fisher z-transform", indent_level=1)
 
-            # Fisher z-transform (r=+/-1 -> +/-inf is expected and clamped below;
-            # guard the warning, matching the vectorized streaming path).
+            # Fisher z-transform in place (batch_r_maps is not reused after this;
+            # r=+/-1 -> +/-inf is expected and clamped below; guard the warning).
             with np.errstate(divide="ignore", invalid="ignore"):
-                batch_z_maps = np.arctanh(batch_r_maps)
-                batch_z_maps = np.nan_to_num(batch_z_maps, nan=0, posinf=10, neginf=-10)
+                batch_z_maps = np.arctanh(batch_r_maps, out=batch_r_maps)
+                batch_z_maps = np.nan_to_num(batch_z_maps, copy=False, nan=0, posinf=10, neginf=-10)
 
             # Fold this batch's per-subject z-maps into the running moments.
             batch_n = batch_z_maps.shape[0]
@@ -1058,8 +1058,16 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_img = mask_data.mask_img
         input_shape = mask_img.shape
 
-        # Check if resampling is needed
-        if input_shape != mask_shape:
+        # Resample unless the mask is already on the connectome's exact grid.
+        # Shape equality alone is NOT sufficient: a mask with the same shape but
+        # a different affine (e.g. a radiological input vs the RAS+ connectome)
+        # would be matched by raw voxel index and silently L/R-mirrored. Require
+        # the affines to match too, so world-coordinate alignment is guaranteed.
+        grids_match = input_shape == mask_shape and np.allclose(
+            mask_img.affine, mask_affine, atol=1e-4
+        )
+
+        if not grids_match:
             # Resample mask to connectome space
             from nilearn.image import resample_to_img
 
@@ -1113,23 +1121,26 @@ class FunctionalNetworkMapping(BaseAnalysis):
         np.ndarray
             Shape (n_subjects, n_voxels). Correlation values for each voxel.
         """
-        # Center timeseries
+        # Center timeseries. brain_ts_centered is a copy (not in-place): this
+        # method is also called directly with views of caller-owned arrays.
         brain_ts_centered = batch_timeseries - batch_timeseries.mean(axis=1, keepdims=True)
         lesion_ts_centered = lesion_timeseries - lesion_timeseries.mean(axis=1, keepdims=True)
 
-        # Compute covariance using einsum
-        # (n_subjects, n_timepoints) @ (n_subjects, n_timepoints, n_voxels)
+        # Compute covariance. NOTE: no dtype=float64 — forcing float64 accumulation
+        # on float32 inputs disables numpy's BLAS dispatch and drops einsum to a
+        # naive kernel (~40x slower here). float32 matches the vectorized batch
+        # path and is ample precision for correlations over a few hundred frames.
         cov = np.einsum(
             "it,itv->iv",
             lesion_ts_centered,
             brain_ts_centered,
-            dtype=np.float64,
             optimize="optimal",
         )
 
-        # Compute standard deviations
+        # Standard deviations. Use einsum for the brain sum-of-squares so we don't
+        # materialize a full (n_subjects, n_timepoints, n_voxels) squared copy.
         lesion_std = np.sqrt(np.sum(lesion_ts_centered**2, axis=1))
-        brain_std = np.sqrt(np.sum(brain_ts_centered**2, axis=1))
+        brain_std = np.sqrt(np.einsum("itv,itv->iv", brain_ts_centered, brain_ts_centered))
 
         # Compute correlation (cov / (std_lesion * std_brain))
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -1174,9 +1185,21 @@ class FunctionalNetworkMapping(BaseAnalysis):
         """
         self.logger.info(f"Vectorized batch processing: {len(mask_data_list)} masks")
 
-        # Validate all lesions first
+        # Prepare inputs exactly like the single-subject path (BaseAnalysis.run):
+        # canonicalize to RAS+ and transform to the connectome space. Without
+        # this, batch mode rejects (or mis-handles) any input not already in the
+        # connectome space, diverging from run(). Keep each caller's original
+        # affine so outputs are restored to the input orientation.
+        prepared_list = []
+        original_affines = []
         for mask_data in mask_data_list:
-            self._validate_inputs(mask_data)
+            prepared, original_affine = self._prepare_input(mask_data)
+            prepared_list.append(prepared)
+            original_affines.append(original_affine)
+
+        # Validate all lesions first (now in connectome space)
+        for prepared in prepared_list:
+            self._validate_inputs(prepared)
 
         # Load mask info once (shared across all batches)
         mask_indices, mask_affine, mask_shape = self._load_mask_info()
@@ -1193,9 +1216,9 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Track empty masks — they get zero-valued results without batch processing
         empty_mask_indices: dict[int, dict] = {}
-        for i, mask_data in enumerate(mask_data_list):
-            if mask_data.is_empty_mask:
-                subject_id = self._format_subject_id(mask_data)
+        for i, prepared in enumerate(prepared_list):
+            if prepared.is_empty_mask:
+                subject_id = self._format_subject_id(prepared)
                 self.logger.warning(
                     f"Empty mask for {subject_id} — will produce zero-valued network maps"
                 )
@@ -1203,12 +1226,12 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         mask_batch = []
 
-        for i, mask_data in enumerate(mask_data_list):
+        for i, prepared in enumerate(prepared_list):
             if i in empty_mask_indices:
                 continue
-            subject_id = self._format_subject_id(mask_data)
+            subject_id = self._format_subject_id(prepared)
 
-            voxel_indices, _ = self._get_mask_voxel_indices(mask_data)
+            voxel_indices, _ = self._get_mask_voxel_indices(prepared)
 
             if len(voxel_indices) == 0:
                 self.logger.warning(
@@ -1221,9 +1244,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
             mask_batch.append(
                 {
-                    "mask_data": mask_data,
+                    "mask_data": prepared,
                     "voxel_indices": voxel_indices,
                     "index": i,
+                    "original_affine": original_affines[i],
                 }
             )
 
@@ -1275,12 +1299,14 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 mask_batch, timeseries_data
             )  # (n_masks, n_subjects, n_voxels)
 
-            # Convert to Fisher z-scores and update running statistics
-            # This is the KEY optimization: we don't store full maps!
+            # Convert to Fisher z-scores in place (batch_r_maps is not reused
+            # after this) to avoid a second full (masks, subjects, voxels) copy.
             with np.errstate(divide="ignore", invalid="ignore"):
-                batch_z_maps = np.arctanh(batch_r_maps)
+                batch_z_maps = np.arctanh(batch_r_maps, out=batch_r_maps)
                 # Clamp matches the non-batch path (+/-10) so both modes agree.
-                batch_z_maps = np.nan_to_num(batch_z_maps, nan=0.0, posinf=10, neginf=-10)
+                batch_z_maps = np.nan_to_num(
+                    batch_z_maps, copy=False, nan=0.0, posinf=10, neginf=-10
+                )
 
             # Combine this batch's moments into the running moments using the
             # parallel (Chan et al.) form of Welford's algorithm — stable and
@@ -1362,6 +1388,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 mask_affine,
                 mask_shape,
                 total_subjects,
+                original_affine=mask_info["original_affine"],
             )
             return mask_info["index"], result
 
@@ -1453,26 +1480,29 @@ class FunctionalNetworkMapping(BaseAnalysis):
 
         # Stack into (n_masks, n_subjects, n_timepoints)
         mask_mean_ts_batch = np.stack(mask_mean_ts_list, axis=0)
-
-        # Center data
-        brain_ts_centered = timeseries_data - timeseries_data.mean(axis=1, keepdims=True)
         mask_ts_centered = mask_mean_ts_batch - mask_mean_ts_batch.mean(axis=2, keepdims=True)
 
-        # VECTORIZED CORRELATION: Process all masks at once!
-        # einsum: "lit,itv->liv"
-        #   l = masks, i = subjects, t = timepoints, v = voxels
-        # Use float32 for memory efficiency (sufficient precision for correlations)
-        cov = np.einsum(
-            "lit,itv->liv",
-            mask_ts_centered.astype(np.float32),
-            brain_ts_centered.astype(np.float32),
-            dtype=np.float32,
-            optimize="optimal",
-        )
+        # Center the brain timeseries IN PLACE. run_batch owns this array (a fresh
+        # hf["timeseries"][:]) and deletes it right after, so mutating it is safe
+        # and avoids a full (n_subjects, n_timepoints, n_voxels) copy. Seeds were
+        # already extracted above from the uncentered data.
+        timeseries_data -= timeseries_data.mean(axis=1, keepdims=True)
 
-        # Compute standard deviations
+        # VECTORIZED CORRELATION for all masks at once. Batched matmul over the
+        # subject axis dispatches to BLAS gemm directly (cleaner/faster than
+        # einsum "lit,itv->liv", whose batch dim lands in the middle of the
+        # output). Inputs are already float32, so no astype copies.
+        #   (n_subjects, n_masks, n_time) @ (n_subjects, n_time, n_vox)
+        #     -> (n_subjects, n_masks, n_vox) -> (n_masks, n_subjects, n_vox)
+        cov = np.matmul(mask_ts_centered.transpose(1, 0, 2), timeseries_data)
+        cov = np.moveaxis(cov, 0, 1)
+
+        # Standard deviations. einsum for the brain sum-of-squares avoids a full
+        # squared copy of the chunk.
         mask_std = np.sqrt(np.sum(mask_ts_centered**2, axis=2))  # (n_masks, n_subjects)
-        brain_std = np.sqrt(np.sum(brain_ts_centered**2, axis=1))  # (n_subjects, n_voxels)
+        brain_std = np.sqrt(
+            np.einsum("itv,itv->iv", timeseries_data, timeseries_data)
+        )  # (n_subjects, n_voxels)
 
         # Compute correlations: cov / (mask_std * brain_std)
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -1482,7 +1512,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # 0/0 or x/0). Undefined, not perfect, so map to 0 rather than +/-1.
         all_r_maps = np.nan_to_num(all_r_maps, nan=0, posinf=0, neginf=0)
 
-        return all_r_maps.astype(np.float32)
+        return all_r_maps.astype(np.float32, copy=False)
 
     def _compute_pini_timeseries_batch(self, lesion_ts: np.ndarray) -> np.ndarray:
         """Compute PINI timeseries for a batch of subjects.
@@ -1553,6 +1583,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
         mask_affine: np.ndarray,
         mask_shape: tuple,
         total_subjects: int,
+        original_affine: np.ndarray | None = None,
     ) -> SubjectData:
         """Aggregate results from pre-computed statistics (memory-optimized).
 
@@ -1793,6 +1824,16 @@ class FunctionalNetworkMapping(BaseAnalysis):
         # Transform VoxelMap results back to input space if requested
         if self.return_in_input_space:
             results = self._transform_results_to_input_space(results, mask_data)
+
+        # Return maps in the caller's original storage orientation. The batch
+        # path bypasses BaseAnalysis.run() (which handles this for the
+        # single-mask path), so apply the same lossless reorientation here. Use
+        # the caller's original affine when provided (mask_data is now the
+        # RAS+/connectome-space prepared mask, not the raw input).
+        target_affine = (
+            original_affine if original_affine is not None else mask_data.mask_img.affine
+        )
+        results = self._reorient_results_to_orientation(results, target_affine)
 
         # Add results to mask data (returns new instance with results)
         batch_results = {

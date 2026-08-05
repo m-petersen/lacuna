@@ -336,48 +336,85 @@ def fetch_gsp1000(
             )
 
     try:
-        # Phase 1: Download
-        download_start = time.time()
+        download_time = 0.0
 
-        if progress_callback:
-            progress_callback(
-                FetchProgress(
-                    phase="download",
-                    current_file="",
-                    files_completed=0,
-                    files_total=1,
-                    message="Initializing download...",
+        # Reuse already-extracted raw if present. fetch downloads and extracts
+        # tarballs, but users frequently already have the extracted
+        # sub-*/func/*finalmask tree (e.g. from a prior run or a manual copy).
+        # Detect it with the SAME glob the converter uses and skip the ~200GB
+        # download + extraction rather than re-pulling it. To force a fresh
+        # download, remove the raw dir first (e.g. `lacuna fetch --clean`).
+        from .convert import GSP1000_FUNC_GLOB
+
+        existing_raw = sorted(raw_dir.glob(GSP1000_FUNC_GLOB))
+        reuse_raw = bool(existing_raw) and not test_mode
+
+        if reuse_raw:
+            msg = f"Found {len(existing_raw)} extracted subject(s) in {raw_dir} — skipping download"
+            if verbose:
+                print(msg)
+            warn_list.append(msg)
+            leftover = list(raw_dir.glob("*.tar.tmp"))
+            if leftover:
+                warn_list.append(
+                    f"{len(leftover)} incomplete download file(s) present (e.g. "
+                    f"{leftover[0].name}); using the already-extracted data instead. "
+                    "Remove the raw dir and re-run to force a fresh download."
                 )
+            if progress_callback:
+                progress_callback(
+                    FetchProgress(
+                        phase="processing",
+                        current_file="",
+                        files_completed=0,
+                        files_total=1,
+                        message=f"Using {len(existing_raw)} existing raw subjects "
+                        "(download skipped)...",
+                    )
+                )
+        else:
+            # Phase 1: Download
+            download_start = time.time()
+
+            if progress_callback:
+                progress_callback(
+                    FetchProgress(
+                        phase="download",
+                        current_file="",
+                        files_completed=0,
+                        files_total=1,
+                        message="Initializing download...",
+                    )
+                )
+
+            downloader = DataverseDownloader(source, api_key=api_key)
+            downloader.download(
+                output_path=raw_dir,
+                progress_callback=progress_callback,
+                test_mode=test_mode,
+                skip_checksum=skip_checksum,
             )
 
-        downloader = DataverseDownloader(source, api_key=api_key)
-        downloader.download(
-            output_path=raw_dir,
-            progress_callback=progress_callback,
-            test_mode=test_mode,
-            skip_checksum=skip_checksum,
-        )
+            download_time = time.time() - download_start
 
-        download_time = time.time() - download_start
-
-        # Phase 2: Extract tarballs
-        if progress_callback:
-            progress_callback(
-                FetchProgress(
-                    phase="processing",
-                    current_file="",
-                    files_completed=0,
-                    files_total=1,
-                    message="Extracting tarballs...",
+            # Phase 2: Extract tarballs
+            if progress_callback:
+                progress_callback(
+                    FetchProgress(
+                        phase="processing",
+                        current_file="",
+                        files_completed=0,
+                        files_total=1,
+                        message="Extracting tarballs...",
+                    )
                 )
-            )
 
-        import tarfile
+            import tarfile
 
-        tar_files = list(raw_dir.glob("*.tar"))
-        for tar_path in tar_files:
-            with tarfile.open(tar_path, "r") as tar:
-                tar.extractall(path=raw_dir)
+            tar_files = list(raw_dir.glob("*.tar"))
+            for tar_path in tar_files:
+                with tarfile.open(tar_path, "r") as tar:
+                    tar.extractall(path=raw_dir)
 
         # Phase 3: Convert to HDF5
         processing_start = time.time()

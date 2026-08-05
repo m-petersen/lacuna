@@ -8,6 +8,8 @@ analysis extensibility.
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, final
 
+import numpy as np
+
 from lacuna.core.provenance import create_provenance_record
 from lacuna.core.subject_data import SubjectData
 
@@ -218,27 +220,14 @@ class BaseAnalysis(ABC):
         >>> result = analysis.run(mask_data)
         >>> print(result.results['FunctionalNetworkMapping']['rmap'])
         """
-        # Track original input space info for analyses that need to transform back
+        # Track original input space/resolution for the keep_intermediate bookkeeping below.
         original_space = mask_data.space
         original_resolution = mask_data.resolution
 
-        # Step 1: Transform to target space if TARGET_SPACE is defined
-        transformed_data = self._ensure_target_space(mask_data)
-
-        # Store original input info in metadata for _run_analysis to access
-        # This allows analyses to transform results back to input space if requested
-        if transformed_data is not mask_data:
-            updated_metadata = transformed_data.metadata.copy()
-            updated_metadata["_original_input_space"] = original_space
-            updated_metadata["_original_input_resolution"] = original_resolution
-            transformed_data = SubjectData(
-                mask_img=transformed_data.mask_img,
-                space=transformed_data.space,
-                resolution=transformed_data.resolution,
-                metadata=updated_metadata,
-                provenance=transformed_data.provenance,
-                results=transformed_data.results,
-            )
+        # Steps 0+1: canonicalize to RAS+ and transform to TARGET_SPACE. Shared
+        # with the batch path (run_batch) so both accept the same cross-space
+        # inputs and restore the caller's original orientation identically.
+        transformed_data, original_affine = self._prepare_input(mask_data)
 
         # Step 2: Validate inputs
         self._validate_inputs(transformed_data)
@@ -281,6 +270,10 @@ class BaseAnalysis(ABC):
             )
             results_dict["analysis_mask"] = analysis_mask
 
+        # Return voxel-map outputs in the caller's original storage orientation
+        # (lossless axis flip; anatomy/world coordinates are unchanged).
+        results_dict = self._reorient_results_to_orientation(results_dict, original_affine)
+
         namespace_key = self.__class__.__name__
         updated_results = transformed_data.results.copy()
         updated_results[namespace_key] = results_dict
@@ -305,6 +298,93 @@ class BaseAnalysis(ABC):
         result_mask_data = result_mask_data.add_provenance(provenance_record)
 
         return result_mask_data
+
+    def _prepare_input(self, mask_data: SubjectData) -> tuple[SubjectData, np.ndarray]:
+        """Canonicalize to RAS+ and transform to TARGET_SPACE for analysis.
+
+        This is the shared input-preparation used by both the single-subject
+        ``run()`` and the vectorized ``run_batch()`` paths so they accept the
+        same inputs (any supported space) and restore results identically.
+
+        Returns
+        -------
+        tuple[SubjectData, np.ndarray]
+            The prepared mask (RAS+, in TARGET_SPACE, with ``_original_input_space``
+            / ``_original_input_resolution`` recorded when a transform occurred)
+            and the caller's original affine, for restoring output orientation.
+        """
+        original_space = mask_data.space
+        original_resolution = mask_data.resolution
+        original_affine = mask_data.mask_img.affine.copy()
+
+        # Canonicalize to RAS+ so all internal computation aligns with the RAS+
+        # connectome/atlas/template assets by world coordinates rather than by
+        # storage order (radiological inputs would otherwise be matched by raw
+        # voxel index and silently L/R-mirrored).
+        canonical = self._canonicalize_input_orientation(mask_data)
+
+        # Transform to the analysis TARGET_SPACE (nonlinear warp / regrid /
+        # resample as needed). No-op when already in the target space.
+        transformed = self._ensure_target_space(canonical)
+
+        if transformed is not canonical:
+            updated_metadata = transformed.metadata.copy()
+            updated_metadata["_original_input_space"] = original_space
+            updated_metadata["_original_input_resolution"] = original_resolution
+            transformed = SubjectData(
+                mask_img=transformed.mask_img,
+                space=transformed.space,
+                resolution=transformed.resolution,
+                metadata=updated_metadata,
+                provenance=transformed.provenance,
+                results=transformed.results,
+            )
+
+        return transformed, original_affine
+
+    def _canonicalize_input_orientation(self, mask_data: SubjectData) -> SubjectData:
+        """Reorient the input mask to canonical RAS+ (lossless axis flip).
+
+        Radiological inputs share the RAS+ asset grids only up to an axis flip.
+        Canonicalizing here lets same-space analyses match by world coordinates
+        instead of raw storage index, which is what prevents L/R mirroring.
+        Returns the original object unchanged when the mask is already RAS+.
+        """
+        from lacuna.core.validation import ensure_ras_plus
+
+        canonical_img = ensure_ras_plus(mask_data.mask_img)
+        if canonical_img is mask_data.mask_img:
+            return mask_data
+
+        return SubjectData(
+            mask_img=canonical_img,
+            space=mask_data.space,
+            resolution=mask_data.resolution,
+            metadata=mask_data.metadata,
+            provenance=mask_data.provenance,
+            results=mask_data.results,
+        )
+
+    def _reorient_results_to_orientation(
+        self, results_dict: dict, target_affine: np.ndarray
+    ) -> dict:
+        """Reorient every VoxelMap result to ``target_affine``'s orientation.
+
+        A lossless axis flip that restores the caller's original storage
+        convention (e.g. radiological) without touching anatomy or resolution.
+        Non-VoxelMap results (scalars, matrices) are left untouched.
+        """
+        import dataclasses
+
+        from lacuna.core.data_types import VoxelMap
+        from lacuna.core.validation import reorient_to_affine_orientation
+
+        for key, value in results_dict.items():
+            if isinstance(value, VoxelMap):
+                reoriented = reorient_to_affine_orientation(value.data, target_affine)
+                if reoriented is not value.data:
+                    results_dict[key] = dataclasses.replace(value, data=reoriented)
+        return results_dict
 
     @abstractmethod
     def _validate_inputs(self, mask_data: SubjectData) -> None:

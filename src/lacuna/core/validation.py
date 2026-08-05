@@ -101,6 +101,42 @@ def ensure_ras_plus(img: nib.Nifti1Image) -> nib.Nifti1Image:
     return img
 
 
+def reorient_to_affine_orientation(
+    img: nib.Nifti1Image, target_affine: np.ndarray
+) -> nib.Nifti1Image:
+    """
+    Reorient ``img`` so its axis order and flips match ``target_affine``.
+
+    This is a lossless axis permutation/flip (no resampling or interpolation),
+    used to return analysis outputs in the caller's original storage orientation
+    after the pipeline has computed everything in canonical RAS+. It changes only
+    the storage convention (e.g. neurological RAS+ vs radiological); the anatomy
+    and world coordinates are preserved.
+
+    Parameters
+    ----------
+    img : nibabel.Nifti1Image
+        Image to reorient (typically in RAS+).
+    target_affine : np.ndarray
+        Affine whose axis orientation (order and flip signs) ``img`` should adopt.
+
+    Returns
+    -------
+    nibabel.Nifti1Image
+        ``img`` reordered to match ``target_affine``'s orientation. If it already
+        matches, the input image is returned unchanged.
+    """
+    current_ornt = nib.io_orientation(img.affine)
+    target_ornt = nib.io_orientation(target_affine)
+    transform = nib.orientations.ornt_transform(current_ornt, target_ornt)
+
+    # ornt_transform returns this identity when the orientations already match.
+    if np.array_equal(transform, [[0, 1], [1, 1], [2, 1]]):
+        return img
+
+    return img.as_reoriented(transform)
+
+
 def check_spatial_match(
     img1: nib.Nifti1Image,
     img2: nib.Nifti1Image,

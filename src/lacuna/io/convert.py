@@ -13,6 +13,11 @@ import nibabel as nib
 import numpy as np
 from tqdm import tqdm
 
+# Glob (relative to a GSP1000 raw dir) matching one resting-state run per subject.
+# Shared with fetch so "raw already present" detection uses the same criterion the
+# converter uses to enumerate subjects.
+GSP1000_FUNC_GLOB = "sub-*/func/*bld001_rest_*_finalmask.nii.gz"
+
 
 def gsp1000_to_hdf5(
     gsp_dir: str | Path,
@@ -93,7 +98,7 @@ def gsp1000_to_hdf5(
         raise FileNotFoundError(f"Mask file not found: {mask_path}")
 
     # Find all functional NIfTI files
-    search_pattern = str(gsp_dir / "sub-*" / "func" / "*bld001_rest_*_finalmask.nii.gz")
+    search_pattern = str(gsp_dir / GSP1000_FUNC_GLOB)
     all_subject_files = sorted(glob.glob(search_pattern))
 
     if not all_subject_files:
@@ -457,7 +462,6 @@ def trk_to_tck(
         # streamlines); lazy loading keeps peak memory to a single streamline
         # plus I/O buffers, regardless of tractogram size.
         print("Converting .trk -> .tck (streaming, low memory)...")
-        affine = nib.streamlines.load(str(trk_path), lazy_load=True).affine
 
         def _streamlines():
             # Re-open per pass so the generator is replayable — the TCK writer
@@ -465,7 +469,13 @@ def trk_to_tck(
             src = nib.streamlines.load(str(trk_path), lazy_load=True)
             yield from src.streamlines
 
-        lazy_out = nib.streamlines.LazyTractogram(streamlines=_streamlines, affine_to_rasmm=affine)
+        # nibabel yields streamline points already in RAS+ world (mm) space, so
+        # the output tractogram's affine_to_rasmm is the identity. Passing the
+        # source's voxel_to_rasmm here instead would apply that affine a SECOND
+        # time on save, mislocating every streamline (cf. merge_trk_to_tck).
+        lazy_out = nib.streamlines.LazyTractogram(
+            streamlines=_streamlines, affine_to_rasmm=np.eye(4)
+        )
         nib.streamlines.save(lazy_out, str(output_path))
 
     except Exception as e:
