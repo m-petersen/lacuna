@@ -70,6 +70,10 @@ Documentation including tutorials, how-to guides, and conceptual background is a
 > **Note**
 > Lacuna is in alpha release and under active development. APIs may change without notice. Use in research at your own discretion.
 
+## Supported platforms
+
+Lacuna is developed and tested on Linux. macOS is expected to work but is not tested. Windows is not supported. Windows users should try Windows Subsystem for Linux.
+
 ## Citation
 
 If you use Lacuna in your research, please cite it via [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). A citation entry is provided in [`CITATION.cff`](CITATION.cff). <!-- TODO: add preprint reference once available -->

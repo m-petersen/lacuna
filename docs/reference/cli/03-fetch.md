@@ -18,7 +18,7 @@ The fetch command downloads, processes, and registers normative connectomes requ
 
 | Name | Type | Description | Size | API key |
 |------|------|-------------|------|--------|
-| `gsp1000` | Functional | GSP1000 functional connectome | ~200GB | Dataverse |
+| `gsp1000` | Functional | GSP1000 functional connectome | ~220GB raw + ~100GB HDF5 (~320GB peak) | Dataverse |
 | `dtor985` | Structural | dTOR985 structural tractogram (full) | ~11GB | Figshare |
 | `dtor985_10pct` | Structural | dTOR985 10% subsample, ~1.2M streamlines | ~1.3GB | None |
 | `dtor985_25pct` | Structural | dTOR985 25% subsample, ~3M streamlines | ~3.1GB | None |

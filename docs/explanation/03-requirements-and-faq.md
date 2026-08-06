@@ -14,11 +14,17 @@
 
 | Connectome | Used by | Approx. size |
 |---|---|---|
-| GSP1000 | Functional network mapping | ~200 GB |
+| GSP1000 | Functional network mapping | ~320 GB peak (see note) |
 | HCP1065 | Structural network mapping | ~1.5 GB |
 | dTOR985 full | Structural network mapping | ~11 GB |
 | dTOR985 10% | Structural network mapping | ~1 GB |
 | dTOR985 25% | Structural network mapping | ~3 GB |
+
+> **GSP1000 disk usage.** Fetching downloads/extracts the raw subject data (~220 GB)
+> and then builds the HDF5 connectome (~100 GB), so you need **~320 GB free during
+> the build**. Only the HDF5 (`processed/`) is needed for analysis — you can delete
+> the raw data afterwards (or pass `lacuna fetch gsp1000 --no-keep-original`) to
+> drop back to **~100 GB**.
 
 ## Frequently asked questions
 

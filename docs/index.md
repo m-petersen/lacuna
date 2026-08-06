@@ -103,6 +103,10 @@ For the full walkthrough, see the [Getting started](tutorials/01-getting-started
 
 </div>
 
+## Supported platforms
+
+Lacuna is developed and tested on Linux. macOS is expected to work but is not tested. Windows is not supported. Windows users should try Windows Subsystem for Linux.
+
 ## Issues
 
 Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues).
