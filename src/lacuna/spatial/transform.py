@@ -147,7 +147,7 @@ class TransformationStrategy:
         )
 
     def select_interpolation(
-        self, img: nib.Nifti1Image, method: InterpolationMethod | None = None
+        self, img: nib.Nifti1Image, method: InterpolationMethod | str | None = None
     ) -> InterpolationMethod:
         """Select appropriate interpolation method based on image data.
 
@@ -155,15 +155,32 @@ class TransformationStrategy:
         ----------
         img : nib.Nifti1Image
             Image to transform.
-        method : InterpolationMethod or None
-            Override interpolation method (if None, auto-detect).
+        method : InterpolationMethod, str, or None
+            Override interpolation method. A string ('nearest', 'linear',
+            'cubic') is normalized to the enum. If None, auto-detect.
 
         Returns
         -------
         InterpolationMethod
             Interpolation method to use.
+
+        Raises
+        ------
+        ValueError
+            If ``method`` is a string that is not a valid interpolation name.
         """
         if method is not None:
+            # Normalize a string override to the enum. Callers (and the public
+            # transform_mask_data) may pass a documented string; returning it
+            # unchanged would break downstream `.value` access.
+            if isinstance(method, str):
+                try:
+                    return InterpolationMethod(method.lower())
+                except ValueError:
+                    raise ValueError(
+                        "Invalid interpolation string. Must be one of: "
+                        "'nearest', 'linear', 'cubic'"
+                    ) from None
             return method
 
         # Auto-detect: use nearest neighbor for binary/integer data
