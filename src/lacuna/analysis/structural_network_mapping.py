@@ -45,6 +45,17 @@ if TYPE_CHECKING:
     from lacuna.core.data_types import AnalysisResult
 
 
+def _streamline_count(tck_path) -> int:
+    """Number of streamlines in a ``.tck`` file.
+
+    Read from the TCK header ``count`` field (cheap, no streamline parsing);
+    falls back to a lazy count if the header lacks it.
+    """
+    tck = nib.streamlines.load(str(tck_path), lazy_load=True)
+    count = tck.header.get("count")
+    return int(count) if count is not None else sum(1 for _ in tck.streamlines)
+
+
 class StructuralNetworkMapping(BaseAnalysis):
     """
     Structural lesion network mapping using tractography-based disconnection.
@@ -753,9 +764,10 @@ class StructuralNetworkMapping(BaseAnalysis):
             # Free memory immediately after computing statistics
             del disconn_array
 
-            # Count streamlines in mask tractogram (from TDI sum)
-            mask_tdi = nib.load(mask_tdi_path, mmap=True)
-            mask_streamline_count = int(np.sum(mask_tdi.get_fdata()))
+            # True number of streamlines passing through the lesion, from the
+            # filtered tractogram's header. (Previously this summed the TDI,
+            # which is ~count x mean streamline length, not a streamline count.)
+            mask_streamline_count = _streamline_count(mask_tck_path)
 
             # Load disconnection map into memory
             # This ensures results are independent of temp directory lifecycle
