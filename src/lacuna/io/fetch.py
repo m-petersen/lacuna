@@ -341,7 +341,7 @@ def fetch_gsp1000(
         # Reuse already-extracted raw if present. fetch downloads and extracts
         # tarballs, but users frequently already have the extracted
         # sub-*/func/*finalmask tree (e.g. from a prior run or a manual copy).
-        # Detect it with the SAME glob the converter uses and skip the ~200GB
+        # Detect it with the SAME glob the converter uses and skip the ~220GB
         # download + extraction rather than re-pulling it. To force a fresh
         # download, remove the raw dir first (e.g. `lacuna fetch --clean`).
         from .convert import GSP1000_FUNC_GLOB

@@ -340,7 +340,7 @@ CONNECTOME_SOURCES: dict[str, ConnectomeSource] = {
         default_batches=10,
         n_subjects=1000,
         space="MNI152NLin6Asym",
-        estimated_size_gb=200.0,
+        estimated_size_gb=220.0,  # raw download; the built HDF5 adds ~100GB (~320GB peak)
         citation="Cohen et al, 2020. https://doi.org/10.7910/DVN/ILXIKS",
     ),
     "dtor985": ConnectomeSource(

@@ -484,40 +484,43 @@ def _show_atlases_info() -> int:
     return EXIT_SUCCESS
 
 
+def _connectome_downloaded(base_dir, name, source_type) -> bool:
+    """Whether a connectome has been fetched to disk under ``base_dir``.
+
+    Functional connectomes land as ``<name>/processed/*.h5`` chunks; structural
+    ones as a ``<name>/*.tck`` tractogram.
+    """
+    d = base_dir / name
+    if source_type == "functional":
+        proc = d / "processed"
+        return proc.is_dir() and any(proc.glob("*.h5"))
+    return any(d.glob("*.tck"))
+
+
 def _show_connectomes_info() -> int:
-    """Display information about available connectomes."""
-    from lacuna.assets.connectomes import (
-        list_functional_connectomes,
-        list_structural_connectomes,
-    )
+    """List the connectomes you can fetch, marking any already on disk.
+
+    The CLI is path-based: ``lacuna run`` registers a connectome on the fly from
+    ``--connectome-path``, so there is no persistent registry to display.
+    """
     from lacuna.io.downloaders import CONNECTOME_SOURCES
+    from lacuna.io.fetch import get_data_dir
 
-    func_connectomes = list_functional_connectomes()
-    struct_connectomes = list_structural_connectomes()
+    base_dir = get_data_dir() / "connectomes"
+    downloaded = {
+        name
+        for name, source in CONNECTOME_SOURCES.items()
+        if _connectome_downloaded(base_dir, name, source.type)
+    }
 
-    print("\nRegistered Connectomes")
-    print("=" * 60)
-
-    print("\nFunctional Connectomes:")
-    if func_connectomes:
-        for func_conn in func_connectomes:
-            print(
-                f"  {func_conn.name:<30} (space={func_conn.space}, resolution={func_conn.resolution}mm)"
-            )
-    else:
-        print("  None registered. Use 'lacuna fetch gsp1000' to download GSP1000.")
-
-    print("\nStructural Connectomes:")
-    if struct_connectomes:
-        for struct_conn in struct_connectomes:
-            print(f"  {struct_conn.name:<30} (space={struct_conn.space})")
-    else:
-        print("  None registered. Use 'lacuna fetch dtor985' or 'lacuna fetch hcp1065'.")
-
-    print("\n" + "=" * 60)
-    print("\nFetchable Connectomes (use 'lacuna fetch <name>'):")
+    print("\nFetchable connectomes (use 'lacuna fetch <name>'):")
     for name, source in CONNECTOME_SOURCES.items():
-        print(f"\n  {name:<8} - {source.display_name} (~{source.estimated_size_gb:.0f}GB)")
+        tag = "  [downloaded]" if name in downloaded else ""
+        if name == "gsp1000":
+            size = "~220GB download + ~100GB HDF5, ~320GB peak on disk"
+        else:
+            size = f"~{source.estimated_size_gb:.0f}GB"
+        print(f"\n  {name:<8} - {source.display_name} ({size}){tag}")
         space_note = source.space
         if name == "hcp1065":
             space_note += " (native: MNI152NLin2009aAsym)"
