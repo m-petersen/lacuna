@@ -11,6 +11,7 @@ from typing import Any
 
 import pandas as pd
 
+from ..core.json_utils import NumpyJSONEncoder
 from ..core.subject_data import SubjectData
 
 
@@ -277,7 +278,9 @@ def export_provenance_to_json(
 
     # Write provenance as JSON
     with open(output_path, "w") as f:
-        json.dump(mask_data.provenance, f, indent=indent if indent > 0 else None)
+        json.dump(
+            mask_data.provenance, f, indent=indent if indent > 0 else None, cls=NumpyJSONEncoder
+        )
 
     return output_path
 
@@ -382,7 +385,7 @@ def export_results_to_json(
 
     # Write JSON
     with open(output_path, "w") as f:
-        json.dump(export_data, f, indent=indent if indent > 0 else None)
+        json.dump(export_data, f, indent=indent if indent > 0 else None, cls=NumpyJSONEncoder)
 
     return output_path
 
