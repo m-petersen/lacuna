@@ -12,7 +12,7 @@ from pathlib import Path
 
 import nibabel as nib
 
-from lacuna.utils.cache import make_temp_file
+from lacuna.utils.cache import get_temp_dir, make_temp_file
 
 
 class MRtrixError(Exception):
@@ -219,10 +219,12 @@ def filter_tractogram_by_mask(
     else:
         raise TypeError(f"mask must be str, Path, or nibabel.Nifti1Image, got {type(mask)}")
 
-    # Determine output path
+    # Determine output path. Use a fresh temp DIRECTORY and a not-yet-created
+    # file inside it (rather than make_temp_file, which creates the file) so the
+    # "already exists" guard below and MRtrix's own overwrite check don't trip on
+    # our own auto-generated output.
     if output_path is None:
-        temp_output = make_temp_file(suffix=".tck", delete=False)
-        output_path = Path(temp_output.name)
+        output_path = get_temp_dir(prefix="tckedit_") / "output.tck"
     else:
         output_path = Path(output_path)
 
@@ -338,8 +340,7 @@ def compute_tdi_map(
 
     # Determine output path
     if output_path is None:
-        temp_output = make_temp_file(suffix=".nii.gz", delete=False)
-        output_path = Path(temp_output.name)
+        output_path = get_temp_dir(prefix="tckmap_") / "output.nii.gz"
     else:
         output_path = Path(output_path)
 
@@ -466,8 +467,7 @@ def compute_disconnection_map(
 
     # Determine output path
     if output_path is None:
-        temp_output = make_temp_file(suffix=".nii.gz", delete=False)
-        output_path = Path(temp_output.name)
+        output_path = get_temp_dir(prefix="mrcalc_") / "output.nii.gz"
     else:
         output_path = Path(output_path)
 

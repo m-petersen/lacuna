@@ -480,24 +480,32 @@ def get_image_space(
 
     # Use declared space if provided
     if declared_space is not None:
-        if detected_space is not None and require_match:
-            if declared_space != detected_space:
-                affine_diff = np.max(
-                    np.abs(
-                        img.affine
-                        - REFERENCE_AFFINES.get(
-                            (declared_space, declared_resolution or 2), img.affine
-                        )
-                    )
+        # Resolution precedence: explicit declaration > header-detected voxel
+        # size > 2mm last-resort default. Using `declared_resolution or 2` here
+        # discarded a correctly-detected resolution — a 1mm image declared only
+        # by space became 2mm with the wrong reference affine.
+        if declared_resolution is not None:
+            effective_resolution = declared_resolution
+        elif detected_resolution is not None:
+            effective_resolution = detected_resolution
+        else:
+            effective_resolution = 2
+
+        if detected_space is not None and require_match and declared_space != detected_space:
+            affine_diff = np.max(
+                np.abs(
+                    img.affine
+                    - REFERENCE_AFFINES.get((declared_space, effective_resolution), img.affine)
                 )
-                raise SpaceMismatchError(
-                    declared_space=declared_space,
-                    detected_space=detected_space,
-                    filepath=filepath or Path("unknown"),
-                    affine_difference=float(affine_diff),
-                )
+            )
+            raise SpaceMismatchError(
+                declared_space=declared_space,
+                detected_space=detected_space,
+                filepath=filepath or Path("unknown"),
+                affine_difference=float(affine_diff),
+            )
         detected_space = declared_space
-        detected_resolution = declared_resolution or 2
+        detected_resolution = effective_resolution
 
     # Raise error if detection failed
     if detected_space is None:
