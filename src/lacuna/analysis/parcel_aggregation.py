@@ -1167,13 +1167,22 @@ class ParcelAggregation(BaseAnalysis):
             keep_masked_labels=False,  # Remove empty region signals (future nilearn default)
         )
 
-        # Extract values - nilearn expects 4D input (add time dimension if needed)
+        # nilearn's masker expects 4D input. Parcel aggregation produces one value
+        # per parcel, so the source must be a single 3D volume: wrap a 3D map (or a
+        # 4D map with a singleton volume) as (X, Y, Z, 1). A genuinely multi-volume
+        # source can't be represented as one-value-per-parcel — reject it clearly
+        # rather than crashing later on float(<array>).
         if source_img.ndim == 3:
-            # Add a dummy 4th dimension for time
             source_data_4d = source_img.get_fdata()[..., np.newaxis]
             source_img_4d = nib.Nifti1Image(source_data_4d, source_img.affine)
-        else:
+        elif source_img.ndim == 4 and source_img.shape[3] == 1:
             source_img_4d = source_img
+        else:
+            raise ValueError(
+                f"Parcel aggregation requires a single 3D map (one value per parcel), "
+                f"but got a {source_img.ndim}D source with shape {tuple(source_img.shape)}. "
+                "Select or aggregate a single volume before parcellating."
+            )
 
         # Transform: returns (n_timepoints, n_regions) array
         try:
