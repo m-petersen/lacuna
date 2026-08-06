@@ -5635,14 +5635,16 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_snm_run1</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">connectome</span><span class="o">-</span><span class="n">path</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">dtor985_10pct_data</span><span class="o">/</span><span class="n">dtor985_10pct</span><span class="o">.</span><span class="n">tck</span> \
     <span class="o">--</span><span class="n">participant</span><span class="o">-</span><span class="n">label</span> <span class="mi">01</span> \
-    <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
+    <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
+    <span class="o">--</span><span class="n">overwrite</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-4">!lacuna run snm \
     /tmp/tutorial_bids/ \
     /tmp/outputs_snm_run1/ \
     --connectome-path /tmp/dtor985_10pct_data/dtor985_10pct.tck \
     --participant-label 01 \
-    --mask-space MNI152NLin6Asym</div>
+    --mask-space MNI152NLin6Asym \
+    --overwrite</div>
 </div>
 </div>
 </div>
@@ -5799,13 +5801,20 @@ disconnection_map = plotting.plot_stat_map(disconnection_img,
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e8b439ce">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output" id="cell-id=e8b439ce">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="celltoolbar">
+<div class="button_container tags_button_container">
+<span class="tag-container">
+<span class="cell-tag">remove_output</span>
+</span>
+</div>
+</div>
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
@@ -5826,7 +5835,8 @@ disconnection_map = plotting.plot_stat_map(disconnection_img,
     <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
     <span class="o">--</span><span class="n">compute</span><span class="o">-</span><span class="n">disconnectivity</span><span class="o">-</span><span class="n">matrix</span> \
     <span class="o">--</span><span class="n">compute</span><span class="o">-</span><span class="n">roi</span><span class="o">-</span><span class="n">disconnection</span> \
-    <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span>
+    <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
+    <span class="o">--</span><span class="n">overwrite</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-7">!lacuna run snm \
     /tmp/tutorial_bids/ \
@@ -5836,21 +5846,8 @@ disconnection_map = plotting.plot_stat_map(disconnection_img,
     --mask-space MNI152NLin6Asym \
     --compute-disconnectivity-matrix \
     --compute-roi-disconnection \
-    --parcel-atlases schaefer2018parcels100networks7</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>2026-06-12 11:49:49 - lacuna.cli.main - ERROR - Failed to process sub-01: Output for sub-01_ses-01 already exists (e.g. /tmp/outputs_snm_run2/sub-01/ses-01/anat/method-snm_space-MNI152NLin6Asym_desc-disconnectionpct (voxelmap)); nothing new to write. Use overwrite=True to regenerate.
-2026-06-12 11:49:49 - lacuna.cli.main - WARNING - Subject processing failed, continuing...
-</pre>
+    --parcel-atlases schaefer2018parcels100networks7 \
+    --overwrite</div>
 </div>
 </div>
 </div>
@@ -6158,7 +6155,8 @@ yab.plot_cortical(
     <span class="o">--</span><span class="n">compute</span><span class="o">-</span><span class="n">roi</span><span class="o">-</span><span class="n">disconnection</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
     <span class="o">--</span><span class="n">nprocs</span> <span class="mi">12</span> \
-    <span class="o">--</span><span class="n">verbose</span>
+    <span class="o">--</span><span class="n">verbose</span> \
+    <span class="o">--</span><span class="n">overwrite</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-11">!lacuna run snm \
     /tmp/tutorial_bids/ \
@@ -6168,7 +6166,8 @@ yab.plot_cortical(
     --compute-roi-disconnection \
     --parcel-atlases schaefer2018parcels100networks7 \
     --nprocs 12 \
-    --verbose</div>
+    --verbose \
+    --overwrite</div>
 </div>
 </div>
 </div>
@@ -6238,13 +6237,20 @@ yab.plot_cortical(
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=29b04544">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output" id="cell-id=29b04544">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="celltoolbar">
+<div class="button_container tags_button_container">
+<span class="tag-container">
+<span class="cell-tag">remove_output</span>
+</span>
+</div>
+</div>
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
@@ -6272,28 +6278,6 @@ yab.plot_cortical(
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>2026-06-12 12:21:46 - lacuna.cli.main - INFO - Running collect (group-level aggregation)
-2026-06-12 12:21:46 - lacuna.cli.main - INFO - Scanning derivatives directory: /tmp/outputs_snm_run3
-2026-06-12 12:21:46 - lacuna.cli.main - INFO - Output directory: /tmp/group_outputs_snm
-2026-06-12 12:21:46 - lacuna.cli.main - INFO - Pattern: *disconnectionpct*_parcelstats.tsv
-2026-06-12 12:21:46 - lacuna.cli.main - INFO - Found 3 file(s) across 3 subject(s) and 1 output type(s)
-Collecting output types:   0%|                          | 0/1 [00:00&lt;?, ?type/s]
-  Reading ses-01_label-acuteinfarct_method-snm_atlas-schaefer2018parcels100netwo
-Collecting output types: 100%|██████████████████| 1/1 [00:00&lt;00:00, 36.47type/s]
-2026-06-12 12:21:46 - lacuna.cli.main - INFO - Created 1 group-level TSV file(s):
-2026-06-12 12:21:46 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-snm_atlas-schaefer2018parcels100networks7_desc-disconnectionpct_parcelstats.tsv
-</pre>
-</div>
-</div>
-</div>
-</div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
 <div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=df8d686e">
@@ -6301,7 +6285,7 @@ Collecting output types: 100%|████████████████�
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-14">
@@ -6342,7 +6326,7 @@ Collecting output types: 100%|████████████████�
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-15">
@@ -6369,7 +6353,7 @@ parcel_df</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[18]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[15]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div>
 <style scoped="">

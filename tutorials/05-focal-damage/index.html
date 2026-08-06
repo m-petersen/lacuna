@@ -5412,13 +5412,20 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d8b38168">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output" id="cell-id=d8b38168">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="celltoolbar">
+<div class="button_container tags_button_container">
+<span class="tag-container">
+<span class="cell-tag">remove_output</span>
+</span>
+</div>
+</div>
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -5435,27 +5442,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">tutorial_bids</span><span class="o">/</span> \
     <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">outputs_fd</span><span class="o">/</span> \
     <span class="o">--</span><span class="n">parcel</span><span class="o">-</span><span class="n">atlases</span> <span class="n">schaefer2018parcels100networks7</span> \
-    <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span>
+    <span class="o">--</span><span class="n">mask</span><span class="o">-</span><span class="n">space</span> <span class="n">MNI152NLin6Asym</span> \
+    <span class="o">--</span><span class="n">overwrite</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">!lacuna run fd \
     /tmp/tutorial_bids/ \
     /tmp/outputs_fd/ \
     --parcel-atlases schaefer2018parcels100networks7 \
-    --mask-space MNI152NLin6Asym</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>2026-06-12 11:51:48 - lacuna.cli.main - WARNING - Failed to export sub-01: Output for sub-01_ses-01 already exists (e.g. /tmp/outputs_fd/sub-01/ses-01/anat/method-fd_atlas-schaefer2018parcels100networks7_desc-damagepct_parcelstats (parcelstats)); nothing new to write. Use overwrite=True to regenerate.
-2026-06-12 11:51:48 - lacuna.cli.main - WARNING - Completed with 1 failures out of 3 subjects
-</pre>
+    --mask-space MNI152NLin6Asym \
+    --overwrite</div>
 </div>
 </div>
 </div>
@@ -5784,13 +5779,20 @@ plot.add_overlay(
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=df4e98d2">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_remove_output" id="cell-id=df4e98d2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="celltoolbar">
+<div class="button_container tags_button_container">
+<span class="tag-container">
+<span class="cell-tag">remove_output</span>
+</span>
+</div>
+</div>
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
@@ -5814,31 +5816,6 @@ plot.add_overlay(
     --pattern "*schaefer2018*" \
     --output-dir /tmp/group_outputs/ \
     --verbose</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>2026-06-12 11:51:59 - lacuna.cli.main - INFO - Running collect (group-level aggregation)
-2026-06-12 11:51:59 - lacuna.cli.main - INFO - Scanning derivatives directory: /tmp/outputs_fd
-2026-06-12 11:51:59 - lacuna.cli.main - INFO - Output directory: /tmp/group_outputs
-2026-06-12 11:51:59 - lacuna.cli.main - INFO - Pattern: *schaefer2018*_parcelstats.tsv
-2026-06-12 11:51:59 - lacuna.cli.main - INFO - Found 8 file(s) across 3 subject(s) and 4 output type(s)
-Collecting output types:   0%|                          | 0/4 [00:00&lt;?, ?type/s]
-  Reading ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels4
-                                                                                
-  Reading ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels4
-Collecting output types: 100%|██████████████████| 4/4 [00:00&lt;00:00, 39.03type/s]
-2026-06-12 11:51:59 - lacuna.cli.main - INFO - Created 2 group-level TSV file(s):
-2026-06-12 11:51:59 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels416networks17_desc-damagepct_parcelstats.tsv
-2026-06-12 11:51:59 - lacuna.cli.main - INFO -   - group_ses-01_label-acuteinfarct_method-fd_atlas-schaefer2018tian2020parcels416networks17_desc-damagebin_parcelstats.tsv
-</pre>
 </div>
 </div>
 </div>

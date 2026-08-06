@@ -4802,7 +4802,7 @@
 <tr>
 <td>GSP1000</td>
 <td>Functional network mapping</td>
-<td>~200 GB</td>
+<td>~320 GB peak (see note)</td>
 </tr>
 <tr>
 <td>HCP1065</td>
@@ -4826,6 +4826,13 @@
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>GSP1000 disk usage.</strong> Fetching downloads/extracts the raw subject data (~220 GB)
+and then builds the HDF5 connectome (~100 GB), so you need <strong>~320 GB free during
+the build</strong>. Only the HDF5 (<code>processed/</code>) is needed for analysis — you can delete
+the raw data afterwards (or pass <code>lacuna fetch gsp1000 --no-keep-original</code>) to
+drop back to <strong>~100 GB</strong>.</p>
+</blockquote>
 <h2 id="frequently-asked-questions">Frequently asked questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h2>
 <h3 id="my-lesion-masks-arent-in-mni-space-what-do-i-do">My lesion masks aren't in MNI space. What do I do?<a class="headerlink" href="#my-lesion-masks-arent-in-mni-space-what-do-i-do" title="Permanent link">&para;</a></h3>
 <p>Lacuna requires masks in <code>MNI152NLin6Asym</code> or <code>MNI152NLin2009cAsym</code>. If yours are
