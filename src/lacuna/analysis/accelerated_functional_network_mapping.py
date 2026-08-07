@@ -25,6 +25,7 @@ from lacuna.analysis.base import BaseAnalysis
 from lacuna.assets.parcellations import list_parcellations, load_parcellation
 from lacuna.core.data_types import ParcelData
 from lacuna.core.keys import build_result_key
+from lacuna.core.spaces import spaces_are_equivalent
 from lacuna.core.subject_data import SubjectData
 from lacuna.utils.logging import ConsoleLogger
 
@@ -153,6 +154,21 @@ class AcceleratedFunctionalNetworkMapping(BaseAnalysis):
             raise ValueError(
                 "AcceleratedFunctionalNetworkMapping requires input with a known "
                 "coordinate space."
+            )
+        # The atlas is resampled to the lesion grid by affine only (no nonlinear
+        # warp between MNI variants), so a lesion in a different space than the
+        # atlas yields an anatomically wrong weight vector m — and thus a silently
+        # wrong `m @ C`. Require the spaces to match.
+        atlas_space = next(
+            (p.space for p in list_parcellations() if p.name == self.parcel_names[0]), None
+        )
+        if atlas_space is not None and not spaces_are_equivalent(mask_data.space, atlas_space):
+            raise ValueError(
+                f"Lesion space '{mask_data.space}' does not match the atlas space "
+                f"'{atlas_space}' for parcellation '{self.parcel_names[0]}'. AFNM aligns the "
+                "atlas to the lesion by affine only (no nonlinear warp between MNI variants), "
+                f"so a space mismatch produces an anatomically wrong result. Warp the lesion "
+                f"to '{atlas_space}' first."
             )
 
     def _build_weight_vector(

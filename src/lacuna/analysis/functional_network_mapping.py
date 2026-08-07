@@ -421,10 +421,11 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "Mask loaded", details={"shape": str(mask_shape), "n_voxels": n_voxels}
             )
 
-        # Empty masks: produce zero-valued output maps
+        # Empty masks: produce zero-valued output maps (in the input space, like a
+        # non-empty run; base.run() reorients them afterward).
         if mask_data.is_empty_mask:
             self.logger.warning("Empty mask detected — producing zero-valued network maps")
-            return self._build_empty_mask_results()
+            return self._empty_results_in_input_space(mask_data)
 
         # Get mask voxel indices and resampled mask (computed once, reused for all batches)
         self.logger.info("Computing mask-connectome overlap...")
@@ -435,7 +436,7 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 "No mask voxels overlap with connectome brain mask after resampling "
                 "— producing zero-valued network maps"
             )
-            return self._build_empty_mask_results()
+            return self._empty_results_in_input_space(mask_data)
 
         self.logger.success(f"Found {len(mask_voxel_indices):,} overlapping mask voxels")
 
@@ -825,6 +826,19 @@ class FunctionalNetworkMapping(BaseAnalysis):
             results = self._transform_results_to_input_space(results, mask_data)
 
         self.logger.success(f"Analysis complete ({len(results)} results)")
+        return results
+
+    def _empty_results_in_input_space(self, mask_data: SubjectData) -> dict[str, AnalysisResult]:
+        """Zero-valued results, transformed back to the input space when requested.
+
+        Empty/non-overlapping masks skip the main analysis; without this they
+        would be returned on the connectome grid while non-empty results are on
+        the input grid — an inconsistent mix within a batch. (The caller still
+        applies orientation restoration, as it does for non-empty results.)
+        """
+        results = self._build_empty_mask_results()
+        if self.return_in_input_space:
+            results = self._transform_results_to_input_space(results, mask_data)
         return results
 
     def _build_empty_mask_results(self) -> dict[str, AnalysisResult]:
@@ -1222,7 +1236,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
                 self.logger.warning(
                     f"Empty mask for {subject_id} — will produce zero-valued network maps"
                 )
-                empty_mask_indices[i] = self._build_empty_mask_results()
+                _empty = self._empty_results_in_input_space(prepared)
+                empty_mask_indices[i] = self._reorient_results_to_orientation(
+                    _empty, original_affines[i]
+                )
 
         mask_batch = []
 
@@ -1239,7 +1256,10 @@ class FunctionalNetworkMapping(BaseAnalysis):
                     f"brain mask after resampling to {self.TARGET_SPACE} "
                     f"— will produce zero-valued network maps"
                 )
-                empty_mask_indices[i] = self._build_empty_mask_results()
+                _empty = self._empty_results_in_input_space(prepared)
+                empty_mask_indices[i] = self._reorient_results_to_orientation(
+                    _empty, original_affines[i]
+                )
                 continue
 
             mask_batch.append(
