@@ -31,7 +31,12 @@ def _fnm_2mm():
         f.create_dataset("mask_affine", data=aff2)
         f.attrs["mask_shape"] = shp2
     register_functional_connectome(
-        name=NAME, space="MNI152NLin6Asym", resolution=2.0, data_path=p, n_subjects=3, description="t"
+        name=NAME,
+        space="MNI152NLin6Asym",
+        resolution=2.0,
+        data_path=p,
+        n_subjects=3,
+        description="t",
     )
     fnm = FunctionalNetworkMapping(connectome_name=NAME, method="boes", verbose=False)
     fnm._load_mask_info()
