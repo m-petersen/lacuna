@@ -71,5 +71,6 @@ Point `lacuna run` at a BIDS dataset root rather than a single mask, or use
 
 ### How do I cite Lacuna?
 
-See [`CITATION.cff`](https://github.com/m-petersen/lacuna/blob/main/CITATION.cff)
-in the repository.
+See the [Citation](../index.md#citation) section on the home page for the DOI,
+an APA reference and a BibTeX entry. Machine-readable metadata is in
+[`CITATION.cff`](https://github.com/m-petersen/lacuna/blob/main/CITATION.cff).

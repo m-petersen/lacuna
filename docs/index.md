@@ -107,6 +107,32 @@ For the full walkthrough, see the [Getting started](tutorials/01-getting-started
 
 Lacuna is developed and tested on Linux. macOS is expected to work but is not tested. Windows is not supported. Windows users should try Windows Subsystem for Linux.
 
+## Citation
+
+If you use Lacuna in your research, please cite it via its Zenodo DOI: [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). This concept DOI always resolves to the latest release. To cite the exact version you used, select it on the Zenodo record and use that version's DOI.
+
+=== "APA"
+
+    Petersen, M., & Biessels, G. J. (2026). *Lacuna: A Python package for characterizing brain lesions using normative neuroimaging data* (Version 0.1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.20668457
+
+=== "BibTeX"
+
+    ```bibtex
+    @software{petersen_lacuna,
+      author    = {Petersen, Marvin and Biessels, Geert Jan},
+      title     = {Lacuna: A Python package for characterizing brain lesions using normative neuroimaging data},
+      year      = {2026},
+      publisher = {Zenodo},
+      version   = {0.1.0},
+      doi       = {10.5281/zenodo.20668457},
+      url       = {https://doi.org/10.5281/zenodo.20668457}
+    }
+    ```
+
+Machine-readable citation metadata is provided in [`CITATION.cff`](https://github.com/m-petersen/lacuna/blob/main/CITATION.cff); GitHub's "Cite this repository" button generates further formats from it.
+
+Lacuna builds on normative reference data (connectomes, tractograms, atlases) produced by other groups. Please also cite the original publications for the datasets you use; `lacuna info licenses` lists every bundled and downloaded dataset together with its license and citation (see [`lacuna info`](reference/cli/08-info.md)).
+
 ## Issues
 
 Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues).
