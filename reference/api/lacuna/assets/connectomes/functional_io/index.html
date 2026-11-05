@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../../../assets/logo.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4757,51 +4757,51 @@ reader can be reused by :mod:<code>lacuna.prepare.parcellate</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/lacuna/assets/connectomes/functional_io.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span>
-<span class="normal"><a href="#__codelineno-0-24">24</a></span>
-<span class="normal"><a href="#__codelineno-0-25">25</a></span>
-<span class="normal"><a href="#__codelineno-0-26">26</a></span>
-<span class="normal"><a href="#__codelineno-0-27">27</a></span>
-<span class="normal"><a href="#__codelineno-0-28">28</a></span>
-<span class="normal"><a href="#__codelineno-0-29">29</a></span>
-<span class="normal"><a href="#__codelineno-0-30">30</a></span>
-<span class="normal"><a href="#__codelineno-0-31">31</a></span>
-<span class="normal"><a href="#__codelineno-0-32">32</a></span>
-<span class="normal"><a href="#__codelineno-0-33">33</a></span>
-<span class="normal"><a href="#__codelineno-0-34">34</a></span>
-<span class="normal"><a href="#__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#__codelineno-0-38">38</a></span>
-<span class="normal"><a href="#__codelineno-0-39">39</a></span>
-<span class="normal"><a href="#__codelineno-0-40">40</a></span>
-<span class="normal"><a href="#__codelineno-0-41">41</a></span>
-<span class="normal"><a href="#__codelineno-0-42">42</a></span>
-<span class="normal"><a href="#__codelineno-0-43">43</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_connectome_batch_files</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return sorted list of HDF5 batch files under ``path``.</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">    Parameters</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    ----------</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">    path : Path</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">        Either a single ``.h5`` file or a directory containing ``*.h5`` files.</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">    Returns</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    -------</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    list[Path]</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        Sorted list of HDF5 files. At least one file is guaranteed or</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        ``FileNotFoundError`` is raised.</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connectome path not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="n">h5_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.h5&quot;</span><span class="p">))</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">h5_files</span><span class="p">:</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No HDF5 files found in directory: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="k">return</span> <span class="n">h5_files</span>
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">path</span><span class="p">]</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-21">21</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-22">22</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-23">23</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-24">24</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-25">25</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-26">26</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-27">27</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-28">28</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-29">29</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-30">30</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-31">31</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-32">32</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-33">33</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-34">34</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-35">35</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-36">36</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-39">39</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-40">40</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-42">42</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-43">43</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-21"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-21" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-21"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_connectome_batch_files</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-22"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-22" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-22"></a><span class="w">    </span><span class="sd">"""Return sorted list of HDF5 batch files under ``path``.</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-23"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-23" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-23"></a>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-24"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-24" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-24"></a><span class="sd">    Parameters</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-25"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-25" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-25"></a><span class="sd">    ----------</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-26"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-26" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-26"></a><span class="sd">    path : Path</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-27"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-27" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-27"></a><span class="sd">        Either a single ``.h5`` file or a directory containing ``*.h5`` files.</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-28"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-28" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-28"></a>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-29"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-29" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-29"></a><span class="sd">    Returns</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-30"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-30" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-30"></a><span class="sd">    -------</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-31"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-31" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-31"></a><span class="sd">    list[Path]</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-32"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-32" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-32"></a><span class="sd">        Sorted list of HDF5 files. At least one file is guaranteed or</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-33"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-33" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-33"></a><span class="sd">        ``FileNotFoundError`` is raised.</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-34"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-34" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-34"></a><span class="sd">    """</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-35"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-35" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-35"></a>    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-36"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-36" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-36"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-37"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-37" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-37"></a>        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Connectome path not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-38"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-38" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-38"></a>    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-39"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-39" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-39"></a>        <span class="n">h5_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*.h5"</span><span class="p">))</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-40"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-40" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-40"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">h5_files</span><span class="p">:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-41"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-41" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-41"></a>            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No HDF5 files found in directory: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-42"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-42" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-42"></a>        <span class="k">return</span> <span class="n">h5_files</span>
+</span><span id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__span-0-43"><a id="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-43" name="lacuna.assets.connectomes.functional_io.list_connectome_batch_files--source--__codelineno-0-43"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">path</span><span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4828,47 +4828,47 @@ reader can be reused by :mod:<code>lacuna.prepare.parcellate</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/lacuna/assets/connectomes/functional_io.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span>
-<span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span>
-<span class="normal"><a href="#__codelineno-0-51">51</a></span>
-<span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
-<span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span>
-<span class="normal"><a href="#__codelineno-0-57">57</a></span>
-<span class="normal"><a href="#__codelineno-0-58">58</a></span>
-<span class="normal"><a href="#__codelineno-0-59">59</a></span>
-<span class="normal"><a href="#__codelineno-0-60">60</a></span>
-<span class="normal"><a href="#__codelineno-0-61">61</a></span>
-<span class="normal"><a href="#__codelineno-0-62">62</a></span>
-<span class="normal"><a href="#__codelineno-0-63">63</a></span>
-<span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">read_mask_info</span><span class="p">(</span><span class="n">h5_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Read mask geometry from an HDF5 connectome file.</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    Returns a dict with:</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">        - ``mask_indices``: tuple of three ``int64`` 1-D arrays (ix, iy, iz)</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">        - ``mask_affine``: (4, 4) ndarray</span>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        - ``mask_shape``: tuple of three ints</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">hf</span><span class="p">:</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="n">mi</span> <span class="o">=</span> <span class="n">hf</span><span class="p">[</span><span class="s2">&quot;mask_indices&quot;</span><span class="p">][:]</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>        <span class="k">if</span> <span class="n">mi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a>            <span class="n">mask_indices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mi</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>            <span class="n">mask_indices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mi</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>        <span class="n">mask_affine</span> <span class="o">=</span> <span class="n">hf</span><span class="p">[</span><span class="s2">&quot;mask_affine&quot;</span><span class="p">][:]</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>        <span class="n">mask_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hf</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;mask_shape&quot;</span><span class="p">])</span>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="k">return</span> <span class="p">{</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>        <span class="s2">&quot;mask_indices&quot;</span><span class="p">:</span> <span class="n">mask_indices</span><span class="p">,</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>        <span class="s2">&quot;mask_affine&quot;</span><span class="p">:</span> <span class="n">mask_affine</span><span class="p">,</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>        <span class="s2">&quot;mask_shape&quot;</span><span class="p">:</span> <span class="n">mask_shape</span><span class="p">,</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="p">}</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-55">55</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-56">56</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-66">66</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-46"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-46" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">read_mask_info</span><span class="p">(</span><span class="n">h5_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-47"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-47" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-47"></a><span class="w">    </span><span class="sd">"""Read mask geometry from an HDF5 connectome file.</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-48"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-48" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-48"></a>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-49"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-49" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-49"></a><span class="sd">    Returns a dict with:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-50"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-50" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-50"></a><span class="sd">        - ``mask_indices``: tuple of three ``int64`` 1-D arrays (ix, iy, iz)</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-51"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-51" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-51"></a><span class="sd">        - ``mask_affine``: (4, 4) ndarray</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-52"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-52" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-52"></a><span class="sd">        - ``mask_shape``: tuple of three ints</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-53"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-53" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-53"></a><span class="sd">    """</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-54"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-54" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-54"></a>    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">hf</span><span class="p">:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-55"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-55" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-55"></a>        <span class="n">mi</span> <span class="o">=</span> <span class="n">hf</span><span class="p">[</span><span class="s2">"mask_indices"</span><span class="p">][:]</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-56"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-56" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-56"></a>        <span class="k">if</span> <span class="n">mi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-57"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-57" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-57"></a>            <span class="n">mask_indices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mi</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-58"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-58" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-58"></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-59"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-59" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-59"></a>            <span class="n">mask_indices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mi</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-60"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-60" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-60"></a>        <span class="n">mask_affine</span> <span class="o">=</span> <span class="n">hf</span><span class="p">[</span><span class="s2">"mask_affine"</span><span class="p">][:]</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-61"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-61" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-61"></a>        <span class="n">mask_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hf</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"mask_shape"</span><span class="p">])</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-62"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-62" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-62"></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-63"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-63" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-63"></a>        <span class="s2">"mask_indices"</span><span class="p">:</span> <span class="n">mask_indices</span><span class="p">,</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-64"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-64" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-64"></a>        <span class="s2">"mask_affine"</span><span class="p">:</span> <span class="n">mask_affine</span><span class="p">,</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-65"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-65" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-65"></a>        <span class="s2">"mask_shape"</span><span class="p">:</span> <span class="n">mask_shape</span><span class="p">,</span>
+</span><span id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__span-0-66"><a id="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-66" name="lacuna.assets.connectomes.functional_io.read_mask_info--source--__codelineno-0-66"></a>    <span class="p">}</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4955,11 +4955,118 @@ reader can be reused by :mod:<code>lacuna.prepare.parcellate</code>.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "navigation.tracking", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "navigation.tracking", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
-  </body>
+  <script data-mkdocs-jupyter-mathjax="{&quot;url&quot;: &quot;https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js&quot;, &quot;version&quot;: 4}">
+/* Shared by full pages and Material's instant navigation. */
+(() => {
+  const config = JSON.parse(document.currentScript.dataset.mkdocsJupyterMathjax);
+  if (window.mkdocsJupyterMathJax) return;
+
+  let loading;
+  let queue = Promise.resolve();
+  let previous = [];
+
+  const ready = async () => {
+    if (!loading) {
+      loading = (async () => {
+        let math = window.MathJax;
+        if (!math?.typesetPromise) {
+          const url = new URL(config.url, document.baseURI).href;
+          const existing = Array.from(document.scripts).find(script =>
+            script.src && (script.src === url || script.id === 'MathJax-script' ||
+              (/mathjax/i.test(script.src) &&
+               /\/(?:MathJax|latest|(?:tex|mml)(?:-mml)?-(?:chtml|svg))\.js(?:[?#]|$)/i.test(script.src))));
+          if (existing) {
+            if (!math?.startup?.promise) {
+              await new Promise((resolve, reject) => {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+              });
+            }
+          } else {
+            // Keep site macros, delimiters and startup hooks when supplied.
+            const options = math || {};
+            window.MathJax = {
+              ...options,
+              loader: {
+                ...options.loader,
+                load: Array.from(new Set(['ui/safe', ...(options.loader?.load || [])]))
+              },
+              startup: { typeset: false, ...options.startup },
+              tex: {
+                tags: 'ams',
+                useLabelIds: true,
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                ...options.tex
+              }
+            };
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = config.url;
+              script.id = 'MathJax-script';
+              script.async = true;
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+        }
+        math = window.MathJax;
+        await math.startup.promise;
+        return math;
+      })();
+    }
+    const math = await loading;
+    // A site owner can extend the v3 queue again on each navigation.
+    await math.startup.promise;
+    return math;
+  };
+
+  const unrendered = node => {
+    if (node.matches('mjx-container')) return [];
+    if (!node.querySelector('mjx-container')) return [node];
+    // In v3, scanning generated assistive MathML again produces nested output.
+    return Array.from(node.children).flatMap(unrendered);
+  };
+
+  const refresh = () => {
+    // A separate chain also serializes v3, without changing v4's startup promise.
+    queue = queue.then(async () => {
+      const notebooks = Array.from(document.querySelectorAll('.jupyter-wrapper'));
+      if (!notebooks.length && !previous.length) return;
+      if (notebooks.length === previous.length &&
+          notebooks.every((node, index) => node === previous[index])) return;
+      const math = await ready();
+      if (previous.length) {
+        math.typesetClear(previous);
+        math.texReset();
+      }
+      previous = notebooks.filter(node => node.isConnected);
+      const pending = previous.flatMap(unrendered);
+      if (pending.length) await math.typesetPromise(pending);
+    }).catch(error => console.error('mkdocs-jupyter: MathJax rendering failed', error));
+    return queue;
+  };
+
+  window.mkdocsJupyterMathJax = { refresh };
+  const start = () => {
+    if (typeof document$ !== 'undefined') document$.subscribe(refresh);
+    else refresh();
+  };
+  // Theme bundles and user-provided MathJax scripts can follow notebook content.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else start();
+})();
+
+</script>
+</body>
 </html>
