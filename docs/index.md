@@ -18,8 +18,6 @@ Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, and 
 <img src="assets/logo.svg" alt="Lacuna" width="800" style="flex-shrink: 0;">
 </div>
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20668457.svg)](https://doi.org/10.5281/zenodo.20668457)
-
 !!! warning "This project is in alpha release and under active development. Interfaces may change between versions."
 
 ## Capabilities
@@ -109,15 +107,15 @@ For the full walkthrough, see the [Getting started](tutorials/01-getting-started
 
 Lacuna is developed and tested on Linux. macOS is expected to work but is not tested. Windows is not supported. Windows users should try Windows Subsystem for Linux.
 
+## Issues
+
+Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues).
+
 ## Citation
 
 If you use Lacuna in your research, please cite it via its Zenodo DOI: [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). The [Zenodo record](https://doi.org/10.5281/zenodo.20668457) provides ready-made citations in common formats (APA, BibTeX, and others) under "Citation" and "Export". The DOI always resolves to the latest release; to cite the exact version you used, select it on the Zenodo record and use that version's DOI.
 
 Lacuna builds on normative reference data (connectomes, tractograms, atlases) produced by other groups. Please also cite the original publications for the datasets you use: `lacuna info licenses` lists every bundled and downloaded dataset together with its license and citation (see [`lacuna info`](reference/cli/08-info.md)).
-
-## Issues
-
-Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues).
 
 <div style="display: flex; align-items: center; gap: 2rem;" markdown>
 <div markdown>
