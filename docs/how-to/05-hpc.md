@@ -28,7 +28,7 @@ Pull the Lacuna image once and store the resulting `.sif` file on the shared fil
 
 ```bash
 module load apptainer
-apptainer pull lacuna.sif docker://ghcr.io/m-petersen/lacuna:latest 
+apptainer pull lacuna.sif docker://ghcr.io/m-petersen/lacuna:edge 
 ```
 
 This creates `lacuna.sif` in the current directory.
