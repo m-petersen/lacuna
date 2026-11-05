@@ -113,9 +113,9 @@ Please report issues on [GitHub](https://github.com/m-petersen/lacuna/issues).
 
 ## Citation
 
-If you use Lacuna in your research, please cite it via its Zenodo DOI: [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). The [Zenodo record](https://doi.org/10.5281/zenodo.20668457) provides ready-made citations in common formats (APA, BibTeX, and others) under "Citation" and "Export". The DOI always resolves to the latest release; to cite the exact version you used, select it on the Zenodo record and use that version's DOI.
+If you use Lacuna in your research, please cite it via its Zenodo DOI: [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457).
 
-Lacuna builds on normative reference data (connectomes, tractograms, atlases) produced by other groups. Please also cite the original publications for the datasets you use: `lacuna info licenses` lists every bundled and downloaded dataset together with its license and citation (see [`lacuna info`](reference/cli/08-info.md)).
+Lacuna builds on normative reference data (connectomes, tractograms, atlases) produced by other groups. Please also cite the original publications for the datasets you use: `lacuna info licenses` lists bundled and downloaded datasets together with their license and citation.
 
 <div style="display: flex; align-items: center; gap: 2rem;" markdown>
 <div markdown>
