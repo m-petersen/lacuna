@@ -9,7 +9,6 @@
 [![Documentation](https://readthedocs.org/projects/lacuna-py/badge/?version=latest)](https://lacuna-py.readthedocs.io/en/latest/)
 [![status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/m-petersen/lacuna)
 [![DOI](https://zenodo.org/badge/1093379161.svg)](https://doi.org/10.5281/zenodo.20668457)
-[![Downloads](https://img.shields.io/github/downloads/m-petersen/lacuna/total)](https://github.com/m-petersen/lacuna/releases)
 
 When a stroke, tumor, or other focal injury damages brain tissue, understanding its consequences requires placing the lesion in the broader context of brain organization.
 
