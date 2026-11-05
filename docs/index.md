@@ -18,6 +18,8 @@ Lacuna is built to be easy to adopt: you provide lesion masks in MNI space, and 
 <img src="assets/logo.svg" alt="Lacuna" width="800" style="flex-shrink: 0;">
 </div>
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20668457.svg)](https://doi.org/10.5281/zenodo.20668457)
+
 !!! warning "This project is in alpha release and under active development. Interfaces may change between versions."
 
 ## Capabilities
@@ -109,29 +111,9 @@ Lacuna is developed and tested on Linux. macOS is expected to work but is not te
 
 ## Citation
 
-If you use Lacuna in your research, please cite it via its Zenodo DOI: [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). This concept DOI always resolves to the latest release. To cite the exact version you used, select it on the Zenodo record and use that version's DOI.
+If you use Lacuna in your research, please cite it via its Zenodo DOI: [10.5281/zenodo.20668457](https://doi.org/10.5281/zenodo.20668457). The [Zenodo record](https://doi.org/10.5281/zenodo.20668457) provides ready-made citations in common formats (APA, BibTeX, and others) under "Citation" and "Export". The DOI always resolves to the latest release; to cite the exact version you used, select it on the Zenodo record and use that version's DOI.
 
-=== "APA"
-
-    Petersen, M., & Biessels, G. J. (2026). *Lacuna: A Python package for characterizing brain lesions using normative neuroimaging data* (Version 0.1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.20668457
-
-=== "BibTeX"
-
-    ```bibtex
-    @software{petersen_lacuna,
-      author    = {Petersen, Marvin and Biessels, Geert Jan},
-      title     = {Lacuna: A Python package for characterizing brain lesions using normative neuroimaging data},
-      year      = {2026},
-      publisher = {Zenodo},
-      version   = {0.1.0},
-      doi       = {10.5281/zenodo.20668457},
-      url       = {https://doi.org/10.5281/zenodo.20668457}
-    }
-    ```
-
-Machine-readable citation metadata is provided in [`CITATION.cff`](https://github.com/m-petersen/lacuna/blob/main/CITATION.cff); GitHub's "Cite this repository" button generates further formats from it.
-
-Lacuna builds on normative reference data (connectomes, tractograms, atlases) produced by other groups. Please also cite the original publications for the datasets you use; `lacuna info licenses` lists every bundled and downloaded dataset together with its license and citation (see [`lacuna info`](reference/cli/08-info.md)).
+Lacuna builds on normative reference data (connectomes, tractograms, atlases) produced by other groups. Please also cite the original publications for the datasets you use: `lacuna info licenses` lists every bundled and downloaded dataset together with its license and citation (see [`lacuna info`](reference/cli/08-info.md)).
 
 ## Issues
 
