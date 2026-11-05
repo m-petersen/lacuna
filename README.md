@@ -15,9 +15,9 @@
 
 Lacuna characterizes brain lesions (stroke, tumor, or other focal injury) in the context of normative brain organization. Using reference data from healthy individuals, including functional and structural connectomes and anatomical atlases, it derives measures that go beyond a lesion's anatomical location.
 
-You provide lesion masks in MNI space; Lacuna fetches the reference data, aligns coordinate spaces, and runs the analyses from a command line interface.
+You provide lesion masks in MNI space. Lacuna fetches the reference data, aligns coordinate spaces, and runs the analyses from a command line interface.
 
-- **BIDS in, BIDS out:** standardized inputs and BIDS-organized outputs
+- **Standardized:** BIDS-style inputs and outputs
 - **Scales:** from a single mask to entire cohorts with batch processing
 - **HPC-ready:** Docker and Apptainer containers
 - **Traceable:** provenance recorded for every result
@@ -43,7 +43,7 @@ Requirements for each analysis (connectomes, MRtrix3, disk space) are described 
 pip install git+https://github.com/m-petersen/lacuna
 ```
 
-Requires Python ≥ 3.10 on Linux (macOS untested; on Windows use WSL). Alternatively, use the container image, which includes MRtrix3:
+Requires Python ≥ 3.10 on Linux (macOS untested, Windows via WSL). Alternatively, use the container image, which includes MRtrix3:
 
 ```bash
 docker pull ghcr.io/m-petersen/lacuna:edge
@@ -60,7 +60,7 @@ lacuna run snm my_dataset output \
     --mask-space MNI152NLin6Asym
 ```
 
-Results are written to `output/` as BIDS derivatives. Lesion masks must be in MNI space; see the [spatial normalization guide](https://lacuna-py.readthedocs.io/en/latest/how-to/01-spatial-normalization/).
+Results are written to `output/` in a BIDS-style layout. Lesion masks must be in MNI space (see the [spatial normalization guide](https://lacuna-py.readthedocs.io/en/latest/how-to/01-spatial-normalization/)).
 
 ## Documentation
 
@@ -82,4 +82,4 @@ Lacuna is developed as part of the [Meta VCI Map Consortium](https://metavcimap.
 
 ## License
 
-Code: MIT, see [LICENSE](LICENSE). Reference datasets carry their own licenses, some restricted to non-commercial use; run `lacuna info licenses` for details.
+Code: MIT, see [LICENSE](LICENSE). Reference datasets carry their own licenses, some restricted to non-commercial use. Run `lacuna info licenses` for details.
